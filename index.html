@@ -236,6 +236,12 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .vs.big img{width:min(36vw,160px);height:auto}
 .vs b{font-family:var(--f-pix);font-size:22px;color:var(--staff)}
 .vs img.lose{filter:grayscale(1) brightness(.5);transform:rotate(-8deg)}
+.swear.news{max-width:380px;max-height:86vh;text-align:left}
+.swear.news #nwT{text-align:center}
+.news-body{overflow-y:auto;font-size:14px;line-height:1.65;padding-right:4px}
+.news-body h4{margin:10px 0 2px;font-size:15px;color:var(--staff)}
+.swear.news .news-body p{margin:0 0 4px;font-weight:500;font-size:14px;line-height:1.65}
+.swear.news .news-end{margin-top:10px;font-weight:900;text-align:center}
 .missions{display:flex;flex-direction:column;gap:10px}
 .mission{background:var(--bark);border:2px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;gap:12px;align-items:center}
 .mission.open{border-color:var(--moss)}
@@ -579,9 +585,42 @@ if(FBA){
     if(u){ if(!LOGIN_NAME){ try{ const p=await FDB.doc("profiles/"+u.uid).get(); if(p.exists) LOGIN_NAME=p.data().name||null; }catch(e){} }
       startRemote(u.uid); }
     else { SIGNED=false; DB=null; MYID=null; remoteDoc=null; remoteReady=false; render();
-      try{ if(!localStorage.getItem("toto-login-skip")) setTimeout(()=>openLogin(),600); }catch(e){ setTimeout(()=>openLogin(),600); } }
+      newsDone.then(()=>{ try{ if(!localStorage.getItem("toto-login-skip")) setTimeout(()=>openLogin(),300); }catch(e){ setTimeout(()=>openLogin(),300); } }); }
   });
 }
+
+/* ---------- お知らせ（起動時に表示） ---------- */
+const NEWS_KEY="toto-news-battle-v1";
+let newsResolve; const newsDone=new Promise(r=>newsResolve=r);
+function openNews(force){
+  let hide=false; try{ hide=localStorage.getItem(NEWS_KEY)==="hide"; }catch(e){}
+  if(hide && !force){ newsResolve(); return; }
+  const bg=document.createElement("div"); bg.className="sheet-bg center news-sheet";
+  bg.innerHTML=`<div class="swear news" role="dialog" aria-modal="true" aria-labelledby="nwT">
+    <p id="nwT">⚔️ バトル機能が始まりました！</p>
+    <div class="news-body">
+      <h4>🛡 配置モンスター</h4>
+      <p>手持ちの魔物を1体、プロフィールに配置できます。魔物をタップして「プロフィールに配置する」を押すだけ！</p>
+      <p>ほかの人に見えるのはイラストと名前だけで、レベルは「？？？」。強さは自分にしかわかりません。</p>
+      <h4>⚔️ バトル</h4>
+      <p>ランキングで気になる人をタップして「戦う」！配置モンスターのレベルが高い方の勝ちです。同じレベルなら引き分け。</p>
+      <p>同じ相手と戦えるのは1日1回まで。</p>
+      <h4>💀 負けると…</h4>
+      <p>・配置していた魔物は消えてしまいます（保護していても消えます）<br>・プレイヤーレベルが5下がります</p>
+      <p>攻めた側でも守った側でも、負けたら同じです。</p>
+      <h4>⏰ 配置しないと…</h4>
+      <p>魔物を配置していない間は、1時間ごとにプレイヤーレベルが1ずつ下がります。ランキングを守りたいなら、必ず1体配置しておこう！</p>
+      <p class="news-end">強い魔物で守るか、それとも攻めるか…あなた次第！</p>
+    </div>
+    <button class="btn gold" id="nwOk" type="button">とじる</button>
+    <button class="btn ghost" id="nwHide" type="button">次から表示しない</button></div>`;
+  document.body.appendChild(bg);
+  const close=hideNext=>{ if(hideNext){ try{ localStorage.setItem(NEWS_KEY,"hide"); }catch(e){} toast("次から表示しません（ボーナスタブの「お知らせ」でまた見られます）"); } bg.remove(); newsResolve(); };
+  bg.querySelector("#nwOk").onclick=()=>close(false);
+  bg.querySelector("#nwHide").onclick=()=>close(true);
+  bg.querySelector("#nwOk").focus();
+}
+setTimeout(()=>openNews(false),150);
 
 /* ---------- 名前＋4桁でログイン ---------- */
 const nameKey=async n=>(await sha256(n.normalize("NFKC").trim().toLowerCase())).slice(0,40);
@@ -1190,7 +1229,7 @@ function confirmMission(i){
 /* ---------- ボーナス・パスワード ---------- */
 function renderBonus(){
   const dr=dailyReady(), left=hourlyLeft();
-  $("#stage").innerHTML=`<h2>ボーナス</h2><p class="sub">コインを受け取って、ガチャをまわそう。</p>
+  $("#stage").innerHTML=`<h2>ボーナス</h2><p class="sub">コインを受け取って、ガチャをまわそう。 <button class="chip" type="button" data-news="1">お知らせ</button></p>
   <div class="bonus userno"><h3>ユーザー番号</h3>
     <p>${S.userNo?"プレゼントを受け取るときに使う、あなただけの番号です。":numberState==="loading"?"番号を発行しています…":"ログインすると、番号が発行されます。"}</p>
     ${S.userNo?`<button class="cd no-btn" id="copyNo" type="button" aria-label="ユーザー番号をコピー">No.${S.userNo}<small>タップでコピー</small></button>`:`<div class="cd">―<small>未発行</small></div>`}</div>
@@ -1224,7 +1263,7 @@ let SIGNED=false, VIEWONLY=false, DB=null, MYID=null, profMode="me", profTimer=n
 const loginBox=msg=>`<div class="login-box"><p>${msg}</p>
   <button class="btn gold login-btn" type="button" data-login="1">ログイン / はじめて登録</button>
   <p class="note" style="margin:0">名前と4桁の数字だけで登録できます。</p></div>`;
-document.addEventListener("click",e=>{ if(e.target.closest("[data-login]")) openLogin(); });
+document.addEventListener("click",e=>{ if(e.target.closest("[data-login]")) openLogin(); if(e.target.closest("[data-news]")) openNews(true); });
 const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const compPct=()=>Math.round(MONSTERS.filter(m=>S.got[m.id]).length/MONSTERS.length*1000)/10;
 const myName=()=>S.name||"名無しの召喚士";
