@@ -492,7 +492,7 @@ const FRAME_IN = 0.30;                           // アイコン枠の内側の�
 const CODES = [
   { h: "8235da9ccb4062943ef947b83f043be2d35b327097fb2adb58f8c59c11f6ff6b", coins: 3000 },  // 2026-10-16 追加
   { h: "bca2b41a2b25e137c83fee346af7bd1e0f52bd560583ca07a1b42f9944c5c50b", coins: 1000000 },  // 2026-10-16 追加
-  { h: "ad3b0ddb5abf8ab440d6cec789cb373b42bb7ecb6fd9b666e924a0699a396344", item: "gift", repeat: true },  // 何回でも使える
+  { h: "ad3b0ddb5abf8ab440d6cec789cb373b42bb7ecb6fd9b666e924a0699a396344", item: "gift", qty: 30, repeat: true },  // 何回でも使える
 ];
 const MAX_LV = 100;
 // Lv → Lv+1 に必要な経験値: 後半ほど大きく、ランクが高いほど多い (Cランクは Lv1→100 で合計約10万)
@@ -1576,8 +1576,8 @@ function renderBonus(){
     if(!c){ try{ const h2=await sha256(v.normalize("NFKC")); c=CODES.find(x=>x.h===h2); if(c) h=h2; }catch(err){} }
     if(!c) return say("呪文が違います。大文字・小文字も確かめてください",false);
     S.codes=S.codes||[];
-    if(c.item){ const it=itemOf(c.item); addItem(c.item,1); save(); $("#codeIn").value="";
-      say(`「${it.name}」を手に入れた！ランキングで相手をタップすると使えます（持っている数：${inv(c.item)}）`,true); SFX.reveal("S"); toast(`${it.name}を手に入れた！`); return; }
+    if(c.item){ const it=itemOf(c.item), q=c.qty||1; addItem(c.item,q); save(); $("#codeIn").value="";
+      say(`「${it.name}」を${q}個手に入れた！ランキングで相手をタップすると使えます（持っている数：${inv(c.item)}）`,true); SFX.reveal("S"); toast(`${it.name}×${q}を手に入れた！`); return; }
     if(S.codes.includes(h)) return say("この呪文はもう使われています",false);
     S.codes.push(h); S.coins+=c.coins; save(); renderCoins(); $("#codeIn").value="";
     say(`${c.coins.toLocaleString()}コインを受け取りました！`,true); SFX.coin(); toast(`呪文 +${c.coins.toLocaleString()}コイン`);
