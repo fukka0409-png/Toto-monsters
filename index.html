@@ -1751,7 +1751,7 @@ async function checkItems(){
       if(gifts.length){ const g=document.createElement("div"); g.className="reveal";
         const names=[...new Set(gifts)];
         g.innerHTML=`<div class="burst"></div><h3>🎁 神からの贈り物が届いた！</h3><img src="${itemOf("gift").img}" alt="" class="iu-big">
-          <p class="note" style="text-align:center;max-width:320px">${names.join("、")}から${gifts.length>1?`${gifts.length}つの`:""}贈り物！<br><b style="color:var(--staff);font-size:20px">+${(GIFT_COIN*gifts.length).toLocaleString()}コイン</b></p><button class="btn gold" type="button">受け取る</button>`;
+          <p class="note" style="text-align:center;max-width:320px">神から${gifts.length>1?`${gifts.length}つの`:""}贈り物が届きました！<br><b style="color:var(--staff);font-size:20px">+${(GIFT_COIN*gifts.length).toLocaleString()}コイン</b></p><button class="btn gold" type="button">受け取る</button>`;
         document.body.appendChild(g); SFX.reveal("S"); SFX.coin(); g.querySelector(".btn").onclick=()=>{ g.remove(); renderCoins(); }; }
       if(msgs.length){
       const bg=document.createElement("div"); bg.className="sheet-bg center";
