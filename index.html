@@ -208,6 +208,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .cmt-row input,.nm-in{flex:1;min-width:0;background:var(--night);border:2px solid var(--line);border-radius:12px;color:var(--mist);font:inherit;font-size:16px;padding:10px 12px}
 .rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .rank li{display:flex;align-items:center;gap:10px;background:var(--bark);border:2px solid var(--line);border-radius:14px;padding:8px 10px}
+.rank li{cursor:pointer}
+.rank li:active{transform:scale(.98)}
 .rank li.me{border-color:var(--moss)}
 .rank li.top1{border-color:#f0c040}.rank li.top2{border-color:#c8d0d8}.rank li.top3{border-color:#c88a50}
 .rk-no{font-family:var(--f-pix);font-size:18px;width:30px;text-align:center;flex:0 0 auto}
@@ -1190,7 +1192,9 @@ const myName=()=>S.name||"名無しの召喚士";
 function profilePayload(){
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
-    comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0 };
+    comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
+    owned:MONSTERS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
+    units:S.units.length, missions:(S.stats.missions||0) };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -1269,7 +1273,7 @@ function renderRanking(segHtml){
   else if(rankErr) body=`<div class="empty">ランキングを読み込めませんでした。少し時間をおいて開き直してください。</div>`;
   else if(!RANK) body=`<div class="empty">読み込み中…</div>`;
   else if(!RANK.length) body=`<div class="empty">まだ誰もいません</div>`;
-  else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3?"top"+(i+1):""}">
+  else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3?"top"+(i+1):""}" data-ri="${i}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
       <span class="rk-no">${i+1}</span>${avatarImg(r.icon,44)}
       <div class="rk-body"><div class="rk-name">${esc(r.name||"名無しの召喚士")}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">No.${esc(r.no||"―")} ・ コンプ ${esc(r.comp??0)}%</div>
@@ -1278,6 +1282,31 @@ function renderRanking(segHtml){
   $("#stage").innerHTML=`${segHtml}<h2>ランキング</h2><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>${body}`;
   $("#reRank").onclick=()=>{ RANK=null; render(); loadRanking(); };
+  document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
+    const open=()=>openOtherProfile(RANK[+li.dataset.ri], +li.dataset.ri+1);
+    li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } };
+  });
+}
+function openOtherProfile(r,rank){
+  if(!r) return;
+  const n=v=>esc(Number(v||0).toLocaleString());
+  const bg=sheet(`<div class="sheet-h"><h3>プロフィール</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+  <div class="prof">
+    <div class="prof-top">${avatarImg(r.icon,88)}
+      <div class="prof-id"><div class="prof-name">${esc(r.name||"名無しの召喚士")}${r.id===MYID?` <span class="same">あなた</span>`:""}</div>
+        <div class="prof-no">${r.no?"No."+esc(r.no):"ユーザー番号 未発行"}</div></div>
+      <div class="prof-rank"><small>ランキング</small><b>${rank}位</b></div></div>
+    <div class="plv"><span>プレイヤー Lv</span><b>${esc(r.lv||1)}</b></div>
+    ${rank<=50&&r.comment?`<div class="rk-cmt" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
+    <div class="stats">
+      <div><small>ガチャ回数</small><b>${n(r.pulls)}</b></div>
+      <div><small>合成回数</small><b>${n(r.fuses)}</b></div>
+      <div><small>魔物コンプ率</small><b>${esc(r.comp??0)}%</b>${r.owned!=null?`<small>${n(r.owned)}/${MONSTERS.length}</small>`:""}</div>
+      ${r.frames!=null?`<div><small>アイコン枠</small><b>${n(r.frames)}</b><small>/${FRAMES.length}</small></div>`:""}
+      ${r.units!=null?`<div><small>手持ちの魔物</small><b>${n(r.units)}</b></div>`:""}
+      ${r.missions!=null?`<div><small>ミッション達成</small><b>${n(r.missions)}</b></div>`:""}
+    </div>
+  </div>`);
 }
 function setAvatar(){
   const cv=composeIcon(128); S.avatar=cv.toDataURL("image/jpeg",0.82); save(); toast("プロフィールアイコンにしました");
