@@ -224,6 +224,18 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .login-box{display:flex;flex-direction:column;gap:10px;align-items:stretch;text-align:center;background:var(--bark);border:2px solid var(--staff);border-radius:16px;padding:16px}
 .login-box p{margin:0}
 .login-btn{text-decoration:none;display:block}
+.guard-box{display:flex;gap:12px;align-items:center;background:var(--bark);border:2px solid var(--moss);border-radius:14px;padding:10px;margin-top:8px}
+.guard-box.warn{border-color:var(--berry)}
+.guard-box img{width:84px;height:84px;border-radius:10px;flex:0 0 auto}
+.gb-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.guard-b{position:absolute;left:6px;bottom:6px;font-size:10px;font-weight:900;background:var(--moss);color:#1b2a0c;padding:0 5px;border-radius:5px}
+.rk-guard{width:40px;height:40px;border-radius:8px;flex:0 0 auto}
+.rk-guard.none{display:inline-block;border:2px dashed var(--line)}
+.vs{display:flex;align-items:center;justify-content:center;gap:10px}
+.vs img{width:96px;height:96px;border-radius:12px}
+.vs.big img{width:min(36vw,160px);height:auto}
+.vs b{font-family:var(--f-pix);font-size:22px;color:var(--staff)}
+.vs img.lose{filter:grayscale(1) brightness(.5);transform:rotate(-8deg)}
 .missions{display:flex;flex-direction:column;gap:10px}
 .mission{background:var(--bark);border:2px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;gap:12px;align-items:center}
 .mission.open{border-color:var(--moss)}
@@ -461,6 +473,31 @@ function applyLoginDecay(){
   if(S.lastLogin!==today){ S.lastLogin=today; try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
 }
 applyLoginDecay();
+
+/* ---------- 配置モンスター・バトル ----------
+   ・プロフィールに魔物を1体配置できる（レベルは自分にしか見えない）
+   ・ランキングの相手と戦う：配置魔物のレベルが高い方の勝ち（同じなら引き分け）
+   ・負けた側は配置魔物が消え、プレイヤーレベル -5
+   ・同じ相手には1日1回まで
+   ・魔物を配置していない間は1時間ごとにプレイヤーレベル -1 */
+const HOUR_MS = 60*60*1000, LOSE_LV = 5;
+function fixGuard(){
+  if(S.guard && !S.units.some(z=>z.u===S.guard)) S.guard=null;
+  if(!S.guard && !S.decayAt) S.decayAt=Date.now();
+  S.attacks=S.attacks||{}; S.lastBattle=S.lastBattle||0;
+}
+const guardUnit=()=>S.guard?S.units.find(z=>z.u===S.guard)||null:null;
+function setGuard(u){ S.guard=u; S.decayAt=0; save(); }
+function clearGuard(){ S.guard=null; S.decayAt=Date.now(); }
+function dropPlayerLv(n){ const b=S.plv; S.plv=Math.max(1,S.plv-n); if(S.plv<b) S.pexp=0; return b-S.plv; }
+function hourlyDecay(){
+  fixGuard();
+  if(S.guard) return;
+  const h=Math.floor((Date.now()-S.decayAt)/HOUR_MS);
+  if(h>0){ const d=dropPlayerLv(h); S.decayAt+=h*HOUR_MS; save(); if(d) setTimeout(()=>toast(`魔物を配置していなかったので、レベルが ${d} 下がりました`),1200); }
+}
+setTimeout(hourlyDecay,0);
+setInterval(hourlyDecay, 60*1000);
 let remoteDoc = null, remoteTimer = null, remoteReady = false;
 function isFreshSave(x){ return !x || ((x.units||[]).length<=1 && !x.coins && !(x.stats&&x.stats.pulls) && !x.lastDaily && !(x.codes&&x.codes.length) && !Object.keys(x.frames||{}).length); }
 function save(){
@@ -486,7 +523,7 @@ async function pullRemote(){
     const d=snap.data();
     if((d.updated||0) > lastRemote){
       const r=JSON.parse(d.json); if(!r || !Array.isArray(r.units)) return false;
-      S=r; fixPlayer(); lastRemote=d.updated||0;
+      S=r; fixPlayer(); fixGuard(); lastRemote=d.updated||0;
       try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
       render(); toast("別の端末で遊んだ記録を読み込みました"); return true;
     }
@@ -524,16 +561,16 @@ async function startRemote(uid){
         else if(S.owner===uid) takeRemote=(d.updated||0) > (S.updated||0);
         else takeRemote=(await askWhichSave(S,r))==="remote";       // ログイン前の記録 → 本人に選んでもらう
         lastRemote=d.updated||0;
-        if(takeRemote){ S = r; fixPlayer(); applyLoginDecay(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
+        if(takeRemote){ S = r; fixPlayer(); applyLoginDecay(); fixGuard(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
       }
     }
     if(LOGIN_NAME) S.name=LOGIN_NAME;
-    S.owner=uid; DB=db; MYID=uid; remoteReady=true; save(); render();
+    S.owner=uid; DB=db; MYID=uid; remoteReady=true; hourlyDecay(); save(); render();
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    await checkGifts(db);
-    clearInterval(giftTimer); giftTimer=setInterval(()=>checkGifts(db), 5*60*1000);
+    await checkGifts(db); await checkBattles();
+    clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); }, 5*60*1000);
   }catch(e){ console.warn(e); remoteDoc = null; }
 }
 let giftTimer=null, LOGIN_NAME=null;
@@ -975,7 +1012,7 @@ function sortedUnits(){
   return u.sort((a,b)=> (b.s-a.s) || (RANKS.indexOf(mon(b.m).rank)-RANKS.indexOf(mon(a.m).rank)) || (b.l-a.l) || (a.u-b.u));
 }
 function unitCard(x,extra=""){ const m=mon(x.m); return `<button class="card ${extra}" type="button" data-u="${x.u}" aria-label="${m.name} Lv${x.l}">
-  <img src="${cardURL(x.m,x.s)}" alt=""><span class="rk rk-${m.rank}">${m.rank}</span>${x.k?'<span class="lock" aria-label="保護中">🔒</span>':''}<span class="lv">Lv${x.l}</span></button>`; }
+  <img src="${cardURL(x.m,x.s)}" alt=""><span class="rk rk-${m.rank}">${m.rank}</span>${x.k?'<span class="lock" aria-label="保護中">🔒</span>':''}${S.guard===x.u?'<span class="guard-b" aria-label="配置中">配置中</span>':''}<span class="lv">Lv${x.l}</span></button>`; }
 const boxSeg=()=>seg([["units","手持ち"],["dexM","魔物図鑑"],["dexF","枠図鑑"]],boxMode);
 function renderBox(){
   if(boxMode!=="units"){ dexMode = boxMode==="dexM"?"mon":"frame"; return renderDex(); }
@@ -1008,14 +1045,14 @@ function renderBox(){
 let sellMode=false; const sellSel=new Set();
 const sellPrice=u=>mon(u.m).sell ?? SELL[mon(u.m).rank];
 function doSell(uids){
-  const list=S.units.filter(z=>uids.includes(z.u)&&!z.k); if(!list.length) return 0;
+  const list=S.units.filter(z=>uids.includes(z.u)&&!z.k&&z.u!==S.guard); if(!list.length) return 0;
   const total=list.reduce((t,u)=>t+sellPrice(u),0);
   S.units=S.units.filter(z=>!list.includes(z));
   if(S.dress && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
   S.coins+=total; save(); SFX.coin(); toast(`${list.length}体を売却 +${total.toLocaleString()}コイン`); return total;
 }
 function confirmSell(uids,onDone){
-  const list=S.units.filter(z=>uids.includes(z.u)&&!z.k); if(!list.length) return;
+  const list=S.units.filter(z=>uids.includes(z.u)&&!z.k&&z.u!==S.guard); if(!list.length) return toast("配置中・保護中の魔物は売却できません");
   const total=list.reduce((t,u)=>t+sellPrice(u),0);
   const rare=list.filter(u=>["S","Z"].includes(mon(u.m).rank));
   const bg=document.createElement("div"); bg.className="sheet-bg center";
@@ -1049,9 +1086,11 @@ function openUnit(uid){
     </div></div>
   <div class="row"><button class="btn" id="fuse" type="button" ${maxed?"disabled":""}>合成する</button>
   <button class="btn ghost" id="lock" type="button">${x.k?"保護を外す":"保護する"}</button></div>
+  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button">${S.guard===x.u?"配置を外す":"プロフィールに配置する"}</button></div>
   <div class="row"><button class="btn ghost" id="sell" type="button" ${x.k?"disabled":""}>売却する（+${sellPrice(x).toLocaleString()}コイン）</button></div>
   <p class="note">保護した魔物は合成の素材に選ばれず、売却もできません。素材の経験値はレベルが高いほど増え、同じ魔物なら2倍。合成1回に50コイン必要で、合成1回で10コイン、Lvが10上がるごとに100コイン。最大Lv100。ランクが高い魔物ほど、レベルアップに多くの経験値が必要です。</p>`);
   bg.querySelector("#lock").onclick=()=>{ x.k=!x.k; save(); render(); openUnit(uid); };
+  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ clearGuard(); save(); toast("配置を外しました。1時間ごとにレベルが下がります"); } else { setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
   bg.querySelector("#sell").onclick=()=>confirmSell([uid],()=>{ closeSheet(); render(); });
   bg.querySelector("#fuse").onclick=()=>openFuse(uid);
 }
@@ -1064,7 +1103,7 @@ const unitExp=u=>Math.round(mon(u.m).exp*(1+(u.l-1)*LV_BONUS));
 const matExp=(base,mat)=>unitExp(mat)*(mat.m===base.m?SAME_BONUS:1);
 function openFuse(uid){
   const base=S.units.find(z=>z.u===uid); const m=mon(base.m); const sel=new Set();
-  const mats=S.units.filter(z=>z.u!==uid).sort((a,b)=>(RANKS.indexOf(mon(a.m).rank)-RANKS.indexOf(mon(b.m).rank))||(a.l-b.l));
+  const mats=S.units.filter(z=>z.u!==uid && z.u!==S.guard).sort((a,b)=>(RANKS.indexOf(mon(a.m).rank)-RANKS.indexOf(mon(b.m).rank))||(a.l-b.l));
   const bg=sheet(`<div class="sheet-h"><h3>${m.name} に合成</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div id="fsum" class="fuse-sum"></div>
     <div class="toolbar"><button class="chip" id="selAll" type="button">保護以外をすべて選ぶ</button><button class="chip" id="selNone" type="button">選択を解除</button></div>
@@ -1194,7 +1233,8 @@ function profilePayload(){
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:MONSTERS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
-    units:S.units.length, missions:(S.stats.missions||0) };
+    units:S.units.length, missions:(S.stats.missions||0),
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, pub:Date.now() };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -1206,8 +1246,12 @@ function queueProfile(now){
 async function loadRanking(){
   if(!DB) return;
   try{
-    const q=await DB.collection("profiles").orderBy("score","desc").limit(100).get();
-    RANK=q.docs.map(d=>({id:d.id,...d.data()}));
+    const q=await DB.collection("profiles").orderBy("score","desc").limit(200).get();
+    const now=Date.now();
+    RANK=q.docs.map(d=>{ const r={id:d.id,...d.data()};
+      if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; }
+      else if(!r.gm && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-h); r.exp=0; } }
+      return r; }).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
     else { const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
@@ -1223,6 +1267,17 @@ function renderProfileTab(){
   else renderMe(segHtml);
   bindSeg(k=>{ profMode=k; if(k==="rank") loadRanking(); render(); $("#stage").scrollTop=0; });
 }
+function guardBox(){
+  const g=guardUnit();
+  if(g){ const m=mon(g.m); return `<div class="guard-box"><img src="${cardURL(g.m,0,128)}" alt="">
+    <div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物</div><b>${esc(m.name)}</b><div class="note" style="margin:0">Lv${g.l} ・ レベルはあなたにしか見えません</div>
+    <button class="chip" type="button" data-goto-box="1">変更する</button></div></div>`; }
+  const left=HOUR_MS-((Date.now()-(S.decayAt||Date.now()))%HOUR_MS);
+  return `<div class="guard-box warn"><div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物：なし</div>
+    <div class="note" style="margin:0;color:var(--berry)">配置していないと、1時間ごとにレベルが1下がります（次まで あと${Math.ceil(left/60000)}分）</div>
+    <button class="btn" type="button" data-goto-box="1">魔物を配置する</button></div></div>`;
+}
+document.addEventListener("click",e=>{ if(e.target.closest("[data-goto-box]")){ closeSheet(); tab="box"; boxMode="units"; render(); toast("配置したい魔物をタップして「プロフィールに配置する」"); } });
 function renderMe(segHtml){
   const need=pNeed(S.plv), owned=MONSTERS.filter(m=>S.got[m.id]).length, frames=FRAMES.filter(f=>S.frames[f.id]).length;
   $("#stage").innerHTML=`${segHtml}
@@ -1233,6 +1288,7 @@ function renderMe(segHtml){
         ${DB?"":`<button class="chip" id="editName" type="button">名前を変える</button>`}</div>
       <div class="prof-rank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b></div></div>
     <div class="plv"><span>プレイヤー Lv</span><b>${S.plv}</b></div>
+    ${guardBox()}
     <div class="xp"><b style="width:${Math.min(100,S.pexp/need*100)}%"></b></div>
     <div class="note" style="margin:2px 0 0">次のレベルまで ${need-S.pexp} EXP ・ ガチャ+${PXP.pull} / 合成+${PXP.fuse} / 新しい魔物+${PXP.newMon}</div>
     ${decayNote?`<div class="note" style="color:var(--berry)">ログインしなかった日があったので、レベルが ${decayNote} 下がりました</div>`:""}
@@ -1278,6 +1334,7 @@ function renderRanking(segHtml){
       <div class="rk-body"><div class="rk-name">${esc(r.name||"名無しの召喚士")}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">No.${esc(r.no||"―")} ・ コンプ ${esc(r.comp??0)}%</div>
         ${i<50&&r.comment?`<div class="rk-cmt">「${esc(r.comment)}」</div>`:""}</div>
+      ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}<h2>ランキング</h2><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>${body}`;
@@ -1286,6 +1343,84 @@ function renderRanking(segHtml){
     const open=()=>openOtherProfile(RANK[+li.dataset.ri], +li.dataset.ri+1);
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } };
   });
+}
+const todayN=()=>dayNum(new Date());
+function fightButton(r){
+  if(!DB) return "";
+  if(!r.gm) return "";
+  if(!guardUnit()) return `<div class="note" style="margin:0;color:var(--berry)">戦うには、自分の魔物を配置してください</div>`;
+  if((S.attacks||{})[r.id]===todayN()) return `<button class="btn" type="button" disabled>今日はもう戦いました</button>`;
+  return `<button class="btn gold" type="button" data-fight="${esc(r.id)}">戦う</button>`;
+}
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-fight]"); if(b){ const r=(RANK||[]).find(x=>x.id===b.dataset.fight); if(r) confirmFight(r); } });
+function confirmFight(r){
+  const g=guardUnit(); if(!g) return;
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="fT"><p id="fT">${esc(r.name||"名無しの召喚士")}さんと戦いますか？</p>
+    <div class="vs"><img src="${cardURL(g.m,0,128)}" alt=""><b>VS</b><img src="${cardURL(r.gm,0,128)}" alt=""></div>
+    <div class="note" style="margin:0">あなたの${esc(mon(g.m).name)}（Lv${g.l}） 対 ${esc(mon(r.gm).name)}（Lv ？？？）<br>レベルが高い方の勝ち。負けると魔物が消えて、プレイヤーレベルが${LOSE_LV}下がります。</div>
+    <button class="btn gold" id="fGo" type="button">戦う！</button><button class="btn ghost" id="fNo" type="button">やめる</button></div>`;
+  document.body.appendChild(bg);
+  bg.querySelector("#fNo").onclick=()=>bg.remove();
+  bg.querySelector("#fGo").onclick=async()=>{ bg.querySelector("#fGo").disabled=true; await doFight(r); bg.remove(); };
+}
+async function doFight(r){
+  const g=guardUnit(); if(!g||!DB) return;
+  let d; try{ const snap=await DB.doc("profiles/"+r.id).get(); d=snap.exists?snap.data():null; }catch(e){ return toast("通信できませんでした"); }
+  if(!d||!d.gm||!mon(d.gm)) return toast("相手は魔物を配置していません");
+  const day=todayN(), id=`${MYID}_${r.id}_${day}`;
+  const myLv=g.l, theirLv=d.gl||1;
+  const result= myLv>theirLv?"att": myLv<theirLv?"def":"draw";
+  try{
+    await DB.doc("battles/"+id).set({att:MYID, def:r.id, attName:myName().slice(0,12), defName:String(d.name||"").slice(0,12),
+      attM:g.m, attU:g.u, attLv:myLv, defM:d.gm, defU:d.gu||0, defLv:theirLv, result, at:Date.now(), day});
+  }catch(e){ S.attacks[r.id]=day; save(); render(); return toast("今日はもうこの相手と戦いました"); }
+  S.attacks[r.id]=day;
+  let lost=0;
+  if(result==="def"){ S.units=S.units.filter(z=>z.u!==g.u); clearGuard(); lost=dropPlayerLv(LOSE_LV); }
+  save(); closeSheet(); render();
+  showBattleResult(result, g.m, d.gm, r.name, lost);
+  loadRanking();
+}
+function showBattleResult(result, myM, theirM, theirName, lost){
+  const win=result==="att", draw=result==="draw";
+  const bg=document.createElement("div"); bg.className="reveal";
+  bg.innerHTML=`${win?'<div class="burst"></div>':""}<h3>${win?"勝利！":draw?"引き分け":"敗北…"}</h3>
+    <div class="vs big"><img src="${cardURL(myM,0,200)}" alt="" class="${win||draw?"":"lose"}"><b>VS</b><img src="${cardURL(theirM,0,200)}" alt="" class="${win?"lose":""}"></div>
+    <p class="note" style="text-align:center;max-width:320px">${win?`${esc(theirName||"相手")}さんの${esc(mon(theirM).name)}をたおした！`:draw?"同じ強さだった。どちらも無事です。":`あなたの${esc(mon(myM).name)}はやられてしまった…<br>プレイヤーレベルが${lost}下がりました。`}</p>
+    <button class="btn" type="button">OK</button>`;
+  document.body.appendChild(bg); win?SFX.reveal("S"):SFX.ng();
+  bg.querySelector(".btn").onclick=()=>{ bg.remove(); render(); };
+}
+let battleBusy=false;
+async function checkBattles(){
+  if(battleBusy||!DB||!MYID) return; battleBusy=true;
+  try{
+    const q=await DB.collection("battles").where("def","==",MYID).get();
+    const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastBattle||0)).sort((a,b)=>a.at-b.at);
+    if(list.length){
+      const msgs=[]; let lostLv=0;
+      for(const b of list){
+        if(b.result==="att"){
+          const had=S.units.some(z=>z.u===b.defU);
+          S.units=S.units.filter(z=>z.u!==b.defU);
+          if(S.guard===b.defU || !guardUnit()) clearGuard();
+          lostLv+=dropPlayerLv(LOSE_LV);
+          msgs.push(`${esc(b.attName||"だれか")}さんに負けて、${esc(mon(b.defM)?.name||"魔物")}がやられた…`);
+        } else if(b.result==="def") msgs.push(`${esc(b.attName||"だれか")}さんの${esc(mon(b.attM)?.name||"魔物")}をしりぞけた！`);
+        else msgs.push(`${esc(b.attName||"だれか")}さんと引き分けた`);
+        S.lastBattle=Math.max(S.lastBattle||0,b.at);
+      }
+      save(); render();
+      const bg=document.createElement("div"); bg.className="sheet-bg center";
+      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="bT"><div class="swear-face">⚔️</div><p id="bT">留守中にバトルがありました</p>
+        <div class="note" style="margin:0;text-align:left">${msgs.map(m=>"・"+m).join("<br>")}</div>
+        ${lostLv?`<div class="note" style="margin:0;color:var(--berry)">プレイヤーレベルが ${lostLv} 下がりました</div>`:""}
+        <button class="btn gold" type="button">OK</button></div>`;
+      document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove();
+    }
+  }catch(e){}
+  battleBusy=false;
 }
 function openOtherProfile(r,rank){
   if(!r) return;
@@ -1297,6 +1432,10 @@ function openOtherProfile(r,rank){
         <div class="prof-no">${r.no?"No."+esc(r.no):"ユーザー番号 未発行"}</div></div>
       <div class="prof-rank"><small>ランキング</small><b>${rank}位</b></div></div>
     <div class="plv"><span>プレイヤー Lv</span><b>${esc(r.lv||1)}</b></div>
+    ${r.id===MYID?"":`<div class="guard-box ${r.gm?"":"warn"}">${r.gm&&mon(r.gm)?`<img src="${cardURL(r.gm,0,128)}" alt="">`:""}
+      <div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物</div>
+      ${r.gm&&mon(r.gm)?`<b>${esc(mon(r.gm).name)}</b><div class="note" style="margin:0">レベルは ？？？</div>`:`<div class="note" style="margin:0">配置なし（戦えません）</div>`}
+      ${fightButton(r)}</div></div>`}
     ${rank<=50&&r.comment?`<div class="rk-cmt" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
     <div class="stats">
       <div><small>ガチャ回数</small><b>${n(r.pulls)}</b></div>
