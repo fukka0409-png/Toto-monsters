@@ -1149,6 +1149,7 @@ function openFuse(uid){
   const mats=S.units.filter(z=>z.u!==uid && z.u!==S.guard).sort((a,b)=>(RANKS.indexOf(mon(a.m).rank)-RANKS.indexOf(mon(b.m).rank))||(a.l-b.l));
   const bg=sheet(`<div class="sheet-h"><h3>${m.name} に合成</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div id="fsum" class="fuse-sum"></div>
+    ${mats.some(x=>x.m===base.m&&!x.k)?`<button class="btn gold" id="fuseSame" type="button" style="width:100%;margin-bottom:10px">同じ魔物をまとめて合成（${mats.filter(x=>x.m===base.m&&!x.k).length}体・経験値2倍）</button>`:""}
     <div class="toolbar"><button class="chip" id="selAll" type="button">保護以外をすべて選ぶ</button><button class="chip" id="selNone" type="button">選択を解除</button></div>
     ${mats.length?`<div class="grid" id="mats">${mats.map(x=>unitCard(x,(x.k?"dim":"")+(x.m===base.m?" same-m":""))).join("")}</div>`:`<div class="empty">素材にできる魔物がいません。ガチャで仲間を増やそう</div>`}
     <div class="row"><button class="btn gold" id="doFuse" type="button" disabled>合成する（${fuseCost(base)}コイン）</button></div>`);
@@ -1165,6 +1166,10 @@ function openFuse(uid){
   };
   bg.querySelectorAll("#mats .card").forEach(c=>c.onclick=()=>{ const u=+c.dataset.u, x=S.units.find(z=>z.u===u); if(x.k) return toast("保護中の魔物は素材にできません"); sel.has(u)?sel.delete(u):sel.add(u); upd(); });
   bg.querySelector("#selAll").onclick=()=>{ mats.forEach(x=>{if(!x.k) sel.add(x.u)}); upd(); };
+  const fs=bg.querySelector("#fuseSame");
+  if(fs) fs.onclick=()=>{ sel.clear(); mats.forEach(x=>{ if(x.m===base.m && !x.k) sel.add(x.u); }); upd();
+    if(S.coins<fuseCost(base)) return toast(`合成には${fuseCost(base)}コイン必要です`);
+    bg.querySelector("#doFuse").click(); };
   bg.querySelector("#selNone").onclick=()=>{ sel.clear(); upd(); };
   bg.querySelector("#doFuse").onclick=()=>{
     const total=[...sel].reduce((s,u)=>s+matExp(base,S.units.find(z=>z.u===u)),0);
