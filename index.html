@@ -363,7 +363,7 @@ const START_MONSTER = 1; // 最初から全員が持っている魔物
 const RANKS = ["C","B","A","S","Z"];
 const RATES = { Z:0.067, S:2, A:10, B:28, C:59.933 };     // %
 const COST = 100, DAILY = 1000, MAX_STAGE = 9;
-const HOURLY = 500, HOURLY_MS = 15*60*1000;   // 15分おきのボーナス
+const HOURLY = 100, HOURLY_MS = 15*60*1000;   // 15分おきのボーナス
 const FUSE_COIN = 10;
 const SELL = { Z:100000, S:5000, A:100, B:50, C:10 };  // 売却価格
 const fuseCost = u => 50;                        // 合成1回に必要なコイン
@@ -941,7 +941,7 @@ function bindSeg(fn){ document.querySelectorAll(".seg button").forEach(b=>b.oncl
 function renderGacha(){
   const isMon = gachaMode==="mon";
   const ranksHave = new Set(MONSTERS.map(m=>m.rank));
-  $("#stage").innerHTML = `<h2>召喚の祭壇</h2><p class="sub">1回 ${COST}コイン。ボーナスタブで毎日1000コイン、15分ごとに500コインもらえます。</p>
+  $("#stage").innerHTML = `<h2>召喚の祭壇</h2><p class="sub">1回 ${COST}コイン。ボーナスタブで毎日1000コイン、15分ごとに100コインもらえます。</p>
   ${seg([["mon","魔物ガチャ"],["frame","アイコン枠ガチャ"]],gachaMode)}
   <div class="altar">
     <canvas id="altarCv" width="256" height="256" aria-hidden="true"></canvas>
