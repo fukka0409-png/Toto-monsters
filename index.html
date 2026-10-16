@@ -665,7 +665,9 @@ function openLogin(mode){
           toast(`ようこそ、${name}さん！`);
         } else {
           LOGIN_NAME=name;
-          await FBA.signInWithEmailAndPassword(authEmail(k),authPass(pin));
+          let email=authEmail(k);
+          try{ const nd=await FDB.doc("names/"+k).get(); if(nd.exists && nd.data().email) email=nd.data().email; }catch(e){}
+          await FBA.signInWithEmailAndPassword(email,authPass(pin));
           toast(`おかえりなさい、${name}さん！`);
         }
         bg.remove();
@@ -1333,7 +1335,7 @@ function renderMe(segHtml){
     <div class="prof-top">${avatarImg(S.avatar,88)}
       <div class="prof-id"><div class="prof-name" id="pName"></div>
         <div class="prof-no">${S.userNo?"No."+S.userNo:"ユーザー番号 未発行"}</div>
-        ${DB?"":`<button class="chip" id="editName" type="button">名前を変える</button>`}</div>
+        <button class="chip" id="editName" type="button">名前を変える</button></div>
       <div class="prof-rank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b></div></div>
     <div class="plv"><span>プレイヤー Lv</span><b>${S.plv}</b></div>
     ${guardBox()}
@@ -1362,14 +1364,33 @@ function renderMe(segHtml){
   $("#toDress").onclick=()=>{ profMode="dress"; render(); };
 }
 function editName(){
+  const online=!!(DB && FBA && FBA.currentUser);
   const bg=document.createElement("div"); bg.className="sheet-bg center";
-  bg.innerHTML=`<form class="swear" role="dialog" aria-modal="true" aria-labelledby="nmT"><p id="nmT">名前を決めよう</p>
-    <input id="nmIn" maxlength="12" placeholder="12文字まで" aria-label="名前" class="nm-in">
-    <button class="btn gold" type="submit">決定</button><button class="btn ghost" id="nmNo" type="button">やめる</button></form>`;
+  bg.innerHTML=`<form class="swear" role="dialog" aria-modal="true" aria-labelledby="nmT"><p id="nmT">名前を変える</p>
+    <input id="nmIn" maxlength="12" placeholder="新しい名前（12文字まで）" aria-label="新しい名前" class="nm-in">
+    ${online?`<div class="note" style="margin:0">ログインするときの名前も、新しい名前に変わります。4桁の数字はそのままです。</div>`:""}
+    <div class="code-msg ng" id="nmMsg" role="status"></div>
+    <button class="btn gold" type="submit" id="nmGo">決定</button><button class="btn ghost" id="nmNo" type="button">やめる</button></form>`;
   document.body.appendChild(bg); const inp=bg.querySelector("#nmIn"); inp.value=S.name||""; inp.focus();
+  const msg=bg.querySelector("#nmMsg"), go=bg.querySelector("#nmGo");
   bg.onclick=e=>{ if(e.target===bg) bg.remove(); }; bg.querySelector("#nmNo").onclick=()=>bg.remove();
-  bg.querySelector("form").onsubmit=e=>{ e.preventDefault(); const v=inp.value.replace(/\s+/g," ").trim().slice(0,12);
-    if(!v) return toast("名前を入力してください"); S.name=v; save(); bg.remove(); render(); toast("名前を変えました"); };
+  bg.querySelector("form").onsubmit=async e=>{ e.preventDefault();
+    const v=inp.value.replace(/\s+/g," ").trim().slice(0,12);
+    if(!v){ msg.textContent="名前を入力してください"; return; }
+    if(v===S.name){ bg.remove(); return; }
+    if(online){
+      go.disabled=true; go.textContent="確認中…";
+      try{
+        const k=await nameKey(v);
+        const ex=await FDB.doc("names/"+k).get();
+        if(ex.exists && ex.data().uid!==MYID){ msg.textContent="その名前はもう使われています。別の名前にしてください"; go.disabled=false; go.textContent="決定"; return; }
+        if(!ex.exists) await FDB.doc("names/"+k).set({uid:MYID, name:v, email:FBA.currentUser.email, at:Date.now()});
+        LOGIN_NAME=v;
+      }catch(err){ msg.textContent="通信できませんでした。もう一度ためしてください"; go.disabled=false; go.textContent="決定"; return; }
+    }
+    S.name=v; save(); queueProfile(true); bg.remove(); render();
+    toast(online?`名前を「${v}」に変えました。次からはこの名前でログインしてね`:"名前を変えました");
+  };
 }
 function renderRanking(segHtml){
   let body;
