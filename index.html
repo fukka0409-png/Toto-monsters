@@ -1271,6 +1271,18 @@ function renderBonus(){
   $("#codeForm").onsubmit=async e=>{ e.preventDefault(); const msg=$("#codeMsg"), v=$("#codeIn").value.trim().normalize("NFKC");
     const say=(t,ok)=>{ msg.textContent=t; msg.className="code-msg "+(ok?"ok":"ng"); if(!ok) SFX.ng(); };
     if(!v) return say("呪文を入力してください",false);
+    // 整理の呪文：「Cランクさようなら」など（何度でも使える・保護中と配置中は残る）
+    const bye=v.toUpperCase().match(/^([CBASZ])ランクさようなら$/);
+    if(bye){
+      const rk=bye[1];
+      const all=S.units.filter(z=>mon(z.m).rank===rk);
+      const ids=all.filter(z=>!z.k && z.u!==S.guard).map(z=>z.u);
+      if(!all.length) return say(`${rk}ランクの魔物を持っていません`,false);
+      if(!ids.length) return say(`${rk}ランクは保護中か配置中の魔物しかいません`,false);
+      $("#codeIn").value=""; msg.textContent=""; 
+      confirmSell(ids,()=>render());
+      return;
+    }
     let h; try{ h=await sha256(v) }catch(err){ return say("この画面では呪文を確認できませんでした",false) }
     const c=CODES.find(x=>x.h===h);
     if(!c) return say("呪文が違います。大文字・小文字も確かめてください",false);
