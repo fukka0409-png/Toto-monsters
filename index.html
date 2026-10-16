@@ -565,7 +565,7 @@ function isFreshSave(x){ return !x || ((x.units||[]).length<=1 && !x.coins && !(
 function save(){
   S.updated = Date.now(); queueProfile();
   try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
-  if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(pushRemote, 1200); }
+  if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(()=>{ remoteTimer=null; pushRemote(); }, 8000); }   // 書き込み回数を節約：操作が落ち着いてから8秒後にまとめて保存
 }
 let lastRemote = 0;   // 最後にサーバーと同じだった時の updated
 async function pushRemote(){
@@ -592,7 +592,10 @@ async function pullRemote(){
   }catch(e){}
   return false;
 }
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") pullRemote(); });
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible") pullRemote();
+  else { if(remoteTimer){ clearTimeout(remoteTimer); remoteTimer=null; pushRemote(); } if(profTimer){ queueProfile(true); } }   // 閉じる・切り替える時はすぐ保存
+});
 function askWhichSave(local, remote){
   return new Promise(res=>{
     const sum=x=>`魔物 ${x.units.length}体 ・ ${(x.coins||0).toLocaleString()}コイン ・ Lv${x.plv||1}`;
@@ -632,7 +635,8 @@ async function startRemote(uid){
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
     await checkSeason(); await checkGifts(db); await checkBattles(); await checkItems();
-    clearInterval(giftTimer); giftTimer=setInterval(async()=>{ await checkSeason(); checkGifts(db); checkBattles(); checkItems(); }, 60*1000);
+    clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
+    setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // シーズンの切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
 }
 let giftTimer=null, LOGIN_NAME=null;
@@ -1469,9 +1473,10 @@ function profilePayload(){
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
   profTimer=setTimeout(async()=>{
+    profTimer=null;
     const p=profilePayload(); const key=JSON.stringify(p); if(key===lastPub) return;
     try{ await DB.doc("profiles/"+MYID).set(p); lastPub=key; }catch(e){}
-  }, now?300:3000);
+  }, now?300:20000);
 }
 async function loadRanking(){
   if(!DB) return;
