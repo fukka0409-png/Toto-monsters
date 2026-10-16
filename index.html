@@ -1633,12 +1633,52 @@ function showBattleResult(result, myM, theirM, theirName, lost, coins, why){
   document.body.appendChild(bg); win?SFX.reveal("S"):SFX.ng();
   bg.querySelector(".btn").onclick=()=>{ bg.remove(); render(); };
 }
+/* ---------- ボット（留守中に攻めてくる5人の冒険者。報告は人と同じ匿名表示） ----------
+   1人につき1日1回まで、BOT_RATE の確率で行動。強さは自分のレベルに合わせて決まる */
+const BOTS = [
+  { p:0.6, m:0.55 },   // p: プレイヤーレベルの倍率 / m: 魔物レベルの倍率（自分の配置魔物に対して）
+  { p:0.8, m:0.75 },
+  { p:1.0, m:0.9  },
+  { p:1.2, m:1.0  },
+  { p:1.5, m:1.15 },
+];
+const BOT_RATE = 0.25;
+let botItemQueue = [];
+function genBotEvents(){
+  const out=[];
+  if(!DB||!MYID||S.plv<SAFE_LV) return out;
+  const day=todayN(); S.botDay=S.botDay||{};
+  BOTS.forEach((bt,i)=>{
+    if(S.botDay[i]===day) return; S.botDay[i]=day;
+    if(Math.random()>=BOT_RATE) return;
+    const attP=Math.max(1,Math.round(S.plv*bt.p*(0.85+Math.random()*0.3)));
+    const at=Date.now()-Math.floor(Math.random()*3*HOUR_MS);
+    const g=guardUnit(), x=Math.random();
+    if(g && x<0.6){
+      // バトル：魔物レベル→ランク→図鑑No.で決着（ふつうのバトルと同じ）
+      const lv=Math.max(1,Math.min(100,Math.round(g.l*bt.m*(0.85+Math.random()*0.3))));
+      const ranks=bt.m<0.7?["C","B"]:bt.m<1?["B","A"]:["A","S"];
+      const pool=NORMAL.filter(m=>ranks.includes(m.rank)); const bm=pool[Math.floor(Math.random()*pool.length)]||mon(START_MONSTER);
+      const rI=m=>RANKS.indexOf(mon(m).rank);
+      const result= lv!==g.l ? (lv>g.l?"att":"def") : rI(bm.id)!==rI(g.m) ? (rI(bm.id)>rI(g.m)?"att":"def") : bm.id!==g.m ? (bm.id<g.m?"att":"def") : "draw";
+      const coins= result==="att" ? Math.floor(S.coins*STEAL) : result==="def" ? Math.floor(attP*100*(0.5+Math.random())*STEAL) : 0;
+      out.push({kind:"battle", bot:true, result, attP, attM:bm.id, defM:g.m, defU:g.u, coins, at});
+    } else {
+      const opts=g?["magnet","fire","fire","bomb","bomb"]:["magnet","bomb","bomb"];
+      const item=opts[Math.floor(Math.random()*opts.length)];
+      out.push({kind:"item", bot:true, item, attP, coins:item==="magnet"?Math.floor(S.coins*MAGNET):0, defU:g?g.u:0, defM:g?g.m:0, at});
+    }
+  });
+  save();
+  return out;
+}
 let battleBusy=false;
 async function checkBattles(){
   if(battleBusy||!DB||!MYID) return; battleBusy=true;
   try{
     const q=await DB.collection("battles").where("def","==",MYID).get();
-    const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastBattle||0)).sort((a,b)=>a.at-b.at);
+    const bots=genBotEvents(); botItemQueue.push(...bots.filter(e=>e.kind==="item"));
+    const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastBattle||0)).concat(bots.filter(e=>e.kind==="battle")).sort((a,b)=>a.at-b.at);
     if(list.length){
       const msgs=[]; let lostLv=0, coinDiff=0;
       for(const b of list){
@@ -1652,7 +1692,7 @@ async function checkBattles(){
         else { halveUnitLv(b.defU); lostLv+=dropPlayerLv(DRAW_LV);
           msgs.push(`${anonWho(b)}と引き分けた…${esc(mon(b.defM)?.name||"魔物")}のレベルが半分になった`); }
         addRecord(b.result==="att"?"lose":b.result==="def"?"win":"draw");
-        S.lastBattle=Math.max(S.lastBattle||0,b.at);
+        if(!b.bot) S.lastBattle=Math.max(S.lastBattle||0,b.at);
       }
       save(); render();
       const bg=document.createElement("div"); bg.className="sheet-bg center";
@@ -1734,7 +1774,7 @@ async function checkItems(){
   if(itemBusy||!DB||!MYID) return; itemBusy=true;
   try{
     const q=await DB.collection("items").where("def","==",MYID).get();
-    const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastItem||0)).sort((a,b)=>a.at-b.at);
+    const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastItem||0)).concat(botItemQueue.splice(0)).sort((a,b)=>a.at-b.at);
     if(list.length){
       const msgs=[], gifts=[]; let lostLv=0, lostCoin=0;
       for(const b of list){
@@ -1745,7 +1785,7 @@ async function checkItems(){
           if(x){ const before=x.l; x.l=Math.max(1,x.l-FIRE_LV); x.e=0; t=`${esc(mon(x.m).name)}がLv${before}→Lv${x.l}`; }
           msgs.push(`🔥 ${who}にファイヤーボールを使われた…${t?`（${t}）`:"（魔物はもういなかった）"}`); }
         else if(b.item==="bomb"){ const d=dropPlayerLv(BOMB_LV); lostLv+=d; msgs.push(`💣 ${who}に爆弾を使われた…（プレイヤーレベル−${d}）`); }
-        S.lastItem=Math.max(S.lastItem||0,b.at);
+        if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at);
       }
       save(); render();
       if(gifts.length){ const g=document.createElement("div"); g.className="reveal";
