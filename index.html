@@ -1609,7 +1609,7 @@ async function doFight(r){
               : g.m!==d.gm ? (g.m<d.gm?"att":"def") : "draw";
   const coins = result==="att" ? Math.floor(Math.max(0,d.cn||0)*STEAL) : result==="def" ? Math.floor(S.coins*STEAL) : 0;
   try{
-    await DB.doc("battles/"+id).set({att:MYID, def:r.id, attName:myName().slice(0,12), defName:String(d.name||"").slice(0,12),
+    await DB.doc("battles/"+id).set({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
       attM:g.m, attU:g.u, attLv:myLv, defM:d.gm, defU:d.gu||0, defLv:theirLv, result, coins, at:Date.now(), day});
   }catch(e){ S.attacks[r.id]=day; save(); render(); return toast("今日はもうこの相手と戦いました"); }
   S.attacks[r.id]=day;
@@ -1646,11 +1646,11 @@ async function checkBattles(){
           resetUnitLv(b.defU);
           lostLv+=dropPlayerLv(LOSE_LV);
           const c=Math.min(S.coins, Math.max(0,Math.floor(b.coins||0))); S.coins-=c; coinDiff-=c;
-          msgs.push(`${esc(b.attName||"だれか")}さんに負けて、${esc(mon(b.defM)?.name||"魔物")}がLv1にもどってしまった…${c?`（−${c.toLocaleString()}コイン）`:""}`);
+          msgs.push(`${anonWho(b)}に負けて、${esc(mon(b.defM)?.name||"魔物")}がLv1にもどってしまった…${c?`（−${c.toLocaleString()}コイン）`:""}`);
         } else if(b.result==="def"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; coinDiff+=c;
-          msgs.push(`${esc(b.attName||"だれか")}さんの${esc(mon(b.attM)?.name||"魔物")}をしりぞけた！${c?`（+${c.toLocaleString()}コイン）`:""}`); }
+          msgs.push(`${anonWho(b)}の${esc(mon(b.attM)?.name||"魔物")}をしりぞけた！${c?`（+${c.toLocaleString()}コイン）`:""}`); }
         else { halveUnitLv(b.defU); lostLv+=dropPlayerLv(DRAW_LV);
-          msgs.push(`${esc(b.attName||"だれか")}さんと引き分けた…${esc(mon(b.defM)?.name||"魔物")}のレベルが半分になった`); }
+          msgs.push(`${anonWho(b)}と引き分けた…${esc(mon(b.defM)?.name||"魔物")}のレベルが半分になった`); }
         addRecord(b.result==="att"?"lose":b.result==="def"?"win":"draw");
         S.lastBattle=Math.max(S.lastBattle||0,b.at);
       }
@@ -1685,7 +1685,7 @@ function confirmItem(r,k){
   const what=k==="gift"?`${who}さんに${GIFT_COIN.toLocaleString()}コインをプレゼントします。`:k==="magnet"?`${who}さんの所持コインの10%をうばいます。`:k==="fire"?`${who}さんの配置魔物（${esc(mon(r.gm)?.name||"魔物")}）のレベルを${FIRE_LV}下げます。`:`${who}さんのプレイヤーレベルを${BOMB_LV}下げます。`;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="iuT"><img src="${i.img}" alt="" style="width:96px;height:96px;margin:0 auto;image-rendering:pixelated"><p id="iuT">${i.name}を使いますか？</p>
-    <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。（残り ${inv(k)}個）</div>
+    <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。あなたの名前は出ず「プレイヤーレベル○○くらいの冒険者」と伝わります。（残り ${inv(k)}個）</div>
     <button class="btn gold" id="iuGo" type="button">使う！</button><button class="btn ghost" id="iuNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#iuNo").onclick=()=>bg.remove();
@@ -1699,7 +1699,7 @@ async function useItem(r,k){
   if(k==="fire"&&(!d.gm||!mon(d.gm))) return toast("相手は魔物を配置していません");
   const coins = k==="magnet" ? Math.floor(Math.max(0,d.cn||0)*MAGNET) : 0;
   try{
-    await DB.collection("items").add({att:MYID, def:r.id, attName:myName().slice(0,12), defName:String(d.name||"").slice(0,12),
+    await DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
       item:k, coins, defM:d.gm||0, defU:d.gu||0, at:Date.now()});
   }catch(e){ return toast("アイテムを使えませんでした。少し時間をおいてためしてください"); }
   addItem(k,-1); if(coins) S.coins+=coins; save(); closeSheet(); render();
@@ -1722,6 +1722,13 @@ function useGiftSelf(){
     <p class="note" style="text-align:center"><b style="color:var(--staff);font-size:20px">+${GIFT_COIN.toLocaleString()}コイン</b><br>のこり ${inv("gift")}個</p><button class="btn gold" type="button">OK</button>`;
   document.body.appendChild(g); SFX.reveal("S"); SFX.coin(); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); };
 }
+// 相手には名前を出さず、プレイヤーレベルを10の位で四捨五入して伝える（例：Lv47 →「プレイヤーレベル50くらいの冒険者」）
+function anonWho(b){
+  const lv=Number(b&&b.attP);
+  if(!lv) return "ある冒険者";
+  const r=Math.round(lv/10)*10;
+  return r<10?"プレイヤーレベル10未満の冒険者":`プレイヤーレベル${r}くらいの冒険者`;
+}
 let itemBusy=false;
 async function checkItems(){
   if(itemBusy||!DB||!MYID) return; itemBusy=true;
@@ -1731,20 +1738,20 @@ async function checkItems(){
     if(list.length){
       const msgs=[], gifts=[]; let lostLv=0, lostCoin=0;
       for(const b of list){
-        const who=esc(b.attName||"だれか");
+        const who=anonWho(b);
         if(b.item==="gift"){ S.coins+=GIFT_COIN; gifts.push(who); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
-        if(b.item==="magnet"){ const c=Math.min(S.coins,Math.max(0,Math.floor(b.coins||0))); S.coins-=c; lostCoin+=c; msgs.push(`🧲 ${who}さんにコインマグネットを使われた…（−${c.toLocaleString()}コイン）`); }
+        if(b.item==="magnet"){ const c=Math.min(S.coins,Math.max(0,Math.floor(b.coins||0))); S.coins-=c; lostCoin+=c; msgs.push(`🧲 ${who}にコインマグネットを使われた…（−${c.toLocaleString()}コイン）`); }
         else if(b.item==="fire"){ const x=S.units.find(z=>z.u===b.defU); let t="";
           if(x){ const before=x.l; x.l=Math.max(1,x.l-FIRE_LV); x.e=0; t=`${esc(mon(x.m).name)}がLv${before}→Lv${x.l}`; }
-          msgs.push(`🔥 ${who}さんにファイヤーボールを使われた…${t?`（${t}）`:"（魔物はもういなかった）"}`); }
-        else if(b.item==="bomb"){ const d=dropPlayerLv(BOMB_LV); lostLv+=d; msgs.push(`💣 ${who}さんに爆弾を使われた…（プレイヤーレベル−${d}）`); }
+          msgs.push(`🔥 ${who}にファイヤーボールを使われた…${t?`（${t}）`:"（魔物はもういなかった）"}`); }
+        else if(b.item==="bomb"){ const d=dropPlayerLv(BOMB_LV); lostLv+=d; msgs.push(`💣 ${who}に爆弾を使われた…（プレイヤーレベル−${d}）`); }
         S.lastItem=Math.max(S.lastItem||0,b.at);
       }
       save(); render();
       if(gifts.length){ const g=document.createElement("div"); g.className="reveal";
         const names=[...new Set(gifts)];
         g.innerHTML=`<div class="burst"></div><h3>🎁 神からの贈り物が届いた！</h3><img src="${itemOf("gift").img}" alt="" class="iu-big">
-          <p class="note" style="text-align:center;max-width:320px">${names.map(n=>`${n}さん`).join("、")}から${gifts.length>1?`${gifts.length}つの`:""}贈り物！<br><b style="color:var(--staff);font-size:20px">+${(GIFT_COIN*gifts.length).toLocaleString()}コイン</b></p><button class="btn gold" type="button">受け取る</button>`;
+          <p class="note" style="text-align:center;max-width:320px">${names.join("、")}から${gifts.length>1?`${gifts.length}つの`:""}贈り物！<br><b style="color:var(--staff);font-size:20px">+${(GIFT_COIN*gifts.length).toLocaleString()}コイン</b></p><button class="btn gold" type="button">受け取る</button>`;
         document.body.appendChild(g); SFX.reveal("S"); SFX.coin(); g.querySelector(".btn").onclick=()=>{ g.remove(); renderCoins(); }; }
       if(msgs.length){
       const bg=document.createElement("div"); bg.className="sheet-bg center";
