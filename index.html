@@ -207,6 +207,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .stats div{background:var(--bark);border-radius:12px;padding:8px;text-align:center;min-width:0}
 .stats small{display:block;font-size:11px;color:var(--mist-dim)}
+.stats .wide{grid-column:span 3}
 .stats b{font-family:var(--f-pix);font-weight:400;font-size:18px;font-variant-numeric:tabular-nums}
 .cmt-row{display:flex;gap:8px}
 .cmt-row input,.nm-in{flex:1;min-width:0;background:var(--night);border:2px solid var(--line);border-radius:12px;color:var(--mist);font:inherit;font-size:16px;padding:10px 12px}
@@ -505,6 +506,8 @@ const guardUnit=()=>S.guard?S.units.find(z=>z.u===S.guard)||null:null;
 function setGuard(u){ S.guard=u; S.decayAt=0; save(); }
 function clearGuard(){ S.guard=null; S.decayAt=Date.now(); }
 function resetUnitLv(u){ const x=S.units.find(z=>z.u===u); if(x){ x.l=1; x.e=0; } return x; }   // 負けた魔物はLv1に戻る
+function addRecord(kind){ S.stats.win=S.stats.win||0; S.stats.lose=S.stats.lose||0; S.stats.draw=S.stats.draw||0; S.stats[kind]++; }
+const winRate=(w,l,d)=>{ const t=(w||0)+(l||0)+(d||0); return t?Math.round((w||0)/t*1000)/10+"%":"―"; };
 function dropPlayerLv(n){ const b=S.plv; S.plv=Math.max(1,S.plv-n); if(S.plv<b) S.pexp=0; return b-S.plv; }
 function hourlyDecay(){
   fixGuard();
@@ -1331,7 +1334,7 @@ function profilePayload(){
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:MONSTERS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, cn:S.coins, pub:Date.now() };
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, cn:S.coins, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, pub:Date.now() };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -1346,7 +1349,7 @@ async function loadRanking(){
     const q=await DB.collection("profiles").orderBy("score","desc").limit(200).get();
     const now=Date.now();
     RANK=q.docs.map(d=>{ const r={id:d.id,...d.data()};
-      if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; }
+      if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
       else if(!r.gm && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-h); r.exp=0; } }
       return r; }).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
@@ -1396,6 +1399,10 @@ function renderMe(segHtml){
       <div><small>アイコン枠</small><b>${frames}</b><small>/${FRAMES.length}</small></div>
       <div><small>手持ちの魔物</small><b>${S.units.length}</b></div>
       <div><small>ミッション達成</small><b>${(S.stats.missions||0).toLocaleString()}</b></div>
+      <div><small>勝利数</small><b>${(S.stats.win||0).toLocaleString()}</b></div>
+      <div><small>敗北数</small><b>${(S.stats.lose||0).toLocaleString()}</b></div>
+      <div><small>引き分け数</small><b>${(S.stats.draw||0).toLocaleString()}</b></div>
+      <div class="wide"><small>勝率</small><b>${winRate(S.stats.win,S.stats.lose,S.stats.draw)}</b></div>
     </div>
     <div class="cmt"><div class="pick-label">ひとことコメント <span>ランキング50位以内で表示</span></div>
       ${myRank&&myRank<=50?`<form id="cmtForm" class="cmt-row"><input id="cmtIn" maxlength="40" placeholder="ランキングにのせるひとこと" aria-label="ひとことコメント"><button class="btn" type="submit">保存</button></form>`
@@ -1448,7 +1455,7 @@ function renderRanking(segHtml){
   else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3?"top"+(i+1):""}" data-ri="${i}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
       <span class="rk-no">${i+1}</span>${avatarImg(r.icon,44)}
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${esc(r.name||"名無しの召喚士")}${r.id===MYID?" <em>あなた</em>":""}</div>
-        <div class="rk-sub">No.${esc(r.no||"―")} ・ コンプ ${esc(r.comp??0)}%</div>
+        <div class="rk-sub">No.${esc(r.no||"―")} ・ コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>
         ${i<50&&r.comment?`<div class="rk-cmt">「${esc(r.comment)}」</div>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}</div></li>`).join("")}</ol>`;
@@ -1499,6 +1506,7 @@ async function doFight(r){
       attM:g.m, attU:g.u, attLv:myLv, defM:d.gm, defU:d.gu||0, defLv:theirLv, result, coins, at:Date.now(), day});
   }catch(e){ S.attacks[r.id]=day; save(); render(); return toast("今日はもうこの相手と戦いました"); }
   S.attacks[r.id]=day;
+  addRecord(result==="att"?"win":result==="def"?"lose":"draw");
   let lost=0;
   if(result==="def"){ resetUnitLv(g.u); lost=dropPlayerLv(LOSE_LV); S.coins=Math.max(0,S.coins-coins); }
   if(result==="att"){ S.coins+=coins; }
@@ -1533,6 +1541,7 @@ async function checkBattles(){
         } else if(b.result==="def"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; coinDiff+=c;
           msgs.push(`${esc(b.attName||"だれか")}さんの${esc(mon(b.attM)?.name||"魔物")}をしりぞけた！${c?`（+${c.toLocaleString()}コイン）`:""}`); }
         else msgs.push(`${esc(b.attName||"だれか")}さんと引き分けた`);
+        addRecord(b.result==="att"?"lose":b.result==="def"?"win":"draw");
         S.lastBattle=Math.max(S.lastBattle||0,b.at);
       }
       save(); render();
@@ -1569,6 +1578,10 @@ function openOtherProfile(r,rank){
       ${r.frames!=null?`<div><small>アイコン枠</small><b>${n(r.frames)}</b><small>/${FRAMES.length}</small></div>`:""}
       ${r.units!=null?`<div><small>手持ちの魔物</small><b>${n(r.units)}</b></div>`:""}
       ${r.missions!=null?`<div><small>ミッション達成</small><b>${n(r.missions)}</b></div>`:""}
+      <div><small>勝利数</small><b>${n(r.w)}</b></div>
+      <div><small>敗北数</small><b>${n(r.l)}</b></div>
+      <div><small>引き分け数</small><b>${n(r.dr)}</b></div>
+      <div class="wide"><small>勝率</small><b>${winRate(r.w,r.l,r.dr)}</b></div>
     </div>
   </div>`);
 }
