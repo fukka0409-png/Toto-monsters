@@ -457,23 +457,70 @@ function isFreshSave(x){ return !x || ((x.units||[]).length<=1 && !x.coins && !(
 function save(){
   S.updated = Date.now(); queueProfile();
   try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
-  if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(()=>{ remoteDoc.set({json:JSON.stringify(S), updated:S.updated}).catch(()=>{ remoteDoc=null }) }, 1200); }
+  if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(pushRemote, 1200); }
+}
+let lastRemote = 0;   // 最後にサーバーと同じだった時の updated
+async function pushRemote(){
+  if(!remoteDoc || !remoteReady) return;
+  try{
+    // 別の端末で遊んだ記録があれば、上書きせずにそちらを読み込む
+    if(await pullRemote()) return;
+    S.owner = MYID;
+    await remoteDoc.set({json:JSON.stringify(S), updated:S.updated});
+    lastRemote = S.updated;
+  }catch(e){}
+}
+async function pullRemote(){
+  if(!remoteDoc || !remoteReady) return false;
+  try{
+    const snap=await remoteDoc.get(); if(!snap.exists) return false;
+    const d=snap.data();
+    if((d.updated||0) > lastRemote){
+      const r=JSON.parse(d.json); if(!r || !Array.isArray(r.units)) return false;
+      S=r; fixPlayer(); lastRemote=d.updated||0;
+      try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+      render(); toast("別の端末で遊んだ記録を読み込みました"); return true;
+    }
+  }catch(e){}
+  return false;
+}
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") pullRemote(); });
+function askWhichSave(local, remote){
+  return new Promise(res=>{
+    const sum=x=>`魔物 ${x.units.length}体 ・ ${(x.coins||0).toLocaleString()}コイン ・ Lv${x.plv||1}`;
+    const bg=document.createElement("div"); bg.className="sheet-bg center";
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="wsT">
+      <p id="wsT">どちらの記録で遊びますか？</p>
+      <div class="note" style="margin:0">この端末に、ログイン前に遊んだ記録があります。選ばなかった方は消えます。</div>
+      <button class="btn gold" id="wsR" type="button">アカウントの記録<br><small>${sum(remote)}</small></button>
+      <button class="btn ghost" id="wsL" type="button">この端末の記録<br><small>${sum(local)}</small></button></div>`;
+    document.body.appendChild(bg);
+    bg.querySelector("#wsR").onclick=()=>{ bg.remove(); res("remote"); };
+    bg.querySelector("#wsL").onclick=()=>{ bg.remove(); res("local"); };
+  });
 }
 async function startRemote(uid){
   try{
     const db=FDB; SIGNED=true; VIEWONLY=false;
     remoteDoc = db.doc("saves/"+uid);
-    const snap = await remoteDoc.get(); remoteReady = true;
+    const snap = await remoteDoc.get();
     if(snap.exists){
       const d = snap.data(); let r=null; try{ r=JSON.parse(d.json); }catch(e){}
       if(r && Array.isArray(r.units)){
         const lf=isFreshSave(S), rf=isFreshSave(r);
-        const takeRemote = (lf && !rf) || (!rf && !lf && (d.updated||0) > (S.updated||0));
+        let takeRemote;
+        if(rf) takeRemote=false;
+        else if(lf) takeRemote=true;
+        else if(S.owner && S.owner!==uid) takeRemote=true;            // 別の人の記録は使わない
+        else if(S.owner===uid) takeRemote=(d.updated||0) > (S.updated||0);
+        else takeRemote=(await askWhichSave(S,r))==="remote";       // ログイン前の記録 → 本人に選んでもらう
+        lastRemote=d.updated||0;
         if(takeRemote){ S = r; fixPlayer(); applyLoginDecay(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
       }
     }
     if(LOGIN_NAME) S.name=LOGIN_NAME;
-    DB=db; MYID=uid; save(); render();
+    S.owner=uid; DB=db; MYID=uid; remoteReady=true; save(); render();
+    setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
     await checkGifts(db);
