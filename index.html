@@ -496,7 +496,7 @@ applyLoginDecay();
    ・負けた側は配置魔物がLv1にもどり、プレイヤーレベル -5
    ・同じ相手には1日1回まで
    ・魔物を配置していない間は1時間ごとにプレイヤーレベル -1 */
-const HOUR_MS = 60*60*1000, LOSE_LV = 5, SAFE_LV = 10, STEAL = 0.05;   // 勝者は敗者の所持コインの5%を奪う   // プレイヤーLv10になるまでは攻撃されない
+const HOUR_MS = 60*60*1000, LOSE_LV = 5, DRAW_LV = 3, SAFE_LV = 10, STEAL = 0.05;   // 勝者は敗者の所持コインの5%を奪う   // プレイヤーLv10になるまでは攻撃されない
 function fixGuard(){
   if(S.guard && !S.units.some(z=>z.u===S.guard)) S.guard=null;
   if(!S.guard && !S.decayAt) S.decayAt=Date.now();
@@ -506,6 +506,7 @@ const guardUnit=()=>S.guard?S.units.find(z=>z.u===S.guard)||null:null;
 function setGuard(u){ S.guard=u; S.decayAt=0; save(); }
 function clearGuard(){ S.guard=null; S.decayAt=Date.now(); }
 function resetUnitLv(u){ const x=S.units.find(z=>z.u===u); if(x){ x.l=1; x.e=0; } return x; }   // 負けた魔物はLv1に戻る
+function halveUnitLv(u){ const x=S.units.find(z=>z.u===u); if(x){ x.l=Math.max(1,Math.ceil(x.l/2)); x.e=0; } return x; }   // 引き分け：魔物のレベルが半分に
 function addRecord(kind){ S.stats.win=S.stats.win||0; S.stats.lose=S.stats.lose||0; S.stats.draw=S.stats.draw||0; S.stats[kind]++; }
 const winRate=(w,l,d)=>{ const t=(w||0)+(l||0)+(d||0); return t?Math.round((w||0)/t*1000)/10+"%":"―"; };
 function dropPlayerLv(n){ const b=S.plv; S.plv=Math.max(1,S.plv-n); if(S.plv<b) S.pexp=0; return b-S.plv; }
@@ -603,7 +604,7 @@ if(FBA){
 }
 
 /* ---------- お知らせ（起動時に表示） ---------- */
-const NEWS_KEY="toto-news-battle-v3";
+const NEWS_KEY="toto-news-battle-v4";
 let newsResolve; const newsDone=new Promise(r=>newsResolve=r);
 function openNews(force){
   let hide=false; try{ hide=localStorage.getItem(NEWS_KEY)==="hide"; }catch(e){}
@@ -618,6 +619,7 @@ function openNews(force){
       <h4>⚔️ バトル</h4>
       <p>ランキングで気になる人をタップして「戦う」！配置モンスターのレベルが高い方の勝ちです。</p>
       <p>レベルが同じならランクが高い方、ランクも同じなら図鑑No.が古い方の勝ち。</p>
+      <p>🤝 それでも決まらない（同じ魔物・同じレベル）ときは引き分け。おたがいの魔物のレベルが半分になり、プレイヤーレベルが3下がります。</p>
       <p>💰 勝った人は、負けた人の所持コインの5%をうばえます。</p>
       <p>同じ相手と戦えるのは1日1回まで。</p>
       <p>🔰 プレイヤーレベルが10になるまでは、ほかの人から攻撃されません。</p>
@@ -1482,7 +1484,7 @@ function confirmFight(r){
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="fT"><p id="fT">${esc(r.name||"名無しの召喚士")}さんと戦いますか？</p>
     <div class="vs"><img src="${cardURL(g.m,0,128)}" alt=""><b>VS</b><img src="${cardURL(r.gm,0,128)}" alt=""></div>
-    <div class="note" style="margin:0">あなたの${esc(mon(g.m).name)}（Lv${g.l}） 対 ${esc(mon(r.gm).name)}（Lv ？？？）<br>レベルが高い方の勝ち（同じならランク、それも同じなら図鑑No.が古い方）。負けると魔物がLv1にもどり、プレイヤーレベル−${LOSE_LV}、所持コインの5%をうばわれます。</div>
+    <div class="note" style="margin:0">あなたの${esc(mon(g.m).name)}（Lv${g.l}） 対 ${esc(mon(r.gm).name)}（Lv ？？？）<br>レベルが高い方の勝ち（同じならランク、それも同じなら図鑑No.が古い方）。負けると魔物がLv1にもどり、プレイヤーレベル−${LOSE_LV}、所持コインの5%をうばわれます。引き分けはおたがい魔物のレベルが半分、プレイヤーレベル−${DRAW_LV}。</div>
     <button class="btn gold" id="fGo" type="button">戦う！</button><button class="btn ghost" id="fNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#fNo").onclick=()=>bg.remove();
@@ -1510,8 +1512,10 @@ async function doFight(r){
   let lost=0;
   if(result==="def"){ resetUnitLv(g.u); lost=dropPlayerLv(LOSE_LV); S.coins=Math.max(0,S.coins-coins); }
   if(result==="att"){ S.coins+=coins; }
+  let half=null;
+  if(result==="draw"){ half=halveUnitLv(g.u); lost=dropPlayerLv(DRAW_LV); }
   save(); closeSheet(); render();
-  showBattleResult(result, g.m, d.gm, r.name, lost, coins, myLv===theirLv?(rI(g.m)!==rI(d.gm)?"rank":"no"):"");
+  showBattleResult(result, g.m, d.gm, r.name, lost, coins, result==="draw"?"":myLv===theirLv?(rI(g.m)!==rI(d.gm)?"rank":"no"):"");
   loadRanking();
 }
 function showBattleResult(result, myM, theirM, theirName, lost, coins, why){
@@ -1519,7 +1523,7 @@ function showBattleResult(result, myM, theirM, theirName, lost, coins, why){
   const bg=document.createElement("div"); bg.className="reveal";
   bg.innerHTML=`${win?'<div class="burst"></div>':""}<h3>${win?"勝利！":draw?"引き分け":"敗北…"}</h3>
     <div class="vs big"><img src="${cardURL(myM,0,200)}" alt="" class="${win||draw?"":"lose"}"><b>VS</b><img src="${cardURL(theirM,0,200)}" alt="" class="${win?"lose":""}"></div>
-    <p class="note" style="text-align:center;max-width:320px">${why==="rank"?"レベルは同じ！ランクの差で決着…<br>":why==="no"?"レベルもランクも同じ！図鑑No.の古さで決着…<br>":""}${win?`${esc(theirName||"相手")}さんの${esc(mon(theirM).name)}をたおした！${coins?`<br><b style="color:var(--staff)">+${coins.toLocaleString()}コイン</b>をうばった！`:""}`:draw?"まったく同じ魔物・同じレベルだった。どちらも無事です。":`あなたの${esc(mon(myM).name)}はやられて、Lv1にもどってしまった…<br>プレイヤーレベルが${lost}下がりました。${coins?`<br><b style="color:var(--berry)">−${coins.toLocaleString()}コイン</b>うばわれた…`:""}`}</p>
+    <p class="note" style="text-align:center;max-width:320px">${why==="rank"?"レベルは同じ！ランクの差で決着…<br>":why==="no"?"レベルもランクも同じ！図鑑No.の古さで決着…<br>":""}${win?`${esc(theirName||"相手")}さんの${esc(mon(theirM).name)}をたおした！${coins?`<br><b style="color:var(--staff)">+${coins.toLocaleString()}コイン</b>をうばった！`:""}`:draw?`まったく同じ魔物・同じレベルだった！<br>おたがいの魔物のレベルが半分になり、プレイヤーレベルが${lost}下がりました。`:`あなたの${esc(mon(myM).name)}はやられて、Lv1にもどってしまった…<br>プレイヤーレベルが${lost}下がりました。${coins?`<br><b style="color:var(--berry)">−${coins.toLocaleString()}コイン</b>うばわれた…`:""}`}</p>
     <button class="btn" type="button">OK</button>`;
   document.body.appendChild(bg); win?SFX.reveal("S"):SFX.ng();
   bg.querySelector(".btn").onclick=()=>{ bg.remove(); render(); };
@@ -1540,7 +1544,8 @@ async function checkBattles(){
           msgs.push(`${esc(b.attName||"だれか")}さんに負けて、${esc(mon(b.defM)?.name||"魔物")}がLv1にもどってしまった…${c?`（−${c.toLocaleString()}コイン）`:""}`);
         } else if(b.result==="def"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; coinDiff+=c;
           msgs.push(`${esc(b.attName||"だれか")}さんの${esc(mon(b.attM)?.name||"魔物")}をしりぞけた！${c?`（+${c.toLocaleString()}コイン）`:""}`); }
-        else msgs.push(`${esc(b.attName||"だれか")}さんと引き分けた`);
+        else { halveUnitLv(b.defU); lostLv+=dropPlayerLv(DRAW_LV);
+          msgs.push(`${esc(b.attName||"だれか")}さんと引き分けた…${esc(mon(b.defM)?.name||"魔物")}のレベルが半分になった`); }
         addRecord(b.result==="att"?"lose":b.result==="def"?"win":"draw");
         S.lastBattle=Math.max(S.lastBattle||0,b.at);
       }
