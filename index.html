@@ -1078,16 +1078,18 @@ function renderBox(){
   const list=sortedUnits();
   [...sellSel].forEach(u=>{ const x=S.units.find(z=>z.u===u); if(!x||x.k) sellSel.delete(u); });
   const total=[...sellSel].reduce((t,u)=>t+sellPrice(S.units.find(z=>z.u===u)),0);
-  $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}<p class="sub">${S.units.length}体の仲間。${sellMode?"売却する魔物をタップで選んでね（保護中は選べません）。":"タップして合成でレベルを上げよう。"}</p>
+  $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}<p class="sub">${S.units.length}体の仲間。${lockMode?"🔒 タップした魔物に鍵をかけたり外したりできます。鍵付きは合成の素材・売却に使われません。":sellMode?"売却する魔物をタップで選んでね（鍵付きは選べません）。":"タップして合成でレベルを上げよう。"}</p>
   <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r}</button>`).join("")}
-    <button class="chip" id="sellToggle" type="button" aria-pressed="${sellMode}" style="margin-left:auto">${sellMode?"売却をやめる":"まとめて売却"}</button></div>
+    <button class="chip" id="lockToggle" type="button" aria-pressed="${lockMode}" style="margin-left:auto">${lockMode?"鍵をおわる":"🔒 鍵をかける"}</button>
+    <button class="chip" id="sellToggle" type="button" aria-pressed="${sellMode}">${sellMode?"売却をやめる":"まとめて売却"}</button></div>
   ${sellMode?`<div class="sellbar"><span>${sellSel.size}体 ・ <b>+${total.toLocaleString()}</b>コイン</span>
     <button class="chip" id="sellAllC" type="button">C・Bを全部選ぶ</button><button class="chip" id="sellClear" type="button">解除</button>
     <button class="btn gold" id="sellGo" type="button" ${sellSel.size?"":"disabled"}>売却</button></div>`:""}
   ${list.length?`<div class="grid">${list.map(x=>unitCard(x,sellMode?((x.k?"dim":"")+(sellSel.has(x.u)?" sel":"")):"")).join("")}</div>`:`<div class="empty">このランクの魔物はまだいません</div>`}`;
-  bindSeg(k=>{boxMode=k;sellMode=false;sellSel.clear();render();$("#stage").scrollTop=0});
+  bindSeg(k=>{boxMode=k;sellMode=false;lockMode=false;sellSel.clear();render();$("#stage").scrollTop=0});
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.onclick=()=>{boxFilter=b.dataset.f;render()});
-  $("#sellToggle").onclick=()=>{ sellMode=!sellMode; sellSel.clear(); render(); };
+  $("#sellToggle").onclick=()=>{ sellMode=!sellMode; lockMode=false; sellSel.clear(); render(); };
+  $("#lockToggle").onclick=()=>{ lockMode=!lockMode; sellMode=false; sellSel.clear(); render(); };
   if(sellMode){
     $("#sellAllC").onclick=()=>{ S.units.forEach(x=>{ if(!x.k && ["C","B"].includes(mon(x.m).rank)) sellSel.add(x.u); }); render(); };
     $("#sellClear").onclick=()=>{ sellSel.clear(); render(); };
@@ -1095,13 +1097,14 @@ function renderBox(){
   }
   document.querySelectorAll(".card").forEach(b=>b.onclick=()=>{
     const u=+b.dataset.u;
+    if(lockMode){ const x=S.units.find(z=>z.u===u); x.k=!x.k; save(); SFX.tap(); const y=$("#stage").scrollTop; render(); $("#stage").scrollTop=y; return toast(x.k?`${mon(x.m).name}に鍵をかけました`:`${mon(x.m).name}の鍵を外しました`); }
     if(!sellMode) return openUnit(u);
     const x=S.units.find(z=>z.u===u); if(x.k) return toast("保護中の魔物は売却できません");
     sellSel.has(u)?sellSel.delete(u):sellSel.add(u); render();
   });
 }
 
-let sellMode=false; const sellSel=new Set();
+let sellMode=false, lockMode=false; const sellSel=new Set();
 const sellPrice=u=>mon(u.m).sell ?? SELL[mon(u.m).rank];
 function doSell(uids){
   const list=S.units.filter(z=>uids.includes(z.u)&&!z.k&&z.u!==S.guard); if(!list.length) return 0;
@@ -1144,7 +1147,7 @@ function openUnit(uid){
       <div class="note" style="margin:0">${maxed?"最大レベル":`次のレベルまで ${(needFor(x)-x.e).toLocaleString()} EXP`}</div>
     </div></div>
   <div class="row"><button class="btn" id="fuse" type="button" ${maxed?"disabled":""}>合成する</button>
-  <button class="btn ghost" id="lock" type="button">${x.k?"保護を外す":"保護する"}</button></div>
+  <button class="btn ghost" id="lock" type="button">${x.k?"🔓 鍵を外す":"🔒 鍵をかける"}</button></div>
   <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button">${S.guard===x.u?"配置を外す":"プロフィールに配置する"}</button></div>
   <div class="row"><button class="btn ghost" id="sell" type="button" ${x.k?"disabled":""}>売却する（+${sellPrice(x).toLocaleString()}コイン）</button></div>
   <p class="note">保護した魔物は合成の素材に選ばれず、売却もできません。素材の経験値はレベルが高いほど増え、同じ魔物なら2倍。合成1回に50コイン必要で、合成1回で10コイン、Lvが10上がるごとに100コイン。最大Lv100。ランクが高い魔物ほど、レベルアップに多くの経験値が必要です。</p>`);
