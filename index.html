@@ -363,7 +363,7 @@ const START_MONSTER = 1; // 最初から全員が持っている魔物
 const RANKS = ["C","B","A","S","Z"];
 const RATES = { Z:0.067, S:2, A:10, B:28, C:59.933 };     // %
 const COST = 100, DAILY = 1000, MAX_STAGE = 9;
-const HOURLY = 500, HOURLY_MS = 3*60*60*1000;   // 3時間おきのログインボーナス
+const HOURLY = 500, HOURLY_MS = 15*60*1000;   // 15分おきのボーナス
 const FUSE_COIN = 10;
 const SELL = { Z:100000, S:5000, A:100, B:50, C:10 };  // 売却価格
 const fuseCost = u => 50;                        // 合成1回に必要なコイン
@@ -916,7 +916,7 @@ function renderCoins(){
   document.querySelector('.tabs button[data-tab="mission"]').classList.toggle("dot",MISSIONS.some((_,i)=>missionLeft(i)===0));
 }
 function claimDaily(){ if(!dailyReady()) return; S.lastDaily=today(); S.coins+=DAILY; save(); SFX.coin(); toast(`毎日ボーナス +${DAILY}コイン`); render(); }
-function claimHourly(){ if(hourlyLeft()>0) return; S.lastHourly=Date.now(); S.coins+=HOURLY; save(); SFX.coin(); toast(`3時間ボーナス +${HOURLY}コイン`); render(); }
+function claimHourly(){ if(hourlyLeft()>0) return; S.lastHourly=Date.now(); S.coins+=HOURLY; save(); SFX.coin(); toast(`15分ボーナス +${HOURLY}コイン`); render(); }
 $("#bonusBtn").onclick=()=>{ tab="bonus"; render(); $("#stage").scrollTop=0; };
 const fmt=ms=>{const t=Math.ceil(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`};
 let wasReady=null, wasMission=null;
@@ -941,7 +941,7 @@ function bindSeg(fn){ document.querySelectorAll(".seg button").forEach(b=>b.oncl
 function renderGacha(){
   const isMon = gachaMode==="mon";
   const ranksHave = new Set(MONSTERS.map(m=>m.rank));
-  $("#stage").innerHTML = `<h2>召喚の祭壇</h2><p class="sub">1回 ${COST}コイン。ボーナスタブで毎日1000コイン、3時間ごとに500コインもらえます。</p>
+  $("#stage").innerHTML = `<h2>召喚の祭壇</h2><p class="sub">1回 ${COST}コイン。ボーナスタブで毎日1000コイン、15分ごとに500コインもらえます。</p>
   ${seg([["mon","魔物ガチャ"],["frame","アイコン枠ガチャ"]],gachaMode)}
   <div class="altar">
     <canvas id="altarCv" width="256" height="256" aria-hidden="true"></canvas>
@@ -1155,7 +1155,7 @@ function renderBonus(){
     ${S.userNo?`<button class="cd no-btn" id="copyNo" type="button" aria-label="ユーザー番号をコピー">No.${S.userNo}<small>タップでコピー</small></button>`:`<div class="cd">―<small>未発行</small></div>`}</div>
   <div class="bonus ${dr?"ready":""}"><h3>毎日ボーナス</h3><p>1日1回 ・ <span class="amt">${DAILY.toLocaleString()}コイン</span></p>
     ${dr?`<button class="btn gold" id="cDaily" type="button">受け取る</button>`:`<div class="cd">受け取り済み<small>明日またどうぞ</small></div>`}</div>
-  <div class="bonus ${left===0?"ready":""}"><h3>3時間ボーナス</h3><p>3時間ごと ・ <span class="amt">${HOURLY}コイン</span></p>
+  <div class="bonus ${left===0?"ready":""}"><h3>15分ボーナス</h3><p>15分ごと ・ <span class="amt">${HOURLY}コイン</span></p>
     ${left===0?`<button class="btn" id="cHourly" type="button">受け取る</button>`:`<div class="cd" id="hourlyCd">${fmt(left)}<small>次の受け取りまで</small></div>`}</div>
   <div class="code-box"><h3>呪文</h3><p class="sub" style="margin:0">お知らせされた呪文をとなえると、コインがもらえます。1つの呪文につき1回だけです。</p>
     <form id="codeForm" autocomplete="off"><input id="codeIn" type="text" placeholder="呪文を入力" aria-label="呪文" autocapitalize="off" spellcheck="false">
