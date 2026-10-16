@@ -246,6 +246,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .news-body h4{margin:10px 0 2px;font-size:15px;color:var(--staff)}
 .swear.news .news-body p{margin:0 0 4px;font-weight:500;font-size:14px;line-height:1.65}
 .swear.news .news-end{margin-top:10px;font-weight:900;text-align:center}
+.warn-bar{margin-left:max(16px,env(safe-area-inset-left,0px));margin-right:max(16px,env(safe-area-inset-right,0px));margin-bottom:6px;background:color-mix(in srgb,var(--berry) 22%,var(--bark));border:2px solid var(--berry);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:900;line-height:1.5}
+.warn-bar small{display:block;font-weight:500;color:var(--mist-dim)}
 .missions{display:flex;flex-direction:column;gap:10px}
 .mission{background:var(--bark);border:2px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;gap:12px;align-items:center}
 .mission.open{border-color:var(--moss)}
@@ -276,6 +278,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
     <button class="snd" id="snd" type="button" aria-label="効果音"></button>
     <div class="coin" aria-label="コイン"><i></i><span id="coins">0</span></div>
   </header>
+  <div class="warn-bar" id="unitWarn" role="alert" hidden>⚠️ モンスターの手持ちが1000体を超えているのでゲームが動かなくなる場合があります！<small>売却や合成で数を減らしてね</small></div>
   <main class="stage" id="stage"></main>
   <div class="tabs"><nav role="tablist">
     <button role="tab" data-tab="gacha" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M5 10h14M8 21h8M12 17v4"/></svg>ガチャ</button>
@@ -1004,7 +1007,9 @@ const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+
 function toast(t){ document.querySelectorAll(".toast").forEach(x=>x.remove()); const el=document.createElement("div"); el.className="toast"; el.textContent=t; el.setAttribute("role","status"); document.body.appendChild(el); setTimeout(()=>el.remove(),2200); }
 const dailyReady=()=>S.lastDaily!==today();
 const hourlyLeft=()=>Math.max(0,(S.lastHourly||0)+HOURLY_MS-Date.now());
+const UNIT_WARN = 1000;   // 手持ちがこの数を超えたら注意を出す
 function renderCoins(){
+  const w=document.getElementById("unitWarn"); if(w) w.hidden = !(S.units.length > UNIT_WARN);
   $("#coins").textContent=S.coins.toLocaleString();
   const ready = dailyReady() || hourlyLeft()===0;
   const b=$("#bonusBtn"); b.classList.toggle("ready",ready); b.textContent= ready?"ボーナスあり":"ボーナス";
