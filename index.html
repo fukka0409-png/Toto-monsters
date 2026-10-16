@@ -1274,8 +1274,8 @@ function renderBonus(){
   $("#codeForm").onsubmit=async e=>{ e.preventDefault(); const msg=$("#codeMsg"), v=$("#codeIn").value.trim().normalize("NFKC");
     const say=(t,ok)=>{ msg.textContent=t; msg.className="code-msg "+(ok?"ok":"ng"); if(!ok) SFX.ng(); };
     if(!v) return say("呪文を入力してください",false);
-    // 整理の呪文：「Cランクさようなら」など（何度でも使える・保護中と配置中は残る）
-    const bye=v.toUpperCase().match(/^([CBASZ])ランクさようなら$/);
+    // 整理の呪文：「Cランクさようなら」「cランクさよなら」など（大文字小文字どちらでも・何度でも使える・鍵付きと配置中は残る）
+    const bye=v.replace(/\s+/g,"").toUpperCase().match(/^([CBASZ])ランクさよう?なら[!！]*$/);
     if(bye){
       const rk=bye[1];
       const all=S.units.filter(z=>mon(z.m).rank===rk);
