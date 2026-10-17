@@ -1475,7 +1475,7 @@ function openRules(){
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手のプレイヤーLv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
     ["🏆","ランキングとシーズン",`<ul><li>プレイヤーレベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！")}</li><li>集計のあと<b>プレイヤーLvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["📈","プレイヤーレベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／枠が空で1時間ごと${U("−"+EMPTY_DECAY)}／ログインしなかった日1日ごと−2</li></ul>`],
-    ["🔒","そのほか",`<ul><li>${U("🏠 <b>ホーム</b>で、好きな魔物・背景・地面・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる","h")}</li><li>${U("ガチャ・ショップ・ボーナスは<b>ガチャ</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブにまとまった","h")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ガチャタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
+    ["🔒","そのほか",`<ul><li>${U("🏠 <b>ホーム</b>で、好きな魔物・背景・地面を選んで部屋を着せ替えできる（装飾はこれから追加予定）。プロフィールもホームの左上から見られる","h")}</li><li>${U("ガチャ・ショップ・ボーナスは<b>ガチャ</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブにまとまった","h")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ガチャタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
   const el=document.createElement("div"); el.className="rules-stage"+(fresh?" fresh":""); el.setAttribute("role","dialog"); el.setAttribute("aria-label","最新ルール");
   el.innerHTML=`<div class="rules-card"><div class="rules-h"><h3>📖 最新ルール</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
@@ -1801,18 +1801,14 @@ const HOME_GD = [
   {k:"magma", n:"溶岩", c:"#3b1d1d", c2:"#ff6a2a"},
   {k:"crystal",n:"水晶", c:"#9fd8ff", c2:"#c8a8ff"},
 ];
-const HOME_DECO = [
-  {k:"none",n:"なし",e:""},{k:"rock",n:"岩",e:"🪨"},{k:"tree",n:"木",e:"🌳"},{k:"pine",n:"もみの木",e:"🌲"},{k:"palm",n:"ヤシの木",e:"🌴"},
-  {k:"cactus",n:"サボテン",e:"🌵"},{k:"mush",n:"キノコ",e:"🍄"},{k:"flower",n:"お花",e:"🌷"},{k:"sunflower",n:"ひまわり",e:"🌻"},
-  {k:"moai",n:"石像",e:"🗿"},{k:"lamp",n:"ちょうちん",e:"🏮"},{k:"fire",n:"たき火",e:"🔥"},{k:"castle",n:"お城",e:"🏰"},
-  {k:"torii",n:"とりい",e:"⛩️"},{k:"xmas",n:"ツリー",e:"🎄"},{k:"snowman",n:"雪だるま",e:"⛄"},{k:"pumpkin",n:"かぼちゃ",e:"🎃"},
-  {k:"chest",n:"宝箱",img:"gift"},{k:"crystal",n:"覚醒の石",img:"stone"},{k:"bomb",n:"爆弾",img:"bomb"},
+const HOME_DECO = [   // 装飾（デザインが届いたらここに追加：{k:"id", n:"名前", img:"data:image/png;base64,..."}）
+  {k:"none",n:"なし",e:""},
 ];
 function homeCfg(){ S.home=S.home||{}; const h=S.home;
   if(!h.m||!S.units.some(z=>z.m===h.m)) h.m=(guardUnit()||S.units[0]||{m:START_MONSTER}).m;
-  h.bg=h.bg||"sand"; h.gd=h.gd||"stone"; h.dl=h.dl||"rock"; h.dr=h.dr||"tree"; return h; }
+  h.bg=h.bg||"sand"; h.gd=h.gd||"stone"; if(!HOME_DECO.some(x=>x.k===h.dl)) h.dl="none"; if(!HOME_DECO.some(x=>x.k===h.dr)) h.dr="none"; return h; }
 const decoHtml=(k,side)=>{ const d=HOME_DECO.find(x=>x.k===k)||HOME_DECO[0]; if(d.k==="none") return "";
-  return `<div class="hm-deco ${side}">${d.img?`<img src="${itemOf(d.img).img}" alt="">`:`<span>${d.e}</span>`}</div>`; };
+  return `<div class="hm-deco ${side}">${d.img?`<img src="${d.img.startsWith("data:")?d.img:itemOf(d.img).img}" alt="">`:`<span>${d.e}</span>`}</div>`; };
 function renderHome(){
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
   const h=homeCfg(), bg=HOME_BG.find(x=>x.k===h.bg)||HOME_BG[0], gd=HOME_GD.find(x=>x.k===h.gd)||HOME_GD[0], m=mon(h.m);
@@ -1847,7 +1843,8 @@ function openHomeEdit(mode){
   if(mode==="m") body=`<div class="hm-grid">${species.map(x=>`<button class="hm-opt ${h.m===x.id?"on":""}" type="button" data-v="${x.id}"><img src="${x.img}" alt=""><small><span class="rk rk-${x.rank}">${x.rank}</span> ${esc(x.name)}</small></button>`).join("")}</div>`;
   else if(mode==="bg") body=`<div class="hm-grid">${HOME_BG.map(x=>`<button class="hm-opt ${h.bg===x.k?"on":""}" type="button" data-v="${x.k}"><span class="hm-sw" style="background:${x.css}"></span><small>${x.n}</small></button>`).join("")}</div>`;
   else if(mode==="gd") body=`<div class="hm-grid">${HOME_GD.map(x=>`<button class="hm-opt ${h.gd===x.k?"on":""}" type="button" data-v="${x.k}"><span class="hm-sw" style="background:linear-gradient(${x.c},${x.c2})"></span><small>${x.n}</small></button>`).join("")}</div>`;
-  else body=`<div class="hm-grid">${HOME_DECO.map(x=>`<button class="hm-opt ${h[mode]===x.k?"on":""}" type="button" data-v="${x.k}"><span class="hm-sw deco">${x.img?`<img src="${itemOf(x.img).img}" alt="">`:x.e||"✕"}</span><small>${x.n}</small></button>`).join("")}</div>`;
+  else if(HOME_DECO.length<=1) body=`<div class="empty">装飾はまだありません。これから少しずつ増えていきます！</div>`;
+  else body=`<div class="hm-grid">${HOME_DECO.map(x=>`<button class="hm-opt ${h[mode]===x.k?"on":""}" type="button" data-v="${x.k}"><span class="hm-sw deco">${x.img?`<img src="${x.img.startsWith("data:")?x.img:itemOf(x.img).img}" alt="">`:x.e||"✕"}</span><small>${x.n}</small></button>`).join("")}</div>`;
   const bg=sheet(`<div class="sheet-h"><h3>🎨 魔物／装飾 変更</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="hm-tabs">${modes.map(([k,l])=>`<button class="chip ${k===mode?"on":""}" type="button" data-hm="${k}">${l}</button>`).join("")}</div>${body}`);
   bg.querySelectorAll("[data-hm]").forEach(b=>b.onclick=()=>openHomeEdit(b.dataset.hm));
