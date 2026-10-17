@@ -202,6 +202,20 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .prof-rank small{display:block;font-size:11px;color:var(--mist-dim)}
 .prof-rank b{font-family:var(--f-pix);font-weight:400;font-size:20px;color:var(--staff)}
 .plv{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.g-banner{position:relative;border-radius:18px;padding:14px;margin-bottom:16px;border:2px solid #ffffff22;box-shadow:0 6px 18px #0006;overflow:hidden}
+.g-banner::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,#ffffff14 45%,transparent 60%);animation:gShine 4s ease-in-out infinite}
+@keyframes gShine{0%,60%{transform:translateX(-70%)}100%{transform:translateX(70%)}}
+.g-banner.mon{background:linear-gradient(135deg,#1f3d2c,#4a5a1c 55%,#6b4f12)}
+.g-banner.frame{background:linear-gradient(135deg,#2a1e47,#4a2a6b 55%,#20385e)}
+.g-banner.item{background:linear-gradient(135deg,#123446,#1e4f63 55%,#5a3a1c)}
+.g-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.g-head canvas{width:96px;height:96px;flex:0 0 96px;filter:drop-shadow(0 4px 8px #0008)}
+.g-items{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:96px;flex:0 0 96px}.g-items img{width:100%;aspect-ratio:1;image-rendering:pixelated}
+.g-tag{font-family:var(--f-pix);font-size:11px;letter-spacing:.2em;color:#ffe9a8;opacity:.8}
+.g-title{font-family:var(--f-pix);font-size:22px;font-weight:900;color:#fff;text-shadow:0 2px 0 #0008}
+.g-sub{font-size:12px;color:#ffffffcc}
+.g-banner .pulls{margin-top:8px}.g-banner .rates{margin-top:10px;background:#0003}
+@media (prefers-reduced-motion:reduce){.g-banner::before{animation:none}}
 .tr{font-size:.7em;margin-left:3px;vertical-align:2px}.tr.up{color:#5fd36a}.tr.down{color:#ff5a5a}.tr.mix{color:#5fb7e0}
 .pull.ticket{grid-column:1/-1;background:linear-gradient(90deg,#ffe27a,#ffb84d,#ffe27a);color:#3a2306;box-shadow:0 4px 0 #9a6c1d;display:grid;grid-template-columns:44px 1fr;align-items:center;text-align:left;column-gap:8px}
 .pull.ticket img{grid-row:span 2;width:44px;height:44px;object-fit:contain}
@@ -1292,37 +1306,49 @@ function seg(opts,cur,fn){ return `<div class="seg">${opts.map(([k,l])=>`<button
 function bindSeg(fn){ document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>fn(b.dataset.k)); }
 
 function renderGacha(){
-  if(gachaMode==="item") return renderItemGacha();
-  const isMon = gachaMode==="mon";
-  const ranksHave = new Set(MONSTERS.map(m=>m.rank));
-  $("#stage").innerHTML = `${rulesBtn()}<h2>召喚の祭壇</h2><p class="sub">1回 ${COST}コイン。ショップタブで毎日1000コイン、15分ごとに100コインもらえます。</p>
-  ${seg([["mon","魔物"],["frame","アイコン枠"],["item","アイテム"]],gachaMode)}
-  <div class="altar">
-    <canvas id="altarCv" width="256" height="256" aria-hidden="true"></canvas>
-    <div class="title">${isMon?"魔物ガチャ":"アイコン枠ガチャ"}</div>
-    <div class="sub" style="margin:0">${isMon?`全${MONSTERS.length}種の魔物から召喚`:`火・水・闇・骨など10属性 全100種`}</div>
+  const ranksHave = new Set(MONSTERS.map(m=>m.rank)), tk=inv("ticket");
+  const tkBtn=(id,label)=>tk?`<button class="pull ticket" id="${id}" type="button"><img src="${itemOf("ticket").img}" alt="">${label}<small>チケット1枚（のこり ${tk.toLocaleString()}枚）</small></button>`:"";
+  const packBtns=k=>`<div class="pulls">
+      <button class="pull" data-pull="${k}" data-n="1" type="button" ${S.coins<COST?"disabled":""}>1パック<small>${COST}コイン</small></button>
+      <button class="pull ten" data-pull="${k}" data-n="10" type="button" ${S.coins<COST*10?"disabled":""}>10連パック<small>${COST*10}コイン</small></button>
+      <button class="pull hundred" data-pull="${k}" data-n="100" type="button" ${S.coins<COST*100?"disabled":""}>100連パック<small>${(COST*100).toLocaleString()}コイン</small></button>
+      ${tkBtn("tk-"+k,"チケットで10連パック")}</div>`;
+  const rankRates=list=>["Z","S","A","B","C"].map(r=>`<div class="rate-row"><span><span class="rk rk-${r}">${r}</span> ${list.filter(x=>x.rank===r).length}種</span><span>${RATES[r]}%</span></div>`).join("");
+  $("#stage").innerHTML = `${rulesBtn()}<h2>召喚の祭壇</h2><p class="sub">好きなガチャを選んでね。下にスクロールすると、ほかのガチャもあります。</p>
+  ${S.lastDaily!==today()?`<button class="btn gold" id="dailyBig" type="button" style="width:100%;margin:0 0 12px">今日の1000コインを受け取る</button>`:""}
+  <section class="g-banner mon">
+    <div class="g-head"><canvas id="cvMon" width="200" height="200" aria-hidden="true"></canvas>
+      <div><div class="g-tag">MONSTER</div><div class="g-title">魔物ガチャ</div><div class="g-sub">全${MONSTERS.length}種の魔物から召喚</div></div></div>
+    ${packBtns("mon")}
+    <details class="rates"><summary>提供割合</summary>${rankRates(NORMAL)}
+      ${SPECIAL.map(m=>`<div class="rate-row"><span><span class="rk rk-${m.rank}">${m.rank}</span> ${m.name}（特別）</span><span>${m.rate}%</span></div>`).join("")}
+      ${ranksHave.size<5?`<p class="note">まだ魔物がいないランクが出たときは、近いランクの魔物が出ます。</p>`:""}</details>
+  </section>
+  <section class="g-banner frame">
+    <div class="g-head"><canvas id="cvFrame" width="200" height="200" aria-hidden="true"></canvas>
+      <div><div class="g-tag">ICON FRAME</div><div class="g-title">アイコン枠ガチャ</div><div class="g-sub">火・水・闇・骨など10属性 全100種</div></div></div>
+    ${packBtns("frame")}
+    <details class="rates"><summary>提供割合</summary>${rankRates(FRAMES)}</details>
+  </section>
+  <section class="g-banner item">
+    <div class="g-head"><div class="g-items">${GACHA_ITEMS.map(i=>`<img src="${i.img}" alt="">`).join("")}</div>
+      <div><div class="g-tag">ITEM</div><div class="g-title">アイテムガチャ</div><div class="g-sub">全${GACHA_ITEMS.length}種・ランキングで相手に使える</div></div></div>
     <div class="pulls">
-      <button class="pull" id="p1" type="button" ${S.coins<COST?"disabled":""}>1パック<small>${COST}コイン</small></button>
-      <button class="pull ten" id="p10" type="button" ${S.coins<COST*10?"disabled":""}>10連パック<small>${COST*10}コイン</small></button>
-      <button class="pull hundred" id="p100" type="button" ${S.coins<COST*100?"disabled":""}>100連パック<small>${(COST*100).toLocaleString()}コイン</small></button>
-      ${inv("ticket")?`<button class="pull ticket" id="pT" type="button"><img src="${itemOf("ticket").img}" alt="">チケットで10連パック<small>チケット1枚（のこり ${inv("ticket").toLocaleString()}枚）</small></button>`:""}
-    </div>
-  </div>
-  ${S.lastDaily!==today()?`<button class="btn gold" id="dailyBig" type="button" style="width:100%;margin-top:12px">今日の1000コインを受け取る</button>`:""}
-  <details class="rates"><summary>提供割合</summary>
-    ${["Z","S","A","B","C"].map(r=>`<div class="rate-row"><span><span class="rk rk-${r}">${r}</span> ${isMon?NORMAL.filter(m=>m.rank===r).length:FRAMES.filter(f=>f.rank===r).length}種</span><span>${RATES[r]}%</span></div>`).join("")}
-    ${isMon?SPECIAL.map(m=>`<div class="rate-row"><span><span class="rk rk-${m.rank}">${m.rank}</span> ${m.name}（特別）</span><span>${m.rate}%</span></div>`).join(""):""}
-    ${isMon && ranksHave.size<5?`<p class="note">まだ魔物がいないランクが出たときは、近いランクの魔物が出ます。魔物が増えるほど本来の割合に近づきます。</p>`:""}
-  </details>`;
-  bindSeg(k=>{gachaMode=k;render()});
-  $("#p1").onclick=()=>isMon?pullMonsters(1):pullFrames(1);
-  $("#p10").onclick=()=>isMon?pullMonsters(10):pullFrames(10);
-  $("#p100").onclick=()=>isMon?pullMonsters(100):pullFrames(100);
-  const pT=$("#pT"); if(pT) pT.onclick=()=>isMon?pullMonsters(0,true):pullFrames(0,true);
+      <button class="pull" data-pull="item" data-n="1" type="button" ${S.coins<ITEM_COST?"disabled":""}>1回まわす<small>${ITEM_COST.toLocaleString()}コイン</small></button>
+      <button class="pull ten" data-pull="item" data-n="10" type="button" ${S.coins<ITEM_COST*10?"disabled":""}>10連まわす<small>${(ITEM_COST*10).toLocaleString()}コイン</small></button>
+      ${tkBtn("tk-item",`チケットで${TICKET_ITEMS}回まわす`)}</div>
+    <details class="rates"><summary>提供割合</summary>${GACHA_ITEMS.map(i=>`<div class="rate-row"><span>${i.name}</span><span>${i.rate}%</span></div>`).join("")}</details>
+  </section>
+  <h3 class="inv-h">持っているアイテム</h3>
+  <div class="inv">${ITEMS.filter(i=>!i.secret||inv(i.k)).map(i=>`<div class="inv-it"><img src="${i.img}" alt=""><div><b>${i.name}</b><span class="inv-n">×${inv(i.k).toLocaleString()}</span><div class="note" style="margin:0">${i.desc}</div>${i.k==="gift"&&inv("gift")?`<button class="chip" type="button" data-selfgift="1" style="margin-top:6px">自分に使う</button>`:""}</div></div>`).join("")}</div>`;
+  const PULL={mon:pullMonsters, frame:pullFrames, item:pullItems};
+  document.querySelectorAll("[data-pull]").forEach(b=>b.onclick=()=>PULL[b.dataset.pull](+b.dataset.n));
+  ["mon","frame","item"].forEach(k=>{ const t=$("#tk-"+k); if(t) t.onclick=()=>PULL[k](0,true); });
   const db=$("#dailyBig"); if(db) db.onclick=claimDaily;
-  const cv=$("#altarCv"), ctx=cv.getContext("2d");
-  if(isMon){ if(IMG[1]) ctx.drawImage(IMG[1],8,8,240,240); }
-  else { const fid = FRAMES[(Math.floor(Date.now()/1000)%10)*10+9-1].id; const ir=256*FRAME_IN; ctx.fillStyle="#2f4a40"; ctx.beginPath(); ctx.arc(128,128,ir,0,7); ctx.fill(); ctx.save(); ctx.beginPath(); ctx.arc(128,128,ir,0,7); ctx.clip(); if(IMG[1]) ctx.drawImage(IMG[1],128-ir,128-ir,ir*2,ir*2); ctx.restore(); drawFrame(ctx,fid,256); }
+  const c1=$("#cvMon").getContext("2d"); if(IMG[1]) c1.drawImage(IMG[1],6,6,188,188);
+  const c2=$("#cvFrame").getContext("2d"), fid=FRAMES[(Math.floor(Date.now()/1000)%10)*10+9-1].id, ir=200*FRAME_IN;
+  c2.fillStyle="#2f4a40"; c2.beginPath(); c2.arc(100,100,ir,0,7); c2.fill(); c2.save(); c2.beginPath(); c2.arc(100,100,ir,0,7); c2.clip();
+  if(IMG[1]) c2.drawImage(IMG[1],100-ir,100-ir,ir*2,ir*2); c2.restore(); drawFrame(c2,fid,200);
 }
 
 function sortedUnits(){
@@ -1431,29 +1457,6 @@ function openRules(){
   el.querySelector(".x").onclick=close; el.querySelector("[data-rclose]").onclick=close;
   el.onclick=e=>{ if(e.target===el) close(); };
   el.querySelectorAll("[data-rj]").forEach(b=>b.onclick=()=>el.querySelector("#rl"+b.dataset.rj).scrollIntoView({behavior:"smooth",block:"start"}));
-}
-function renderItemGacha(){
-  $("#stage").innerHTML = `${rulesBtn()}<h2>召喚の祭壇</h2><p class="sub">アイテムガチャは1回 ${ITEM_COST.toLocaleString()}コイン。アイテムはランキングで相手をタップして使えます（覚醒の石は魔物の画面で使います）。</p>
-  ${seg([["mon","魔物"],["frame","アイコン枠"],["item","アイテム"]],gachaMode)}
-  <div class="altar">
-    <div class="item-altar">${GACHA_ITEMS.map(i=>`<img src="${i.img}" alt="">`).join("")}</div>
-    <div class="title">アイテムガチャ</div>
-    <div class="sub" style="margin:0">全${GACHA_ITEMS.length}種のアイテムから1つ</div>
-    <div class="pulls">
-      <button class="pull" id="i1" type="button" ${S.coins<ITEM_COST?"disabled":""}>1回まわす<small>${ITEM_COST.toLocaleString()}コイン</small></button>
-      <button class="pull ten" id="i10" type="button" ${S.coins<ITEM_COST*10?"disabled":""}>10連まわす<small>${(ITEM_COST*10).toLocaleString()}コイン</small></button>
-      ${inv("ticket")?`<button class="pull ticket" id="iT" type="button"><img src="${itemOf("ticket").img}" alt="">チケットで${TICKET_ITEMS}回まわす<small>チケット1枚（のこり ${inv("ticket").toLocaleString()}枚）</small></button>`:""}
-    </div>
-  </div>
-  <h3 class="inv-h">持っているアイテム</h3>
-  <div class="inv">${ITEMS.filter(i=>!i.secret||inv(i.k)).map(i=>`<div class="inv-it"><img src="${i.img}" alt=""><div><b>${i.name}</b><span class="inv-n">×${inv(i.k).toLocaleString()}</span><div class="note" style="margin:0">${i.desc}</div>${i.k==="gift"&&inv("gift")?`<button class="chip" type="button" data-selfgift="1" style="margin-top:6px">自分に使う</button>`:""}</div></div>`).join("")}</div>
-  <details class="rates"><summary>提供割合</summary>
-    ${GACHA_ITEMS.map(i=>`<div class="rate-row"><span>${i.name}</span><span>${i.rate}%</span></div>`).join("")}
-  </details>`;
-  bindSeg(k=>{gachaMode=k;render()});
-  $("#i1").onclick=()=>pullItems(1);
-  $("#i10").onclick=()=>pullItems(10);
-  const iT=$("#iT"); if(iT) iT.onclick=()=>pullItems(0,true);
 }
 function pullItems(n, ticket){
   if(ticket){ if(!inv("ticket")) return toast("ガチャチケットがありません"); addItem("ticket",-1); n=TICKET_ITEMS; }
