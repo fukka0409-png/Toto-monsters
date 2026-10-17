@@ -1515,7 +1515,11 @@ const I18N_EN = {
 "に終了し、": " the season ends; ",
 "0:00〜0:15は集計タイム": "0:00–0:15 is tally time",
 "（攻撃・アイテム禁止）。全員の最新の状態で正式な順位を決めて、": " (no battles or items). Final ranks are decided with everyone's latest state, with ",
-"0:15に結果発表＆報酬": "results & rewards at 0:15"
+"0:15に結果発表＆報酬": "results & rewards at 0:15",
+"🏁 集計中（0:00〜0:03）は、攻撃もアイテムも使えません": "🏁 During the tally (0:00–0:03), battles and items are disabled",
+"前のシーズンの順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！": "Final ranks for the last season are being tallied with everyone's latest state. Results & rewards at 0:03!",
+"0:00〜0:03は集計タイム": "0:00–0:03 is tally time",
+"0:03に結果発表＆報酬": "results & rewards at 0:03"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -2683,7 +2687,7 @@ function openRules(){
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>2時間「現在配置不可」</b>","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（24時間で最大10レベルまで）","j")}。</li><li>${U("バトルで負けると枠が空になる（自動では補充されない）。別の魔物を配置し直そう","f")}</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>冒険者Lv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
-    ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に終了し、<b>0:00〜0:15は集計タイム</b>（攻撃・アイテム禁止）。全員の最新の状態で正式な順位を決めて、<b>0:15に結果発表＆報酬</b>。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度</b>、さらに<b>23:00〜24:00に1度ログイン</b>した人だけ！達成しないと、1〜3位でも<b>ランキング外（11位以下）あつかい</b>になり、その人への投資は「4位以下」になる","o")}</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
+    ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に終了し、<b>0:00〜0:03は集計タイム</b>（攻撃・アイテム禁止）。全員の最新の状態で正式な順位を決めて、<b>0:03に結果発表＆報酬</b>。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度</b>、さらに<b>23:00〜24:00に1度ログイン</b>した人だけ！達成しないと、1〜3位でも<b>ランキング外（11位以下）あつかい</b>になり、その人への投資は「4位以下」になる","o")}</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・<b>シーズン終了の10時間前＝14:00まで</b>）。</li><li>シーズン終了時の投資先の順位で：<b>1位 5倍</b>もらえる／<b>2位 3倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"n")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
@@ -3504,7 +3508,7 @@ function renderRanking(segHtml){
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
-    ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のシーズンの順位を、全員の最新の状態で集計しています。0:15に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
+    ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のシーズンの順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
     <div class="season-box"><div><small>シーズン終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div>
       <div class="note" style="display:block;margin:2px 0 0;${prizeOk(seasonNow())?"color:var(--moss)":""}">${prizeOk(seasonNow())?"✅ 景品の受け取り条件クリア（2つとも達成）":"⏰ 景品の受け取り条件（2つとも必要）"}${prizeOk(seasonNow())?"":`<br>${S.lateSeen===seasonNow()?"✅":"⬜"} 18:00〜24:00に1回ログイン<br>${S.lastSeen===seasonNow()?"✅":"⬜"} 23:00〜24:00に1回ログイン<br><span style="font-size:11px;opacity:.8">達成しないとランキング外あつかい（1〜3位でも11位以下になり、投資の結果にも影響）</span>`}</div>
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>⏰ <b>景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度、さらに終了前の1時間以内（23:00〜24:00）に1度ログインしておく必要があります。</b>達成しなかった人はランキング外あつかい（11位以下）になります。<br>
@@ -3663,11 +3667,13 @@ const SEASON_DAYS = 1, SEASON_DAY0 = 20743;   // 20743 = 2026-10-17
 const JST = 9*HOUR_MS, DAY_MS = 24*HOUR_MS;
 const seasonNow = () => Math.floor((Math.floor((Date.now()+JST)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);
 const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1))*DAY_MS - JST;
-// シーズン終了後 0:00〜0:15 は集計タイム：攻撃もアイテムも使えない。0:15に正式な順位で結果発表＆報酬
-const FREEZE_MS = 15*60*1000;
-const freezeLeft = () => Math.max(0, seasonEnd(seasonNow()-1) + FREEZE_MS - Date.now());
+// シーズン終了後 0:00〜0:03 は集計タイム：攻撃もアイテムも使えない。0:03に正式な順位で結果発表＆報酬
+// （2026-10-18 の0:00だけは、はじめての回なので0:15まで）
+const FREEZE_MS = 3*60*1000;
+const freezeMsFor = start => start < Date.parse("2026-10-18T01:00:00+09:00") ? 15*60*1000 : FREEZE_MS;
+const freezeLeft = () => { const st=seasonEnd(seasonNow()-1); return Math.max(0, st + freezeMsFor(st) - Date.now()); };
 const inFreeze = () => freezeLeft() > 0;
-const FREEZE_TXT = "🏁 集計中（0:00〜0:15）は、攻撃もアイテムも使えません";
+const FREEZE_TXT = "🏁 集計中（0:00〜0:03）は、攻撃もアイテムも使えません";
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
 const RANK_PRIZE = [ null, {c:10000,st:20}, {c:7777,st:10}, {c:5000,st:5} ];   // 1〜3位
 const RANK_PRIZE_10 = {c:2000, st:2};                                          // 4〜10位
@@ -3730,7 +3736,7 @@ async function checkSeason(){
   if(seasonBusy||!DB||!MYID) return;
   const cur=seasonNow(); if(S.season==null) S.season=0;
   if(S.season>=cur) return;
-  if(S.season===cur-1 && inFreeze()) return;   // 0:15の結果発表まで待つ
+  if(S.season===cur-1 && inFreeze()) return;   // 0:03の結果発表まで待つ
   seasonBusy=true;
   try{
     const old=S.season, mine=S.plv*1e6+S.pexp;
