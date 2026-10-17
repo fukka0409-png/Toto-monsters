@@ -351,6 +351,23 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .awk{font-size:11px;background:linear-gradient(90deg,#ff9ad5,#9ad7ff,#c5ff9a);color:#222;border-radius:6px;padding:1px 6px;margin-left:4px}
 .plv span{font-size:13px;color:var(--mist-dim)}
 .plv b{font-family:var(--f-pix);font-weight:400;font-size:30px;color:var(--moss)}
+.radar{background:var(--bark);border-radius:14px;padding:6px 8px 10px;margin-top:10px}
+.radar svg{display:block;width:100%;max-width:380px;margin:0 auto;overflow:visible}
+.rd-ring{fill:none;stroke:#ffffff22;stroke-width:1}
+.rd-avg{fill:#e9f1ea18;stroke:#e9f1eaaa;stroke-width:2;stroke-dasharray:5 4}
+.rd-me{fill:#e0ad4f55;stroke:var(--staff);stroke-width:2.5;stroke-linejoin:round;animation:rdIn .5s ease-out both;transform-origin:150px 150px}
+.rd-dot{fill:var(--staff)}
+@keyframes rdIn{from{transform:scale(.2);opacity:0}}
+.rd-l{fill:#e9f1eabb;font-size:13px;font-weight:700}
+.rd-v{fill:var(--mist);font-size:17px;font-weight:900}
+.rd-leg{display:flex;justify-content:center;gap:14px;font-size:12px;font-weight:700;flex-wrap:wrap}
+.rd-leg i{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.rd-leg i.me{background:#e0ad4f88;border:2px solid var(--staff)}
+.rd-leg i.avg{border:2px dashed #e9f1eaaa}
+.rd-avgs{display:flex;justify-content:center;gap:4px 10px;flex-wrap:wrap;font-size:11px;opacity:.75;margin-top:4px}
+.rk-search{display:flex;align-items:center;gap:8px;background:var(--bark);border:2px solid var(--line);border-radius:999px;padding:4px 14px;margin-bottom:10px}
+.rk-search input{flex:1;min-width:0;background:none;border:0;color:var(--mist);font:inherit;font-size:16px;padding:6px 0;outline:none}
+.rank li[hidden]{display:none}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .stats div{background:var(--bark);border-radius:12px;padding:8px;text-align:center;min-width:0}
 .stats small{display:block;font-size:11px;color:var(--mist-dim)}
@@ -1833,12 +1850,7 @@ async function loadRanking(){
   try{
     const q=await DB.collection("profiles").orderBy("score","desc").limit(200).get();
     const now=Date.now();
-    RANK=q.docs.map(d=>{ const r={id:d.id,...d.data()};
-      if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
-      else if((r.ss??0)<seasonNow()){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新シーズンを開いていない人はリセット後の状態で表示
-      else if(!r.gm && r.ge && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-emptyDropFor(now-r.pub)); r.exp=0; r.tr=r.tr==="up"||r.tr==="mix"?"mix":"down"; } }
-      if(r.id===MYID) r.tr=myTrend(); else if(r.pub && now-r.pub>TREND_MS && !(r.ge&&!r.gm)) r.tr="";   // 古い情報の矢印は出さない
-      return r; }).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
+    RANK=q.docs.map(d=>normRank({id:d.id,...d.data()},now)).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
     else { const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
@@ -1848,6 +1860,18 @@ async function loadRanking(){
   }catch(e){ rankErr=true; }
   if(tab==="rank"||tab==="home") render();
 }
+// ランキング表示用に、シーズンや空枠の状態を反映する
+function normRank(r,now=Date.now()){
+      if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
+      else if((r.ss??0)<seasonNow()){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新シーズンを開いていない人はリセット後の状態で表示
+      else if(!r.gm && r.ge && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-emptyDropFor(now-r.pub)); r.exp=0; r.tr=r.tr==="up"||r.tr==="mix"?"mix":"down"; } }
+      if(r.id===MYID) r.tr=myTrend(); else if(r.pub && now-r.pub>TREND_MS && !(r.ge&&!r.gm)) r.tr="";   // 古い情報の矢印は出さない
+      return r;
+}
+// ランキング外（検索で見つけた人）も含めて探す
+let RANK_EXTRA=[], rankQ="";
+const findRank=id=>(RANK||[]).find(x=>x.id===id)||RANK_EXTRA.find(x=>x.id===id);
+const normName=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"");
 function avatarImg(src,size){ return src&&/^data:image\/(png|jpeg);base64,/.test(src)?`<img class="ava" src="${src}" width="${size}" height="${size}" alt="">`:`<span class="ava ava-none" style="width:${size}px;height:${size}px"></span>`; }
 /* ---------- ホーム（着せ替えできる部屋） ----------
    背景・床は「装飾ガチャ」で集める。シンプル2種ずつは最初から使える。かぶったら覚醒の石1個に */
@@ -2181,7 +2205,7 @@ function renderRanking(segHtml){
   else if(rankErr) body=`<div class="empty">ランキングを読み込めませんでした。少し時間をおいて開き直してください。</div>`;
   else if(!RANK) body=`<div class="empty">読み込み中…</div>`;
   else if(!RANK.length) body=`<div class="empty">まだ誰もいません</div>`;
-  else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3?"top"+(i+1):""}" data-ri="${i}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
+  else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3?"top"+(i+1):""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
       <span class="rk-no">${i+1}</span>${avatarImg(r.icon,44)}
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${esc(r.name||"名無しの召喚士")}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>
@@ -2195,12 +2219,38 @@ function renderRanking(segHtml){
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。</p>
-    <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>${body}`;
+    <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>
+    ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
   $("#reRank").onclick=()=>{ RANK=null; render(); loadRanking(); };
+  const qi=$("#rkQ"); if(qi){ qi.oninput=()=>{ rankQ=qi.value; filterRank(); }; qi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); qi.blur(); if(!filterRank()) searchOutside(); } }; filterRank(); }
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
     const open=()=>openOtherProfile(RANK[+li.dataset.ri], +li.dataset.ri+1);
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } };
   });
+}
+// 名前検索：読み込んだランキングの中は打つたびに絞り込み、見つからなければランキング外も探せる
+function filterRank(){
+  const q=normName(rankQ), hit=$("#rkHit"); let n=0;
+  document.querySelectorAll(".rank li[data-ri]").forEach(li=>{ const ok=!q||li.dataset.nm.includes(q); li.hidden=!ok; if(ok) n++; });
+  if(hit) hit.innerHTML = !q ? "" : n ? `<p class="sub" style="margin:0 0 6px">${n}人 見つかりました</p>`
+    : `<div class="empty" style="padding:14px">上位${(RANK||[]).length}人の中には見つかりませんでした<br><button class="chip" type="button" id="rkOut" style="margin-top:8px">ランキング外から「${esc(rankQ.trim())}」さんを探す</button></div>`;
+  $("#rkOut")?.addEventListener("click",searchOutside);
+  return n;
+}
+async function searchOutside(){
+  const q=rankQ.trim(), hit=$("#rkHit"); if(!q||!DB||!hit) return;
+  hit.innerHTML=`<div class="empty" style="padding:14px">探しています…</div>`;
+  let list=[];
+  try{ const s=await withTO(DB.collection("profiles").where("name","==",q).limit(10).get()); list=s.docs.map(d=>normRank({id:d.id,...d.data()})); }
+  catch(e){ hit.innerHTML=`<div class="empty" style="padding:14px">通信できませんでした</div>`; return; }
+  if(!list.length){ hit.innerHTML=`<div class="empty" style="padding:14px">「${esc(q)}」さんは見つかりませんでした<br><small>ランキング外の人は、名前を正確に入力してね</small></div>`; return; }
+  for(const r of list){ try{ const h=await DB.collection("profiles").where("score",">",r.score||0).get(); r._rank=h.size+1; }catch(e){ r._rank=0; } }
+  RANK_EXTRA=list;
+  hit.innerHTML=`<p class="sub" style="margin:0 0 6px">ランキング外で見つかりました</p><ol class="rank">${list.map((r,i)=>`<li data-xi="${i}" tabindex="0" role="button">
+    <span class="rk-no">${r._rank||"―"}</span>${avatarImg(r.icon,44)}<div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${esc(r.name||"名無しの召喚士")}</div>
+    <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div></div><div class="rk-lv"><small>Lv</small>${esc(r.lv||1)}</div></li>`).join("")}</ol>`;
+  hit.querySelectorAll("li[data-xi]").forEach(li=>{ const r=list[+li.dataset.xi]; const open=()=>openOtherProfile(r, r._rank||"―");
+    li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } }; });
 }
 const todayN=()=>dayNum(new Date());
 function fightButton(r){
@@ -2211,7 +2261,7 @@ function fightButton(r){
   if((S.attacks||{})[r.id]===`${todayN()}-${r.gu||0}`) return `<button class="btn" type="button" disabled>この魔物とは今日はもう戦いました</button>`;
   return `<button class="btn gold" type="button" data-fight="${esc(r.id)}">戦う</button>`;
 }
-document.addEventListener("click",e=>{ const b=e.target.closest("[data-fight]"); if(b){ const r=(RANK||[]).find(x=>x.id===b.dataset.fight); if(r) confirmFight(r); } });
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-fight]"); if(b){ const r=findRank(b.dataset.fight); if(r) confirmFight(r); } });
 // 確認ボタン：押したらすぐ「〇〇中…」にして二重押しを防ぎ、失敗したら元に戻す
 async function busyRun(btn,label,fn){
   if(btn.disabled) return false;
@@ -2426,7 +2476,7 @@ function itemBox(r){
     ${!r.gm?`<div class="note" style="margin:4px 0 0">配置魔物がいないので、ファイヤーボールは使えません</div>`:""}
     ${ITEMS.every(i=>i.k==="stone"||!inv(i.k))?`<div class="note" style="margin:4px 0 0">アイテムはガチャの「アイテムガチャ」で手に入ります</div>`:""}`}</div>`;
 }
-document.addEventListener("click",e=>{ const b=e.target.closest("[data-item]"); if(b&&!b.disabled){ const r=(RANK||[]).find(x=>x.id===b.dataset.to); if(r) confirmItem(r,b.dataset.item); } });
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-item]"); if(b&&!b.disabled){ const r=findRank(b.dataset.to); if(r) confirmItem(r,b.dataset.item); } });
 function confirmItem(r,k){
   const i=itemOf(k), who=esc(r.name||"名無しの召喚士");
   if(SENDABLE.includes(k)) return qtyDialog({img:i.img, title:`${who}さんに${i.name}を贈る`, max:inv(k), ok:"贈る！",
@@ -2555,13 +2605,8 @@ function openOtherProfile(r,rank){
       ${fightButton(r)}</div></div>${itemBox(r)}`}
     ${r.id===MYID?itemBox(r):""}
     ${rank<=50&&r.comment?`<div class="rk-cmt" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
+    ${radarHtml(r)}
     <div class="stats">
-      <div><i class="st-ic" aria-hidden="true">🎰</i><small>ガチャ回数</small><b>${n(r.pulls)}</b></div>
-      <div><i class="st-ic" aria-hidden="true">🔨</i><small>合成回数</small><b>${n(r.fuses)}</b></div>
-      <div><i class="st-ic" aria-hidden="true">📖</i><small>魔物コンプ率</small><b>${esc(r.comp??0)}%</b>${r.owned!=null?`<small>${n(r.owned)}/${MONSTERS.length}</small>`:""}</div>
-      ${r.frames!=null?`<div><i class="st-ic" aria-hidden="true">🖼️</i><small>アイコン枠</small><b>${n(r.frames)}</b><small>/${FRAMES.length}</small></div>`:""}
-      ${r.units!=null?`<div><i class="st-ic" aria-hidden="true">👾</i><small>手持ちの魔物</small><b>${n(r.units)}</b></div>`:""}
-      ${r.missions!=null?`<div><i class="st-ic" aria-hidden="true">🚩</i><small>ミッション達成</small><b>${n(r.missions)}</b></div>`:""}
       <div><i class="st-ic" aria-hidden="true">🏆</i><small>勝利数</small><b>${n(r.w)}</b></div>
       <div><i class="st-ic" aria-hidden="true">💀</i><small>敗北数</small><b>${n(r.l)}</b></div>
       <div><i class="st-ic" aria-hidden="true">🤝</i><small>引き分け数</small><b>${n(r.dr)}</b></div>
@@ -2570,6 +2615,27 @@ function openOtherProfile(r,rank){
       <div><i class="st-ic" aria-hidden="true">⭐</i><small>最高冒険者Lv</small><b>${n(Math.max(r.mp||0,r.lv||1))}</b></div>
     </div>
   </div>`);
+}
+// レーダーチャート：ガチャ回数・合成回数・魔物コンプ率・手持ちの魔物を、ランキングの平均と重ねて表示
+// 回数は人によって差が大きいので、ランキング内の最大値を外側として平方根でならす（コンプ率は0〜100%そのまま）
+function radarHtml(r){
+  const pool=[...(RANK||[])]; if(!pool.some(x=>x.id===r.id)) pool.push(r);
+  const AX=[{k:"pulls",l:"ガチャ回数",ic:"🎰"},{k:"fuses",l:"合成回数",ic:"🔨"},{k:"comp",l:"魔物コンプ率",ic:"📖",pct:1},{k:"units",l:"手持ちの魔物",ic:"👾"}];
+  const val=(x,a)=>Math.max(0,Number(x[a.k])||0);
+  AX.forEach(a=>{ const vs=pool.map(x=>val(x,a)); a.avg=vs.reduce((s,v)=>s+v,0)/vs.length; a.max=a.pct?100:Math.max(1,...vs); a.v=val(r,a); });
+  const f=(v,a)=>a.pct?Math.min(1,v/100):Math.sqrt(Math.min(1,v/a.max));
+  const C=150, R=92, ang=i=>-Math.PI/2+i*Math.PI/2, pt=(i,t)=>[C+Math.cos(ang(i))*R*t, C+Math.sin(ang(i))*R*t];
+  const poly=g=>AX.map((a,i)=>pt(i,Math.max(.03,g(a))).map(v=>v.toFixed(1)).join(",")).join(" ");
+  const fmt=(v,a)=>a.pct?(Math.round(v*10)/10)+"%":Math.round(v).toLocaleString();
+  const lab=AX.map((a,i)=>{ const [x,y]=pt(i,1.18), anc=i===1?"start":i===3?"end":"middle", dy=i===0?-18:i===2?14:-6;
+    return `<text x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}" text-anchor="${anc}" class="rd-l">${a.ic} ${a.l}</text><text x="${x.toFixed(1)}" y="${(y+dy+17).toFixed(1)}" text-anchor="${anc}" class="rd-v">${fmt(a.v,a)}</text>`; }).join("");
+  const rings=[.25,.5,.75,1].map(t=>`<polygon points="${AX.map((a,i)=>pt(i,t).join(",")).join(" ")}" class="rd-ring"/>`).join("");
+  const axes=AX.map((a,i)=>`<line x1="${C}" y1="${C}" x2="${pt(i,1)[0]}" y2="${pt(i,1)[1]}" class="rd-ring"/>`).join("");
+  const dots=AX.map((a,i)=>{ const [x,y]=pt(i,Math.max(.03,f(a.v,a))); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" class="rd-dot"/>`; }).join("");
+  return `<div class="radar"><svg viewBox="-40 0 380 300" role="img" aria-label="${AX.map(a=>a.l+" "+fmt(a.v,a)+"（平均 "+fmt(a.avg,a)+"）").join("、")}">
+    ${rings}${axes}<polygon points="${poly(a=>f(a.avg,a))}" class="rd-avg"/><polygon points="${poly(a=>f(a.v,a))}" class="rd-me"/>${dots}${lab}</svg>
+    <div class="rd-leg"><span><i class="me"></i>${esc(r.name||"名無しの召喚士")}</span><span><i class="avg"></i>平均（ランキング${pool.length}人）</span></div>
+    <div class="rd-avgs">${AX.map(a=>`<span>${a.ic} 平均 ${fmt(a.avg,a)}</span>`).join("")}</div></div>`;
 }
 function setAvatar(){
   const cv=composeIcon(128); S.avatar=cv.toDataURL("image/jpeg",0.82); save(); toast("プロフィールアイコンにしました");
