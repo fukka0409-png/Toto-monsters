@@ -1720,7 +1720,7 @@ function editName(){
 function seenMark(r){
   if(r.id===MYID) return " 🟢";
   const h=(Date.now()-(r.pub||0))/HOUR_MS;
-  return h<=1?" 🟢":h<=6?" 🟡":h<=24?" 🟠":h<=48?" 🟥":h<=72?" 🟣":"";
+  return h<=1?" 🟢":h<=6?" 🟡":h<=24?" 🟠":h<=48?" 🔴":h<=72?" 🟣":"";
 }
 function renderRanking(segHtml){
   let body;
@@ -1740,7 +1740,7 @@ function renderRanking(segHtml){
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">3日ごとの0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、プレイヤーレベルと勝率はリセットされます。</div></details></div>
-    <p class="sub" style="margin-bottom:4px">最後にログインしてから：🟢1時間以内 🟡6時間以内 🟠24時間以内 🟥2日以内 🟣3日以内</p><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
+    <p class="sub" style="margin-bottom:4px">最後にログインしてから：🟢1時間以内 🟡6時間以内 🟠24時間以内 🔴2日以内 🟣3日以内</p><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>${body}`;
   $("#reRank").onclick=()=>{ RANK=null; render(); loadRanking(); };
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
