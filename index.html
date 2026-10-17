@@ -202,6 +202,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .prof-rank small{display:block;font-size:11px;color:var(--mist-dim)}
 .prof-rank b{font-family:var(--f-pix);font-weight:400;font-size:20px;color:var(--staff)}
 .plv{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.down-b{position:absolute;left:4px;bottom:22px;background:#000b;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px}
 .seen{font-size:.75em;vertical-align:1px}
 /* パック開封 */
 .pk-stage{position:fixed;inset:0;z-index:55;background:radial-gradient(circle at 50% 45%,#3a2c1c,#0b0906 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));overflow:hidden;transition:opacity .26s}
@@ -585,7 +586,7 @@ applyLoginDecay();
    ・負けた側は配置魔物がLv1にもどり、プレイヤーレベル -5
    ・同じ相手には1日1回まで
    ・魔物を配置していない間は1時間ごとにプレイヤーレベル -1 */
-const HOUR_MS = 60*60*1000, LOSE_LV = 5, DRAW_LV = 3, SAFE_LV = 10, STEAL = 0.05;   // 勝者は敗者の所持コインの5%を奪う   // プレイヤーLv10になるまでは攻撃されない
+const HOUR_MS = 60*60*1000, LOSE_LV = 5, DRAW_LV = 3, SAFE_LV = 10;   // プレイヤーLv10になるまでは攻撃されない
 function fixGuard(){
   if(S.guard && !S.units.some(z=>z.u===S.guard)) S.guard=null;
   if(!S.guard && !S.decayAt) S.decayAt=Date.now();
@@ -594,7 +595,21 @@ function fixGuard(){
 const guardUnit=()=>S.guard?S.units.find(z=>z.u===S.guard)||null:null;
 function setGuard(u){ S.guard=u; S.decayAt=0; save(); }
 function clearGuard(){ S.guard=null; S.decayAt=Date.now(); }
-function resetUnitLv(u){ const x=S.units.find(z=>z.u===u); if(x){ x.l=1; x.e=0; } return x; }   // 負けた魔物はLv1に戻る
+const WIN_BASE = 500, DOWN_MS = 24*HOUR_MS;   // 勝利報酬：500コイン＋相手のプレイヤーLv分のコイン、プレイヤーLv+1 ／ 負けた魔物は24時間休み
+const isDown = x => !!(x && x.down && x.down > Date.now());
+// 負けた魔物：レベルが半分になり、24時間配置できない。配置していた場合は手持ちからランダムで補充
+function defeatUnit(u){
+  const x=S.units.find(z=>z.u===u); if(!x) return {x:null};
+  x.l=Math.max(1,Math.ceil(x.l/2)); x.e=0; x.down=Date.now()+DOWN_MS;
+  let repl=null;
+  if(S.guard===u){
+    const pool=S.units.filter(z=>z.u!==u && !isDown(z));
+    if(pool.length){ repl=pool[Math.floor(Math.random()*pool.length)]; S.guard=repl.u; S.decayAt=0; }
+    else clearGuard();
+  }
+  return {x, repl};
+}
+function winReward(oppLv){ const c=WIN_BASE+Math.max(0,Math.floor(oppLv||0)); S.coins+=c; S.plv+=1; return c; }
 function halveUnitLv(u){ const x=S.units.find(z=>z.u===u); if(x){ x.l=Math.max(1,Math.ceil(x.l/2)); x.e=0; } return x; }   // 引き分け：魔物のレベルが半分に
 function addRecord(kind){ S.stats.win=S.stats.win||0; S.stats.lose=S.stats.lose||0; S.stats.draw=S.stats.draw||0; S.stats[kind]++; }
 const winRate=(w,l,d)=>{ const t=(w||0)+(l||0)+(d||0); return t?Math.round((w||0)/t*1000)/10+"%":"―"; };
@@ -697,16 +712,21 @@ if(FBA){
 }
 
 /* ---------- お知らせ（起動時に表示） ---------- */
-const NEWS_KEY="toto-news-season-v1";
+const NEWS_KEY="toto-news-battle-v5";
 let newsResolve; const newsDone=new Promise(r=>newsResolve=r);
 function openNews(force){
   let hide=false; try{ hide=localStorage.getItem(NEWS_KEY)==="hide"; }catch(e){}
   if(hide && !force){ newsResolve(); return; }
   const bg=document.createElement("div"); bg.className="sheet-bg center news-sheet";
   bg.innerHTML=`<div class="swear news" role="dialog" aria-modal="true" aria-labelledby="nwT">
-    <p id="nwT">🏆 シーズン制が始まりました！</p>
+    <p id="nwT">⚔️ バトルのルールが変わりました！</p>
     <div class="news-body">
-      <h4>🏆 毎日のシーズン</h4>
+      <h4>🆕 新しいバトルのルール</h4>
+      <p>🏆 勝つと <b>500コイン＋相手のプレイヤーレベル分のコイン</b>、さらに<b>プレイヤーレベル+1</b>！</p>
+      <p>💀 負けた魔物はLv1ではなく<b>レベル半分</b>に。そのかわり<b>24時間休み</b>（配置できません）。</p>
+      <p>🔄 留守中に負けたら、手持ちからランダムで魔物が自動で配置されます。</p>
+      <p>⚔️ 相手の配置魔物が変われば、同じ相手とまた戦えます。</p>
+      <h4 style="margin-top:18px">🏆 毎日のシーズン</h4>
       <p>毎日0:00（日本時間）にランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
       <p>⏰ 景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度ログインしておく必要があります。</p>
       <p>🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個</p>
@@ -729,11 +749,11 @@ function openNews(force){
       <p>ランキングで気になる人をタップして「戦う」！配置モンスターのレベルが高い方の勝ちです。</p>
       <p>レベルが同じならランクが高い方、ランクも同じなら図鑑No.が古い方の勝ち。</p>
       <p>🤝 それでも決まらない（同じ魔物・同じレベル）ときは引き分け。おたがいの魔物のレベルが半分になり、プレイヤーレベルが3下がります。</p>
-      <p>💰 勝った人は、負けた人の所持コインの5%をうばえます。</p>
-      <p>同じ相手と戦えるのは1日1回まで。</p>
+      <p>💰 勝つと「500コイン＋相手のプレイヤーレベルと同じ数のコイン」がもらえて、プレイヤーレベルが1上がります！（守って勝ったときも同じ）</p>
+      <p>同じ相手の同じ魔物と戦えるのは1日1回まで。相手の配置魔物が変われば、また戦えます。</p>
       <p>🔰 プレイヤーレベルが10になるまでは、ほかの人から攻撃されません。</p>
       <h4>💀 負けると…</h4>
-      <p>・配置していた魔物はLv1にもどってしまいます（保護していてももどります）<br>・プレイヤーレベルが5下がります<br>・所持コインの5%をうばわれます</p>
+      <p>・配置していた魔物はレベルが半分になり、24時間休み（配置できません）<br>・プレイヤーレベルが5下がります<br>・留守中に負けたときは、手持ちからランダムで別の魔物が自動で配置されます</p>
       <p>攻めた側でも守った側でも、負けたら同じです。</p>
       <h4>⏰ 配置しないと…</h4>
       <p>魔物を配置していない間は、1時間ごとにプレイヤーレベルが1ずつ下がります。ランキングを守りたいなら、必ず1体配置しておこう！</p>
@@ -1267,7 +1287,7 @@ function sortedUnits(){
   return u.sort((a,b)=> ((b.k?1:0)-(a.k?1:0)) || (b.s-a.s) || (RANKS.indexOf(mon(b.m).rank)-RANKS.indexOf(mon(a.m).rank)) || (b.l-a.l) || (a.u-b.u));
 }
 function unitCard(x,extra=""){ const m=mon(x.m); return `<button class="card ${extra}" type="button" data-u="${x.u}" aria-label="${m.name} Lv${x.l}">
-  <img src="${cardURL(x.m,x.s)}" alt=""><span class="rk rk-${m.rank}">${m.rank}</span>${x.k?'<span class="lock" aria-label="保護中">🔒</span>':''}${S.guard===x.u?'<span class="guard-b" aria-label="配置中">配置中</span>':''}<span class="lv">Lv${x.l}</span></button>`; }
+  <img src="${cardURL(x.m,x.s)}" alt=""><span class="rk rk-${m.rank}">${m.rank}</span>${x.k?'<span class="lock" aria-label="保護中">🔒</span>':''}${S.guard===x.u?'<span class="guard-b" aria-label="配置中">配置中</span>':''}${isDown(x)?'<span class="down-b" aria-label="休み中">😵休み</span>':''}<span class="lv">Lv${x.l}</span></button>`; }
 const boxSeg=()=>seg([["units","手持ち"],["dexM","魔物図鑑"],["dexF","枠図鑑"]],boxMode);
 function renderBox(){
   if(boxMode!=="units"){ dexMode = boxMode==="dexM"?"mon":"frame"; return renderDex(); }
@@ -1402,11 +1422,11 @@ function openUnit(uid){
   <div class="row"><button class="btn" id="fuse" type="button" ${maxed?"disabled":""}>合成する</button>
   <button class="btn ghost" id="lock" type="button">${x.k?"🔓 鍵を外す":"🔒 鍵をかける"}</button></div>
   <div class="row"><button class="btn gold" id="awaken" type="button" ${inv("stone")?"":"disabled"}>💎 覚醒の石を合成（${inv("stone").toLocaleString()}個）</button></div>
-  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button">${S.guard===x.u?"配置を外す":"プロフィールに配置する"}</button></div>
+  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button" ${isDown(x)&&S.guard!==x.u?"disabled":""}>${S.guard===x.u?"配置を外す":isDown(x)?`😵 休み中（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間は配置できません）`:"プロフィールに配置する"}</button></div>
   <div class="row"><button class="btn ghost" id="sell" type="button" ${x.k?"disabled":""}>売却する（+${sellPrice(x).toLocaleString()}コイン）</button></div>
   <p class="note">保護した魔物は合成の素材に選ばれず、売却もできません。素材の経験値はレベルが高いほど増え、同じ魔物なら2倍。合成1回に50コイン必要で、合成1回で10コイン、Lvが10上がるごとに100コイン。最大Lv100（覚醒の石を合成すると、さらに上げられます）。ランクが高い魔物ほど、レベルアップに多くの経験値が必要です。</p>`);
   bg.querySelector("#lock").onclick=()=>{ x.k=!x.k; save(); render(); openUnit(uid); };
-  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ clearGuard(); save(); toast("配置を外しました。1時間ごとにレベルが下がります"); } else { setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
+  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ clearGuard(); save(); toast("配置を外しました。1時間ごとにレベルが下がります"); } else { if(isDown(x)) return toast(`${m.name}は休んでいます（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`); setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
   bg.querySelector("#sell").onclick=()=>confirmSell([uid],()=>{ closeSheet(); render(); });
   bg.querySelector("#fuse").onclick=()=>openFuse(uid);
   const aw=bg.querySelector("#awaken"); if(aw) aw.onclick=()=>openAwaken(uid);
@@ -1759,7 +1779,7 @@ function fightButton(r){
   if(!r.gm) return "";
   if((r.lv||1)<SAFE_LV) return `<div class="note" style="margin:0">🔰 Lv${SAFE_LV}になるまでは守られています（攻撃できません）</div>`;
   if(!guardUnit()) return `<div class="note" style="margin:0;color:var(--berry)">戦うには、自分の魔物を配置してください</div>`;
-  if((S.attacks||{})[r.id]===todayN()) return `<button class="btn" type="button" disabled>今日はもう戦いました</button>`;
+  if((S.attacks||{})[r.id]===`${todayN()}-${r.gu||0}`) return `<button class="btn" type="button" disabled>この魔物とは今日はもう戦いました</button>`;
   return `<button class="btn gold" type="button" data-fight="${esc(r.id)}">戦う</button>`;
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-fight]"); if(b){ const r=(RANK||[]).find(x=>x.id===b.dataset.fight); if(r) confirmFight(r); } });
@@ -1768,7 +1788,7 @@ function confirmFight(r){
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="fT"><p id="fT">${esc(r.name||"名無しの召喚士")}さんと戦いますか？</p>
     <div class="vs"><img src="${cardURL(g.m,0,128)}" alt=""><b>VS</b><img src="${cardURL(r.gm,0,128)}" alt=""></div>
-    <div class="note" style="margin:0">あなたの${esc(mon(g.m).name)}（Lv${g.l}） 対 ${esc(mon(r.gm).name)}（Lv ？？？）<br>レベルが高い方の勝ち（同じならランク、それも同じなら図鑑No.が古い方）。負けると魔物がLv1にもどり、プレイヤーレベル−${LOSE_LV}、所持コインの5%をうばわれます。引き分けはおたがい魔物のレベルが半分、プレイヤーレベル−${DRAW_LV}。</div>
+    <div class="note" style="margin:0">あなたの${esc(mon(g.m).name)}（Lv${g.l}） 対 ${esc(mon(r.gm).name)}（Lv ？？？）<br>レベルが高い方の勝ち（同じならランク、それも同じなら図鑑No.が古い方）。勝つと ${WIN_BASE}コイン＋相手のプレイヤーLv分のコイン、プレイヤーLv+1！負けると魔物のレベルが半分になって24時間休み、プレイヤーレベル−${LOSE_LV}。引き分けはおたがい魔物のレベルが半分、プレイヤーレベル−${DRAW_LV}。</div>
     <button class="btn gold" id="fGo" type="button">戦う！</button><button class="btn ghost" id="fNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#fNo").onclick=()=>bg.remove();
@@ -1779,35 +1799,35 @@ async function doFight(r){
   let d; try{ const snap=await DB.doc("profiles/"+r.id).get(); d=snap.exists?snap.data():null; }catch(e){ return toast("通信できませんでした"); }
   if(!d||!d.gm||!mon(d.gm)) return toast("相手は魔物を配置していません");
   if((d.lv||1)<SAFE_LV) return toast(`相手はLv${SAFE_LV}未満なので、まだ攻撃できません`);
-  const day=todayN(), id=`${MYID}_${r.id}_${day}`;
+  const day=`${todayN()}-${d.gu||0}`, id=`${MYID}_${r.id}_${day}`;   // 相手の配置魔物が変わればまた戦える
   const myLv=g.l, theirLv=d.gl||1;
   // 勝敗：①レベル ②ランク ③図鑑No.が古い（小さい）方
   const rI=m=>RANKS.indexOf(mon(m).rank);
   const result= myLv!==theirLv ? (myLv>theirLv?"att":"def")
               : rI(g.m)!==rI(d.gm) ? (rI(g.m)>rI(d.gm)?"att":"def")
               : g.m!==d.gm ? (g.m<d.gm?"att":"def") : "draw";
-  const coins = result==="att" ? Math.floor(Math.max(0,d.cn||0)*STEAL) : result==="def" ? Math.floor(S.coins*STEAL) : 0;
+  const coins = result==="att" ? WIN_BASE+Math.max(0,d.lv||0) : result==="def" ? WIN_BASE+S.plv : 0;   // 勝った側がもらうコイン
   try{
     await DB.doc("battles/"+id).set({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
       attM:g.m, attU:g.u, attLv:myLv, defM:d.gm, defU:d.gu||0, defLv:theirLv, result, coins, at:Date.now(), day});
-  }catch(e){ S.attacks[r.id]=day; save(); render(); return toast("今日はもうこの相手と戦いました"); }
+  }catch(e){ S.attacks[r.id]=day; save(); render(); return toast("この魔物とは今日はもう戦いました"); }
   S.attacks[r.id]=day;
   addRecord(result==="att"?"win":result==="def"?"lose":"draw");
-  let lost=0;
-  if(result==="def"){ resetUnitLv(g.u); lost=dropPlayerLv(LOSE_LV); S.coins=Math.max(0,S.coins-coins); }
-  if(result==="att"){ S.coins+=coins; }
+  let lost=0, repl=null;
+  if(result==="def"){ repl=defeatUnit(g.u).repl; lost=dropPlayerLv(LOSE_LV); }
+  if(result==="att"){ winReward(d.lv); }
   let half=null;
   if(result==="draw"){ half=halveUnitLv(g.u); lost=dropPlayerLv(DRAW_LV); }
   save(); closeSheet(); render();
-  showBattleResult(result, g.m, d.gm, r.name, lost, coins, result==="draw"?"":myLv===theirLv?(rI(g.m)!==rI(d.gm)?"rank":"no"):"");
+  showBattleResult(result, g.m, d.gm, r.name, lost, coins, result==="draw"?"":myLv===theirLv?(rI(g.m)!==rI(d.gm)?"rank":"no"):"", repl);
   loadRanking();
 }
-function showBattleResult(result, myM, theirM, theirName, lost, coins, why){
+function showBattleResult(result, myM, theirM, theirName, lost, coins, why, repl){
   const win=result==="att", draw=result==="draw";
   const bg=document.createElement("div"); bg.className="reveal";
   bg.innerHTML=`${win?'<div class="burst"></div>':""}<h3>${win?"勝利！":draw?"引き分け":"敗北…"}</h3>
     <div class="vs big"><img src="${cardURL(myM,0,200)}" alt="" class="${win||draw?"":"lose"}"><b>VS</b><img src="${cardURL(theirM,0,200)}" alt="" class="${win?"lose":""}"></div>
-    <p class="note" style="text-align:center;max-width:320px">${why==="rank"?"レベルは同じ！ランクの差で決着…<br>":why==="no"?"レベルもランクも同じ！図鑑No.の古さで決着…<br>":""}${win?`${esc(theirName||"相手")}さんの${esc(mon(theirM).name)}をたおした！${coins?`<br><b style="color:var(--staff)">+${coins.toLocaleString()}コイン</b>をうばった！`:""}`:draw?`まったく同じ魔物・同じレベルだった！<br>おたがいの魔物のレベルが半分になり、プレイヤーレベルが${lost}下がりました。`:`あなたの${esc(mon(myM).name)}はやられて、Lv1にもどってしまった…<br>プレイヤーレベルが${lost}下がりました。${coins?`<br><b style="color:var(--berry)">−${coins.toLocaleString()}コイン</b>うばわれた…`:""}`}</p>
+    <p class="note" style="text-align:center;max-width:320px">${why==="rank"?"レベルは同じ！ランクの差で決着…<br>":why==="no"?"レベルもランクも同じ！図鑑No.の古さで決着…<br>":""}${win?`${esc(theirName||"相手")}さんの${esc(mon(theirM).name)}をたおした！<br><b style="color:var(--staff)">+${coins.toLocaleString()}コイン</b> ・ プレイヤーレベル+1！`:draw?`まったく同じ魔物・同じレベルだった！<br>おたがいの魔物のレベルが半分になり、プレイヤーレベルが${lost}下がりました。`:`あなたの${esc(mon(myM).name)}はやられて、レベルが半分になり24時間休むことに…<br>プレイヤーレベルが${lost}下がりました。${repl?`<br>代わりに${esc(mon(repl.m).name)}を配置しました。`:""}`}</p>
     <button class="btn" type="button">OK</button>`;
   document.body.appendChild(bg); win?SFX.reveal("S"):SFX.ng();
   bg.querySelector(".btn").onclick=()=>{ bg.remove(); render(); };
@@ -1840,7 +1860,7 @@ function genBotEvents(){
       const pool=NORMAL.filter(m=>ranks.includes(m.rank)); const bm=pool[Math.floor(Math.random()*pool.length)]||mon(START_MONSTER);
       const rI=m=>RANKS.indexOf(mon(m).rank);
       const result= lv!==g.l ? (lv>g.l?"att":"def") : rI(bm.id)!==rI(g.m) ? (rI(bm.id)>rI(g.m)?"att":"def") : bm.id!==g.m ? (bm.id<g.m?"att":"def") : "draw";
-      const coins= result==="att" ? Math.floor(S.coins*STEAL) : result==="def" ? Math.floor(attP*100*(0.5+Math.random())*STEAL) : 0;
+      const coins= result==="def" ? WIN_BASE+attP : 0;
       out.push({kind:"battle", bot:true, result, attP, attM:bm.id, defM:g.m, defU:g.u, coins, at});
     } else {
       const opts=g?["magnet","fire","fire","bomb","bomb"]:["magnet","bomb","bomb"];
@@ -1931,12 +1951,11 @@ async function checkBattles(){
       const msgs=[]; let lostLv=0, coinDiff=0;
       for(const b of list){
         if(b.result==="att"){
-          resetUnitLv(b.defU);
+          const {x,repl}=defeatUnit(b.defU);
           lostLv+=dropPlayerLv(LOSE_LV);
-          const c=Math.min(S.coins, Math.max(0,Math.floor(b.coins||0))); S.coins-=c; coinDiff-=c;
-          msgs.push(`${anonWho(b)}に負けて、${esc(mon(b.defM)?.name||"魔物")}がLv1にもどってしまった…${c?`（−${c.toLocaleString()}コイン）`:""}`);
-        } else if(b.result==="def"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; coinDiff+=c;
-          msgs.push(`${anonWho(b)}の${esc(mon(b.attM)?.name||"魔物")}をしりぞけた！${c?`（+${c.toLocaleString()}コイン）`:""}`); }
+          msgs.push(`${anonWho(b)}に負けて、${esc(mon(b.defM)?.name||"魔物")}のレベルが半分になり24時間休むことに…${x?`（Lv${x.l}）`:""}${repl?`<br>　→ 代わりに${esc(mon(repl.m).name)}を自動で配置しました`:""}`);
+        } else if(b.result==="def"){ const c=winReward(b.attP); coinDiff+=c; lostLv-=1;
+          msgs.push(`${anonWho(b)}の${esc(mon(b.attM)?.name||"魔物")}をしりぞけた！（+${c.toLocaleString()}コイン・プレイヤーLv+1）`); }
         else { halveUnitLv(b.defU); lostLv+=dropPlayerLv(DRAW_LV);
           msgs.push(`${anonWho(b)}と引き分けた…${esc(mon(b.defM)?.name||"魔物")}のレベルが半分になった`); }
         addRecord(b.result==="att"?"lose":b.result==="def"?"win":"draw");
@@ -1946,7 +1965,7 @@ async function checkBattles(){
       const bg=document.createElement("div"); bg.className="sheet-bg center";
       bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="bT"><div class="swear-face">⚔️</div><p id="bT">留守中にバトルがありました</p>
         <div class="note" style="margin:0;text-align:left">${msgs.map(m=>"・"+m).join("<br>")}</div>
-        ${lostLv?`<div class="note" style="margin:0;color:var(--berry)">プレイヤーレベルが ${lostLv} 下がりました</div>`:""}
+        ${lostLv>0?`<div class="note" style="margin:0;color:var(--berry)">プレイヤーレベルが ${lostLv} 下がりました</div>`:lostLv<0?`<div class="note" style="margin:0;color:var(--moss)">プレイヤーレベルが ${-lostLv} 上がりました</div>`:""}
         ${coinDiff?`<div class="note" style="margin:0;color:${coinDiff>0?"var(--staff)":"var(--berry)"}">コイン ${coinDiff>0?"+":"−"}${Math.abs(coinDiff).toLocaleString()}</div>`:""}
         <button class="btn gold" type="button">OK</button></div>`;
       document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove();
