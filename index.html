@@ -585,7 +585,7 @@ applyLoginDecay();
    ・ランキングの相手と戦う：配置魔物のレベルが高い方の勝ち（同じなら引き分け）
    ・負けた側は配置魔物がLv1にもどり、プレイヤーレベル -5
    ・同じ相手には1日1回まで
-   ・魔物を配置していない間は1時間ごとにプレイヤーレベル -1 */
+   ・配置枠が空の間は1時間ごとにプレイヤーレベル -3（配置できる魔物がいれば自動で配置される） */
 const HOUR_MS = 60*60*1000, LOSE_LV = 5, DRAW_LV = 3, SAFE_LV = 10;   // プレイヤーLv10になるまでは攻撃されない
 function fixGuard(){
   if(S.guard && !S.units.some(z=>z.u===S.guard)) S.guard=null;
@@ -614,11 +614,19 @@ function halveUnitLv(u){ const x=S.units.find(z=>z.u===u); if(x){ x.l=Math.max(1
 function addRecord(kind){ S.stats.win=S.stats.win||0; S.stats.lose=S.stats.lose||0; S.stats.draw=S.stats.draw||0; S.stats[kind]++; }
 const winRate=(w,l,d)=>{ const t=(w||0)+(l||0)+(d||0); return t?Math.round((w||0)/t*1000)/10+"%":"―"; };
 function dropPlayerLv(n){ const b=S.plv; S.plv=Math.max(1,S.plv-n); if(S.plv<b) S.pexp=0; return b-S.plv; }
+// 配置していない人には、配置できる魔物の中からランダムで自動配置。いなければ枠は空のまま
+const EMPTY_DECAY = 3;   // 枠が空のあいだ、1時間ごとに下がるプレイヤーレベル
+function autoGuard(){
+  if(guardUnit()) return null;
+  const pool=S.units.filter(z=>!isDown(z)); if(!pool.length) return null;
+  const x=pool[Math.floor(Math.random()*pool.length)]; S.guard=x.u; S.decayAt=0; save(); queueProfile(); return x;
+}
 function hourlyDecay(){
   fixGuard();
   if(S.guard) return;
+  const ag=autoGuard(); if(ag){ setTimeout(()=>toast(`${mon(ag.m).name}を自動で配置しました`),1200); if(typeof render==="function"&&tab==="dress") render(); return; }
   const h=Math.floor((Date.now()-S.decayAt)/HOUR_MS);
-  if(h>0){ const d=dropPlayerLv(h); S.decayAt+=h*HOUR_MS; save(); if(d) setTimeout(()=>toast(`魔物を配置していなかったので、レベルが ${d} 下がりました`),1200); }
+  if(h>0){ const d=dropPlayerLv(h*EMPTY_DECAY); S.decayAt+=h*HOUR_MS; save(); if(d) setTimeout(()=>toast(`魔物を配置していなかったので、レベルが ${d} 下がりました`),1200); }
 }
 setTimeout(hourlyDecay,0);
 setInterval(hourlyDecay, 60*1000);
@@ -756,7 +764,7 @@ function openNews(force){
       <p>・配置していた魔物はレベルが半分になり、24時間配置不可<br>・プレイヤーレベルが5下がります<br>・留守中に負けたときは、手持ちからランダムで別の魔物が自動で配置されます</p>
       <p>攻めた側でも守った側でも、負けたら同じです。</p>
       <h4>⏰ 配置しないと…</h4>
-      <p>魔物を配置していない間は、1時間ごとにプレイヤーレベルが1ずつ下がります。ランキングを守りたいなら、必ず1体配置しておこう！</p>
+      <p>配置していない人には、手持ちからランダムで魔物が自動で配置されます。配置できる魔物がいなくて枠が空のあいだは、1時間ごとにプレイヤーレベルが3ずつ下がります。</p>
       <p class="news-end">強い魔物で守るか、それとも攻めるか…あなた次第！</p>
     </div>
     <button class="btn gold" id="nwOk" type="button">とじる</button>
@@ -1422,11 +1430,11 @@ function openUnit(uid){
   <div class="row"><button class="btn" id="fuse" type="button" ${maxed?"disabled":""}>合成する</button>
   <button class="btn ghost" id="lock" type="button">${x.k?"🔓 鍵を外す":"🔒 鍵をかける"}</button></div>
   <div class="row"><button class="btn gold" id="awaken" type="button" ${inv("stone")?"":"disabled"}>💎 覚醒の石を合成（${inv("stone").toLocaleString()}個）</button></div>
-  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button" ${isDown(x)&&S.guard!==x.u?"disabled":""}>${S.guard===x.u?"配置を外す":isDown(x)?`現在配置不可（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`:"プロフィールに配置する"}</button></div>
+  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button" ${(isDown(x)&&S.guard!==x.u)||S.guard===x.u?"disabled":""}>${S.guard===x.u?"配置中":isDown(x)?`現在配置不可（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`:"プロフィールに配置する"}</button></div>
   <div class="row"><button class="btn ghost" id="sell" type="button" ${x.k?"disabled":""}>売却する（+${sellPrice(x).toLocaleString()}コイン）</button></div>
   <p class="note">保護した魔物は合成の素材に選ばれず、売却もできません。素材の経験値はレベルが高いほど増え、同じ魔物なら2倍。合成1回に50コイン必要で、合成1回で10コイン、Lvが10上がるごとに100コイン。最大Lv100（覚醒の石を合成すると、さらに上げられます）。ランクが高い魔物ほど、レベルアップに多くの経験値が必要です。</p>`);
   bg.querySelector("#lock").onclick=()=>{ x.k=!x.k; save(); render(); openUnit(uid); };
-  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ clearGuard(); save(); toast("配置を外しました。1時間ごとにレベルが下がります"); } else { if(isDown(x)) return toast(`${m.name}は現在配置不可です（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`); setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
+  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ return; } else { if(isDown(x)) return toast(`${m.name}は現在配置不可です（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`); setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
   bg.querySelector("#sell").onclick=()=>confirmSell([uid],()=>{ closeSheet(); render(); });
   bg.querySelector("#fuse").onclick=()=>openFuse(uid);
   const aw=bg.querySelector("#awaken"); if(aw) aw.onclick=()=>openAwaken(uid);
@@ -1644,7 +1652,7 @@ async function loadRanking(){
     RANK=q.docs.map(d=>{ const r={id:d.id,...d.data()};
       if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
       else if((r.ss??0)<seasonNow()){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新シーズンを開いていない人はリセット後の状態で表示
-      else if(!r.gm && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-h); r.exp=0; } }
+      else if(!r.gm && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-h*EMPTY_DECAY); r.exp=0; } }
       return r; }).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
@@ -1668,7 +1676,7 @@ function guardBox(){
     <button class="chip" type="button" data-goto-box="1">変更する</button></div></div>`; }
   const left=HOUR_MS-((Date.now()-(S.decayAt||Date.now()))%HOUR_MS);
   return `<div class="guard-box warn"><div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物：なし</div>
-    <div class="note" style="margin:0;color:var(--berry)">配置していないと、1時間ごとにレベルが1下がります（次まで あと${Math.ceil(left/60000)}分）</div>
+    <div class="note" style="margin:0;color:var(--berry)">配置できる魔物がいません。枠が空のあいだは、1時間ごとにプレイヤーレベルが${EMPTY_DECAY}下がります（次まで あと${Math.ceil(left/60000)}分）</div>
     <button class="btn" type="button" data-goto-box="1">魔物を配置する</button></div></div>`;
 }
 document.addEventListener("click",e=>{ if(e.target.closest("[data-goto-box]")){ closeSheet(); tab="box"; boxMode="units"; render(); toast("配置したい魔物をタップして「プロフィールに配置する」"); } });
@@ -1889,7 +1897,7 @@ function seasonScore(p, s){
   if(p.sv && p.sv[s]!=null) return p.sv[s];
   if((p.ss ?? 0)!==s) return null;
   let lv=p.lv||1, exp=p.exp||0;
-  if(!p.gm && p.pub){ const h=Math.floor((Math.min(Date.now(),seasonEnd(s))-p.pub)/HOUR_MS); if(h>0){ lv=Math.max(1,lv-h); exp=0; } }
+  if(!p.gm && p.pub){ const h=Math.floor((Math.min(Date.now(),seasonEnd(s))-p.pub)/HOUR_MS); if(h>0){ lv=Math.max(1,lv-h*EMPTY_DECAY); exp=0; } }
   return lv*1e6+exp;
 }
 // 景品の条件：シーズン終了前の6時間以内に1度ログインしていること
