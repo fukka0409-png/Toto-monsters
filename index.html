@@ -128,6 +128,10 @@ details.rates summary{cursor:pointer;font-weight:700}
 .btn.ghost{background:var(--bark-2);color:var(--mist)}
 .btn.gold{background:var(--staff);color:#3a2306}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.busy:disabled{opacity:1;cursor:progress;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.busy::before{content:"";width:16px;height:16px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.swear .btn:active:not(:disabled){transform:scale(.96)}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .row .btn{flex:1}
 .fuse-sum{background:var(--night);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:13px}
@@ -2208,6 +2212,16 @@ function fightButton(r){
   return `<button class="btn gold" type="button" data-fight="${esc(r.id)}">戦う</button>`;
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-fight]"); if(b){ const r=(RANK||[]).find(x=>x.id===b.dataset.fight); if(r) confirmFight(r); } });
+// 確認ボタン：押したらすぐ「〇〇中…」にして二重押しを防ぎ、失敗したら元に戻す
+async function busyRun(btn,label,fn){
+  if(btn.disabled) return false;
+  const t=btn.textContent; btn.disabled=true; btn.classList.add("busy"); btn.textContent=label;
+  let ok=false; try{ ok=await fn(); }catch(e){ console.warn(e); }
+  if(btn.isConnected){ btn.disabled=false; btn.classList.remove("busy"); btn.textContent=t; }
+  return ok;
+}
+// 通信が止まったままにならないよう時間切れにする
+function withTO(p,ms=10000){ return Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error("timeout")),ms))]); }
 function confirmFight(r){
   const g=guardUnit(); if(!g) return;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
@@ -2217,11 +2231,11 @@ function confirmFight(r){
     <button class="btn gold" id="fGo" type="button">戦う！</button><button class="btn ghost" id="fNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#fNo").onclick=()=>bg.remove();
-  bg.querySelector("#fGo").onclick=async()=>{ bg.querySelector("#fGo").disabled=true; await doFight(r); bg.remove(); };
+  bg.querySelector("#fGo").onclick=async e=>{ if(await busyRun(e.currentTarget,"戦っています…",()=>doFight(r))) bg.remove(); };
 }
 async function doFight(r){
   const g=guardUnit(); if(!g||!DB) return;
-  let d; try{ const snap=await DB.doc("profiles/"+r.id).get(); d=snap.exists?snap.data():null; }catch(e){ return toast("通信できませんでした"); }
+  let d; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get()); d=snap.exists?snap.data():null; }catch(e){ toast("通信できませんでした。電波のよい所でもう一度ためしてください"); return false; }
   if(!d||!d.gm||!mon(d.gm)) return toast("相手は魔物を配置していません");
   if((d.lv||1)<SAFE_LV) return toast(`相手はLv${SAFE_LV}未満なので、まだ攻撃できません`);
   const day=`${todayN()}-${d.gu||0}`, id=`${MYID}_${r.id}_${day}`;   // 相手の配置魔物が変わればまた戦える
@@ -2235,7 +2249,7 @@ async function doFight(r){
   try{
     await DB.doc("battles/"+id).set({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
       attM:g.m, attU:g.u, attLv:myLv, defM:d.gm, defU:d.gu||0, defLv:theirLv, result, coins, at:Date.now(), day});
-  }catch(e){ S.attacks[r.id]=day; save(); render(); return toast("この魔物とは今日はもう戦いました"); }
+  }catch(e){ S.attacks[r.id]=day; save(); closeSheet(); render(); toast("この魔物とは今日はもう戦いました"); return false; }
   S.attacks[r.id]=day;
   addRecord(result==="att"?"win":result==="def"?"lose":"draw");
   let lost=0, repl=null;
@@ -2246,6 +2260,7 @@ async function doFight(r){
   save(); closeSheet(); render();
   showBattleResult(result, g.m, d.gm, r.name, lost, coins, result==="draw"?"":myLv===theirLv?(rI(g.m)!==rI(d.gm)?"rank":"no"):"", repl);
   loadRanking();
+  return true;
 }
 function showBattleResult(result, myM, theirM, theirName, lost, coins, why, repl){
   const win=result==="att", draw=result==="draw";
@@ -2423,19 +2438,19 @@ function confirmItem(r,k){
     <button class="btn gold" id="iuGo" type="button">使う！</button><button class="btn ghost" id="iuNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#iuNo").onclick=()=>bg.remove();
-  bg.querySelector("#iuGo").onclick=async()=>{ bg.querySelector("#iuGo").disabled=true; await useItem(r,k); bg.remove(); };
+  bg.querySelector("#iuGo").onclick=async e=>{ if(await busyRun(e.currentTarget,"使っています…",()=>useItem(r,k))) bg.remove(); };
 }
 async function useItem(r,k,qty=1){
-  if(!DB||!MYID||inv(k)<qty) return;
-  let d; try{ const snap=await DB.doc("profiles/"+r.id).get(); d=snap.exists?snap.data():null; }catch(e){ return toast("通信できませんでした"); }
-  if(!d) return toast("相手が見つかりませんでした");
-  if(!SENDABLE.includes(k) && (d.lv||1)<SAFE_LV) return toast(`相手はLv${SAFE_LV}未満なので、まだアイテムを使えません`);
-  if(k==="fire"&&(!d.gm||!mon(d.gm))) return toast("相手は魔物を配置していません");
+  if(!DB||!MYID||inv(k)<qty) return false;
+  let d; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get()); d=snap.exists?snap.data():null; }catch(e){ toast("通信できませんでした。電波のよい所でもう一度ためしてください"); return false; }
+  if(!d) { toast("相手が見つかりませんでした"); return false; }
+  if(!SENDABLE.includes(k) && (d.lv||1)<SAFE_LV) { toast(`相手はLv${SAFE_LV}未満なので、まだアイテムを使えません`); return false; }
+  if(k==="fire"&&(!d.gm||!mon(d.gm))) { toast("相手は魔物を配置していません"); return false; }
   const coins = k==="magnet" ? Math.floor(Math.max(0,d.cn||0)*MAGNET) : 0;
   try{
-    await DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
-      item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:Date.now()});
-  }catch(e){ return toast("アイテムを使えませんでした。少し時間をおいてためしてください"); }
+    await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
+      item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:Date.now()}));
+  }catch(e){ { toast("アイテムを使えませんでした。少し時間をおいてためしてください"); return false; } }
   addItem(k,-qty); if(coins) S.coins+=coins; save(); closeSheet(); render();
   const i=itemOf(k), who=esc(d.name||"相手");
   const msg=k==="gift"?`${who}さんに <b style="color:var(--staff)">${(GIFT_COIN*qty).toLocaleString()}コイン</b> をプレゼントした！`:k==="ticket"?`${who}さんに <b style="color:var(--staff)">ガチャチケット${qty}枚</b> を贈った！`:k==="magnet"?`${who}さんから <b style="color:var(--staff)">${coins.toLocaleString()}コイン</b> をうばった！`
@@ -2445,6 +2460,7 @@ async function useItem(r,k,qty=1){
   el.innerHTML=`<div class="burst"></div><h3>${SENDABLE.includes(k)?"プレゼント！":i.name+"！"}</h3><img src="${i.img}" alt="" class="iu-big"><p class="note" style="text-align:center;max-width:320px">${msg}<br><small>相手が次にアプリを開いたときに反映されます</small></p><button class="btn" type="button">OK</button>`;
   document.body.appendChild(el); SFX.reveal("S");
   el.querySelector(".btn").onclick=()=>{ el.remove(); render(); };
+  return true;
 }
 // 何セット使うか選ぶ画面（神からの贈り物・ガチャチケット）
 function qtyDialog({img,title,max,desc,ok="決定"},onOk){
@@ -2462,7 +2478,7 @@ function qtyDialog({img,title,max,desc,ok="決定"},onOk){
   bg.querySelector("#qdAll").onclick=()=>{ n=max; upd(); };
   bg.querySelector("#qdNo").onclick=()=>bg.remove();
   bg.onclick=e=>{ if(e.target===bg) bg.remove(); };
-  bg.querySelector("#qdGo").onclick=async()=>{ bg.querySelector("#qdGo").disabled=true; await onOk(n); bg.remove(); };
+  bg.querySelector("#qdGo").onclick=async e=>{ if(await busyRun(e.currentTarget,"送っています…",async()=>(await onOk(n))!==false)) bg.remove(); };
   upd();
 }
 // 神からの贈り物を自分に使う（サーバーを通さずその場で +1000コイン）
