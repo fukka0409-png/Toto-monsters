@@ -202,6 +202,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .prof-rank small{display:block;font-size:11px;color:var(--mist-dim)}
 .prof-rank b{font-family:var(--f-pix);font-weight:400;font-size:20px;color:var(--staff)}
 .plv{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.seen{font-size:.75em;vertical-align:1px}
 /* パック開封 */
 .pk-stage{position:fixed;inset:0;z-index:55;background:radial-gradient(circle at 50% 45%,#3a2c1c,#0b0906 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));overflow:hidden;transition:opacity .26s}
 .pk-stage.fade{opacity:0}
@@ -636,7 +637,7 @@ async function pullRemote(){
   return false;
 }
 document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="visible") pullRemote();
+  if(document.visibilityState==="visible"){ pullRemote(); queueProfile(); }
   else { if(remoteTimer){ clearTimeout(remoteTimer); remoteTimer=null; pushRemote(); } if(profTimer){ queueProfile(true); } }   // 閉じる・切り替える時はすぐ保存
 });
 function askWhichSave(local, remote){
@@ -677,7 +678,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    await checkSeason(); await checkGifts(db); await checkBattles(); await checkItems();
+    queueProfile(true); await checkSeason(); await checkGifts(db); await checkBattles(); await checkItems();
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // シーズンの切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -1715,6 +1716,12 @@ function editName(){
     toast(online?`名前を「${v}」に変えました。次からはこの名前でログインしてね`:"名前を変えました");
   };
 }
+// 最後にログイン（プロフィールが更新）してからの時間で色マーク
+function seenMark(r){
+  if(r.id===MYID) return " 🟢";
+  const h=(Date.now()-(r.pub||0))/HOUR_MS;
+  return h<=1?" 🟢":h<=6?" 🟡":h<=24?" 🟠":h<=48?" 🟥":h<=72?" 🟣":"";
+}
 function renderRanking(segHtml){
   let body;
   if(!DB) body=loginBox("ランキングを見たり参加したりするには、ログインが必要です。");
@@ -1723,7 +1730,7 @@ function renderRanking(segHtml){
   else if(!RANK.length) body=`<div class="empty">まだ誰もいません</div>`;
   else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3?"top"+(i+1):""}" data-ri="${i}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
       <span class="rk-no">${i+1}</span>${avatarImg(r.icon,44)}
-      <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${esc(r.name||"名無しの召喚士")}${r.id===MYID?" <em>あなた</em>":""}</div>
+      <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${esc(r.name||"名無しの召喚士")}<span class="seen">${seenMark(r)}</span>${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>
         ${i<50&&r.comment?`<div class="rk-cmt">「${esc(r.comment)}」</div>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
@@ -1733,7 +1740,7 @@ function renderRanking(segHtml){
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">3日ごとの0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、プレイヤーレベルと勝率はリセットされます。</div></details></div>
-    <p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
+    <p class="sub" style="margin-bottom:4px">最後にログインしてから：🟢1時間以内 🟡6時間以内 🟠24時間以内 🟥2日以内 🟣3日以内</p><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>${body}`;
   $("#reRank").onclick=()=>{ RANK=null; render(); loadRanking(); };
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
@@ -2038,7 +2045,7 @@ function openOtherProfile(r,rank){
   const bg=sheet(`<div class="sheet-h"><h3>プロフィール</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
   <div class="prof">
     <div class="prof-top">${avatarImg(r.icon,88)}
-      <div class="prof-id"><div class="prof-name">${esc(r.name||"名無しの召喚士")}${r.id===MYID?` <span class="same">あなた</span>`:""}</div>
+      <div class="prof-id"><div class="prof-name">${esc(r.name||"名無しの召喚士")}<span class="seen">${seenMark(r)}</span>${r.id===MYID?` <span class="same">あなた</span>`:""}</div>
 </div>
       <div class="prof-rank"><small>ランキング</small><b>${rank}位</b></div></div>
     <div class="plv"><span>プレイヤー Lv</span><b>${esc(r.lv||1)}</b></div>
