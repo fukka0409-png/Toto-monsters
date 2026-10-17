@@ -635,7 +635,7 @@ function halveUnitLv(u){ const x=S.units.find(z=>z.u===u); if(x){ x.l=Math.max(1
 function addRecord(kind){ S.stats.win=S.stats.win||0; S.stats.lose=S.stats.lose||0; S.stats.draw=S.stats.draw||0; S.stats[kind]++; }
 const winRate=(w,l,d)=>{ const t=(w||0)+(l||0)+(d||0); return t?Math.round((w||0)/t*1000)/10+"%":"―"; };
 function dropPlayerLv(n){ const b=S.plv; S.plv=Math.max(1,S.plv-n); if(S.plv<b) S.pexp=0; return b-S.plv; }
-// 配置していない人には、配置できる魔物の中からランダムで自動配置。いなければ枠は空のまま
+// （今は使っていない）配置できる魔物の中からランダムで自動配置する関数。配置は任意なので呼んでいない
 const EMPTY_DECAY = 3;   // 枠が空のあいだ、1時間ごとに下がるプレイヤーレベル
 function autoGuard(){
   if(guardUnit()) return null;
@@ -645,7 +645,6 @@ function autoGuard(){
 function hourlyDecay(){
   fixGuard();
   if(S.guard) return;
-  const ag=autoGuard(); if(ag){ setTimeout(()=>toast(`${mon(ag.m).name}を自動で配置しました`),1200); if(typeof render==="function"&&tab==="dress") render(); return; }
   const h=Math.floor((Date.now()-S.decayAt)/HOUR_MS);
   if(h>0){ const d=dropPlayerLv(h*EMPTY_DECAY); S.decayAt+=h*HOUR_MS; save(); if(d) setTimeout(()=>toast(`魔物を配置していなかったので、レベルが ${d} 下がりました`),1200); }
 }
@@ -725,7 +724,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); autoGuard(); queueProfile(true); await checkSeason(); await checkGifts(db); await checkBattles(); await checkItems();
+    fixGuard(); queueProfile(true); await checkSeason(); await checkGifts(db); await checkBattles(); await checkItems();
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // シーズンの切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -785,7 +784,7 @@ function openNews(force){
       <p>・配置していた魔物はレベルが半分になり、24時間配置不可<br>・プレイヤーレベルが5下がります<br>・留守中に負けたときは、手持ちからランダムで別の魔物が自動で配置されます</p>
       <p>攻めた側でも守った側でも、負けたら同じです。</p>
       <h4>⏰ 配置しないと…</h4>
-      <p>配置していない人には、手持ちからランダムで魔物が自動で配置されます。配置できる魔物がいなくて枠が空のあいだは、1時間ごとにプレイヤーレベルが3ずつ下がります。</p>
+      <p>魔物の配置は自由です。ただし枠が空のあいだは、1時間ごとにプレイヤーレベルが3ずつ下がります。</p>
       <p class="news-end">強い魔物で守るか、それとも攻めるか…あなた次第！</p>
     </div>
     <button class="btn gold" id="nwOk" type="button">とじる</button>
@@ -1385,13 +1384,13 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-17d";
+const RULES_VER = "2026-10-17e";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
 // U(...) で囲んだところが「今回の更新で変わったところ」。NEWが付いている間だけ赤で目立たせる
-const RULES_TAG = "d";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
+const RULES_TAG = "e";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
 const U = (t, tag="c") => tag===RULES_TAG ? `<span class="upd">${t}</span>` : t;
 function openRules(){
   const fresh=rulesNew();
@@ -1402,7 +1401,7 @@ function openRules(){
     ["💰","コインの集め方",`<ul><li>毎日ボーナス：<b>${n(DAILY)}コイン</b>（1日1回）</li><li>15分ボーナス：<b>${HOURLY}コイン</b>（15分ごと）</li><li>1時間ボーナス：<b>${n(HOUR_BONUS)}コイン</b>（1時間ごと）</li><li>はじめて手に入れた魔物・アイコン枠：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手のプレイヤーLv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
     ["🎰","ガチャ（パック）",`<ul><li>魔物パック・アイコン枠パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 パックチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span>。出る確率は C ${RATES.C}%／B ${RATES.B}%／A ${RATES.A}%／S ${RATES.S}%／Z ${RATES.Z}%</li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b>（${GACHA_ITEMS.map(i=>i.name+" "+i.rate+"%").join("／")}）</li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
-    ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置していないと、手持ちから<b>ランダムで自動配置</b>される")}。好きな魔物に変えるのは自由！</li><li>${U("バトルで負けた魔物は<b>24時間「現在配置不可」</b>")}。</li><li>配置できる魔物がいなくて枠が空のあいだは、<b>1時間ごとにプレイヤーLv${U("−"+EMPTY_DECAY)}</b>。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
+    ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>24時間「現在配置不可」</b>")}。</li><li>${U("枠が空のあいだは","e")}<b>1時間ごとにプレイヤーLv−${EMPTY_DECAY}</b>。</li><li>留守中のバトルで負けて枠が空いたときだけ、手持ちからランダムで補充される。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手のプレイヤーLv分のコイン")}</b>、<b>${U("プレイヤーLv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("24時間配置不可")}</b>、<b>プレイヤーLv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、プレイヤーLv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 プレイヤー<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず「プレイヤーレベル○○くらいの冒険者」と伝わる。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手のプレイヤーLv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
     ["🏆","ランキングとシーズン",`<ul><li>プレイヤーレベルの高い順。名前の横の色は最後にログインした時間（🟢1時間 🟡6時間 🟠24時間 🔴2日 🟣3日以内）。</li><li>${U("毎日")}<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！")}</li><li>集計のあと<b>プレイヤーLvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
@@ -1496,11 +1495,11 @@ function openUnit(uid){
   <div class="row"><button class="btn" id="fuse" type="button" ${maxed?"disabled":""}>合成する</button>
   <button class="btn ghost" id="lock" type="button">${x.k?"🔓 鍵を外す":"🔒 鍵をかける"}</button></div>
   <div class="row"><button class="btn gold" id="awaken" type="button" ${inv("stone")?"":"disabled"}>💎 覚醒の石を合成（${inv("stone").toLocaleString()}個）</button></div>
-  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button" ${(isDown(x)&&S.guard!==x.u)||S.guard===x.u?"disabled":""}>${S.guard===x.u?"配置中":isDown(x)?`現在配置不可（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`:"プロフィールに配置する"}</button></div>
+  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button" ${isDown(x)&&S.guard!==x.u?"disabled":""}>${S.guard===x.u?"配置を外す":isDown(x)?`現在配置不可（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`:"プロフィールに配置する"}</button></div>
   <div class="row"><button class="btn ghost" id="sell" type="button" ${x.k?"disabled":""}>売却する（+${sellPrice(x).toLocaleString()}コイン）</button></div>
   <p class="note">保護した魔物は合成の素材に選ばれず、売却もできません。素材の経験値はレベルが高いほど増え、同じ魔物なら2倍。合成1回に50コイン必要で、合成1回で10コイン、Lvが10上がるごとに100コイン。最大Lv100（覚醒の石を合成すると、さらに上げられます）。ランクが高い魔物ほど、レベルアップに多くの経験値が必要です。</p>`);
   bg.querySelector("#lock").onclick=()=>{ x.k=!x.k; save(); render(); openUnit(uid); };
-  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ return; } else { if(isDown(x)) return toast(`${m.name}は現在配置不可です（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`); setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
+  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ clearGuard(); save(); toast(`配置を外しました。枠が空のあいだは1時間ごとにプレイヤーレベルが${EMPTY_DECAY}下がります`); } else { if(isDown(x)) return toast(`${m.name}は現在配置不可です（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`); setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
   bg.querySelector("#sell").onclick=()=>confirmSell([uid],()=>{ closeSheet(); render(); });
   bg.querySelector("#fuse").onclick=()=>openFuse(uid);
   const aw=bg.querySelector("#awaken"); if(aw) aw.onclick=()=>openAwaken(uid);
@@ -1742,7 +1741,7 @@ function guardBox(){
     <button class="chip" type="button" data-goto-box="1">変更する</button></div></div>`; }
   const left=HOUR_MS-((Date.now()-(S.decayAt||Date.now()))%HOUR_MS);
   return `<div class="guard-box warn"><div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物：なし</div>
-    <div class="note" style="margin:0;color:var(--berry)">配置できる魔物がいません。枠が空のあいだは、1時間ごとにプレイヤーレベルが${EMPTY_DECAY}下がります（次まで あと${Math.ceil(left/60000)}分）</div>
+    <div class="note" style="margin:0;color:var(--berry)">魔物を配置していません。枠が空のあいだは、1時間ごとにプレイヤーレベルが${EMPTY_DECAY}下がります（次まで あと${Math.ceil(left/60000)}分）</div>
     <button class="btn" type="button" data-goto-box="1">魔物を配置する</button></div></div>`;
 }
 document.addEventListener("click",e=>{ if(e.target.closest("[data-goto-box]")){ closeSheet(); tab="box"; boxMode="units"; render(); toast("配置したい魔物をタップして「プロフィールに配置する」"); } });
