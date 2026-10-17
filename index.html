@@ -1563,7 +1563,15 @@ const I18N_EN = {
 "特別イラスト「{0}」を手に入れた！アイコン作りとホームの魔物で使えます": "Got the special illustration \"{0}\"! Use it for icons and as your Home monster",
 "✨ 特別イラスト ✨": "✨ Special Illustration ✨",
 "アイコン作り（ランキング→アイコン）と、ホームの「魔物／装飾」変更で使えます": "Use it in icon making (Ranking → Icon) and in Home's \"Change Monster / Decor\"",
-"✨ {0}": "✨ {0}"
+"✨ {0}": "✨ {0}",
+"特別イラスト「{0}」を手に入れた！アイコン作りとホームの魔物で使えます。ランキングで相手をタップすると贈ることもできます（持っている数：{1}）": "Got the special illustration \"{0}\"! Use it for icons and as your Home monster. You can also gift it by tapping someone in the Ranking (you have: {1})",
+"🎁 特別イラストが届いた！": "🎁 A special illustration arrived!",
+"神から「{0}」が{1}届きました！": "\"{0}\" {1}arrived from God!",
+"アイコン作りとホームの魔物で使えます（持っている数：{0}）": "Use it for icons and as your Home monster (you have: {0})",
+"{0}枚": "×{0} ",
+"{0}さんに「{1}」が{2}枚届きます。あなたの持っている数は{3}枚へります。": "{0} will receive {2} \"{1}\". You'll have {3} fewer.",
+"贈れませんでした。少し時間をおいてためしてください": "Couldn't send it. Please try again in a bit",
+"{0}さんに「{1}」を{2}枚贈りました！": "Gifted {2} \"{1}\" to {0}!"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -1772,7 +1780,7 @@ const CODES = [
   { h: "bca2b41a2b25e137c83fee346af7bd1e0f52bd560583ca07a1b42f9944c5c50b", coins: 1000000 },  // 2026-10-16 追加
   { h: "ad3b0ddb5abf8ab440d6cec789cb373b42bb7ecb6fd9b666e924a0699a396344", item: "gift", qty: 30, repeat: true },
   { h: "f97eae9a567862f473cae21581786e18ccaba6af1ca1ff3169abd9f26d011461", coins: 50000, stone: 50 },  // 2026-10-17 追加「100人ありがとう」（1回だけ）
-  { h: "b69aa8ecc74fd7ff50dc344f0ac2fcea4d8665c2c55246d0e09371aa4bad5a7d", art: "usagi" },  // 2026-10-18 追加：特別イラスト「トランプの白うさぎ」（1人1回）
+  { h: "b69aa8ecc74fd7ff50dc344f0ac2fcea4d8665c2c55246d0e09371aa4bad5a7d", art: "usagi" },  // 2026-10-18 追加：特別イラスト「トランプの白うさぎ」（何回でも）
   { h: "d73e7060973e5bc18620b1162798db67e681c645d9522325354b4acbfb48543f", item: "ticket", qty: 50, repeat: true },  // ガチャチケット×50（何回でも）  // 何回でも使える
 ];
 const MAX_LV = 100;
@@ -3012,10 +3020,9 @@ function renderBonus(target){
     if(!c){ try{ const h2=await sha256(v.normalize("NFKC")); c=CODES.find(x=>x.h===h2); if(c) h=h2; }catch(err){} }
     if(!c) return say("呪文が違います。大文字・小文字も確かめてください",false);
     S.codes=S.codes||[];
-    if(c.art){ const x=ARTS.find(z=>z.k===c.art);
-      if(S.codes.includes(h)||(S.arts||{})[c.art]) return say("この呪文はもう使われています",false);
-      S.codes.push(h); S.arts=S.arts||{}; S.arts[c.art]=1; save(); $("#codeIn").value="";
-      say(`特別イラスト「${x.name}」を手に入れた！アイコン作りとホームの魔物で使えます`,true); SFX.reveal("S");
+    if(c.art){ const x=ARTS.find(z=>z.k===c.art);   // 何回でも使える。ランキングからほかの人に贈れる
+      S.arts=S.arts||{}; S.arts[c.art]=(S.arts[c.art]||0)+1; save(); $("#codeIn").value="";
+      say(`特別イラスト「${x.name}」を手に入れた！アイコン作りとホームの魔物で使えます。ランキングで相手をタップすると贈ることもできます（持っている数：${S.arts[c.art]}）`,true); SFX.reveal("S");
       const el=document.createElement("div"); el.className="reveal";
       el.innerHTML=`<div class="burst"></div><h3>✨ 特別イラスト ✨</h3><img src="${x.img}" alt="" style="width:min(72vw,320px);height:auto;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px"><b>${esc(x.name)}</b><br>アイコン作り（ランキング→アイコン）と、ホームの「魔物／装飾」変更で使えます</p><button class="btn gold" type="button">OK</button>`;
       document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); };
@@ -3949,7 +3956,8 @@ function itemBox(r){
   if(inFreeze() && r.id!==MYID) return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="note" style="margin:0">${FREEZE_TXT}</div></div>`;
   if(r.id===MYID) return inv("gift")?`<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="item-use"><button type="button" class="iu gift" data-selfgift="1"><img src="${itemOf("gift").img}" alt=""><b>神からの贈り物を自分に使う</b><small>×${inv("gift")}</small></button></div></div>`:"";
   const safe=(r.lv||1)<SAFE_LV;
-  const giftBtn=SENDABLE.filter(k=>inv(k)).map(k=>`<button type="button" class="iu gift" data-item="${k}" data-to="${esc(r.id)}"><img src="${itemOf(k).img}" alt=""><b>${itemOf(k).name}を贈る</b><small>×${inv(k).toLocaleString()}</small></button>`).join("");
+  const giftBtn=SENDABLE.filter(k=>inv(k)).map(k=>`<button type="button" class="iu gift" data-item="${k}" data-to="${esc(r.id)}"><img src="${itemOf(k).img}" alt=""><b>${itemOf(k).name}を贈る</b><small>×${inv(k).toLocaleString()}</small></button>`).join("")
+    + ownArts().map(x=>`<button type="button" class="iu gift" data-artgift="${x.k}" data-to="${esc(r.id)}"><img src="${x.img}" alt=""><b>${esc(x.name)}を贈る</b><small>×${(S.arts[x.k]||0).toLocaleString()}</small></button>`).join("");
   return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div>${giftBtn?`<div class="item-use" style="margin-bottom:6px">${giftBtn}</div>`:""}
     ${safe?`<div class="note" style="margin:0">🔰 Lv${SAFE_LV}になるまでは守られています（攻撃アイテムは使えません）</div>`:
     `<div class="item-use">${["magnet","fire","bomb"].map(k=>{ const i=itemOf(k), no=!inv(k)||(k==="fire"&&!r.gm);
@@ -3958,6 +3966,17 @@ function itemBox(r){
     ${ITEMS.every(i=>i.k==="stone"||!inv(i.k))?`<div class="note" style="margin:4px 0 0">アイテムはガチャの「アイテムガチャ」で手に入ります</div>`:""}`}</div>`;
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-item]"); if(b&&!b.disabled){ const r=findRank(b.dataset.to); if(r) confirmItem(r,b.dataset.item); } });
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-artgift]"); if(!b) return; const r=findRank(b.dataset.to), x=ARTS.find(z=>z.k===b.dataset.artgift); if(!r||!x) return;
+  if(inFreeze()) return toast(FREEZE_TXT);
+  const who=esc(r.name||"名無しの召喚士");
+  qtyDialog({img:x.img, title:`${who}さんに${esc(x.name)}を贈る`, max:S.arts[x.k]||0, ok:"贈る！",
+    desc:n=>`${who}さんに「${esc(x.name)}」が${n}枚届きます。あなたの持っている数は${n}枚へります。<br>相手には次にアプリを開いたときに届きます。`}, n=>sendArt(r,x,n)); });
+async function sendArt(r,x,n){
+  if(!DB||!MYID||(S.arts[x.k]||0)<n) return false;
+  try{ await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(r.name||"").slice(0,12), item:"art:"+x.k, qty:n, coins:0, at:gnow()})); }
+  catch(e){ toast("贈れませんでした。少し時間をおいてためしてください"); return false; }
+  S.arts[x.k]-=n; save(); closeSheet(); render(); SFX.coin(); toast(`${r.name||"名無しの召喚士"}さんに「${x.name}」を${n}枚贈りました！`); return true;
+}
 function confirmItem(r,k){
   if(inFreeze()) return toast(FREEZE_TXT);
   const i=itemOf(k), who=esc(r.name||"名無しの召喚士");
@@ -4042,8 +4061,11 @@ async function checkItems(){
     const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastItem||0)).concat(botItemQueue.splice(0)).sort((a,b)=>a.at-b.at);
     if(list.length){
       const msgs=[], gifts=[]; let lostLv=0, lostCoin=0, gCoins=0, gTickets=0;
+      const artGot={};
       for(const b of list){
         const who=anonWho(b);
+        if(isArt(b.item)){ const x=artOf(b.item), q=Math.max(1,Math.floor(b.qty||1)); if(x){ S.arts=S.arts||{}; S.arts[x.k]=(S.arts[x.k]||0)+q; artGot[x.k]=(artGot[x.k]||0)+q; }
+          S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(SENDABLE.includes(b.item)){ const q=Math.max(1,Math.floor(b.qty||1));
           if(b.item==="gift"){ S.coins+=GIFT_COIN*q; gCoins+=GIFT_COIN*q; } else { addItem("ticket",q); gTickets+=q; }
           gifts.push(who); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
@@ -4055,6 +4077,9 @@ async function checkItems(){
         if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at);
       }
       save(); render();
+      Object.entries(artGot).forEach(([k,q])=>{ const x=ARTS.find(z=>z.k===k); const g=document.createElement("div"); g.className="reveal";
+        g.innerHTML=`<div class="burst"></div><h3>🎁 特別イラストが届いた！</h3><img src="${x.img}" alt="" style="width:min(64vw,280px);height:auto;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">神から「${esc(x.name)}」が${q>1?q+"枚":""}届きました！<br>アイコン作りとホームの魔物で使えます（持っている数：${S.arts[k]}）</p><button class="btn gold" type="button">OK</button>`;
+        document.body.appendChild(g); SFX.reveal("S"); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; });
       if(gifts.length){ const g=document.createElement("div"); g.className="reveal";
         const names=[...new Set(gifts)];
         g.innerHTML=`<div class="burst"></div><h3>🎁 神からの贈り物が届いた！</h3><img src="${itemOf("gift").img}" alt="" class="iu-big">
