@@ -708,6 +708,7 @@ function openNews(force){
     <div class="news-body">
       <h4>🏆 毎日のシーズン</h4>
       <p>毎日0:00（日本時間）にランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
+      <p>⏰ 景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度ログインしておく必要があります。</p>
       <p>🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個</p>
       <p>⚔️ 勝率でも景品！（5戦以上）<br>勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個</p>
       <p>集計のあと、プレイヤーレベルと勝率はリセット。プロフィールには今までの最高順位が残ります。</p>
@@ -1740,7 +1741,8 @@ function renderRanking(segHtml){
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}<h2>ランキング</h2>
     <div class="season-box"><div><small>シーズン終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div>
-      <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
+      <div class="note" style="margin:2px 0 0;${S.lateSeen===seasonNow()?"color:var(--moss)":""}">${S.lateSeen===seasonNow()?"✅ 景品の受け取り条件クリア（終了前6時間以内にログイン済み）":"⏰ 景品をもらうには、18:00〜24:00に1度ログインしてね"}</div>
+      <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>⏰ <b>景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度ログインしておく必要があります。</b><br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、プレイヤーレベルと勝率はリセットされます。</div></details></div>
     <p class="sub" style="margin-bottom:4px">最後にログインしてから：🟢1時間以内 🟡6時間以内 🟠24時間以内 🔴2日以内 🟣3日以内</p><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
@@ -1870,6 +1872,12 @@ function seasonScore(p, s){
   if(!p.gm && p.pub){ const h=Math.floor((Math.min(Date.now(),seasonEnd(s))-p.pub)/HOUR_MS); if(h>0){ lv=Math.max(1,lv-h); exp=0; } }
   return lv*1e6+exp;
 }
+// 景品の条件：シーズン終了前の6時間以内に1度ログインしていること
+const LATE_MS = 6*HOUR_MS;
+const inLateWindow = () => Date.now() >= seasonEnd(seasonNow()) - LATE_MS;
+function markActive(){ if(inLateWindow() && S.lateSeen!==seasonNow()){ S.lateSeen=seasonNow(); save(); } }
+setTimeout(markActive,0); setInterval(markActive,60*1000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") markActive(); });
 let seasonBusy=false;
 async function checkSeason(){
   if(seasonBusy||!DB||!MYID) return;
@@ -1887,9 +1895,11 @@ async function checkSeason(){
     }
     const w=S.stats.win||0, l=S.stats.lose||0, dr=S.stats.draw||0, t=w+l+dr, wr=t?w/t*100:0;
     let coins=0, stones=0; const lines=[];
-    if(rank){ const pz=RANK_PRIZE[rank] || (rank<=10?RANK_PRIZE_10:null);
+    const eligible = S.lateSeen===old;
+    if(!eligible) lines.push("⏰ 終了前の6時間以内にログインしていなかったので、景品はもらえませんでした");
+    if(rank && eligible){ const pz=RANK_PRIZE[rank] || (rank<=10?RANK_PRIZE_10:null);
       if(pz){ coins+=pz.c; stones+=pz.st; lines.push(`🏆 ${rank}位の賞品：${pz.c.toLocaleString()}コイン＋覚醒の石${pz.st}個`); } }
-    if(t>=WR_MIN_BATTLES){ const wp=WR_PRIZE.find(([th])=>wr>=th);
+    if(eligible && t>=WR_MIN_BATTLES){ const wp=WR_PRIZE.find(([th])=>wr>=th);
       if(wp){ stones+=wp[1]; lines.push(`⚔️ 勝率${Math.round(wr*10)/10}%の賞品：覚醒の石${wp[1]}個`); } }
     if(rank){ if(!S.best||rank<S.best) S.best=rank; if(rank===1) S.firsts=(S.firsts||0)+1; }
     S.coins+=coins; if(stones) addItem("stone",stones);
@@ -1899,13 +1909,13 @@ async function checkSeason(){
     S.season=cur; Object.keys(S.sv).forEach(k=>{ if(+k<cur-3) delete S.sv[k]; });
     save(); queueProfile(true); render();
     const bg=document.createElement("div"); bg.className="reveal";
-    bg.innerHTML=`${rank&&rank<=3?'<div class="burst"></div>':""}<h3>シーズン終了！</h3>
+    bg.innerHTML=`${rank&&rank<=3&&eligible?'<div class="burst"></div>':""}<h3>シーズン終了！</h3>
       <p class="season-rank">${rank?`あなたの順位 <b>${rank}位</b>`:"順位の集計期間が過ぎていました"}</p>
       <p class="note" style="text-align:center;max-width:330px">プレイヤーLv${beforeLv} ・ 勝率 ${t?Math.round(wr*10)/10+"%":"―"}（${w}勝${l}敗${dr}分）<br><br>
-      ${lines.length?lines.join("<br>"):"今回は賞品はありませんでした"}<br><br>
+      ${coins||stones?"":(eligible?"今回は賞品はありませんでした<br>":"")}${lines.join("<br>")}<br><br>
       プレイヤーレベルと勝率がリセットされました。新しいシーズンのはじまり！<br>最高順位：<b>${bestText()}</b></p>
       <button class="btn gold" type="button">OK</button>`;
-    document.body.appendChild(bg); lines.length?SFX.reveal("S"):SFX.coin();
+    document.body.appendChild(bg); (coins||stones)?SFX.reveal("S"):SFX.coin();
     bg.querySelector(".btn").onclick=()=>{ bg.remove(); render(); };
   }catch(e){}
   seasonBusy=false;
