@@ -706,8 +706,8 @@ function openNews(force){
   bg.innerHTML=`<div class="swear news" role="dialog" aria-modal="true" aria-labelledby="nwT">
     <p id="nwT">🏆 シーズン制が始まりました！</p>
     <div class="news-body">
-      <h4>🏆 3日ごとのシーズン</h4>
-      <p>3日ごとの0:00（日本時間）にランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
+      <h4>🏆 毎日のシーズン</h4>
+      <p>毎日0:00（日本時間）にランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
       <p>🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個</p>
       <p>⚔️ 勝率でも景品！（5戦以上）<br>勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個</p>
       <p>集計のあと、プレイヤーレベルと勝率はリセット。プロフィールには今までの最高順位が残ります。</p>
@@ -1740,7 +1740,7 @@ function renderRanking(segHtml){
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}<h2>ランキング</h2>
     <div class="season-box"><div><small>シーズン終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div>
-      <details><summary>景品</summary><div class="note" style="margin:6px 0 0">3日ごとの0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
+      <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、プレイヤーレベルと勝率はリセットされます。</div></details></div>
     <p class="sub" style="margin-bottom:4px">最後にログインしてから：🟢1時間以内 🟡6時間以内 🟠24時間以内 🔴2日以内 🟣3日以内</p><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
@@ -1849,10 +1849,10 @@ function genBotEvents(){
   save();
   return out;
 }
-/* ---------- シーズン（3日ごと・日本時間0:00に集計） ----------
+/* ---------- シーズン（24時間ごと・日本時間0:00に集計） ----------
    最初のシーズンは 2026-10-17 0:00 〜 2026-10-20 0:00（日本時間）。
    次にアプリを開いたとき、前のシーズンの順位と勝率で景品を受け取り、プレイヤーレベルと勝率がリセットされる */
-const SEASON_DAYS = 3, SEASON_DAY0 = 20743;   // 20743 = 2026-10-17
+const SEASON_DAYS = 1, SEASON_DAY0 = 20743;   // 20743 = 2026-10-17
 const JST = 9*HOUR_MS, DAY_MS = 24*HOUR_MS;
 const seasonNow = () => Math.floor((Math.floor((Date.now()+JST)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);
 const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1))*DAY_MS - JST;
