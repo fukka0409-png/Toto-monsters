@@ -202,6 +202,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .prof-rank small{display:block;font-size:11px;color:var(--mist-dim)}
 .prof-rank b{font-family:var(--f-pix);font-weight:400;font-size:20px;color:var(--staff)}
 .plv{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.upd-bar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top,0px));z-index:90;display:flex;align-items:center;gap:10px;background:#1d2a24;border:2px solid var(--staff);color:#ffe9a8;font-weight:900;font-size:13px;padding:8px 10px 8px 14px;border-radius:14px;box-shadow:0 6px 18px #000a;white-space:nowrap}
+.upd-bar button{background:var(--staff);color:#3a2306;border:0;border-radius:10px;padding:6px 12px;font:inherit;font-weight:900}
 /* ホーム */
 .home{position:relative;margin:-4px max(-16px,calc(-1*env(safe-area-inset-left,0px) - 16px)) 0;height:calc(100dvh - 140px);min-height:540px;overflow:hidden;border-radius:0 0 18px 18px}
 .hm-bg{position:absolute;inset:0 0 34% 0;transition:background .3s}
@@ -714,26 +716,52 @@ function save(){
   if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(()=>{ remoteTimer=null; pushRemote(); }, 8000); }   // 書き込み回数を節約：操作が落ち着いてから8秒後にまとめて保存
 }
 let lastRemote = 0;   // 最後にサーバーと同じだった時の updated
-async function pushRemote(){
-  if(!remoteDoc || !remoteReady) return;
+/* ---------- 新しいバージョンのお知らせ ----------
+   サイトが更新されたら「更新する」ボタンを出す（古い画面のまま遊び続けないように） */
+let PAGE_TAG=null, updShown=false;
+async function checkUpdate(){
+  if(updShown || location.protocol==="file:") return;
   try{
-    // 別の端末で遊んだ記録があれば、上書きせずにそちらを読み込む
-    if(await pullRemote()) return;
-    S.owner = MYID;
-    await remoteDoc.set({json:JSON.stringify(S), updated:S.updated});
-    lastRemote = S.updated;
+    const r=await fetch(location.href.split("#")[0],{method:"HEAD",cache:"no-store"});
+    const t=r.headers.get("etag")||r.headers.get("last-modified"); if(!t) return;
+    if(!PAGE_TAG){ PAGE_TAG=t; return; }
+    if(t!==PAGE_TAG){ updShown=true; const b=document.createElement("div"); b.className="upd-bar"; b.setAttribute("role","alert");
+      b.innerHTML=`✨ 新しいバージョンがあります <button type="button">更新する</button>`;
+      b.querySelector("button").onclick=async()=>{ if(remoteTimer){ clearTimeout(remoteTimer); remoteTimer=null; await pushRemote(); } location.reload(); };
+      document.body.appendChild(b); }
   }catch(e){}
 }
-async function pullRemote(){
+setTimeout(checkUpdate,2000); setInterval(checkUpdate,5*60*1000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") checkUpdate(); });
+let pushing = null;   // 保存の通信中（その間は読み込みをしない：自分の保存を「別の端末の記録」と勘違いしないため）
+async function pushRemote(){
+  if(!remoteDoc || !remoteReady) return;
+  if(pushing) return pushing.then(()=>pushRemote());
+  pushing=(async()=>{
+    try{
+      // 別の端末でもっと新しい記録が保存されていれば、そちらを読み込む
+      if(await pullRemote(true)) return;
+      S.owner = MYID;
+      const u=S.updated, prev=lastRemote;
+      lastRemote=u;                       // 送る前に記録しておく（返事を待つ間の読み込みで勘違いしないように）
+      try{ await remoteDoc.set({json:JSON.stringify(S), updated:u}); }catch(e){ lastRemote=prev; }
+    }catch(e){}
+  })();
+  try{ await pushing; } finally { pushing=null; }
+}
+async function pullRemote(fromPush){
   if(!remoteDoc || !remoteReady) return false;
+  if(pushing && !fromPush) return false;
   try{
     const snap=await remoteDoc.get(); if(!snap.exists) return false;
-    const d=snap.data();
-    if((d.updated||0) > lastRemote){
+    const d=snap.data(), ru=d.updated||0;
+    if(ru > lastRemote){
+      // この端末でまだ送っていない、もっと新しい記録があるときは、この端末の記録を優先する
+      if((S.updated||0) > ru){ lastRemote=ru; return false; }
       const r=JSON.parse(d.json); if(!r || !Array.isArray(r.units)) return false;
-      S=r; fixPlayer(); fixGuard(); lastRemote=d.updated||0;
+      S=r; fixPlayer(); fixGuard(); lastRemote=ru;
       try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
-      render(); toast("別の端末で遊んだ記録を読み込みました"); return true;
+      render(); return true;              // 画面だけ静かに更新する（メッセージは出さない）
     }
   }catch(e){}
   return false;
@@ -1325,7 +1353,7 @@ setInterval(()=>{
   document.querySelectorAll("[data-shopcd]").forEach(el=>{ const l=shopLeft(el.dataset.shopcd); if(!l&&tab==="mission") return render(); el.textContent=fmt(l); });
   document.querySelectorAll("[data-mcd]").forEach(el=>{ el.textContent=fmt(missionLeft(+el.dataset.mcd)); });
 },1000);
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ tab=b.dataset.tab; render(); $("#stage").scrollTop=0; });
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ tab=b.dataset.tab; if(tab==="home") homeMode="scene"; render(); $("#stage").scrollTop=0; });
 
 function render(){
   renderCoins();
