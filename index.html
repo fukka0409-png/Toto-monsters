@@ -995,7 +995,7 @@ const I18N_EN = {
 "▲上昇中": "▲Rising",
 "▼下降中": "▼Falling",
 "▶上がったり下がったり": "▶Up and down",
-"毎日": "Tallied ",
+"毎日": "Ends daily at ",
 "景品は": "Prizes go only to players who log in ",
 "18:00〜24:00に1度ログイン": "Log in once between 18:00 and 24:00",
 "した人だけ！": "!",
@@ -1541,7 +1541,23 @@ const I18N_EN = {
 "🥇 投資先がシーズン1位 →": "🥇 Your pick finishes 1st →",
 "🥈 2位 →": "🥈 2nd →",
 "／ 🥉 3位 →": "/ 🥉 3rd →",
-"💸 4位以下 →": "💸 4th or lower →"
+"💸 4位以下 →": "💸 4th or lower →",
+"毎日22:00（日本時間）に終了。ランキングは、ログインしていない人の分も30分ごとに最新の状態に更新されます{0}": "Ends daily at 22:00 (JST). The ranking is refreshed every 30 minutes with everyone's latest state, including players who aren't logged in{0}",
+"（最終更新 {0}）": " (updated {0})",
+"毎日22:00（日本時間）に集計。次にアプリを開いたときに受け取れます。": "Tallied daily at 22:00 (JST). Claim them the next time you open the app.",
+"毎日22:00（日本時間）にランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。": "Every day at 22:00 (JST) the ranking is tallied and you get prizes based on your rank! Check the time left on the Ranking page.",
+"毎日22:00の": "Collect prizes at the daily 22:00 ",
+"22:00（日本時間）": "22:00 (JST)",
+"に終了": "",
+"ランキングは、ログインしていない人の分も30分ごとに最新の状態に更新される": "The ranking is refreshed every 30 minutes with everyone's latest state, including players who aren't logged in",
+"シーズン終了の10時間前＝12:00まで": "until 10 hours before the season ends = 12:00 JST",
+"前回のシーズン（22:00まで）の正式な順位です。": "Official ranks for last season (until 22:00).",
+"・投資できるのは毎日22:00〜翌12:00": "• You can invest daily from 22:00 to 12:00 the next day",
+"22:00に新しいシーズンが始まったら、また投資できます": "You can invest again when the new season starts at 22:00",
+"・投資できるのはシーズン終了の10時間前（12:00）まで": "• You can invest until 10 hours before the season ends (12:00 JST)",
+"結果はシーズン終了（毎日22:00）のあと、次にアプリを開いたときに反映されます。": "Results apply the next time you open the app after the season ends (daily at 22:00).",
+"{0}結果はシーズン終了（毎日22:00）のあと、次にアプリを開いたときに反映されます。": "{0}Results apply the next time you open the app after the season ends (daily at 22:00).",
+"。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、": ". Final ranks are decided with everyone's latest state (including battles and bombs while away), with"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -1612,6 +1628,14 @@ const T=s=>I18N?I18N.tr(s):s;   // コードの中で直接訳したいとき用
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+/* ---------- ゲームの時計 ----------
+   スマホの時計はずれていたり、自分で変えられたりするので、サーバー（GitHub）の時刻に合わせた「ゲーム時刻」を使う。
+   シーズン・ボーナス・バトルの時刻などは全部この時計で動く */
+let TIME_OFF = 0;
+try{ TIME_OFF = +(localStorage.getItem("toto-timeoff")||0) || 0; }catch(e){}
+const gnow = () => Date.now() + TIME_OFF;
+function syncClock(r){ const h=r&&r.headers&&r.headers.get("date"); const t=h?Date.parse(h):NaN; if(!isNaN(t)){ TIME_OFF=t+500-Date.now(); try{ localStorage.setItem("toto-timeoff",String(TIME_OFF)); }catch(e){} } }
+if(location.protocol!=="file:") fetch(location.href.split("#")[0],{method:"HEAD",cache:"no-store"}).then(syncClock).catch(()=>{});
 /* ---------- Firebase 設定 ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyBjjzCWo64fo9ofoeDiXyO2gSloqtq9Y9w",
@@ -1794,7 +1818,7 @@ const MISSION_MS = 24*60*60*1000;
 const KEY = "toto-monsters-save-v1";
 function fresh(){
   return {coins:0, lastDaily:"", units:[{u:1,m:START_MONSTER,l:1,e:0,s:0,g:0,k:true}], nextUid:2,
-          got:{[START_MONSTER]:1}, frames:{}, lastHourly:0, codes:[], dress:{m:START_MONSTER,f:0,bg:0,zoom:100,y:0}, updated:Date.now()};
+          got:{[START_MONSTER]:1}, frames:{}, lastHourly:0, codes:[], dress:{m:START_MONSTER,f:0,bg:0,zoom:100,y:0}, updated:gnow()};
 }
 let S;
 try{ S = JSON.parse(localStorage.getItem(KEY)) }catch(e){}
@@ -1818,7 +1842,7 @@ const dayNum = d => Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate(
 let decayNote = 0;
 function applyLoginDecay(){
   fixPlayer();
-  const today=dayNum(new Date());
+  const today=dayNum(new Date(gnow()));
   if(S.lastLogin && today>S.lastLogin){
     const missed=today-S.lastLogin-1;
     if(missed>0){ const before=S.plv; S.plv=Math.max(1,S.plv-2*missed); if(S.plv<before){ S.pexp=0; decayNote=before-S.plv; } }
@@ -1836,20 +1860,20 @@ applyLoginDecay();
 const HOUR_MS = 60*60*1000, LOSE_LV = 5, DRAW_LV = 3, SAFE_LV = 10;   // 冒険者Lv10になるまでは攻撃されない
 function fixGuard(){ fixDownTime();
   if(S.guard && !S.units.some(z=>z.u===S.guard)) S.guard=null;
-  if(!S.guard && !S.decayAt) S.decayAt=Date.now();
+  if(!S.guard && !S.decayAt) S.decayAt=gnow();
   S.attacks=S.attacks||{}; S.lastBattle=S.lastBattle||0;
 }
 const guardUnit=()=>S.guard?S.units.find(z=>z.u===S.guard)||null:null;
 function setGuard(u){ S.guard=u; S.decayAt=0; save(); }
-function clearGuard(){ S.guard=null; S.decayAt=Date.now(); }
+function clearGuard(){ S.guard=null; S.decayAt=gnow(); }
 const WIN_BASE = 500, DOWN_MS = 2*HOUR_MS;   // 勝利報酬：500コイン＋相手の冒険者Lv分のコイン、冒険者Lv+1 ／ 負けた魔物は2時間休み
-const isDown = x => !!(x && x.down && x.down > Date.now());
+const isDown = x => !!(x && x.down && x.down > gnow());
 // 2026-10-17：配置不可を24時間→2時間に短縮。いま配置不可の魔物も、負けてから2時間たっていれば解除
-function fixDownTime(){ if(S.downFix) return; (S.units||[]).forEach(x=>{ if(x.down) x.down=Math.min(x.down, x.down-24*HOUR_MS+DOWN_MS); if(x.down&&x.down<=Date.now()) delete x.down; }); S.downFix=1; }
+function fixDownTime(){ if(S.downFix) return; (S.units||[]).forEach(x=>{ if(x.down) x.down=Math.min(x.down, x.down-24*HOUR_MS+DOWN_MS); if(x.down&&x.down<=gnow()) delete x.down; }); S.downFix=1; }
 // 負けた魔物：レベルが半分になり、2時間配置できない。配置していた場合は枠が空になる（自動補充はしない）
 function defeatUnit(u){
   const x=S.units.find(z=>z.u===u); if(!x) return {x:null};
-  x.l=Math.max(1,Math.ceil(x.l/2)); x.e=0; x.down=Date.now()+DOWN_MS;
+  x.l=Math.max(1,Math.ceil(x.l/2)); x.e=0; x.down=gnow()+DOWN_MS;
   let repl=null;
   if(S.guard===u) clearGuard();
   return {x, repl};
@@ -1876,9 +1900,9 @@ function autoGuard(){
 function hourlyDecay(){
   fixGuard();
   if(S.guard) return;
-  const n=Math.floor((Date.now()-S.decayAt)/EMPTY_STEP_MS);
+  const n=Math.floor((gnow()-S.decayAt)/EMPTY_STEP_MS);
   if(n>0){
-    S.emptyLog=(S.emptyLog||[]).filter(t=>t>Date.now()-2*DAY_MS_);
+    S.emptyLog=(S.emptyLog||[]).filter(t=>t>gnow()-2*DAY_MS_);
     let drop=0;
     for(let i=1;i<=Math.min(n,48*30);i++){ const t=S.decayAt+i*EMPTY_STEP_MS;
       if(S.emptyLog.filter(x=>x>t-DAY_MS_).length<EMPTY_MAX_DAY){ S.emptyLog.push(t); drop++; } }
@@ -1895,17 +1919,17 @@ const TREND_MS = 3*HOUR_MS;
 function trackLv(){
   if(!S.maxPlv || S.plv>S.maxPlv) S.maxPlv=S.plv;   // 今までの最高冒険者レベル（シーズンでリセットされない）
   if(S._lastLv==null){ S._lastLv=S.plv; return; }
-  if(S.plv!==S._lastLv){ S.lvHist=(S.lvHist||[]).concat({t:Date.now(), d:Math.sign(S.plv-S._lastLv)}).slice(-20); S._lastLv=S.plv; }
+  if(S.plv!==S._lastLv){ S.lvHist=(S.lvHist||[]).concat({t:gnow(), d:Math.sign(S.plv-S._lastLv)}).slice(-20); S._lastLv=S.plv; }
 }
 function myTrend(){
-  const h=(S.lvHist||[]).filter(x=>Date.now()-x.t<TREND_MS);
+  const h=(S.lvHist||[]).filter(x=>gnow()-x.t<TREND_MS);
   const up=h.some(x=>x.d>0), dn=h.some(x=>x.d<0);
   return up&&dn?"mix":up?"up":dn?"down":"";
 }
 const TREND_ICON = { up:'<span class="tr up" title="上昇中">▲</span>', down:'<span class="tr down" title="下降中">▼</span>', mix:'<span class="tr mix" title="上がったり下がったり">▶</span>' };
 function save(){
   trackLv();
-  S.updated = Date.now(); queueProfile();
+  S.updated = gnow(); queueProfile();
   try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
   if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(()=>{ remoteTimer=null; pushRemote(); }, 8000); }   // 書き込み回数を節約：操作が落ち着いてから8秒後にまとめて保存
 }
@@ -1916,7 +1940,7 @@ let PAGE_TAG=null, updShown=false;
 async function checkUpdate(){
   if(updShown || location.protocol==="file:") return;
   try{
-    const r=await fetch(location.href.split("#")[0],{method:"HEAD",cache:"no-store"});
+    const r=await fetch(location.href.split("#")[0],{method:"HEAD",cache:"no-store"}); syncClock(r);
     const t=r.headers.get("etag")||r.headers.get("last-modified"); if(!t) return;
     if(!PAGE_TAG){ PAGE_TAG=t; return; }
     if(t!==PAGE_TAG){ updShown=true; const b=document.createElement("div"); b.className="upd-bar"; b.setAttribute("role","alert");
@@ -2035,8 +2059,7 @@ function openNews(force){
       <p>🔄 負けた魔物は配置から外れて、枠が空になります。別の魔物を配置し直してね。</p>
       <p>⚔️ 相手の配置魔物が変われば、同じ相手とまた戦えます。</p>
       <h4 style="margin-top:18px">🏆 毎日のシーズン</h4>
-      <p>毎日0:00（日本時間）にランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
-      <p>⏰ 景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度、さらに終了前の1時間以内（23:00〜24:00）に1度ログインしておく必要があります。</p>
+      <p>毎日22:00（日本時間）にランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
       <p>🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個</p>
       <p>⚔️ 勝率でも景品！（5戦以上）<br>勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個</p>
       <p>集計のあと、冒険者レベルと勝率はリセット。プロフィールには今までの最高順位が残ります。</p>
@@ -2111,7 +2134,7 @@ function openLogin(mode){
           const taken=await FDB.doc("names/"+k).get();
           if(taken.exists){ go.disabled=false; draw(); return bg.querySelector("#lgMsg").textContent="その名前はもう使われています。別の名前にしてください"; }
           const cred=await FBA.createUserWithEmailAndPassword(authEmail(k),authPass(pin));
-          await FDB.doc("names/"+k).set({uid:cred.user.uid, name, at:Date.now()});
+          await FDB.doc("names/"+k).set({uid:cred.user.uid, name, at:gnow()});
           LOGIN_NAME=name; S.name=name; save();
           toast(`ようこそ、${name}さん！`);
         } else {
@@ -2149,7 +2172,7 @@ async function setupNumber(db,id){
     if(S.userNo){
       const own=await db.doc("numbers/"+S.userNo).get();
       if(own.exists && own.data().uid===id){ numberState="ok"; return; }
-      if(!own.exists){ try{ await db.doc("numbers/"+S.userNo).set({uid:id, at:Date.now()}); numberState="ok"; return; }catch(e){} }
+      if(!own.exists){ try{ await db.doc("numbers/"+S.userNo).set({uid:id, at:gnow()}); numberState="ok"; return; }catch(e){} }
       S.userNo=0;
     }
     let h=0; for(const ch of id){ h=(Math.imul(h,31)+ch.charCodeAt(0))|0; }
@@ -2158,7 +2181,7 @@ async function setupNumber(db,id){
       const slot=db.doc("numbers/"+n);
       const snap=await slot.get();
       if(snap.exists){ if(snap.data().uid===id){ S.userNo=n; break; } continue; }
-      try{ await slot.set({uid:id, at:Date.now()}); }catch(e){ continue; }
+      try{ await slot.set({uid:id, at:gnow()}); }catch(e){ continue; }
       S.userNo=n; break;
     }
     if(S.userNo){ save(); queueProfile(true); numberState="ok"; if(tab==="mission") render(); return; }
@@ -2507,12 +2530,12 @@ renderSnd();
 /* ---------- UI ---------- */
 const $ = s=>document.querySelector(s);
 let tab="home", homeMode="scene", gachaMode="mon", dexMode="mon", boxFilter="all", boxMode="units";
-const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
+const today=()=>{const d=new Date(gnow());return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
 function toast(t){ document.querySelectorAll(".toast").forEach(x=>x.remove()); const el=document.createElement("div"); el.className="toast"; el.textContent=t; el.setAttribute("role","status"); document.body.appendChild(el); setTimeout(()=>el.remove(),2200); }
 const dailyReady=()=>S.lastDaily!==today();
-const hourlyLeft=()=>Math.max(0,(S.lastHourly||0)+HOURLY_MS-Date.now());
+const hourlyLeft=()=>Math.max(0,(S.lastHourly||0)+HOURLY_MS-gnow());
 const HOUR_BONUS = 1000, HOUR_BONUS_MS = 60*60*1000;   // 1時間ボーナス
-const hour1Left=()=>Math.max(0,(S.lastHour1||0)+HOUR_BONUS_MS-Date.now());
+const hour1Left=()=>Math.max(0,(S.lastHour1||0)+HOUR_BONUS_MS-gnow());
 const UNIT_WARN = 1000;   // 手持ちがこの数を超えたら注意を出す（一度出したら次は24時間後）
 const WARN_KEY="toto-unit-warn-at"; let warnOpen=false;
 function updateUnitWarn(){
@@ -2520,7 +2543,7 @@ function updateUnitWarn(){
   if(S.units.length <= UNIT_WARN){ warnOpen=false; w.hidden=true; return; }
   if(!warnOpen){
     let last=0; try{ last=+localStorage.getItem(WARN_KEY)||0; }catch(e){}
-    if(Date.now()-last >= 24*60*60*1000){ warnOpen=true; try{ localStorage.setItem(WARN_KEY,String(Date.now())); }catch(e){} }
+    if(gnow()-last >= 24*60*60*1000){ warnOpen=true; try{ localStorage.setItem(WARN_KEY,String(gnow())); }catch(e){} }
   }
   w.hidden=!warnOpen;
 }
@@ -2533,24 +2556,24 @@ function renderCoins(){
   document.querySelector('.tabs button[data-tab="mission"]').classList.toggle("dot",ready||MISSIONS.some((_,i)=>missionLeft(i)===0));
 }
 function claimDaily(){ if(!dailyReady()) return; S.lastDaily=today(); S.coins+=DAILY; save(); SFX.coin(); toast(`毎日ボーナス +${DAILY}コイン`); render(); }
-function claimHour1(){ if(hour1Left()>0) return; S.lastHour1=Date.now(); S.coins+=HOUR_BONUS; save(); SFX.coin(); toast(`1時間ボーナス +${HOUR_BONUS.toLocaleString()}コイン`); render(); }
-function claimHourly(){ if(hourlyLeft()>0) return; S.lastHourly=Date.now(); S.coins+=HOURLY; save(); SFX.coin(); toast(`15分ボーナス +${HOURLY}コイン`); render(); }
+function claimHour1(){ if(hour1Left()>0) return; S.lastHour1=gnow(); S.coins+=HOUR_BONUS; save(); SFX.coin(); toast(`1時間ボーナス +${HOUR_BONUS.toLocaleString()}コイン`); render(); }
+function claimHourly(){ if(hourlyLeft()>0) return; S.lastHourly=gnow(); S.coins+=HOURLY; save(); SFX.coin(); toast(`15分ボーナス +${HOURLY}コイン`); render(); }
 $("#bonusBtn").onclick=()=>{ tab="mission"; render(); const sec=$("#shopSec"); if(sec) sec.scrollIntoView({block:"start"}); };
 const fmt=ms=>{const t=Math.ceil(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`};
 let wasReady=null, wasMission=null;
-const missionLeft=i=>Math.max(0,((S.missions||{})[i]||0)+MISSION_MS-Date.now());
+const missionLeft=i=>Math.max(0,((S.missions||{})[i]||0)+MISSION_MS-gnow());
 setInterval(()=>{
   const left=hourlyLeft(), l1=hour1Left(), r=left===0||l1===0||dailyReady();
   const mr=MISSIONS.map((_,i)=>missionLeft(i)===0).join();
   if(r!==wasReady || mr!==wasMission){ const changed=wasReady!==null; wasReady=r; wasMission=mr; renderCoins(); if(changed && tab==="mission") return render(); }
   const cd=$("#hourlyCd"); if(cd) cd.firstChild.textContent=fmt(left);
   const cd1=$("#hour1Cd"); if(cd1) cd1.firstChild.textContent=fmt(l1);
-  const sc=$("#seasonCd"); if(sc) sc.textContent=fmtDays(seasonEnd(seasonNow())-Date.now());
-  const ic=$("#invCd"); if(ic) ic.textContent=fmtDays(seasonEnd(seasonNow())-Date.now());
+  const sc=$("#seasonCd"); if(sc) sc.textContent=fmtDays(seasonEnd(seasonNow())-gnow());
+  const ic=$("#invCd"); if(ic) ic.textContent=fmtDays(seasonEnd(seasonNow())-gnow());
   markActive();
   if(DB && MYID && S.season!=null && S.season<seasonNow() && !inFreeze() && !seasonBusy) checkSeason();
   const fz=$("#freezeCd"); if(fz){ if(inFreeze()) fz.textContent=fmt(freezeLeft()); else if(tab==="rank") render(); }
-  const io=$("#invOpenCd"); if(io){ const left=seasonEnd(seasonNow())-INV_CLOSE_MS-Date.now(); if(left<=0&&tab==="home"&&homeMode==="invest"){ closeSheet(); render(); } else io.textContent=fmtDays(left); }
+  const io=$("#invOpenCd"); if(io){ const left=seasonEnd(seasonNow())-INV_CLOSE_MS-gnow(); if(left<=0&&tab==="home"&&homeMode==="invest"){ closeSheet(); render(); } else io.textContent=fmtDays(left); }
   document.querySelectorAll("[data-shopcd]").forEach(el=>{ const l=shopLeft(el.dataset.shopcd); if(!l&&tab==="mission") return render(); el.textContent=fmt(l); });
   document.querySelectorAll("[data-mcd]").forEach(el=>{ el.textContent=fmt(missionLeft(+el.dataset.mcd)); });
 },1000);
@@ -2615,10 +2638,10 @@ function renderGacha(){
   ["mon","frame","item","deco"].forEach(k=>{ const t=$("#tk-"+k); if(t) t.onclick=()=>PULL[k](0,true); });
   const db=$("#dailyBig"); if(db) db.onclick=claimDaily;
   const c1=$("#cvMon").getContext("2d"); if(IMG[1]) c1.drawImage(IMG[1],6,6,188,188);
-  const c2=$("#cvFrame").getContext("2d"), fid=FRAMES[(Math.floor(Date.now()/1000)%10)*10+9-1].id, ir=200*FRAME_IN;
+  const c2=$("#cvFrame").getContext("2d"), fid=FRAMES[(Math.floor(gnow()/1000)%10)*10+9-1].id, ir=200*FRAME_IN;
   c2.fillStyle="#2f4a40"; c2.beginPath(); c2.arc(100,100,ir,0,7); c2.fill(); c2.save(); c2.beginPath(); c2.arc(100,100,ir,0,7); c2.clip();
   if(IMG[1]) c2.drawImage(IMG[1],100-ir,100-ir,ir*2,ir*2); c2.restore(); drawFrame(c2,fid,200);
-  const c3=$("#cvDeco").getContext("2d"), pv=new Image(); pv.onload=()=>{ c3.save(); c3.beginPath(); c3.roundRect?c3.roundRect(10,10,180,180,18):c3.rect(10,10,180,180); c3.clip(); c3.drawImage(pv,10,10,180,180); c3.restore(); }; const bgs=HOME_BG.filter(x=>!x.free); pv.src=homeThumb("bg",bgs[Math.floor(Date.now()/4000)%bgs.length].k);
+  const c3=$("#cvDeco").getContext("2d"), pv=new Image(); pv.onload=()=>{ c3.save(); c3.beginPath(); c3.roundRect?c3.roundRect(10,10,180,180,18):c3.rect(10,10,180,180); c3.clip(); c3.drawImage(pv,10,10,180,180); c3.restore(); }; const bgs=HOME_BG.filter(x=>!x.free); pv.src=homeThumb("bg",bgs[Math.floor(gnow()/4000)%bgs.length].k);
 }
 
 function sortedUnits(){
@@ -2692,28 +2715,28 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-17o";
+const RULES_VER = "2026-10-18p";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
 // U(...) で囲んだところが「今回の更新で変わったところ」。NEWが付いている間だけ赤で目立たせる
-const RULES_TAG = "o";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
+const RULES_TAG = "p";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
 const U = (t, tag="c") => tag===RULES_TAG ? `<span class="upd">${t}</span>` : t;
 function openRules(){
   const fresh=rulesNew();
   try{ localStorage.setItem(RULES_KEY,RULES_VER); }catch(e){}
   const n=v=>Number(v).toLocaleString();
   const secs=[
-    ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>毎日0:00の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
+    ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>毎日22:00の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
     ["💰","コインの集め方",`<ul><li>毎日ボーナス：<b>${n(DAILY)}コイン</b>（1日1回）</li><li>15分ボーナス：<b>${HOURLY}コイン</b>（15分ごと）</li><li>1時間ボーナス：<b>${n(HOUR_BONUS)}コイン</b>（1時間ごと）</li><li>はじめて手に入れた魔物・アイコン枠：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
     ["🎰","ガチャ（パック）",`<ul><li>魔物パック・アイコン枠パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span>。出る確率は C ${RATES.C}%／B ${RATES.B}%／A ${RATES.A}%／S ${RATES.S}%／Z ${RATES.Z}%</li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b>（${GACHA_ITEMS.map(i=>i.name+" "+i.rate+"%").join("／")}）</li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>2時間「現在配置不可」</b>","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（24時間で最大10レベルまで）","j")}。</li><li>${U("バトルで負けると枠が空になる（自動では補充されない）。別の魔物を配置し直そう","f")}</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>冒険者Lv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
-    ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に終了。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度</b>、さらに<b>23:00〜24:00に1度ログイン</b>した人だけ！達成しないと、1〜3位でも<b>ランキング外（11位以下）あつかい</b>になり、その人への投資は「4位以下」になる","o")}</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
-    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・<b>シーズン終了の10時間前＝14:00まで</b>）。</li><li>シーズン終了時の投資先の順位で：<b>1位 5倍</b>もらえる／<b>2位 3倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"n")],
+    ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も30分ごとに最新の状態に更新される","p")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
+    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・<b>シーズン終了の10時間前＝12:00まで</b>）。</li><li>シーズン終了時の投資先の順位で：<b>1位 5倍</b>もらえる／<b>2位 3倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"n")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
@@ -2781,11 +2804,11 @@ function openUnit(uid){
   <div class="row"><button class="btn" id="fuse" type="button" ${maxed?"disabled":""}>合成する</button>
   <button class="btn ghost" id="lock" type="button">${x.k?"🔓 鍵を外す":"🔒 鍵をかける"}</button></div>
   <div class="row"><button class="btn gold" id="awaken" type="button" ${inv("stone")?"":"disabled"}>💎 覚醒の石を合成（${inv("stone").toLocaleString()}個）</button></div>
-  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button" ${isDown(x)&&S.guard!==x.u?"disabled":""}>${S.guard===x.u?"配置を外す":isDown(x)?`現在配置不可（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`:"プロフィールに配置する"}</button></div>
+  <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button" ${isDown(x)&&S.guard!==x.u?"disabled":""}>${S.guard===x.u?"配置を外す":isDown(x)?`現在配置不可（あと${Math.ceil((x.down-gnow())/HOUR_MS)}時間）`:"プロフィールに配置する"}</button></div>
   <div class="row"><button class="btn ghost" id="sell" type="button" ${x.k?"disabled":""}>売却する（+${sellPrice(x).toLocaleString()}コイン）</button></div>
   <p class="note">保護した魔物は合成の素材に選ばれず、売却もできません。素材の経験値はレベルが高いほど増え、同じ魔物なら2倍。合成1回に50コイン必要で、合成1回で10コイン、Lvが10上がるごとに100コイン。最大Lv100（覚醒の石を合成すると、さらに上げられます）。ランクが高い魔物ほど、レベルアップに多くの経験値が必要です。</p>`);
   bg.querySelector("#lock").onclick=()=>{ x.k=!x.k; save(); render(); openUnit(uid); };
-  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ clearGuard(); save(); toast(`配置を外しました。枠が空のあいだは${EMPTY_TXT}`); } else { if(isDown(x)) return toast(`${m.name}は現在配置不可です（あと${Math.ceil((x.down-Date.now())/HOUR_MS)}時間）`); setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
+  bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ clearGuard(); save(); toast(`配置を外しました。枠が空のあいだは${EMPTY_TXT}`); } else { if(isDown(x)) return toast(`${m.name}は現在配置不可です（あと${Math.ceil((x.down-gnow())/HOUR_MS)}時間）`); setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
   bg.querySelector("#sell").onclick=()=>confirmSell([uid],()=>{ closeSheet(); render(); });
   bg.querySelector("#fuse").onclick=()=>openFuse(uid);
   const aw=bg.querySelector("#awaken"); if(aw) aw.onclick=()=>openAwaken(uid);
@@ -2868,24 +2891,24 @@ const SHOPS = [
 ];
 const SHOP_REWARD = 500, SHOP_CD = 3*HOUR_MS, SHOP_STAY = 10000;   // 10秒以上で500コイン
 const SHOP_BIG_STAY = 30000, SHOP_BIG_REWARD = 2000;                  // 30秒以上で2000コイン
-const shopLeft = k => Math.max(0, ((S.shopAt||{})[k]||0) + SHOP_CD - Date.now());
+const shopLeft = k => Math.max(0, ((S.shopAt||{})[k]||0) + SHOP_CD - gnow());
 let shopVisit = null;   // {k, at, hiddenAt}
 document.addEventListener("click",e=>{ const a=e.target.closest("[data-shop]"); if(!a) return;
   const k=a.dataset.shop; if(shopLeft(k)>0) return;
-  shopVisit={k, at:Date.now(), hiddenAt:0}; try{ localStorage.setItem("toto-shop-visit",JSON.stringify(shopVisit)); }catch(err){} });
+  shopVisit={k, at:gnow(), hiddenAt:0}; try{ localStorage.setItem("toto-shop-visit",JSON.stringify(shopVisit)); }catch(err){} });
 document.addEventListener("visibilitychange",()=>{
   if(!shopVisit) return;
-  if(document.visibilityState==="hidden"){ shopVisit.hiddenAt=shopVisit.hiddenAt||Date.now(); return; }
+  if(document.visibilityState==="hidden"){ shopVisit.hiddenAt=shopVisit.hiddenAt||gnow(); return; }
   finishShopVisit();
 });
-window.addEventListener("focus",()=>{ if(shopVisit && Date.now()-shopVisit.at>500) finishShopVisit(); });
+window.addEventListener("focus",()=>{ if(shopVisit && gnow()-shopVisit.at>500) finishShopVisit(); });
 function finishShopVisit(){
   const v=shopVisit; shopVisit=null; try{ localStorage.removeItem("toto-shop-visit"); }catch(err){}
   if(!v||shopLeft(v.k)>0) return;
-  const stayed=Date.now()-(v.hiddenAt||v.at);
+  const stayed=gnow()-(v.hiddenAt||v.at);
   if(stayed<SHOP_STAY) return toast(`ショップを${SHOP_STAY/1000}秒以上見ると報酬がもらえます`);
   const big=stayed>=SHOP_BIG_STAY, got=big?SHOP_BIG_REWARD:SHOP_REWARD;
-  S.shopAt=S.shopAt||{}; S.shopAt[v.k]=Date.now(); S.coins+=got; save(); renderCoins(); SFX.coin();
+  S.shopAt=S.shopAt||{}; S.shopAt[v.k]=gnow(); S.coins+=got; save(); renderCoins(); SFX.coin();
   if(tab==="mission") render();
   if(big){ const el=document.createElement("div"); el.className="reveal";
     el.innerHTML=`<div class="burst"></div><h3>😎</h3><p class="note" style="text-align:center;max-width:320px;font-size:16px">すごい！沢山見てくれたから気持ち多めに報酬を付与しよう😎<br><br><b style="color:var(--staff);font-size:22px">+${got.toLocaleString()}コイン</b></p><button class="btn gold" type="button">ありがとう！</button>`;
@@ -2893,7 +2916,7 @@ function finishShopVisit(){
   else toast(`ショップ報酬 +${got.toLocaleString()}コイン！`);
 }
 // ページが開き直された場合（iPhoneで戻ったときなど）
-try{ const v=JSON.parse(localStorage.getItem("toto-shop-visit")||"null"); if(v&&Date.now()-v.at<6*HOUR_MS){ shopVisit=v; setTimeout(finishShopVisit,1500); } else localStorage.removeItem("toto-shop-visit"); }catch(err){}
+try{ const v=JSON.parse(localStorage.getItem("toto-shop-visit")||"null"); if(v&&gnow()-v.at<6*HOUR_MS){ shopVisit=v; setTimeout(finishShopVisit,1500); } else localStorage.removeItem("toto-shop-visit"); }catch(err){}
 function renderMission(){
   const done=MISSIONS.filter((_,i)=>missionLeft(i)>0).length;
   $("#stage").innerHTML=`<h2>ミッション</h2>${!MISSIONS.length?"":`<p class="sub">達成したら「達成」を押してね。それぞれ1日1回、クリアから24時間でまた挑戦できます。</p>
@@ -2918,7 +2941,7 @@ function confirmMission(i){
   bg.onclick=e=>{ if(e.target===bg) close(); };
   bg.querySelector("#swearNo").onclick=close;
   bg.querySelector("#swearOk").onclick=()=>{ close(); if(missionLeft(i)>0) return;
-    S.missions=S.missions||{}; S.missions[i]=Date.now(); S.stats.missions=(S.stats.missions||0)+1; S.coins+=MISSIONS[i].coins; save(); SFX.coin();
+    S.missions=S.missions||{}; S.missions[i]=gnow(); S.stats.missions=(S.stats.missions||0)+1; S.coins+=MISSIONS[i].coins; save(); SFX.coin();
     toast(`ミッションクリア！ +${MISSIONS[i].coins}コイン`); render(); };
   bg.querySelector("#swearOk").focus();
 }
@@ -2999,7 +3022,7 @@ function profilePayload(){
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:MONSTERS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, pub:Date.now() };
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, pub:gnow() };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -3013,8 +3036,9 @@ async function loadRanking(){
   if(!DB) return;
   try{
     const q=await DB.collection("profiles").orderBy("score","desc").limit(200).get();
-    const now=Date.now();
-    RANK=q.docs.map(d=>normRank({id:d.id,...d.data()},now)).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
+    const now=gnow();
+    await loadSeasonEvents(seasonNow(), true);
+    RANK=q.docs.map(d=>liveAdjust(normRank({id:d.id,...d.data()},now))).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
     else { const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
@@ -3026,7 +3050,7 @@ async function loadRanking(){
   if(tab==="rank"||tab==="home") render();
 }
 // ランキング表示用に、シーズンや空枠の状態を反映する
-function normRank(r,now=Date.now()){
+function normRank(r,now=gnow()){
       if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
       else if((r.ss??0)<seasonNow()){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新シーズンを開いていない人はリセット後の状態で表示
       else if(!r.gm && r.ge && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-emptyDropFor(now-r.pub)); r.exp=0; r.tr=r.tr==="up"||r.tr==="mix"?"mix":"down"; } }
@@ -3282,7 +3306,7 @@ function pullDeco(n, ticket){
    投資した自分が3位以内に入ったら、その時点で投資は無効（投資した分は戻らない）
    投資された人は、シーズン終了時に投資額の合計の10%をもらえる */
 const INV_MUL = {1:5, 2:3, 3:2}, INV_LOSE = 10, INV_GIVE = 0.1;
-const INV_CLOSE_MS = 10*HOUR_MS;   // 投資できるのはシーズン終了の10時間前（14:00）まで
+const INV_CLOSE_MS = 10*HOUR_MS;   // 投資できるのはシーズン終了の10時間前（12:00）まで
 const INV_RESET_AT = Date.parse("2026-10-17T19:45:00+09:00");   // これより前の投資はすべて解除（払ったコインは返す）
 const invValid = x => x && !x.void && (x.at||0) >= INV_RESET_AT;
 function resetOldInvest(){
@@ -3291,7 +3315,7 @@ function resetOldInvest(){
   try{ DB&&MYID&&DB.doc("invests/"+MYID+"_"+iv.ss).update({void:true}); }catch(e){}
   S.inv=null; save(); renderCoins();
 }
-const invOpen = () => Date.now() < seasonEnd(seasonNow()) - INV_CLOSE_MS;
+const invOpen = () => gnow() < seasonEnd(seasonNow()) - INV_CLOSE_MS;
 let INV_LIST=null, INV_CNT={}, invQ="", invErr=false;
 const myInv=()=>S.inv&&S.inv.ss===seasonNow()?S.inv:null;
 function seedShuffle(arr,seed){ let a=seed>>>0||1; const rnd=()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
@@ -3302,7 +3326,7 @@ async function loadInvestCounts(){
 }
 async function loadInvestList(){
   if(!DB){ render(); return; }
-  try{ const q=await withTO(DB.collection("profiles").orderBy("score","desc").limit(300).get()); const now=Date.now();
+  try{ const q=await withTO(DB.collection("profiles").orderBy("score","desc").limit(300).get()); const now=gnow();
     const all=q.docs.map(d=>normRank({id:d.id,...d.data()},now)).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0)));
     all.forEach((r,i)=>r._rank=i+1);
     INV_LIST=seedShuffle(all.filter(r=>r.id!==MYID&&Math.max(r.mp||0,r.lv||1)>=SAFE_LV),seasonNow()*7919+13); invErr=false;
@@ -3363,7 +3387,7 @@ async function openLastResult(){
     if(!document.querySelector(".sheet-bg")) return;
   }
   const md=["🥇","🥈","🥉","4","5"], L=LAST_RES.list;
-  closeSheet(); draw(`<p class="sub" style="margin:0 0 8px">前回のシーズン（昨日の0:00まで）の正式な順位です。景品の条件（18:00〜24:00と23:00〜24:00のログイン）を満たした人だけが上位に入ります。</p>
+  closeSheet(); draw(`<p class="sub" style="margin:0 0 8px">前回のシーズン（22:00まで）の正式な順位です。</p>
     ${L.length?`<ol class="rank">${L.map(o=>`<li class="${o.id===MYID?"me":""} ${o.rank<=3?"top"+o.rank:""}"><span class="rk-no">${md[o.rank-1]||o.rank}</span>${avatarImg(o.icon,44)}
       <div class="rk-body"><div class="rk-name">${uname(o.name)}${o.id===MYID?" <em>あなた</em>":""}</div><div class="rk-sub">${o.rank}位</div></div>
       <div class="rk-lv"><small>Lv</small>${Math.floor(o.score/1e6)}</div></li>`).join("")}</ol>`:`<div class="empty">前回のシーズンの記録がありません</div>`}`);
@@ -3378,7 +3402,7 @@ function showInvestIntro(){
     <div class="news-body">
       <p>ホームの黄色いボタンから、ほかの冒険者にコインを投資できるようになりました！</p>
       <p>🥇 投資先がシーズン1位 → <b>投資額の5倍</b>もらえる<br>🥈 2位 → <b>3倍</b> ／ 🥉 3位 → <b>2倍</b><br>💸 4位以下 → <b>投資額の10倍を失う</b>（0コインまで）</p>
-      <p>・投資は1シーズンに1人だけ。投資した時点でコインが減ります<br>・投資できるのは毎日0:00〜14:00<br>・自分が3位以内に入ると投資は無効（没収）<br>・投資された人は投資額の10%をもらえる</p>
+      <p>・投資は1シーズンに1人だけ。投資した時点でコインが減ります<br>・投資できるのは毎日22:00〜翌12:00<br>・自分が3位以内に入ると投資は無効（没収）<br>・投資された人は投資額の10%をもらえる</p>
       <p>強い冒険者を見きわめて、一発逆転をねらおう！</p></div>
     <button class="btn gold" type="button" id="ivGoInv">投資してみる</button><button class="btn ghost" type="button" id="ivIntroX">とじる</button></div>`;
   document.body.appendChild(bg);
@@ -3393,8 +3417,8 @@ function renderInvest(){
   else if(iv) body=investStatusHtml(iv);
   else if(invErr) body=`<div class="empty">読み込めませんでした。少し時間をおいて開き直してください。</div>`;
   else if(!INV_LIST) body=`<div class="empty">読み込み中…</div>`;
-  else if(!invOpen()) body=`<div class="inv-time"><small>今シーズンの投資受付は終了しました（終了の10時間前まで）</small><small>次のシーズンまで</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div><div class="empty">0:00に新しいシーズンが始まったら、また投資できます</div>`;
-  else body=`<div class="inv-time" style="margin:0 0 10px"><small>投資の受付終了まで</small><b id="invOpenCd" style="font-size:30px">${fmtDays(seasonEnd(seasonNow())-INV_CLOSE_MS-Date.now())}</b></div>
+  else if(!invOpen()) body=`<div class="inv-time"><small>今シーズンの投資受付は終了しました（終了の10時間前まで）</small><small>次のシーズンまで</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div><div class="empty">22:00に新しいシーズンが始まったら、また投資できます</div>`;
+  else body=`<div class="inv-time" style="margin:0 0 10px"><small>投資の受付終了まで</small><b id="invOpenCd" style="font-size:30px">${fmtDays(seasonEnd(seasonNow())-INV_CLOSE_MS-gnow())}</b></div>
     <p class="pick-label" style="margin:0 0 4px">名前から探す</p>
     <div class="rk-search"><span aria-hidden="true">🔍</span><input id="ivQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(invQ)}"></div>
     <p class="sub" style="margin:0 0 6px">並び順はシーズンごとにランダムに変わります。投資したい冒険者をタップしてね。</p>
@@ -3404,7 +3428,7 @@ function renderInvest(){
       🥇1位 <b class="up">投資額の5倍もらえる</b> ／ 🥈2位 <b class="up">3倍</b> ／ 🥉3位 <b class="up">2倍</b><br>
       4位以下 <b class="down">投資額の10倍を失う</b>（投資した分もふくめて・0コインまで）<br>
       ・投資は1シーズンに1人だけ。投資した時点でコインが減ります<br>
-      ・投資できるのはシーズン終了の10時間前（14:00）まで<br>
+      ・投資できるのはシーズン終了の10時間前（12:00）まで<br>
       ・あなたが3位以内に入ったら、その時点で投資は無効（投資額は没収）<br>
       ・投資された冒険者は、シーズン終了時に投資額の10%をもらえる</div>${body}`;
   $("#backHome").onclick=()=>{ homeMode="scene"; render(); };
@@ -3424,10 +3448,10 @@ function investStatusHtml(iv){
       ${cur?`<p class="note" style="margin:6px 0 0;color:#555">いまの順位（${cur}位）のまま終わると：${now?`<b style="color:#2fa53a">+${(a*now).toLocaleString()}コイン</b>`:`<b style="color:#d8342a">−${(a*INV_LOSE).toLocaleString()}コイン</b>`}</p>`:""}
       <table class="inv-tbl"><tr class="${cur===1?"now":""}"><td>🥇 1位</td><td class="up">+${(a*5).toLocaleString()}</td></tr><tr class="${cur===2?"now":""}"><td>🥈 2位</td><td class="up">+${(a*3).toLocaleString()}</td></tr>
       <tr class="${cur===3?"now":""}"><td>🥉 3位</td><td class="up">+${(a*2).toLocaleString()}</td></tr><tr class="${cur&&cur>3?"now":""}"><td>4位以下</td><td class="down">−${(a*INV_LOSE).toLocaleString()}</td></tr></table>`;
-  return `<div class="inv-time"><small>今シーズンの残り時間</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div>
+  return `<div class="inv-time"><small>今シーズンの残り時間</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
     <ol class="rank"><li id="ivGoProf">${avatarImg(r?.icon||iv.icon,44)}<div class="rk-body"><div class="rk-name">${uname(iv.name)}</div><div class="rk-sub">${cur?`現在${cur}位`:"順位を読み込み中…"}</div></div><span class="inv-info" style="display:grid;place-items:center">詳細</span></li></ol>
     <div class="inv-box" style="margin-top:12px"><small>投資コイン</small><span class="amt">${a.toLocaleString()}コイン</span>${res}</div>
-    <p class="sub">${iv.paid?"投資したコインはすでに支払い済みです。":""}結果はシーズン終了（毎日0:00）のあと、次にアプリを開いたときに反映されます。</p>`;
+    <p class="sub">${iv.paid?"投資したコインはすでに支払い済みです。":""}結果はシーズン終了（毎日22:00）のあと、次にアプリを開いたときに反映されます。</p>`;
 }
 function openInvestForm(r){
   const bg=sheet(`<div class="sheet-h"><h3>投資する</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
@@ -3454,11 +3478,11 @@ async function doInvest(r,a){
   if(!invOpen()){ toast("今シーズンの投資受付は終了しました（終了の10時間前まで）"); return false; }
   if(r.id===MYID){ toast("自分には投資できません"); return false; }
   const ss=seasonNow();
-  try{ await withTO(DB.doc("invests/"+MYID+"_"+ss).set({att:MYID, def:r.id, amt:a, ss, at:Date.now(), defName:String(r.name||"").slice(0,12)})); }
+  try{ await withTO(DB.doc("invests/"+MYID+"_"+ss).set({att:MYID, def:r.id, amt:a, ss, at:gnow(), defName:String(r.name||"").slice(0,12)})); }
   catch(e){ toast("投資できませんでした。少し時間をおいてためしてください"); return false; }
   if(a>S.coins){ toast("コインが足りません"); return false; }
   S.coins-=a; renderCoins();
-  S.inv={ss, def:r.id, name:String(r.name||""), icon:r.icon||"", amt:a, at:Date.now(), paid:1}; save();
+  S.inv={ss, def:r.id, name:String(r.name||""), icon:r.icon||"", amt:a, at:gnow(), paid:1}; save();
   INV_CNT[r.id]=(INV_CNT[r.id]||0)+1; SFX.coin(); toast(`${r.name||"名無しの召喚士"}さんに${a.toLocaleString()}コイン投資しました！`);
   return true;
 }
@@ -3475,7 +3499,7 @@ function guardBox(){
   if(g){ const m=mon(g.m); return `<div class="guard-box"><img src="${cardURL(g.m,0,128)}" alt="">
     <div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物</div><b>${esc(m.name)}</b><div class="note" style="margin:0">Lv${g.l} ・ レベルはあなたにしか見えません</div>${S.plv<SAFE_LV?`<div class="note" style="margin:0">🔰 冒険者Lv${SAFE_LV}になるまでは、ほかの人から攻撃されません</div>`:""}
     <button class="chip" type="button" data-goto-box="1">変更する</button></div></div>`; }
-  const left=EMPTY_STEP_MS-((Date.now()-(S.decayAt||Date.now()))%EMPTY_STEP_MS);
+  const left=EMPTY_STEP_MS-((gnow()-(S.decayAt||gnow()))%EMPTY_STEP_MS);
   return `<div class="guard-box warn"><div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物：なし</div>
     <div class="note" style="margin:0;color:var(--berry)">魔物を配置していません。枠が空のあいだは、${EMPTY_TXT}（次まで あと${Math.ceil(left/60000)}分）</div>
     <button class="btn" type="button" data-goto-box="1">魔物を配置する</button></div></div>`;
@@ -3546,7 +3570,7 @@ function editName(){
         const k=await nameKey(v);
         const ex=await FDB.doc("names/"+k).get();
         if(ex.exists && ex.data().uid!==MYID){ msg.textContent="その名前はもう使われています。別の名前にしてください"; go.disabled=false; go.textContent="決定"; return; }
-        if(!ex.exists) await FDB.doc("names/"+k).set({uid:MYID, name:v, email:FBA.currentUser.email, at:Date.now()});
+        if(!ex.exists) await FDB.doc("names/"+k).set({uid:MYID, name:v, email:FBA.currentUser.email, at:gnow()});
         LOGIN_NAME=v;
       }catch(err){ msg.textContent="通信できませんでした。もう一度ためしてください"; go.disabled=false; go.textContent="決定"; return; }
     }
@@ -3557,7 +3581,7 @@ function editName(){
 // 最後にログイン（プロフィールが更新）してからの時間で色マーク
 function seenMark(r){
   if(r.id===MYID) return " 🟢";
-  const h=(Date.now()-(r.pub||0))/HOUR_MS;
+  const h=(gnow()-(r.pub||0))/HOUR_MS;
   return h<=1?" 🟢":h<=6?" 🟡":h<=24?" 🟠":h<=48?" 🔴":h<=72?" 🟣":"";
 }
 function renderRanking(segHtml){
@@ -3576,9 +3600,9 @@ function renderRanking(segHtml){
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
     ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のシーズンの順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
-    <div class="season-box"><div><small>シーズン終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div>
-      <div class="note" style="display:block;margin:2px 0 0;${prizeOk(seasonNow())?"color:var(--moss)":""}">${prizeOk(seasonNow())?"✅ 景品の受け取り条件クリア（2つとも達成）":"⏰ 景品の受け取り条件（2つとも必要）"}${prizeOk(seasonNow())?"":`<br>${S.lateSeen===seasonNow()?"✅":"⬜"} 18:00〜24:00に1回ログイン<br>${S.lastSeen===seasonNow()?"✅":"⬜"} 23:00〜24:00に1回ログイン<br><span style="font-size:11px;opacity:.8">達成しないとランキング外あつかい（1〜3位でも11位以下になり、投資の結果にも影響）</span>`}</div>
-      <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>⏰ <b>景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度、さらに終了前の1時間以内（23:00〜24:00）に1度ログインしておく必要があります。</b>達成しなかった人はランキング外あつかい（11位以下）になります。<br>
+    <div class="season-box"><div><small>シーズン終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
+      <div class="note" style="display:block;margin:2px 0 0">毎日22:00（日本時間）に終了。ランキングは、ログインしていない人の分も30分ごとに最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
+      <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日22:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。</p>
@@ -3615,7 +3639,7 @@ async function searchOutside(){
   hit.querySelectorAll("li[data-xi]").forEach(li=>{ const r=list[+li.dataset.xi]; const open=()=>openOtherProfile(r, r._rank||"―");
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } }; });
 }
-const todayN=()=>dayNum(new Date());
+const todayN=()=>dayNum(new Date(gnow()));
 function fightButton(r){
   if(!DB) return "";
   if(inFreeze()) return `<div class="note" style="margin:0">${FREEZE_TXT}</div>`;
@@ -3664,7 +3688,7 @@ async function doFight(r){
   const coins = result==="att" ? WIN_BASE+Math.max(0,d.lv||0) : result==="def" ? WIN_BASE+S.plv : 0;   // 勝った側がもらうコイン
   try{
     await DB.doc("battles/"+id).set({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
-      attM:g.m, attU:g.u, attLv:myLv, defM:d.gm, defU:d.gu||0, defLv:theirLv, result, coins, at:Date.now(), day});
+      attM:g.m, attU:g.u, attLv:myLv, defM:d.gm, defU:d.gu||0, defLv:theirLv, result, coins, at:gnow(), day});
   }catch(e){ S.attacks[r.id]=day; save(); closeSheet(); render(); toast("この魔物とは今日はもう戦いました"); return false; }
   S.attacks[r.id]=day;
   addRecord(result==="att"?"win":result==="def"?"lose":"draw");
@@ -3707,7 +3731,7 @@ function genBotEvents(){
     if(S.botDay[i]===day) return; S.botDay[i]=day;
     if(Math.random()>=BOT_RATE) return;
     const attP=Math.max(1,Math.round(S.plv*bt.p*(0.85+Math.random()*0.3)));
-    const at=Date.now()-Math.floor(Math.random()*3*HOUR_MS);
+    const at=gnow()-Math.floor(Math.random()*3*HOUR_MS);
     const g=guardUnit(), x=Math.random();
     if(g && x<0.6){
       // バトル：魔物レベル→ランク→図鑑No.で決着（ふつうのバトルと同じ）
@@ -3732,13 +3756,15 @@ function genBotEvents(){
    次にアプリを開いたとき、前のシーズンの順位と勝率で景品を受け取り、冒険者レベルと勝率がリセットされる */
 const SEASON_DAYS = 1, SEASON_DAY0 = 20743;   // 20743 = 2026-10-17
 const JST = 9*HOUR_MS, DAY_MS = 24*HOUR_MS;
-const seasonNow = () => Math.floor((Math.floor((Date.now()+JST)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);
-const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1))*DAY_MS - JST;
+// シーズンは毎日 22:00（日本時間）に終わる（SEASON_SHIFT=2時間ぶん前にずらす）
+const SEASON_SHIFT = 2*HOUR_MS;
+const seasonNow = () => Math.floor((Math.floor((gnow()+JST+SEASON_SHIFT)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);
+const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1))*DAY_MS - JST - SEASON_SHIFT;
 // シーズン終了後の待ち時間（集計タイム）はなし：0:00になったらすぐ結果発表＆報酬
 // （0より大きくすると、その間は攻撃・アイテムが使えなくなる）
 const FREEZE_MS = 0;
 const freezeMsFor = start => FREEZE_MS;
-const freezeLeft = () => { const st=seasonEnd(seasonNow()-1); return Math.max(0, st + freezeMsFor(st) - Date.now()); };
+const freezeLeft = () => { const st=seasonEnd(seasonNow()-1); return Math.max(0, st + freezeMsFor(st) - gnow()); };
 const inFreeze = () => freezeLeft() > 0;
 const FREEZE_TXT = "🏁 集計中（0:00〜0:03）は、攻撃もアイテムも使えません";
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
@@ -3750,13 +3776,28 @@ function bestText(){ if(!S.best) return "―"; return S.best===1 && (S.firsts||0
 const bestTextOf = r => !r.best ? "―" : r.best===1 && (r.f1||0)>1 ? `1位×${r.f1}` : `${r.best}位`;
 // 「全員がログインした状態」に更新してから順位を決める：
 // まだアプリを開いていない人にも、シーズン中に受けたバトル・爆弾の結果を反映した最終スコアを計算する
-let SEASON_EV={s:null, list:[]};
-async function loadSeasonEvents(s){
+let SEASON_EV={s:null, list:[]}, LIVE_EV={s:null, list:[]}, RANK_AT=0;
+// ログインしていない人も「ログインした状態」にする：まだ反映していないバトル・爆弾の結果をランキングに反映
+function liveAdjust(r){
+  if(r.id===MYID || LIVE_EV.s!==seasonNow() || (r.ss??0)!==seasonNow()) return r;
+  let lv=r.lv||1, ch=false;
+  for(const e of LIVE_EV.list){ if(e.def!==r.id || e.at<=(r.pub||0)) continue;
+    if(e.k==="bomb"){ lv=Math.max(1,lv-BOMB_LV*Math.max(1,e.qty||1)); ch=true; }
+    else if(e.result==="att"){ lv=Math.max(1,lv-LOSE_LV); ch=true; }
+    else if(e.result==="def"){ lv+=1; ch=true; }
+    else if(e.result==="draw"){ lv=Math.max(1,lv-DRAW_LV); ch=true; } }
+  if(ch){ r.lv=lv; r.exp=0; }
+  return r;
+}
+async function loadSeasonEvents(s, live){
+  if(live && LIVE_EV.s===s && gnow()-RANK_AT<25*60*1000) return;
   const from=seasonEnd(s-1), to=seasonEnd(s); const list=[];
   try{ const b=await DB.collection("battles").where("at",">=",from).get(); b.docs.forEach(x=>{ const v=x.data(); if(v.at<to) list.push({...v, k:"battle"}); }); }catch(e){}
   try{ const it=await DB.collection("items").where("at",">=",from).get(); it.docs.forEach(x=>{ const v=x.data(); if(v.at<to&&v.item==="bomb") list.push({...v, k:"bomb"}); }); }catch(e){}
-  SEASON_EV={s, list:list.sort((a,b)=>a.at-b.at)};
+  if(live){ LIVE_EV={s, list:list.sort((a,b)=>a.at-b.at)}; RANK_AT=gnow(); }
+  else SEASON_EV={s, list:list.sort((a,b)=>a.at-b.at)};
 }
+setInterval(()=>{ if(DB && document.visibilityState==="visible") loadRanking(); }, 30*60*1000);   // 30分ごとにランキングを更新
 function finalScore(id, p, s){
   const base=seasonScore(p,s); if(base==null) return null;
   if(p.sv && p.sv[s]!=null) return base;              // 本人が精算ずみ（すべて反映ずみ）
@@ -3773,22 +3814,22 @@ function seasonScore(p, s){
   if(p.sv && p.sv[s]!=null) return p.sv[s];
   if((p.ss ?? 0)!==s) return null;
   let lv=p.lv||1, exp=p.exp||0;
-  if(!p.gm && p.ge && p.pub){ const h=Math.floor((Math.min(Date.now(),seasonEnd(s))-p.pub)/HOUR_MS); if(h>0){ lv=Math.max(1,lv-emptyDropFor(Math.min(Date.now(),seasonEnd(s))-p.pub)); exp=0; } }
+  if(!p.gm && p.ge && p.pub){ const h=Math.floor((Math.min(gnow(),seasonEnd(s))-p.pub)/HOUR_MS); if(h>0){ lv=Math.max(1,lv-emptyDropFor(Math.min(gnow(),seasonEnd(s))-p.pub)); exp=0; } }
   return lv*1e6+exp;
 }
 // 景品の条件：シーズン終了前の6時間以内に1度ログインしていること
 // 条件は2つ：①終了前6時間以内（18:00〜24:00）に1度 ②終了前1時間以内（23:00〜24:00）に1度 ログイン
 // 条件を満たさなかった人は「ランキング外」あつかい（上位10位に入らず、11位以下になる）→ 投資の結果にも影響
 const LATE_MS = 6*HOUR_MS, LAST_MS = HOUR_MS;
-const inLateWindow = () => Date.now() >= seasonEnd(seasonNow()) - LATE_MS;
-const inLastWindow = () => Date.now() >= seasonEnd(seasonNow()) - LAST_MS;
+const inLateWindow = () => gnow() >= seasonEnd(seasonNow()) - LATE_MS;
+const inLastWindow = () => gnow() >= seasonEnd(seasonNow()) - LAST_MS;
 function markActive(){ let ch=false;
   if(inLateWindow() && S.lateSeen!==seasonNow()){ S.lateSeen=seasonNow(); ch=true; }
   if(inLastWindow() && S.lastSeen!==seasonNow()){ S.lastSeen=seasonNow(); ch=true; }
   if(ch){ save(); queueProfile(true); if(tab==="rank") render(); } }
-const prizeOk = s => S.lateSeen===s && S.lastSeen===s;
+const prizeOk = s => true;   // ログイン条件はなし（2026-10-18〜）
 // ほかの人が条件を満たしたか（プロフィールに書かれた印で判断）
-const profOk = (p,s) => p && p.ls===s && p.lh===s;
+const profOk = (p,s) => true;
 // 条件を満たしていない人を上位10位から外した順位
 function effRank(score, ok, others){   // others: [{score, ok}]
   const raw=1+others.filter(o=>o.score>score).length;
@@ -3916,7 +3957,7 @@ async function useItem(r,k,qty=1){
   const coins = k==="magnet" ? Math.floor(Math.max(0,d.cn||0)*MAGNET) : 0;
   try{
     await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
-      item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:Date.now()}));
+      item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:gnow()}));
   }catch(e){ { toast("アイテムを使えませんでした。少し時間をおいてためしてください"); return false; } }
   addItem(k,-qty); if(coins) S.coins+=coins; save(); closeSheet(); render();
   const i=itemOf(k), who=esc(d.name||"相手");
