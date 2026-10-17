@@ -206,8 +206,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .upd-bar button{background:var(--staff);color:#3a2306;border:0;border-radius:10px;padding:6px 12px;font:inherit;font-weight:900}
 /* ホーム */
 .home{position:relative;margin:-4px max(-16px,calc(-1*env(safe-area-inset-left,0px) - 16px)) 0;height:calc(100dvh - 140px);min-height:540px;overflow:hidden;border-radius:0 0 18px 18px}
-.hm-bg{position:absolute;inset:0 0 34% 0;background-size:cover;background-position:center bottom}
-.hm-ground{position:absolute;left:0;right:0;bottom:0;height:34%;background-size:auto,100% 100%;border-top:3px solid #0005}
+.hm-bg{position:absolute;inset:0 0 50% 0;background-size:100% 100%}
+.hm-ground{position:absolute;left:0;right:0;bottom:0;top:50%;background-size:100% 100%;box-shadow:inset 0 3px 0 #0004}
 .hm-top{position:absolute;left:12px;right:12px;top:12px;display:flex;gap:8px;align-items:flex-start;z-index:5}
 .hm-card{flex:1;min-width:0;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:7px;border-radius:14px;background:#fffffff0;border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;text-align:left;font:inherit;cursor:pointer}
 .hm-card .ava{border:2px solid #1d1d1d}
@@ -217,13 +217,13 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-btns{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
 .hm-btn{position:relative;padding:8px 8px;border-radius:12px;background:#fff;border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font:inherit;font-weight:900;font-size:11px;white-space:nowrap}
 .hm-btn.new{animation:rulesPulse 1.6s ease-in-out infinite}
-.hm-deco{position:absolute;bottom:30%;z-index:2;filter:drop-shadow(0 6px 6px #0005)}.hm-deco span{font-size:min(26vw,120px);line-height:1}.hm-deco img{width:min(28vw,130px)}
+.hm-deco{position:absolute;bottom:38%;z-index:2;filter:drop-shadow(0 6px 6px #0005)}.hm-deco span{font-size:min(26vw,120px);line-height:1}.hm-deco img{width:min(28vw,130px)}
 .hm-deco.l{left:-2%}.hm-deco.r{right:-2%}
-.hm-stand{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);width:min(64vw,300px);z-index:3}
+.hm-stand{position:absolute;left:50%;bottom:27%;transform:translateX(-50%);width:min(60vw,280px);z-index:3}
 .hm-pedestal{position:absolute;left:0;right:0;bottom:0;height:22%;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#fff,#e6e6e6 60%,#bdbdbd);border:3px solid #1d1d1d;box-shadow:0 8px 16px #0006}
 .hm-mon{position:relative;display:block;width:78%;margin:0 auto 9%;animation:hmBob 2.4s ease-in-out infinite;filter:drop-shadow(0 6px 4px #0005)}
 @keyframes hmBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.hm-name{position:absolute;left:0;right:0;bottom:18%;text-align:center;z-index:3;font-weight:900;color:#fff;text-shadow:0 2px 0 #000,0 0 6px #000}
+.hm-name{position:absolute;left:0;right:0;bottom:21%;text-align:center;z-index:3;font-weight:900;color:#fff;text-shadow:0 2px 0 #000,0 0 6px #000}
 .hm-change{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);z-index:4;padding:12px 22px;border-radius:14px;background:#fff;border:3px solid #1d1d1d;box-shadow:0 4px 0 #1d1d1d;font:inherit;font-weight:900;font-size:16px;color:#1d1d1d;white-space:nowrap}
 .hm-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.hm-tabs .chip.on{background:var(--staff);color:#3a2306}
 .hm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;max-height:52vh;overflow-y:auto}
@@ -1937,39 +1937,62 @@ function drawHomeBg(c,k,W,H){
       break;
   }
 }
+// 床：上が奥（地平線）、下が手前。奥ほど模様が小さくなるように描く
 function drawHomeGd(c,k,W,H){
   const R=rng(k.length*733+k.charCodeAt(1)*17);
+  const VX=W/2, VY=-H*0.9;                                  // 消失点（画面の上の外）
+  const sc=y=>0.25+0.95*(y/H);                              // 奥ほど小さく
   const base=(a,b)=>hmGrad(c,W,H,[a,b]);
+  const rowsY=n=>Array.from({length:n+1},(_,i)=>H*Math.pow(i/n,1.7));
+  const rays=(col,n=18)=>{ c.strokeStyle=col; c.lineWidth=1.5; for(let i=-n;i<=n;i++){ const bx=VX+i*W/n*1.2; c.beginPath(); c.moveTo(VX+(bx-VX)*(0-VY)/(H-VY),0); c.lineTo(bx,H); c.stroke(); } };
+  const scatter=(n,fn)=>{ for(let i=0;i<n;i++){ const y=H*Math.pow(R(),0.75), x=R()*W; fn(x,y,sc(y)); } };
+  const haze=(col)=>{ const g=c.createLinearGradient(0,0,0,H*0.35); g.addColorStop(0,col); g.addColorStop(1,"#0000"); c.fillStyle=g; c.fillRect(0,0,W,H*0.35); };
   switch(k){
-    case "plainG": base("#a9a9a9","#8c8c8c"); break;
-    case "plainM": base("#93c86e","#6ea24f"); break;
-    case "moss": base("#6b5034","#4a3522"); for(let i=0;i<40;i++){ c.fillStyle=["#5f8f3a","#4c7a2e","#7aa84a"][i%3]; c.beginPath(); c.ellipse(R()*W,R()*H,8+R()*26,4+R()*10,0,0,7); c.fill(); } hmDots(c,W,H,30,"#c49a5a",2,R); break;
-    case "snowf": base("#f6faff","#d0e1f1"); c.strokeStyle="#b7cfe6"; c.lineWidth=2; for(let i=0;i<14;i++){ const y=R()*H; c.beginPath(); c.moveTo(0,y); c.quadraticCurveTo(W/2,y+(R()-0.5)*30,W,y+(R()-0.5)*20); c.stroke(); } hmDots(c,W,H,40,"#ffffff",2,R); break;
-    case "meadow": base("#2c5a3a","#1b3d28"); c.strokeStyle="#4f9a5e"; c.lineWidth=2; for(let i=0;i<220;i++){ const x=R()*W, y=R()*H; c.beginPath(); c.moveTo(x,y); c.lineTo(x+(R()-0.5)*6,y-8-R()*8); c.stroke(); } hmDots(c,W,H,60,"#cfefff",1.6,R); break;
-    case "jungleg": base("#3f7a2a","#24521a"); for(let i=0;i<30;i++){ c.save(); c.translate(R()*W,R()*H); c.rotate(R()*Math.PI); c.fillStyle=["#2e6a22","#4f9a33","#1f4d17"][i%3]; c.beginPath(); c.ellipse(0,0,30+R()*20,9+R()*5,0,0,7); c.fill(); c.restore(); } break;
-    case "sand": base("#efd59c","#d4b373"); c.strokeStyle="#c9a361"; c.lineWidth=2; for(let y=10;y<H;y+=16){ c.beginPath(); c.moveTo(0,y); for(let x=0;x<=W;x+=30) c.quadraticCurveTo(x+15,y-6+R()*4,x+30,y); c.stroke(); } break;
-    case "tiles": base("#9c9486","#7b7366"); c.strokeStyle="#5a5348"; c.lineWidth=3; for(let y=0;y<H;y+=36){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); for(let x=((y/36)%2)*30;x<W;x+=60){ c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+36); c.stroke(); } } hmDots(c,W,H,40,"#6a8a4a",3,R); break;
-    case "crystal": base("#7ab8e8","#5b7fd0"); c.strokeStyle="#d8f0ff99"; c.lineWidth=2; for(let i=0;i<26;i++){ c.beginPath(); c.moveTo(R()*W,R()*H); c.lineTo(R()*W,R()*H); c.lineTo(R()*W,R()*H); c.closePath(); c.fillStyle=["#a8dcff55","#c8a8ff55","#ffffff33"][i%3]; c.fill(); c.stroke(); } break;
-    case "lava": base("#2a1a1a","#160c0c"); c.strokeStyle="#ff6a1a"; c.shadowColor="#ff8a2a"; c.shadowBlur=12; c.lineWidth=3; for(let i=0;i<12;i++){ let x=R()*W, y=R()*H; c.beginPath(); c.moveTo(x,y); for(let j=0;j<4;j++){ x+=(R()-0.5)*60; y+=(R()-0.5)*30; c.lineTo(x,y); } c.stroke(); } c.shadowBlur=0; break;
-    case "cloud": base("#eef6ff","#cfe2f7"); for(let i=0;i<18;i++) hmCloud(c,R()*W,R()*H,14+R()*16,"#ffffffe0"); break;
-    case "demonf": base("#24102c","#12061a"); c.strokeStyle="#3a1a44"; c.lineWidth=3; for(let y=0;y<H;y+=24){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); for(let x=((y/24)%2)*24;x<W;x+=48){ c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+24); c.stroke(); } }
-      const cg=c.createLinearGradient(W*0.3,0,W*0.7,0); cg.addColorStop(0,"#7a0f1e"); cg.addColorStop(.5,"#b01a2c"); cg.addColorStop(1,"#7a0f1e"); c.fillStyle=cg; c.beginPath(); c.moveTo(W*0.4,0); c.lineTo(W*0.6,0); c.lineTo(W*0.78,H); c.lineTo(W*0.22,H); c.fill();
-      c.strokeStyle="#e8b43a"; c.lineWidth=3; c.beginPath(); c.moveTo(W*0.42,0); c.lineTo(W*0.26,H); c.moveTo(W*0.58,0); c.lineTo(W*0.74,H); c.stroke(); break;
+    case "plainG": base("#a2a2a2","#868686"); rays("#00000022"); break;
+    case "plainM": base("#9ccd77","#6c9f4c"); rays("#00000018"); break;
+    case "moss": base("#6a4f33","#4a3521");
+      scatter(55,(x,y,s)=>{ c.fillStyle=["#5f8f3a","#4c7a2e","#7aa84a"][Math.floor(R()*3)]; c.beginPath(); c.ellipse(x,y,(12+R()*26)*s,(4+R()*8)*s,0,0,7); c.fill(); });
+      scatter(30,(x,y,s)=>{ c.fillStyle="#8a7a66"; c.beginPath(); c.ellipse(x,y,6*s,3.5*s,0,0,7); c.fill(); }); haze("#9fc59a55"); break;
+    case "snowf": base("#f7fbff","#d3e3f2");
+      c.strokeStyle="#b9d0e6"; c.lineWidth=2; rowsY(12).forEach(y=>{ c.beginPath(); c.moveTo(0,y); c.quadraticCurveTo(W/2,y+(R()-0.5)*14*sc(y),W,y+(R()-0.5)*10); c.stroke(); });
+      scatter(50,(x,y,s)=>{ c.fillStyle="#ffffff"; c.beginPath(); c.arc(x,y,2.2*s,0,7); c.fill(); }); haze("#ffffff88"); break;
+    case "meadow": base("#2c5a3a","#173524");
+      c.lineWidth=2; scatter(320,(x,y,s)=>{ c.strokeStyle=R()<0.5?"#4f9a5e":"#3c7f4a"; c.beginPath(); c.moveTo(x,y); c.lineTo(x+(R()-0.5)*6*s,y-(8+R()*10)*s); c.stroke(); });
+      scatter(60,(x,y,s)=>{ c.fillStyle="#d8f4ff"; c.beginPath(); c.arc(x,y,1.6*s,0,7); c.fill(); }); haze("#5a7fb055"); break;
+    case "jungleg": base("#3f7a2a","#22501a");
+      scatter(45,(x,y,s)=>{ c.save(); c.translate(x,y); c.rotate((R()-0.5)*1.2); c.fillStyle=["#2e6a22","#4f9a33","#1f4d17"][Math.floor(R()*3)]; c.beginPath(); c.ellipse(0,0,(30+R()*22)*s,(8+R()*5)*s,0,0,7); c.fill(); c.restore(); }); haze("#9fe0b066"); break;
+    case "sand": base("#f0d79f","#d2b070");
+      c.strokeStyle="#c9a361"; c.lineWidth=2; rowsY(16).forEach(y=>{ const s=sc(y); c.beginPath(); c.moveTo(0,y); for(let x=0;x<=W;x+=34*s+6) c.quadraticCurveTo(x+(17*s+3),y-5*s,x+34*s+6,y); c.stroke(); }); haze("#ffe6b088"); break;
+    case "tiles": base("#a39b8c","#7a7265");
+      c.strokeStyle="#5a5348"; c.lineWidth=2.5; rowsY(9).forEach(y=>{ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }); rays("#5a5348",8);
+      scatter(30,(x,y,s)=>{ c.fillStyle="#6f8f4a"; c.beginPath(); c.ellipse(x,y,5*s,2.5*s,0,0,7); c.fill(); }); haze("#e8b07a55"); break;
+    case "crystal": base("#86c2ee","#4f6fc6");
+      c.lineWidth=1.5; rowsY(8).forEach(y=>{ c.strokeStyle="#e0f4ff88"; c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }); rays("#e0f4ff66",10);
+      scatter(22,(x,y,s)=>{ c.fillStyle=["#c8f0ff88","#d6b8ff88","#ffffff66"][Math.floor(R()*3)]; c.beginPath(); c.moveTo(x,y-14*s); c.lineTo(x+10*s,y); c.lineTo(x,y+6*s); c.lineTo(x-10*s,y); c.fill(); }); haze("#ffffff55"); break;
+    case "lava": base("#2b1b1b","#140b0b");
+      c.shadowColor="#ff8a2a"; c.shadowBlur=10; c.strokeStyle="#ff6a1a"; c.lineWidth=2.5;
+      scatter(16,(x,y,s)=>{ let px=x, py=y; c.beginPath(); c.moveTo(px,py); for(let j=0;j<4;j++){ px+=(R()-0.5)*70*s; py+=(R()-0.3)*24*s; c.lineTo(px,py); } c.stroke(); });
+      scatter(6,(x,y,s)=>{ c.fillStyle="#ff7a2a"; c.beginPath(); c.ellipse(x,y,28*s,8*s,0,0,7); c.fill(); }); c.shadowBlur=0; haze("#ff5a1a44"); break;
+    case "cloud": base("#f2f8ff","#cfe1f6"); scatter(26,(x,y,s)=>hmCloud(c,x,y,(12+R()*10)*s,"#ffffffe8")); haze("#ffffffaa"); break;
+    case "demonf": base("#2a1232","#10061a");
+      c.strokeStyle="#3d1c48"; c.lineWidth=2.5; const ry=rowsY(12); ry.forEach(y=>{ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }); rays("#3d1c48",12);
+      const top=0.06, bot=0.32; c.fillStyle="#9a1628"; c.beginPath(); c.moveTo(W*(0.5-top),0); c.lineTo(W*(0.5+top),0); c.lineTo(W*(0.5+bot),H); c.lineTo(W*(0.5-bot),H); c.fill();
+      c.strokeStyle="#e8b43a"; c.lineWidth=3; c.beginPath(); c.moveTo(W*(0.5-top+0.01),0); c.lineTo(W*(0.5-bot+0.03),H); c.moveTo(W*(0.5+top-0.01),0); c.lineTo(W*(0.5+bot-0.03),H); c.stroke(); haze("#5a123855"); break;
   }
 }
 const homeImgCache={};
 function homeImg(t,k){ const key=t+":"+k; if(homeImgCache[key]) return homeImgCache[key];
-  const cv=document.createElement("canvas"); const W=360, H=t==="bg"?480:240; cv.width=W; cv.height=H; const c=cv.getContext("2d");
+  const cv=document.createElement("canvas"); const W=360, H=320; cv.width=W; cv.height=H; const c=cv.getContext("2d");
   (t==="bg"?drawHomeBg:drawHomeGd)(c,k,W,H); return homeImgCache[key]=cv.toDataURL("image/jpeg",0.88); }
 // ガチャ結果やリストに出す小さな絵（背景なら床はシンプル、床なら背景はシンプル）
 function homeThumb(t,k){ const key="th:"+t+":"+k; if(homeImgCache[key]) return homeImgCache[key];
   const cv=document.createElement("canvas"); cv.width=cv.height=160; const c=cv.getContext("2d");
   const bg=new Image(), gd=new Image();
   c.fillStyle="#222"; c.fillRect(0,0,160,160);
-  const bgC=document.createElement("canvas"); bgC.width=360; bgC.height=480; drawHomeBg(bgC.getContext("2d"),t==="bg"?k:"plain1",360,480);
-  const gdC=document.createElement("canvas"); gdC.width=360; gdC.height=240; drawHomeGd(gdC.getContext("2d"),t==="gd"?k:"plainG",360,240);
-  c.drawImage(bgC,0,120,360,360,0,0,160,104); c.drawImage(gdC,0,0,360,180,0,104,160,56);
-  c.fillStyle="#0006"; c.fillRect(0,103,160,2);
+  const bgC=document.createElement("canvas"); bgC.width=360; bgC.height=320; drawHomeBg(bgC.getContext("2d"),t==="bg"?k:"plain1",360,320);
+  const gdC=document.createElement("canvas"); gdC.width=360; gdC.height=320; drawHomeGd(gdC.getContext("2d"),t==="gd"?k:"plainG",360,320);
+  c.drawImage(bgC,0,0,360,320,0,0,160,80); c.drawImage(gdC,0,0,360,320,0,80,160,80);
+  c.fillStyle="#0005"; c.fillRect(0,79,160,2);
   return homeImgCache[key]=cv.toDataURL("image/jpeg",0.85); }
 function decoThumb(x){ return x.type==="dc" ? x.img : homeThumb(x.type,x.k); }
 
@@ -1986,7 +2009,7 @@ function renderHome(){
   const h=homeCfg(), m=mon(h.m);
   $("#stage").innerHTML=`<div class="home">
     <div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
-    <div class="hm-ground" style="background-image:repeating-conic-gradient(from 160deg at 50% -10%,#0000 0 4deg,#0002 4deg 4.6deg,#0000 4.6deg 8deg),url('${homeImg("gd",h.gd)}')"></div>
+    <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>
     <div class="hm-top">
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
         ${avatarImg(S.avatar,44)}
