@@ -1483,7 +1483,16 @@ const I18N_EN = {
 "から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・": " on Home to invest in another adventurer (1 per season, any amount, ",
 "シーズン終了の10時間前＝14:00まで": "until 10 hours before the season ends = 14:00 JST",
 "）。": ").",
-"投資は解除されました（+{0}コイン返却）": "Your investment was canceled (+{0} coins refunded)"
+"投資は解除されました（+{0}コイン返却）": "Your investment was canceled (+{0} coins refunded)",
+"🔰初心者冒険者": "A 🔰Beginner Adventurer",
+"中級冒険者": "An Intermediate Adventurer",
+"上級冒険者": "An Advanced Adventurer",
+"猛者冒険者": "A Veteran Adventurer",
+"相手には、次にアプリを開いたときに反映されます。あなたの名前は出ず「中級冒険者」のように、レベル帯だけが伝わります。（残り {0}個）": "It takes effect the next time they open the app. Your name isn't shown — only your level tier, like \"Intermediate Adventurer\". ({0} left)",
+"相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。": "Your name isn't shown to the opponent — only your level tier (🔰Beginner / Lv10–50 Intermediate / 51–99 Advanced / 100+ Veteran).",
+"🧲 {0}からコインマグネットを使われた…（−{1}コイン）": "🧲 {0} used a Coin Magnet on you… (−{1} coins)",
+"🔥 {0}からファイヤーボールを使われた…{1}": "🔥 {0} used a Fireball on you…{1}",
+"💣 {0}から爆弾を使われた…（冒険者レベル−{1}）": "💣 {0} used a Bomb on you… (Adventurer Level −{1})"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -2646,7 +2655,7 @@ function openRules(){
     ["🎰","ガチャ（パック）",`<ul><li>魔物パック・アイコン枠パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span>。出る確率は C ${RATES.C}%／B ${RATES.B}%／A ${RATES.A}%／S ${RATES.S}%／Z ${RATES.Z}%</li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b>（${GACHA_ITEMS.map(i=>i.name+" "+i.rate+"%").join("／")}）</li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>2時間「現在配置不可」</b>","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（24時間で最大10レベルまで）","j")}。</li><li>${U("バトルで負けると枠が空になる（自動では補充されない）。別の魔物を配置し直そう","f")}</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
-    ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>冒険者Lv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず「冒険者Lv○○くらいの冒険者」と伝わる。</li></ul>`],
+    ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>冒険者Lv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
     ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！")}</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・<b>シーズン終了の10時間前＝14:00まで</b>）。</li><li>シーズン終了時の投資先の順位で：<b>1位 5倍</b>もらえる／<b>2位 3倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"n")],
@@ -3739,7 +3748,7 @@ function confirmItem(r,k){
   const what=k==="gift"?`${who}さんに${GIFT_COIN.toLocaleString()}コインをプレゼントします。`:k==="magnet"?`${who}さんの所持コインの10%をうばいます。`:k==="fire"?`${who}さんの配置魔物（${esc(mon(r.gm)?.name||"魔物")}）のレベルを${FIRE_LV}下げます。`:`${who}さんの冒険者レベルを${BOMB_LV}下げます。`;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="iuT"><img src="${i.img}" alt="" style="width:96px;height:96px;margin:0 auto;image-rendering:pixelated"><p id="iuT">${i.name}を使いますか？</p>
-    <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。あなたの名前は出ず「冒険者Lv○○くらいの冒険者」と伝わります。（残り ${inv(k)}個）</div>
+    <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。あなたの名前は出ず「中級冒険者」のように、レベル帯だけが伝わります。（残り ${inv(k)}個）</div>
     <button class="btn gold" id="iuGo" type="button">使う！</button><button class="btn ghost" id="iuNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#iuNo").onclick=()=>bg.remove();
@@ -3800,12 +3809,11 @@ function openGiftSelf(q){
     <p class="note" style="text-align:center">${q>1?`${q}セット<br>`:""}<b style="color:var(--staff);font-size:20px">+${(GIFT_COIN*q).toLocaleString()}コイン</b><br>のこり ${inv("gift")}個</p><button class="btn gold" type="button">OK</button>`;
   document.body.appendChild(g); SFX.reveal("S"); SFX.coin(); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); };
 }
-// 相手には名前を出さず、冒険者レベルを10の位で四捨五入して伝える（例：Lv47 →「冒険者レベル50くらいの冒険者」）
+// 相手には名前を出さず、冒険者レベルの帯だけ伝える（🔰Lv10未満＝初心者／10〜50＝中級／51〜99＝上級／100〜＝猛者）
 function anonWho(b){
   const lv=Number(b&&b.attP);
   if(!lv) return "ある冒険者";
-  const r=Math.round(lv/10)*10;
-  return r<10?"冒険者Lv10未満の冒険者":`冒険者Lv${r}くらいの冒険者`;
+  return lv<SAFE_LV?"🔰初心者冒険者":lv<=50?"中級冒険者":lv<=99?"上級冒険者":"猛者冒険者";
 }
 let itemBusy=false;
 async function checkItems(){
@@ -3820,11 +3828,11 @@ async function checkItems(){
         if(SENDABLE.includes(b.item)){ const q=Math.max(1,Math.floor(b.qty||1));
           if(b.item==="gift"){ S.coins+=GIFT_COIN*q; gCoins+=GIFT_COIN*q; } else { addItem("ticket",q); gTickets+=q; }
           gifts.push(who); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
-        if(b.item==="magnet"){ const c=Math.min(S.coins,Math.max(0,Math.floor(b.coins||0))); S.coins-=c; lostCoin+=c; msgs.push(`🧲 ${who}にコインマグネットを使われた…（−${c.toLocaleString()}コイン）`); }
+        if(b.item==="magnet"){ const c=Math.min(S.coins,Math.max(0,Math.floor(b.coins||0))); S.coins-=c; lostCoin+=c; msgs.push(`🧲 ${who}からコインマグネットを使われた…（−${c.toLocaleString()}コイン）`); }
         else if(b.item==="fire"){ const x=S.units.find(z=>z.u===b.defU); let t="";
           if(x){ const before=x.l; x.l=Math.max(1,x.l-FIRE_LV); x.e=0; t=`${esc(mon(x.m).name)}がLv${before}→Lv${x.l}`; }
-          msgs.push(`🔥 ${who}にファイヤーボールを使われた…${t?`（${t}）`:"（魔物はもういなかった）"}`); }
-        else if(b.item==="bomb"){ const d=dropPlayerLv(BOMB_LV); lostLv+=d; msgs.push(`💣 ${who}に爆弾を使われた…（冒険者レベル−${d}）`); }
+          msgs.push(`🔥 ${who}からファイヤーボールを使われた…${t?`（${t}）`:"（魔物はもういなかった）"}`); }
+        else if(b.item==="bomb"){ const d=dropPlayerLv(BOMB_LV); lostLv+=d; msgs.push(`💣 ${who}から爆弾を使われた…（冒険者レベル−${d}）`); }
         if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at);
       }
       save(); render();
