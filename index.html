@@ -1260,7 +1260,7 @@ function renderGacha(){
 function sortedUnits(){
   let u=[...S.units];
   if(boxFilter!=="all") u=u.filter(x=>mon(x.m).rank===boxFilter);
-  return u.sort((a,b)=> (b.s-a.s) || (RANKS.indexOf(mon(b.m).rank)-RANKS.indexOf(mon(a.m).rank)) || (b.l-a.l) || (a.u-b.u));
+  return u.sort((a,b)=> ((b.k?1:0)-(a.k?1:0)) || (b.s-a.s) || (RANKS.indexOf(mon(b.m).rank)-RANKS.indexOf(mon(a.m).rank)) || (b.l-a.l) || (a.u-b.u));
 }
 function unitCard(x,extra=""){ const m=mon(x.m); return `<button class="card ${extra}" type="button" data-u="${x.u}" aria-label="${m.name} Lv${x.l}">
   <img src="${cardURL(x.m,x.s)}" alt=""><span class="rk rk-${m.rank}">${m.rank}</span>${x.k?'<span class="lock" aria-label="保護中">🔒</span>':''}${S.guard===x.u?'<span class="guard-b" aria-label="配置中">配置中</span>':''}<span class="lv">Lv${x.l}</span></button>`; }
