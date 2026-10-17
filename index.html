@@ -226,6 +226,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-rank{display:flex;flex-direction:column;align-items:center;background:#86bcbc;border-radius:10px;padding:3px 6px;border:2px solid #1d1d1d}.hm-rank small{font-size:9px}.hm-rank b{font-size:16px}
 .hm-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
 .hm-invest{align-self:flex-start;display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;background:#f2dc3a;border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font:inherit;font-weight:900;font-size:14px}
+.hm-invest.last{background:#fff;font-size:13px;padding:7px 14px}
 .hm-invest:active{transform:translateY(2px);box-shadow:0 1px 0 #1d1d1d}
 .hm-invest small{background:#1d1d1d;color:#f2dc3a;border-radius:999px;padding:1px 7px;font-size:10px}
 .inv-rule{background:var(--bark);border:2px solid var(--staff);border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.7;margin-bottom:12px}
@@ -1469,7 +1470,7 @@ const I18N_EN = {
 "トトと": "Toto &",
 "魔物たち": "Monsters",
 "（投資した分もふくめて・0コインまで）": " (including what you invested; down to 0 coins)",
-"・投資は1シーズンに1人だけ。投資した時点でコインが減ります": "• 1 investment per season. The coins are taken when you invest",
+"・投資は1シーズンに1人だけ。投資した時点でコインが減ります": "• 1 investment per season. Coins are taken when you invest",
 "投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。": "The coins are taken when you invest. At 4th or lower you lose 10x in total, including what you invested. Results apply the next time you open the app after the season ends.",
 "（投資した分は戻らない）。自分には投資できない。": " (what you invested isn't returned). You can't invest in yourself.",
 "投資するとすぐに {0}コイン 減ります": "{0} coins will be taken right away",
@@ -1521,7 +1522,26 @@ const I18N_EN = {
 "0:00〜0:03は集計タイム": "0:00–0:03 is tally time",
 "0:03に結果発表＆報酬": "results & rewards at 0:03",
 "に終了。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、": " the season ends. Final ranks are decided with everyone's latest state (including battles and bombs while away), with ",
-"すぐに結果発表＆報酬": "results & rewards right away"
+"すぐに結果発表＆報酬": "results & rewards right away",
+"🏆 前回のランキング結果": "🏆 Last Season's Results",
+"前回の結果を見るには、ログインが必要です。": "You need to log in to see last season's results.",
+"集計しています…": "Tallying…",
+"読み込めませんでした。少し時間をおいてためしてください。": "Couldn't load. Please try again in a bit.",
+"前回のシーズン（昨日の0:00まで）の正式な順位です。景品の条件（18:00〜24:00と23:00〜24:00のログイン）を満たした人だけが上位に入ります。": "Official ranks for last season (until 0:00). Only players who met the prize conditions (logging in during 18:00–24:00 and 23:00–24:00) can be at the top.",
+"前回のシーズンの記録がありません": "No records for last season",
+"💰 新機能「冒険者に投資する」": "💰 New: Invest in an Adventurer",
+"ホームの黄色いボタンから、ほかの冒険者にコインを投資できるようになりました！": "You can now invest coins in other adventurers from the yellow button on Home!",
+"投資額の5倍": "5x your investment",
+"もらえる": " back",
+"・投資できるのは毎日0:00〜14:00": "• You can invest daily from 0:00 to 14:00",
+"・自分が3位以内に入ると投資は無効（没収）": "• If you reach the top 3 yourself, the investment is void (confiscated)",
+"・投資された人は投資額の10%をもらえる": "• Adventurers who receive investments get 10%",
+"強い冒険者を見きわめて、一発逆転をねらおう！": "Spot the strongest adventurers and go for a big comeback!",
+"投資してみる": "Try investing",
+"🥇 投資先がシーズン1位 →": "🥇 Your pick finishes 1st →",
+"🥈 2位 →": "🥈 2nd →",
+"／ 🥉 3位 →": "/ 🥉 3rd →",
+"💸 4位以下 →": "💸 4th or lower →"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -1982,7 +2002,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkSeason(); await checkGifts(db);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkSeason(); await checkGifts(db); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // シーズンの切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -3201,7 +3221,8 @@ function renderHome(){
         <span class="hm-id"><b id="hmName"></b><span class="hm-lv">冒険者 Lv <b>${S.plv}</b></span></span>
         <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
       </button>
-      <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${S.inv&&S.inv.ss===seasonNow()&&!S.inv.void?'<small>投資中</small>':""}</button></div>
+      <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${S.inv&&S.inv.ss===seasonNow()&&!S.inv.void?'<small>投資中</small>':""}</button>
+      <button class="hm-invest last" type="button" id="hmLast">🏆 前回のランキング結果</button></div>
       <div class="hm-btns">
         <button class="hm-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖 最新ルール確認${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>
         <button class="hm-btn" type="button" id="hmStats">📊 自己記録確認</button>
@@ -3216,6 +3237,7 @@ function renderHome(){
   $("#hmProf").onclick=e=>{ if(e.target.closest("#hmRank")){ tab="rank"; profMode="rank"; loadRanking(); render(); return; } homeMode="me"; render(); $("#stage").scrollTop=0; };
   $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   $("#hmChange").onclick=()=>openHomeEdit("m");
+  $("#hmLast").onclick=openLastResult;
   $("#hmInvest").onclick=()=>{ homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); };
 }
 function openHomeEdit(mode){
@@ -3323,6 +3345,46 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
 const invRow=(r,i)=>`<li data-iv="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button">${avatarImg(r.icon,44)}
   <div class="rk-body"><div class="rk-name">${uname(r.name)}</div><div class="rk-sub">現在${r._rank}位 ・ Lv${esc(r.lv||1)}</div>${INV_CNT[r.id]?`<div class="rk-inv">💰 投資家 ${INV_CNT[r.id]}人</div>`:""}</div>
   <button class="inv-info" type="button" data-ivinfo="${i}">詳細</button></li>`;
+// 前回シーズンのランキング結果（上位5人）：0:00の集計とまったく同じ計算で出す
+let LAST_RES={s:null, list:null};
+async function openLastResult(){
+  const old=seasonNow()-1;
+  const draw=body=>sheet(`<div class="sheet-h"><h3>🏆 前回のランキング結果</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${body}`);
+  if(!DB) return draw(loginBox("前回の結果を見るには、ログインが必要です。"));
+  if(LAST_RES.s!==old){
+    draw(`<div class="empty">集計しています…</div>`);
+    try{ const q=await withTO(DB.collection("profiles").limit(3000).get()); await loadSeasonEvents(old);
+      const all=q.docs.map(x=>{ const v=x.data(); const isMe=x.id===MYID;
+        const sc=isMe&&S.sv&&S.sv[old]!=null?S.sv[old]:finalScore(x.id,v,old);
+        return {id:x.id, name:v.name, icon:v.icon, score:sc, ok:isMe?prizeOk(old):profOk(v,old)}; }).filter(o=>o.score!=null);
+      all.forEach(o=>{ o.rank=effRank(o.score,o.ok,all.filter(z=>z!==o)); });
+      LAST_RES={s:old, list:all.filter(o=>o.rank<=5).sort((a,b)=>a.rank-b.rank||b.score-a.score).slice(0,5)};
+    }catch(e){ closeSheet(); return draw(`<div class="empty">読み込めませんでした。少し時間をおいてためしてください。</div>`); }
+    if(!document.querySelector(".sheet-bg")) return;
+  }
+  const md=["🥇","🥈","🥉","4","5"], L=LAST_RES.list;
+  closeSheet(); draw(`<p class="sub" style="margin:0 0 8px">前回のシーズン（昨日の0:00まで）の正式な順位です。景品の条件（18:00〜24:00と23:00〜24:00のログイン）を満たした人だけが上位に入ります。</p>
+    ${L.length?`<ol class="rank">${L.map(o=>`<li class="${o.id===MYID?"me":""} ${o.rank<=3?"top"+o.rank:""}"><span class="rk-no">${md[o.rank-1]||o.rank}</span>${avatarImg(o.icon,44)}
+      <div class="rk-body"><div class="rk-name">${uname(o.name)}${o.id===MYID?" <em>あなた</em>":""}</div><div class="rk-sub">${o.rank}位</div></div>
+      <div class="rk-lv"><small>Lv</small>${Math.floor(o.score/1e6)}</div></li>`).join("")}</ol>`:`<div class="empty">前回のシーズンの記録がありません</div>`}`);
+}
+// 「冒険者に投資する」のかんたんな説明（次にログインしたとき1回だけ）
+function showInvestIntro(){
+  if(S.invIntro || !DB) return;
+  if(document.querySelector(".sheet-bg.center,.reveal,.rules-stage")) return setTimeout(showInvestIntro, 3000);
+  S.invIntro=1; save();
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
+  bg.innerHTML=`<div class="swear news" role="dialog" aria-modal="true" aria-labelledby="ivT"><p id="ivT">💰 新機能「冒険者に投資する」</p>
+    <div class="news-body">
+      <p>ホームの黄色いボタンから、ほかの冒険者にコインを投資できるようになりました！</p>
+      <p>🥇 投資先がシーズン1位 → <b>投資額の5倍</b>もらえる<br>🥈 2位 → <b>3倍</b> ／ 🥉 3位 → <b>2倍</b><br>💸 4位以下 → <b>投資額の10倍を失う</b>（0コインまで）</p>
+      <p>・投資は1シーズンに1人だけ。投資した時点でコインが減ります<br>・投資できるのは毎日0:00〜14:00<br>・自分が3位以内に入ると投資は無効（没収）<br>・投資された人は投資額の10%をもらえる</p>
+      <p>強い冒険者を見きわめて、一発逆転をねらおう！</p></div>
+    <button class="btn gold" type="button" id="ivGoInv">投資してみる</button><button class="btn ghost" type="button" id="ivIntroX">とじる</button></div>`;
+  document.body.appendChild(bg);
+  bg.querySelector("#ivIntroX").onclick=()=>bg.remove();
+  bg.querySelector("#ivGoInv").onclick=()=>{ bg.remove(); closeSheet(); tab="home"; homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); };
+}
 function renderInvest(){
   resetOldInvest();
   const back=`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`;
