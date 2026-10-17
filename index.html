@@ -860,7 +860,7 @@ function openNews(force){
       <p>⚔️ 勝率でも景品！（5戦以上）<br>勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個</p>
       <p>集計のあと、冒険者レベルと勝率はリセット。プロフィールには今までの最高順位が残ります。</p>
       <h4>⏰ 1時間ボーナス</h4>
-      <p>ガチャタブに、1時間ごとに1,000コインもらえるボーナスが増えました！</p>
+      <p>ミッションタブに、1時間ごとに1,000コインもらえるボーナスがあります！</p>
       <h4 style="margin-top:18px">🎰 アイテムガチャ</h4>
       <h4>🎰 アイテムガチャ</h4>
       <p>ガチャタブの「アイテムガチャ」で、1回1000コイン。4種類のアイテムが出ます。</p>
@@ -889,7 +889,7 @@ function openNews(force){
     <button class="btn gold" id="nwOk" type="button">とじる</button>
     <button class="btn ghost" id="nwHide" type="button">次から表示しない</button></div>`;
   document.body.appendChild(bg);
-  const close=hideNext=>{ if(hideNext){ try{ localStorage.setItem(NEWS_KEY,"hide"); }catch(e){} toast("次から表示しません（ガチャタブの「お知らせ」でまた見られます）"); } bg.remove(); newsResolve(); };
+  const close=hideNext=>{ if(hideNext){ try{ localStorage.setItem(NEWS_KEY,"hide"); }catch(e){} toast("次から表示しません（ミッションタブの「お知らせ」でまた見られます）"); } bg.remove(); newsResolve(); };
   bg.querySelector("#nwOk").onclick=()=>close(false);
   bg.querySelector("#nwHide").onclick=()=>close(true);
   bg.querySelector("#nwOk").focus();
@@ -980,10 +980,10 @@ async function setupNumber(db,id){
       try{ await slot.set({uid:id, at:Date.now()}); }catch(e){ continue; }
       S.userNo=n; break;
     }
-    if(S.userNo){ save(); queueProfile(true); numberState="ok"; if(tab==="gacha") render(); return; }
+    if(S.userNo){ save(); queueProfile(true); numberState="ok"; if(tab==="mission") render(); return; }
     numberState="none";
   }catch(e){ numberState="none"; }
-  if(tab==="gacha") render();
+  if(tab==="mission") render();
 }
 
 /* ---------- プレゼント (to: ユーザー番号 / 0 = 全員) ---------- */
@@ -1349,20 +1349,19 @@ function renderCoins(){
   $("#coins").textContent=S.coins.toLocaleString();
   const ready = dailyReady() || hourlyLeft()===0 || hour1Left()===0;
   const b=$("#bonusBtn"); b.classList.toggle("ready",ready); b.textContent= ready?"ボーナスあり":"ボーナス";
-  document.querySelector('.tabs button[data-tab="gacha"]').classList.toggle("dot",ready);
-  document.querySelector('.tabs button[data-tab="mission"]').classList.toggle("dot",MISSIONS.some((_,i)=>missionLeft(i)===0));
+  document.querySelector('.tabs button[data-tab="mission"]').classList.toggle("dot",ready||MISSIONS.some((_,i)=>missionLeft(i)===0));
 }
 function claimDaily(){ if(!dailyReady()) return; S.lastDaily=today(); S.coins+=DAILY; save(); SFX.coin(); toast(`毎日ボーナス +${DAILY}コイン`); render(); }
 function claimHour1(){ if(hour1Left()>0) return; S.lastHour1=Date.now(); S.coins+=HOUR_BONUS; save(); SFX.coin(); toast(`1時間ボーナス +${HOUR_BONUS.toLocaleString()}コイン`); render(); }
 function claimHourly(){ if(hourlyLeft()>0) return; S.lastHourly=Date.now(); S.coins+=HOURLY; save(); SFX.coin(); toast(`15分ボーナス +${HOURLY}コイン`); render(); }
-$("#bonusBtn").onclick=()=>{ tab="gacha"; render(); const sec=$("#shopSec"); if(sec) sec.scrollIntoView({block:"start"}); };
+$("#bonusBtn").onclick=()=>{ tab="mission"; render(); const sec=$("#shopSec"); if(sec) sec.scrollIntoView({block:"start"}); };
 const fmt=ms=>{const t=Math.ceil(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`};
 let wasReady=null, wasMission=null;
 const missionLeft=i=>Math.max(0,((S.missions||{})[i]||0)+MISSION_MS-Date.now());
 setInterval(()=>{
   const left=hourlyLeft(), l1=hour1Left(), r=left===0||l1===0||dailyReady();
   const mr=MISSIONS.map((_,i)=>missionLeft(i)===0).join();
-  if(r!==wasReady || mr!==wasMission){ const changed=wasReady!==null; wasReady=r; wasMission=mr; renderCoins(); if(changed && (tab==="gacha"||tab==="mission")) return render(); }
+  if(r!==wasReady || mr!==wasMission){ const changed=wasReady!==null; wasReady=r; wasMission=mr; renderCoins(); if(changed && tab==="mission") return render(); }
   const cd=$("#hourlyCd"); if(cd) cd.firstChild.textContent=fmt(left);
   const cd1=$("#hour1Cd"); if(cd1) cd1.firstChild.textContent=fmt(l1);
   const sc=$("#seasonCd"); if(sc) sc.textContent=fmtDays(seasonEnd(seasonNow())-Date.now());
@@ -1374,7 +1373,7 @@ document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ tab=b.datas
 function render(){
   renderCoins();
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
-  ({home:renderHome, gacha:renderGachaShop, box:renderBox, mission:renderMission, rank:renderRankTab})[tab]();
+  ({home:renderHome, gacha:renderGachaShop, box:renderBox, mission:renderMissionPage, rank:renderRankTab})[tab]();
 }
 function seg(opts,cur,fn){ return `<div class="seg">${opts.map(([k,l])=>`<button type="button" data-k="${k}" aria-pressed="${k===cur}">${l}</button>`).join("")}</div>`; }
 function bindSeg(fn){ document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>fn(b.dataset.k)); }
@@ -1388,7 +1387,7 @@ function renderGacha(){
       <button class="pull hundred" data-pull="${k}" data-n="100" type="button" ${S.coins<COST*100?"disabled":""}>100連パック<small>${(COST*100).toLocaleString()}コイン</small></button>
       ${tkBtn("tk-"+k,"チケットで10連パック")}</div>`;
   const rankRates=list=>["Z","S","A","B","C"].map(r=>`<div class="rate-row"><span><span class="rk rk-${r}">${r}</span> ${list.filter(x=>x.rank===r).length}種</span><span>${RATES[r]}%</span></div>`).join("");
-  $("#stage").innerHTML = `${rulesBtn()}<h2>ガチャ</h2><p class="sub">好きなガチャを選んでね。下にスクロールすると、ほかのガチャやボーナスもあります。</p>
+  $("#stage").innerHTML = `${rulesBtn()}<h2>ガチャ</h2><p class="sub">好きなガチャを選んでね。下にスクロールすると、ほかのガチャもあります。</p>
   <a class="shop-banner buy" href="${BUY_URL}" target="_blank" rel="noopener"><img src="${BUY_IMG}" alt="30連分ガチャチケット 700円 購入はここをタップ"></a>
   ${S.lastDaily!==today()?`<button class="btn gold" id="dailyBig" type="button" style="width:100%;margin:0 0 12px">今日の1000コインを受け取る</button>`:""}
   <section class="g-banner mon">
@@ -1508,13 +1507,13 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-17j";
+const RULES_VER = "2026-10-17k";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
 // U(...) で囲んだところが「今回の更新で変わったところ」。NEWが付いている間だけ赤で目立たせる
-const RULES_TAG = "j";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
+const RULES_TAG = "k";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
 const U = (t, tag="c") => tag===RULES_TAG ? `<span class="upd">${t}</span>` : t;
 function openRules(){
   const fresh=rulesNew();
@@ -1530,7 +1529,7 @@ function openRules(){
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
     ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！")}</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
-    ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>覚醒の石1個</b>に変わる","i")}</li><li>${U("ガチャ・ショップ・ボーナスは<b>ガチャ</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブにまとまった","h")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ガチャタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
+    ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>覚醒の石1個</b>に変わる","i")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
   const el=document.createElement("div"); el.className="rules-stage"+(fresh?" fresh":""); el.setAttribute("role","dialog"); el.setAttribute("aria-label","最新ルール");
   el.innerHTML=`<div class="rules-card"><div class="rules-h"><h3>📖 最新ルール</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
@@ -1746,9 +1745,12 @@ function openItemList(){
   sheet(`<div class="sheet-h"><h3>📋 持っているアイテム</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="inv">${ITEMS.filter(i=>!i.secret||inv(i.k)).map(i=>`<div class="inv-it"><img src="${i.img}" alt=""><div><b>${i.name}</b><span class="inv-n">×${inv(i.k).toLocaleString()}</span><div class="note" style="margin:0">${i.desc}</div>${i.k==="gift"&&inv("gift")?`<button class="chip" type="button" data-selfgift="1" style="margin-top:6px">自分に使う</button>`:""}</div></div>`).join("")}</div>`);
 }
-function renderGachaShop(){
-  renderGacha();
-  const sec=document.createElement("div"); sec.id="shopSec"; $("#stage").appendChild(sec); renderBonus(sec);
+function renderGachaShop(){ renderGacha(); }
+// ミッションのページにボーナス（毎日・15分・1時間）と呪文をのせる
+function renderMissionPage(){
+  renderMission();
+  const sec=document.createElement("div"); sec.id="shopSec";
+  const h=$("#stage").querySelector("h2"); h.insertAdjacentElement("afterend",sec); renderBonus(sec);
 }
 function renderBonus(target){
   const dr=dailyReady(), left=hourlyLeft(), l1=hour1Left();
