@@ -1621,7 +1621,7 @@ function finishShopVisit(){
 try{ const v=JSON.parse(localStorage.getItem("toto-shop-visit")||"null"); if(v&&Date.now()-v.at<6*HOUR_MS){ shopVisit=v; setTimeout(finishShopVisit,1500); } else localStorage.removeItem("toto-shop-visit"); }catch(err){}
 function renderMission(){
   const done=MISSIONS.filter((_,i)=>missionLeft(i)>0).length;
-  $("#stage").innerHTML=`<h2>ミッション</h2>${!MISSIONS.length?`<div class="empty">今はミッションはありません。次のミッションをお楽しみに！</div>`:`<p class="sub">達成したら「達成」を押してね。それぞれ1日1回、クリアから24時間でまた挑戦できます。</p>
+  $("#stage").innerHTML=`<h2>ミッション</h2>${!MISSIONS.length?"":`<p class="sub">達成したら「達成」を押してね。それぞれ1日1回、クリアから24時間でまた挑戦できます。</p>
   <div class="progress"><div class="bar"><b style="width:${done/MISSIONS.length*100}%"></b></div><span class="pct">${done}/${MISSIONS.length}</span></div>
   <div class="missions">${MISSIONS.map((m,i)=>{ const left=missionLeft(i), big=m.coins>=500; return `<div class="mission ${left?"cleared":"open"} ${big?"big":""}">
     <div class="m-body"><div class="m-no">MISSION ${i+1}${big?" ・ スペシャル":""}</div><div class="m-text">${m.text}</div><div class="amt">+${m.coins}コイン</div></div>
