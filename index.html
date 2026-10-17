@@ -202,6 +202,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .prof-rank small{display:block;font-size:11px;color:var(--mist-dim)}
 .prof-rank b{font-family:var(--f-pix);font-weight:400;font-size:20px;color:var(--staff)}
 .plv{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.tr{font-size:.7em;margin-left:3px;vertical-align:2px}.tr.up{color:#5fd36a}.tr.down{color:#ff5a5a}.tr.mix{color:#5fb7e0}
 .pull.ticket{grid-column:1/-1;background:linear-gradient(90deg,#ffe27a,#ffb84d,#ffe27a);color:#3a2306;box-shadow:0 4px 0 #9a6c1d;display:grid;grid-template-columns:44px 1fr;align-items:center;text-align:left;column-gap:8px}
 .pull.ticket img{grid-row:span 2;width:44px;height:44px;object-fit:contain}
 .pull.ticket small{grid-column:2}
@@ -648,7 +649,21 @@ setTimeout(hourlyDecay,0);
 setInterval(hourlyDecay, 60*1000);
 let remoteDoc = null, remoteTimer = null, remoteReady = false;
 function isFreshSave(x){ return !x || ((x.units||[]).length<=1 && !x.coins && !(x.stats&&x.stats.pulls) && !x.lastDaily && !(x.codes&&x.codes.length) && !Object.keys(x.frames||{}).length); }
+/* ---------- プレイヤーレベルの流れ（ランキングの矢印） ----------
+   最近3時間のレベルの上がり下がりを記録：上がるだけ=▲緑 / 下がるだけ=▼赤 / 両方=▶青 */
+const TREND_MS = 3*HOUR_MS;
+function trackLv(){
+  if(S._lastLv==null){ S._lastLv=S.plv; return; }
+  if(S.plv!==S._lastLv){ S.lvHist=(S.lvHist||[]).concat({t:Date.now(), d:Math.sign(S.plv-S._lastLv)}).slice(-20); S._lastLv=S.plv; }
+}
+function myTrend(){
+  const h=(S.lvHist||[]).filter(x=>Date.now()-x.t<TREND_MS);
+  const up=h.some(x=>x.d>0), dn=h.some(x=>x.d<0);
+  return up&&dn?"mix":up?"up":dn?"down":"";
+}
+const TREND_ICON = { up:'<span class="tr up" title="上昇中">▲</span>', down:'<span class="tr down" title="下降中">▼</span>', mix:'<span class="tr mix" title="上がったり下がったり">▶</span>' };
 function save(){
+  trackLv();
   S.updated = Date.now(); queueProfile();
   try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
   if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(()=>{ remoteTimer=null; pushRemote(); }, 8000); }   // 書き込み回数を節約：操作が落ち着いてから8秒後にまとめて保存
@@ -1380,13 +1395,13 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-17f";
+const RULES_VER = "2026-10-17g";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
 // U(...) で囲んだところが「今回の更新で変わったところ」。NEWが付いている間だけ赤で目立たせる
-const RULES_TAG = "f";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
+const RULES_TAG = "g";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
 const U = (t, tag="c") => tag===RULES_TAG ? `<span class="upd">${t}</span>` : t;
 function openRules(){
   const fresh=rulesNew();
@@ -1400,7 +1415,7 @@ function openRules(){
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>24時間「現在配置不可」</b>")}。</li><li>${U("枠が空のあいだは","e")}<b>1時間ごとにプレイヤーLv−${EMPTY_DECAY}</b>。</li><li>${U("バトルで負けると枠が空になる（自動では補充されない）。別の魔物を配置し直そう","f")}</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手のプレイヤーLv分のコイン")}</b>、<b>${U("プレイヤーLv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("24時間配置不可")}</b>、<b>プレイヤーLv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、プレイヤーLv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 プレイヤー<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず「プレイヤーレベル○○くらいの冒険者」と伝わる。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手のプレイヤーLv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
-    ["🏆","ランキングとシーズン",`<ul><li>プレイヤーレベルの高い順。名前の横の色は最後にログインした時間（🟢1時間 🟡6時間 🟠24時間 🔴2日 🟣3日以内）。</li><li>${U("毎日")}<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！")}</li><li>集計のあと<b>プレイヤーLvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
+    ["🏆","ランキングとシーズン",`<ul><li>プレイヤーレベルの高い順。名前の横の色は最後にログインした時間（🟢1時間 🟡6時間 🟠24時間 🔴2日 🟣3日以内）。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！")}</li><li>集計のあと<b>プレイヤーLvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["📈","プレイヤーレベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／枠が空で1時間ごと${U("−"+EMPTY_DECAY)}／ログインしなかった日1日ごと−2</li></ul>`],
     ["🔒","そのほか",`<ul><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ボーナスタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
@@ -1695,7 +1710,7 @@ function profilePayload(){
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:MONSTERS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, pub:Date.now() };
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, pub:Date.now() };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -1713,7 +1728,8 @@ async function loadRanking(){
     RANK=q.docs.map(d=>{ const r={id:d.id,...d.data()};
       if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
       else if((r.ss??0)<seasonNow()){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新シーズンを開いていない人はリセット後の状態で表示
-      else if(!r.gm && r.ge && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-h*EMPTY_DECAY); r.exp=0; } }
+      else if(!r.gm && r.ge && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-h*EMPTY_DECAY); r.exp=0; r.tr=r.tr==="up"||r.tr==="mix"?"mix":"down"; } }
+      if(r.id===MYID) r.tr=myTrend(); else if(r.pub && now-r.pub>TREND_MS && !(r.ge&&!r.gm)) r.tr="";   // 古い情報の矢印は出さない
       return r; }).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
@@ -1827,14 +1843,14 @@ function renderRanking(segHtml){
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>
         ${i<50&&r.comment?`<div class="rk-cmt">「${esc(r.comment)}」</div>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
-      <div class="rk-lv"><small>Lv</small>${esc(r.lv)}</div></li>`).join("")}</ol>`;
+      <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
     <div class="season-box"><div><small>シーズン終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div>
       <div class="note" style="margin:2px 0 0;${S.lateSeen===seasonNow()?"color:var(--moss)":""}">${S.lateSeen===seasonNow()?"✅ 景品の受け取り条件クリア（終了前6時間以内にログイン済み）":"⏰ 景品をもらうには、18:00〜24:00に1度ログインしてね"}</div>
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>⏰ <b>景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度ログインしておく必要があります。</b><br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、プレイヤーレベルと勝率はリセットされます。</div></details></div>
-    <p class="sub" style="margin-bottom:4px">最後にログインしてから：🟢1時間以内 🟡6時間以内 🟠24時間以内 🔴2日以内 🟣3日以内</p><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
+    <p class="sub" style="margin-bottom:4px">最後にログインしてから：🟢1時間以内 🟡6時間以内 🟠24時間以内 🔴2日以内 🟣3日以内</p><p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><p class="sub">プレイヤーレベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>${body}`;
   $("#reRank").onclick=()=>{ RANK=null; render(); loadRanking(); };
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
@@ -1994,7 +2010,7 @@ async function checkSeason(){
     S.coins+=coins; if(stones) addItem("stone",stones);
     // リセット
     const beforeLv=S.plv;
-    S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0;
+    S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1;
     S.season=cur; Object.keys(S.sv).forEach(k=>{ if(+k<cur-3) delete S.sv[k]; });
     save(); queueProfile(true); render();
     const bg=document.createElement("div"); bg.className="reveal";
