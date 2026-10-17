@@ -202,6 +202,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .prof-rank small{display:block;font-size:11px;color:var(--mist-dim)}
 .prof-rank b{font-family:var(--f-pix);font-weight:400;font-size:20px;color:var(--staff)}
 .plv{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.rank-total{background:var(--bark);border:2px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 8px;font-size:14px}.rank-total b{font-family:var(--f-pix);font-size:18px;color:var(--staff)}
 .upd-bar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top,0px));z-index:90;display:flex;align-items:center;gap:10px;background:#1d2a24;border:2px solid var(--staff);color:#ffe9a8;font-weight:900;font-size:13px;padding:8px 10px 8px 14px;border-radius:14px;box-shadow:0 6px 18px #000a;white-space:nowrap}
 .upd-bar button{background:var(--staff);color:#3a2306;border:0;border-radius:10px;padding:6px 12px;font:inherit;font-weight:900}
 /* ホーム */
@@ -220,8 +221,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-deco{position:absolute;bottom:38%;z-index:2;filter:drop-shadow(0 6px 6px #0005)}.hm-deco span{font-size:min(26vw,120px);line-height:1}.hm-deco img{width:min(28vw,130px)}
 .hm-deco.l{left:-2%}.hm-deco.r{right:-2%}
 .hm-stand{position:absolute;left:50%;bottom:27%;transform:translateX(-50%);width:min(60vw,280px);z-index:3}
-.hm-pedestal{position:absolute;left:0;right:0;bottom:0;height:22%;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#fff,#e6e6e6 60%,#bdbdbd);border:3px solid #1d1d1d;box-shadow:0 8px 16px #0006}
-.hm-mon{position:relative;display:block;width:78%;margin:0 auto 9%;animation:hmBob 2.4s ease-in-out infinite;filter:drop-shadow(0 6px 4px #0005)}
+.hm-mon{position:relative;display:block;width:78%;margin:0 auto;animation:hmBob 2.4s ease-in-out infinite;filter:drop-shadow(0 6px 4px #0005)}
 @keyframes hmBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .hm-name{position:absolute;left:0;right:0;bottom:21%;text-align:center;z-index:3;font-weight:900;color:#fff;text-shadow:0 2px 0 #000,0 0 6px #000}
 .hm-change{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);z-index:4;padding:12px 22px;border-radius:14px;background:#fff;border:3px solid #1d1d1d;box-shadow:0 4px 0 #1d1d1d;font:inherit;font-weight:900;font-size:16px;color:#1d1d1d;white-space:nowrap}
@@ -1790,6 +1790,7 @@ function renderBonus(target){
 async function sha256(t){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
 
 /* ---------- プロフィール・ランキング ---------- */
+let RANK_TOTAL=0;
 let SIGNED=false, VIEWONLY=false, DB=null, MYID=null, profMode="rank", profTimer=null, lastPub="", RANK=null, myRank=null, rankErr=false;
 
 const loginBox=msg=>`<div class="login-box"><p>${msg}</p>
@@ -1829,6 +1830,8 @@ async function loadRanking(){
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
     else { const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
+    try{ const col=DB.collection("profiles");   // ランキングの参加人数（まとめて数えるだけなので通信は少ない）
+      RANK_TOTAL = col.count ? (await col.count().get()).data().count : Math.max(RANK_TOTAL, q.size); }catch(e){ RANK_TOTAL=Math.max(RANK_TOTAL, q.size); }
     rankErr=false;
   }catch(e){ rankErr=true; }
   if(tab==="rank"||tab==="home") render();
@@ -2014,7 +2017,7 @@ function renderHome(){
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
         ${avatarImg(S.avatar,44)}
         <span class="hm-id"><b id="hmName"></b><span class="hm-lv">冒険者 Lv <b>${S.plv}</b></span></span>
-        <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b></span>
+        <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
       </button>
       <div class="hm-btns">
         <button class="hm-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖 最新ルール確認${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>
@@ -2022,7 +2025,7 @@ function renderHome(){
       </div>
     </div>
     ${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
-    <div class="hm-stand"><div class="hm-pedestal"></div><img class="hm-mon" src="${m.img}" alt="${esc(m.name)}"></div>
+    <div class="hm-stand"><img class="hm-mon" src="${m.img}" alt="${esc(m.name)}"></div>
     <div class="hm-name">${esc(m.name)}</div>
     <button class="hm-change" type="button" id="hmChange">🎨「魔物／装飾」変更</button>
   </div>`;
@@ -2179,7 +2182,7 @@ function renderRanking(segHtml){
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>⏰ <b>景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度ログインしておく必要があります。</b><br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
-    <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><p class="sub">冒険者レベルの上位100人。${myRank?`あなたは <b>${myRank}位</b>。`:""}50位以内はひとことコメントを残せます。</p>
+    <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>${body}`;
   $("#reRank").onclick=()=>{ RANK=null; render(); loadRanking(); };
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
