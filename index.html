@@ -1356,7 +1356,11 @@ const I18N_EN = {
 "保存できない時は、この画像を長押しして「写真に追加」": "If you can't save, long-press this image and choose \"Add to Photos\"",
 "アイコンを保存しました": "Icon saved",
 "（自動では配置されない）。好きな魔物に変えたり、外したりできる。": " (nothing is placed automatically). You can swap or remove it anytime.",
-"平均": "avg"
+"平均": "avg",
+"ホームの背景・床・装飾 全{0}種（持っているものが出たら🪙10コインか💎覚醒の石1個に）": "{0} Home backgrounds, floors & decorations (duplicates become 🪙 10 coins or 💎 1 Awakening Stone)",
+"80%で10コイン、20%で覚醒の石1個": "10 coins (80%) or 1 Awakening Stone (20%)",
+"かぶり {0}個 → 🪙 +{1}コイン・💎 覚醒の石 +{2}": "{0} duplicates → 🪙 +{1} coins · 💎 Awakening Stone +{2}",
+"かぶり {0}個 → 🪙 +{1}コイン": "{0} duplicates → 🪙 +{1} coins"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -2405,7 +2409,7 @@ function renderGacha(){
   </section>
   <section class="g-banner deco">
     <div class="g-head"><canvas id="cvDeco" width="200" height="200" aria-hidden="true"></canvas>
-      <div><div class="g-tag">HOME DECO</div><div class="g-title">装飾ガチャ</div><div class="g-sub">ホームの背景・床・装飾 全${DECO_POOL.length}種（持っているものが出たら💎覚醒の石1個に）</div></div></div>
+      <div><div class="g-tag">HOME DECO</div><div class="g-title">装飾ガチャ</div><div class="g-sub">ホームの背景・床・装飾 全${DECO_POOL.length}種（持っているものが出たら🪙10コインか💎覚醒の石1個に）</div></div></div>
     <div class="pulls">
       <button class="pull" data-pull="deco" data-n="1" type="button" ${S.coins<COST?"disabled":""}>1パック<small>${COST}コイン</small></button>
       <button class="pull ten" data-pull="deco" data-n="10" type="button" ${S.coins<COST*10?"disabled":""}>10連パック<small>${COST*10}コイン</small></button>
@@ -2497,13 +2501,13 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-17k";
+const RULES_VER = "2026-10-17l";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
 // U(...) で囲んだところが「今回の更新で変わったところ」。NEWが付いている間だけ赤で目立たせる
-const RULES_TAG = "k";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
+const RULES_TAG = "l";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
 const U = (t, tag="c") => tag===RULES_TAG ? `<span class="upd">${t}</span>` : t;
 function openRules(){
   const fresh=rulesNew();
@@ -2519,7 +2523,7 @@ function openRules(){
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
     ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！")}</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
-    ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>覚醒の石1個</b>に変わる","i")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
+    ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
   const el=document.createElement("div"); el.className="rules-stage"+(fresh?" fresh":""); el.setAttribute("role","dialog"); el.setAttribute("aria-label","最新ルール");
   el.innerHTML=`<div class="rules-card"><div class="rules-h"><h3>📖 最新ルール</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
@@ -2842,7 +2846,7 @@ const findRank=id=>(RANK||[]).find(x=>x.id===id)||RANK_EXTRA.find(x=>x.id===id);
 const normName=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"");
 function avatarImg(src,size){ return src&&/^data:image\/(png|jpeg);base64,/.test(src)?`<img class="ava" src="${src}" width="${size}" height="${size}" alt="">`:`<span class="ava ava-none" style="width:${size}px;height:${size}px"></span>`; }
 /* ---------- ホーム（着せ替えできる部屋） ----------
-   背景・床は「装飾ガチャ」で集める。シンプル2種ずつは最初から使える。かぶったら覚醒の石1個に */
+   背景・床は「装飾ガチャ」で集める。シンプル2種ずつは最初から使える。かぶったら 80%で10コイン・20%で覚醒の石1個 */
 const HOME_BG = [
   {k:"plain1", n:"シンプル（そら）", free:true}, {k:"plain2", n:"シンプル（すな）", free:true},
   {k:"forest", n:"深い森", rank:"C"}, {k:"snow", n:"雪原", rank:"C"},
@@ -3057,17 +3061,22 @@ function openHomeEdit(mode){
   bg.querySelectorAll("[data-hm]").forEach(b=>b.onclick=()=>openHomeEdit(b.dataset.hm));
   bg.querySelectorAll(".hm-opt:not(.lock)").forEach(b=>b.onclick=()=>{ h[mode]=mode==="m"?+b.dataset.v:b.dataset.v; save(); render(); openHomeEdit(mode); });
 }
-// 装飾ガチャ：背景・床・装飾。持っているものが出たら覚醒の石1個に変わる
+// 装飾ガチャ：背景・床・装飾。持っているものが出たら 80%で10コイン、20%で覚醒の石1個に変わる
+const DECO_DUP_COIN = 10, DECO_DUP_STONE = 0.2;
 function pullDeco(n, ticket){
   if(ticket){ if(!inv("ticket")) return toast("ガチャチケットがありません"); addItem("ticket",-1); n=TICKET_PACKS; }
   else { if(S.coins < COST*n) return toast("コインが足りません"); S.coins-=COST*n; }
   S.stats.pulls+=n; gainPExp(PXP.pull*n);
-  const own=homeOwn(), res=[]; let dup=0;
+  const own=homeOwn(), res=[]; let dup=0, dupSt=0;
   for(let i=0;i<n;i++){ const x=pickFrom(DECO_POOL,rollRank()); if(!x) continue;
-    const isNew=!own[x.type][x.k]; if(isNew) own[x.type][x.k]=1; else dup++;
-    res.push({img:decoThumb(x), name:DECO_TYPE[x.type]+(isNew?"":" →💎"), rank:x.rank, isNew}); }
-  if(dup) addItem("stone",dup);
-  save(); renderCoins(); openPack(res,"deco","装飾を手に入れた！",{newCoin:0, note:dup?`かぶり ${dup}個 → 💎 覚醒の石 +${dup}`:""});
+    const isNew=!own[x.type][x.k]; let tag="";
+    if(isNew) own[x.type][x.k]=1;
+    else { dup++; if(Math.random()<DECO_DUP_STONE){ dupSt++; tag=" →💎"; } else tag=" →🪙"; }
+    res.push({img:decoThumb(x), name:DECO_TYPE[x.type]+tag, rank:x.rank, isNew}); }
+  const dupC=(dup-dupSt)*DECO_DUP_COIN;
+  if(dupSt) addItem("stone",dupSt); if(dupC) S.coins+=dupC;
+  const note=!dup?"":dupSt&&dupC?`かぶり ${dup}個 → 🪙 +${dupC}コイン・💎 覚醒の石 +${dupSt}`:dupSt?`かぶり ${dup}個 → 💎 覚醒の石 +${dupSt}`:`かぶり ${dup}個 → 🪙 +${dupC}コイン`;
+  save(); renderCoins(); openPack(res,"deco","装飾を手に入れた！",{newCoin:0, note});
 }
 function renderRankTab(){
   if(profMode!=="dress") profMode="rank";
