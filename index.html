@@ -1467,7 +1467,14 @@ const I18N_EN = {
 "{0}さんに{1}コイン投資しました！": "Invested {1} coins in {0}!",
 "💰 この冒険者には投資家が{0}人ついています": "💰 This adventurer has {0} investor(s)",
 "トトと": "Toto &",
-"魔物たち": "Monsters"
+"魔物たち": "Monsters",
+"（投資した分もふくめて・0コインまで）": " (including what you invested; down to 0 coins)",
+"・投資は1シーズンに1人だけ。投資した時点でコインが減ります": "• 1 investment per season. The coins are taken when you invest",
+"投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。": "The coins are taken when you invest. At 4th or lower you lose 10x in total, including what you invested. Results apply the next time you open the app after the season ends.",
+"（投資した分は戻らない）。自分には投資できない。": " (what you invested isn't returned). You can't invest in yourself.",
+"投資するとすぐに {0}コイン 減ります": "{0} coins will be taken right away",
+"投資したコインはすでに支払い済みです。": "Your invested coins have already been paid. ",
+"{0}結果はシーズン終了（毎日0:00）のあと、次にアプリを開いたときに反映されます。": "{0}Results apply the next time you open the app after the season ends (daily at 0:00)."
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -2632,7 +2639,7 @@ function openRules(){
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>冒険者Lv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず「冒険者Lv○○くらいの冒険者」と伝わる。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
     ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日")}<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ ${U("景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！")}</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
-    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由）。</li><li>シーズン終了時の投資先の順位で：<b>1位 5倍</b>もらえる／<b>2位 3倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資したときにコインは減らない。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資額は没収）。自分には投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"n")],
+    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由）。</li><li>シーズン終了時の投資先の順位で：<b>1位 5倍</b>もらえる／<b>2位 3倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"n")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
@@ -3194,9 +3201,9 @@ function pullDeco(n, ticket){
   save(); renderCoins(); openPack(res,"deco","装飾を手に入れた！",{newCoin:0, note});
 }
 /* ---------- 冒険者に投資する ----------
-   1シーズンに1人だけ。金額は自由（持っているコインまで）。投資したときにコインは減らない。
-   シーズン終了時の投資先の順位で：1位 5倍もらえる／2位 3倍／3位 2倍／4位以下 10倍失う（0コインまで）
-   投資した自分が3位以内に入ったら、その時点で投資は無効（投資額を没収）
+   1シーズンに1人だけ。金額は自由（持っているコインまで）。投資した時点でコインが減る。
+   シーズン終了時の投資先の順位で：1位 投資額の5倍もらえる／2位 3倍／3位 2倍／4位以下 投資額の10倍を失う（投資した分もふくめて合計。0コインまで）
+   投資した自分が3位以内に入ったら、その時点で投資は無効（投資した分は戻らない）
    投資された人は、シーズン終了時に投資額の合計の10%をもらえる */
 const INV_MUL = {1:5, 2:3, 3:2}, INV_LOSE = 10, INV_GIVE = 0.1;
 let INV_LIST=null, INV_CNT={}, invQ="", invErr=false;
@@ -3219,7 +3226,7 @@ async function loadInvestList(){
 }
 function checkInvestVoid(){
   const iv=myInv(); if(!iv||iv.void||!myRank||myRank>3) return;
-  const lose=Math.min(iv.amt,S.coins); S.coins-=lose; iv.void=1; iv.lost=lose; save(); renderCoins();
+  const lose=iv.paid?iv.amt:Math.min(iv.amt,S.coins); if(!iv.paid) S.coins-=lose; iv.void=1; iv.lost=lose; save(); renderCoins();
   try{ DB&&DB.doc("invests/"+MYID+"_"+iv.ss).update({void:true}); }catch(e){}
   const el=document.createElement("div"); el.className="reveal";
   el.innerHTML=`<h3>投資が無効になりました</h3><p class="note" style="text-align:center;max-width:320px">あなたがランキング${myRank}位に入ったので、${esc(iv.name||"")}さんへの投資は無効になりました。<br><b style="color:#ff6a5a">−${lose.toLocaleString()}コイン</b>（投資額を没収）</p><button class="btn" type="button">OK</button>`;
@@ -3230,13 +3237,13 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
   const iv=S.inv&&S.inv.ss===old?S.inv:null;
   if(iv && !iv.void){
     const nm=esc(iv.name||"相手");
-    if(rank && rank<=3){ const lose=Math.min(iv.amt, S.coins+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${lose.toLocaleString()}コイン没収）`); }
+    if(rank && rank<=3){ const lose=iv.paid?0:Math.min(iv.amt, S.coins+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${(iv.paid?iv.amt:lose).toLocaleString()}コイン没収）`); }
     else if(q){
       const d=q.docs.find(x=>x.id===iv.def), ts=d?seasonScore(d.data(),old):null;
       let tr=null; if(ts!=null){ tr=1+q.docs.filter(x=>x.id!==iv.def&&x.id!==MYID).map(x=>seasonScore(x.data(),old)).filter(v=>v!=null&&v>ts).length+(mine>ts?1:0); }
       const mul=INV_MUL[tr];
       if(mul){ out.delta+=iv.amt*mul; out.lines.push(`💰 投資先の${nm}さんが${tr}位！ +${(iv.amt*mul).toLocaleString()}コイン`); }
-      else { const lose=Math.min(iv.amt*INV_LOSE, S.coins+coinsSoFar+out.delta); out.delta-=lose; out.lines.push(`💸 投資先の${nm}さんは${tr?tr+"位":"順位なし"}…（−${lose.toLocaleString()}コイン）`); }
+      else { const more=Math.min(iv.amt*(INV_LOSE-(iv.paid?1:0)), S.coins+coinsSoFar+out.delta); out.delta-=more; out.lines.push(`💸 投資先の${nm}さんは${tr?tr+"位":"順位なし"}…（−${((iv.paid?iv.amt:0)+more).toLocaleString()}コイン）`); }
     }
   }
   if(S.inv && S.inv.ss<=old) S.inv=null;
@@ -3262,8 +3269,8 @@ function renderInvest(){
   $("#stage").innerHTML=`${back}<h2>💰 冒険者に投資する</h2>
     <div class="inv-rule">シーズン終了時の、投資先の冒険者の順位で決まる！<br>
       🥇1位 <b class="up">投資額の5倍もらえる</b> ／ 🥈2位 <b class="up">3倍</b> ／ 🥉3位 <b class="up">2倍</b><br>
-      4位以下 <b class="down">投資額の10倍を失う</b>（0コインまで）<br>
-      ・投資は1シーズンに1人だけ。投資したときにコインは減りません<br>
+      4位以下 <b class="down">投資額の10倍を失う</b>（投資した分もふくめて・0コインまで）<br>
+      ・投資は1シーズンに1人だけ。投資した時点でコインが減ります<br>
       ・あなたが3位以内に入ったら、その時点で投資は無効（投資額は没収）<br>
       ・投資された冒険者は、シーズン終了時に投資額の10%をもらえる</div>${body}`;
   $("#backHome").onclick=()=>{ homeMode="scene"; render(); };
@@ -3286,7 +3293,7 @@ function investStatusHtml(iv){
   return `<div class="inv-time"><small>今シーズンの残り時間</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div>
     <ol class="rank"><li id="ivGoProf">${avatarImg(r?.icon||iv.icon,44)}<div class="rk-body"><div class="rk-name">${uname(iv.name)}</div><div class="rk-sub">${cur?`現在${cur}位`:"順位を読み込み中…"}</div></div><span class="inv-info" style="display:grid;place-items:center">詳細</span></li></ol>
     <div class="inv-box" style="margin-top:12px"><small>投資コイン</small><span class="amt">${a.toLocaleString()}コイン</span>${res}</div>
-    <p class="sub">結果はシーズン終了（毎日0:00）のあと、次にアプリを開いたときに反映されます。</p>`;
+    <p class="sub">${iv.paid?"投資したコインはすでに支払い済みです。":""}結果はシーズン終了（毎日0:00）のあと、次にアプリを開いたときに反映されます。</p>`;
 }
 function openInvestForm(r){
   const bg=sheet(`<div class="sheet-h"><h3>投資する</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
@@ -3299,7 +3306,8 @@ function openInvestForm(r){
   const inp=bg.querySelector("#ivAmt"), prev=bg.querySelector("#ivPrev"), go=bg.querySelector("#ivGo");
   const val=()=>Math.floor(Number(inp.value)||0);
   const upd=()=>{ const a=val(); go.disabled=!(a>=1&&a<=S.coins);
-    prev.innerHTML=a>S.coins?`<span style="color:#ff6a5a">持っているコインより多くは投資できません</span>`:a>=1?`1位 <b style="color:#5fd36a">+${(a*5).toLocaleString()}</b> ／ 2位 <b style="color:#5fd36a">+${(a*3).toLocaleString()}</b> ／ 3位 <b style="color:#5fd36a">+${(a*2).toLocaleString()}</b> ／ 4位以下 <b style="color:#ff6a5a">−${(a*INV_LOSE).toLocaleString()}</b>`:"金額を入力してね"; };
+    prev.innerHTML=a>S.coins?`<span style="color:#ff6a5a">持っているコインより多くは投資できません</span>`:a>=1?`1位 <b style="color:#5fd36a">+${(a*5).toLocaleString()}</b> ／ 2位 <b style="color:#5fd36a">+${(a*3).toLocaleString()}</b> ／ 3位 <b style="color:#5fd36a">+${(a*2).toLocaleString()}</b> ／ 4位以下 <b style="color:#ff6a5a">−${(a*INV_LOSE).toLocaleString()}</b>`:"金額を入力してね";
+    if(a>=1&&a<=S.coins) prev.innerHTML+=`<br><small>投資するとすぐに ${a.toLocaleString()}コイン 減ります</small>`; };
   inp.oninput=upd;
   bg.querySelectorAll("[data-ia]").forEach(b=>b.onclick=()=>{ const v=b.dataset.ia; inp.value=v==="all"?S.coins:v==="0"?"":Math.min(S.coins,val()+(+v)); upd(); });
   go.onclick=async e=>{ const a=val(); if(!(a>=1&&a<=S.coins)) return;
@@ -3313,7 +3321,9 @@ async function doInvest(r,a){
   const ss=seasonNow();
   try{ await withTO(DB.doc("invests/"+MYID+"_"+ss).set({att:MYID, def:r.id, amt:a, ss, at:Date.now(), defName:String(r.name||"").slice(0,12)})); }
   catch(e){ toast("投資できませんでした。少し時間をおいてためしてください"); return false; }
-  S.inv={ss, def:r.id, name:String(r.name||""), icon:r.icon||"", amt:a, at:Date.now()}; save();
+  if(a>S.coins){ toast("コインが足りません"); return false; }
+  S.coins-=a; renderCoins();
+  S.inv={ss, def:r.id, name:String(r.name||""), icon:r.icon||"", amt:a, at:Date.now(), paid:1}; save();
   INV_CNT[r.id]=(INV_CNT[r.id]||0)+1; SFX.coin(); toast(`${r.name||"名無しの召喚士"}さんに${a.toLocaleString()}コイン投資しました！`);
   return true;
 }
