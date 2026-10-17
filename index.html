@@ -285,6 +285,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 @keyframes shopBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.shop-banner{animation:none}}
 .stats .wide2{grid-column:span 2}
+.stats .st-ic{display:block;font-style:normal;font-size:20px;line-height:1.1;margin-bottom:2px}
 .season-box{background:var(--bark);border:2px solid var(--staff);border-radius:14px;padding:10px 12px;margin:0 0 10px}
 .season-box>div{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .season-box b{font-family:var(--f-pix);font-size:22px;color:var(--staff)}
@@ -668,6 +669,7 @@ function isFreshSave(x){ return !x || ((x.units||[]).length<=1 && !x.coins && !(
    最近3時間のレベルの上がり下がりを記録：上がるだけ=▲緑 / 下がるだけ=▼赤 / 両方=▶青 */
 const TREND_MS = 3*HOUR_MS;
 function trackLv(){
+  if(!S.maxPlv || S.plv>S.maxPlv) S.maxPlv=S.plv;   // 今までの最高プレイヤーレベル（シーズンでリセットされない）
   if(S._lastLv==null){ S._lastLv=S.plv; return; }
   if(S.plv!==S._lastLv){ S.lvHist=(S.lvHist||[]).concat({t:Date.now(), d:Math.sign(S.plv-S._lastLv)}).slice(-20); S._lastLv=S.plv; }
 }
@@ -1718,7 +1720,7 @@ function profilePayload(){
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:MONSTERS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, pub:Date.now() };
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, pub:Date.now() };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -1779,17 +1781,18 @@ function renderMe(segHtml){
     <div class="note" style="margin:2px 0 0">次のレベルまで ${need-S.pexp} EXP ・ ガチャ+${PXP.pull} / 合成+${PXP.fuse} / 新しい魔物+${PXP.newMon}</div>
     ${decayNote?`<div class="note" style="color:var(--berry)">ログインしなかった日があったので、レベルが ${decayNote} 下がりました</div>`:""}
     <div class="stats">
-      <div><small>ガチャ回数</small><b>${S.stats.pulls.toLocaleString()}</b></div>
-      <div><small>合成回数</small><b>${S.stats.fuses.toLocaleString()}</b></div>
-      <div><small>魔物コンプ率</small><b>${compPct()}%</b><small>${owned}/${MONSTERS.length}</small></div>
-      <div><small>アイコン枠</small><b>${frames}</b><small>/${FRAMES.length}</small></div>
-      <div><small>手持ちの魔物</small><b>${S.units.length}</b></div>
-      <div><small>ミッション達成</small><b>${(S.stats.missions||0).toLocaleString()}</b></div>
-      <div><small>勝利数</small><b>${(S.stats.win||0).toLocaleString()}</b></div>
-      <div><small>敗北数</small><b>${(S.stats.lose||0).toLocaleString()}</b></div>
-      <div><small>引き分け数</small><b>${(S.stats.draw||0).toLocaleString()}</b></div>
-      <div><small>勝率</small><b>${winRate(S.stats.win,S.stats.lose,S.stats.draw)}</b></div>
-      <div class="wide2"><small>最高順位</small><b>${bestText()}</b></div>
+      <div><i class="st-ic" aria-hidden="true">🎰</i><small>ガチャ回数</small><b>${S.stats.pulls.toLocaleString()}</b></div>
+      <div><i class="st-ic" aria-hidden="true">🔨</i><small>合成回数</small><b>${S.stats.fuses.toLocaleString()}</b></div>
+      <div><i class="st-ic" aria-hidden="true">📖</i><small>魔物コンプ率</small><b>${compPct()}%</b><small>${owned}/${MONSTERS.length}</small></div>
+      <div><i class="st-ic" aria-hidden="true">🖼️</i><small>アイコン枠</small><b>${frames}</b><small>/${FRAMES.length}</small></div>
+      <div><i class="st-ic" aria-hidden="true">👾</i><small>手持ちの魔物</small><b>${S.units.length}</b></div>
+      <div><i class="st-ic" aria-hidden="true">🚩</i><small>ミッション達成</small><b>${(S.stats.missions||0).toLocaleString()}</b></div>
+      <div><i class="st-ic" aria-hidden="true">🏆</i><small>勝利数</small><b>${(S.stats.win||0).toLocaleString()}</b></div>
+      <div><i class="st-ic" aria-hidden="true">💀</i><small>敗北数</small><b>${(S.stats.lose||0).toLocaleString()}</b></div>
+      <div><i class="st-ic" aria-hidden="true">🤝</i><small>引き分け数</small><b>${(S.stats.draw||0).toLocaleString()}</b></div>
+      <div><i class="st-ic" aria-hidden="true">📊</i><small>勝率</small><b>${winRate(S.stats.win,S.stats.lose,S.stats.draw)}</b></div>
+      <div><i class="st-ic" aria-hidden="true">👑</i><small>最高順位</small><b>${bestText()}</b></div>
+      <div><i class="st-ic" aria-hidden="true">⭐</i><small>最高プレイヤーLv</small><b>${(S.maxPlv||S.plv).toLocaleString()}</b></div>
     </div>
     <div class="cmt"><div class="pick-label">ひとことコメント <span>ランキング50位以内で表示</span></div>
       ${myRank&&myRank<=50?`<form id="cmtForm" class="cmt-row"><input id="cmtIn" maxlength="40" placeholder="ランキングにのせるひとこと" aria-label="ひとことコメント"><button class="btn" type="submit">保存</button></form>`
@@ -2208,17 +2211,18 @@ function openOtherProfile(r,rank){
     ${r.id===MYID?itemBox(r):""}
     ${rank<=50&&r.comment?`<div class="rk-cmt" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
     <div class="stats">
-      <div><small>ガチャ回数</small><b>${n(r.pulls)}</b></div>
-      <div><small>合成回数</small><b>${n(r.fuses)}</b></div>
-      <div><small>魔物コンプ率</small><b>${esc(r.comp??0)}%</b>${r.owned!=null?`<small>${n(r.owned)}/${MONSTERS.length}</small>`:""}</div>
-      ${r.frames!=null?`<div><small>アイコン枠</small><b>${n(r.frames)}</b><small>/${FRAMES.length}</small></div>`:""}
-      ${r.units!=null?`<div><small>手持ちの魔物</small><b>${n(r.units)}</b></div>`:""}
-      ${r.missions!=null?`<div><small>ミッション達成</small><b>${n(r.missions)}</b></div>`:""}
-      <div><small>勝利数</small><b>${n(r.w)}</b></div>
-      <div><small>敗北数</small><b>${n(r.l)}</b></div>
-      <div><small>引き分け数</small><b>${n(r.dr)}</b></div>
-      <div><small>勝率</small><b>${winRate(r.w,r.l,r.dr)}</b></div>
-      <div class="wide2"><small>最高順位</small><b>${esc(bestTextOf(r))}</b></div>
+      <div><i class="st-ic" aria-hidden="true">🎰</i><small>ガチャ回数</small><b>${n(r.pulls)}</b></div>
+      <div><i class="st-ic" aria-hidden="true">🔨</i><small>合成回数</small><b>${n(r.fuses)}</b></div>
+      <div><i class="st-ic" aria-hidden="true">📖</i><small>魔物コンプ率</small><b>${esc(r.comp??0)}%</b>${r.owned!=null?`<small>${n(r.owned)}/${MONSTERS.length}</small>`:""}</div>
+      ${r.frames!=null?`<div><i class="st-ic" aria-hidden="true">🖼️</i><small>アイコン枠</small><b>${n(r.frames)}</b><small>/${FRAMES.length}</small></div>`:""}
+      ${r.units!=null?`<div><i class="st-ic" aria-hidden="true">👾</i><small>手持ちの魔物</small><b>${n(r.units)}</b></div>`:""}
+      ${r.missions!=null?`<div><i class="st-ic" aria-hidden="true">🚩</i><small>ミッション達成</small><b>${n(r.missions)}</b></div>`:""}
+      <div><i class="st-ic" aria-hidden="true">🏆</i><small>勝利数</small><b>${n(r.w)}</b></div>
+      <div><i class="st-ic" aria-hidden="true">💀</i><small>敗北数</small><b>${n(r.l)}</b></div>
+      <div><i class="st-ic" aria-hidden="true">🤝</i><small>引き分け数</small><b>${n(r.dr)}</b></div>
+      <div><i class="st-ic" aria-hidden="true">📊</i><small>勝率</small><b>${winRate(r.w,r.l,r.dr)}</b></div>
+      <div><i class="st-ic" aria-hidden="true">👑</i><small>最高順位</small><b>${esc(bestTextOf(r))}</b></div>
+      <div><i class="st-ic" aria-hidden="true">⭐</i><small>最高プレイヤーLv</small><b>${n(Math.max(r.mp||0,r.lv||1))}</b></div>
     </div>
   </div>`);
 }
