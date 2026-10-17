@@ -202,6 +202,19 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .prof-rank small{display:block;font-size:11px;color:var(--mist-dim)}
 .prof-rank b{font-family:var(--f-pix);font-weight:400;font-size:20px;color:var(--staff)}
 .plv{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.rules-btn{position:relative;display:block;width:100%;margin:6px 0 10px;padding:11px 12px;border-radius:14px;border:2px solid #ffd54a;background:linear-gradient(90deg,#3a2a08,#5a3f0a,#3a2a08);color:#ffe9a8;font-weight:900;font-size:15px;letter-spacing:.02em;box-shadow:0 3px 0 #7a5a12}
+.rules-btn.new{animation:rulesPulse 1.6s ease-in-out infinite}
+@keyframes rulesPulse{50%{box-shadow:0 3px 0 #7a5a12,0 0 16px #ffd54a99}}
+.rules-new{position:absolute;top:-8px;right:10px;background:var(--berry);color:#fff;font-size:11px;font-family:var(--f-pix);padding:1px 7px;border-radius:6px}
+.rules-stage{position:fixed;inset:0;z-index:60;background:#000b;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px))}
+.rules-card{background:var(--bark);border:2px solid #ffd54a;border-radius:18px;width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;padding:14px}
+.rules-h{display:flex;align-items:center;justify-content:space-between}.rules-h h3{margin:0;font-family:var(--f-pix);color:#ffe9a8}
+.rules-toc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.rules-toc .chip{font-size:12px}
+.rules-body{overflow-y:auto;flex:1;min-height:0;padding-right:4px;font-size:14px;line-height:1.7}
+.rules-body section{background:#0003;border-radius:12px;padding:10px 12px;margin-bottom:10px;scroll-margin-top:4px}
+.rules-body h4{margin:0 0 6px;font-size:16px;color:#ffe9a8}
+.rules-body ul,.rules-body ol{margin:0;padding-left:1.3em}.rules-body li{margin:3px 0}
+.rules-body b{color:#fff}
 .down-b{position:absolute;left:4px;bottom:22px;background:#000b;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px}
 .seen{font-size:.75em;vertical-align:1px}
 /* パック開封 */
@@ -1261,7 +1274,7 @@ function renderGacha(){
   if(gachaMode==="item") return renderItemGacha();
   const isMon = gachaMode==="mon";
   const ranksHave = new Set(MONSTERS.map(m=>m.rank));
-  $("#stage").innerHTML = `<h2>召喚の祭壇</h2><p class="sub">1回 ${COST}コイン。ボーナスタブで毎日1000コイン、15分ごとに100コインもらえます。</p>
+  $("#stage").innerHTML = `${rulesBtn()}<h2>召喚の祭壇</h2><p class="sub">1回 ${COST}コイン。ボーナスタブで毎日1000コイン、15分ごとに100コインもらえます。</p>
   ${seg([["mon","魔物"],["frame","アイコン枠"],["item","アイテム"]],gachaMode)}
   <div class="altar">
     <canvas id="altarCv" width="256" height="256" aria-hidden="true"></canvas>
@@ -1358,8 +1371,42 @@ function confirmSell(uids,onDone){
 function closeSheet(){ document.querySelectorAll(".sheet-bg").forEach(x=>x.remove()); }
 function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.className="sheet-bg"; bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`; bg.onclick=e=>{if(e.target===bg)closeSheet()}; document.body.appendChild(bg); bg.querySelector(".x")?.addEventListener("click",closeSheet); return bg; }
 
+/* ---------- （必見）最新ルール確認！ ----------
+   ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
+const RULES_VER = "2026-10-17b";
+const RULES_KEY = "toto-rules-seen";
+const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
+const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
+document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
+function openRules(){
+  try{ localStorage.setItem(RULES_KEY,RULES_VER); }catch(e){}
+  const n=v=>Number(v).toLocaleString();
+  const secs=[
+    ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、プレイヤーレベルを上げる</li><li>毎日0:00の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
+    ["💰","コインの集め方",`<ul><li>毎日ボーナス：<b>${n(DAILY)}コイン</b>（1日1回）</li><li>15分ボーナス：<b>${HOURLY}コイン</b>（15分ごと）</li><li>1時間ボーナス：<b>${n(HOUR_BONUS)}コイン</b>（1時間ごと）</li><li>はじめて手に入れた魔物・アイコン枠：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${SHOP_STAY/1000}秒見る：<b>${SHOP_REWARD}コイン</b>（${SHOP_BIG_STAY/1000}秒以上なら${n(SHOP_BIG_REWARD)}コイン・3時間ごと）</li><li>バトルに勝つ：<b>${WIN_BASE}コイン＋相手のプレイヤーLv分</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
+    ["🎰","ガチャ（パック）",`<ul><li>魔物パック・アイコン枠パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span>。出る確率は C ${RATES.C}%／B ${RATES.B}%／A ${RATES.A}%／S ${RATES.S}%／Z ${RATES.Z}%</li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b>（${GACHA_ITEMS.map(i=>i.name+" "+i.rate+"%").join("／")}）</li></ul>`],
+    ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（Lv${MAX_LV}もこえられる）。</li></ul>`],
+    ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>配置していないと、手持ちから<b>ランダムで自動配置</b>される。好きな魔物に変えるのは自由！</li><li>バトルで負けた魔物は<b>24時間「現在配置不可」</b>。</li><li>配置できる魔物がいなくて枠が空のあいだは、<b>1時間ごとにプレイヤーLv−${EMPTY_DECAY}</b>。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
+    ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${WIN_BASE}コイン＋相手のプレイヤーLv分のコイン</b>、<b>プレイヤーLv+1</b></li><li>💀 負け：魔物のレベルが<b>半分</b>＆<b>24時間配置不可</b>、<b>プレイヤーLv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、プレイヤーLv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。相手の魔物が変わればまた戦える。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 プレイヤー<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず「プレイヤーレベル○○くらいの冒険者」と伝わる。</li></ul>`],
+    ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手のプレイヤーLv−${BOMB_LV}</li><li>この3つはランキングで相手をタップして使う。</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
+    ["🏆","ランキングとシーズン",`<ul><li>プレイヤーレベルの高い順。名前の横の色は最後にログインした時間（🟢1時間 🟡6時間 🟠24時間 🔴2日 🟣3日以内）。</li><li>毎日<b>0:00（日本時間）</b>に集計。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>⏰ 景品は<b>18:00〜24:00に1度ログイン</b>した人だけ！</li><li>集計のあと<b>プレイヤーLvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
+    ["📈","プレイヤーレベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／バトルに勝つとLv+1</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／枠が空で1時間ごと−${EMPTY_DECAY}／ログインしなかった日1日ごと−2</li></ul>`],
+    ["🔒","そのほか",`<ul><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ボーナスタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
+  ];
+  const el=document.createElement("div"); el.className="rules-stage"; el.setAttribute("role","dialog"); el.setAttribute("aria-label","最新ルール");
+  el.innerHTML=`<div class="rules-card"><div class="rules-h"><h3>📖 最新ルール</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <p class="note" style="margin:0 0 8px">気になるところをタップすると、すぐそこに飛べます。</p>
+    <div class="rules-toc">${secs.map(([ic,t],i)=>`<button class="chip" type="button" data-rj="${i}">${ic} ${t}</button>`).join("")}</div>
+    <div class="rules-body">${secs.map(([ic,t,b],i)=>`<section id="rl${i}"><h4>${ic} ${t}</h4>${b}</section>`).join("")}</div>
+    <button class="btn gold" type="button" data-rclose="1" style="width:100%;margin-top:10px">わかった！</button></div>`;
+  document.body.appendChild(el);
+  const close=()=>{ el.remove(); render(); };
+  el.querySelector(".x").onclick=close; el.querySelector("[data-rclose]").onclick=close;
+  el.onclick=e=>{ if(e.target===el) close(); };
+  el.querySelectorAll("[data-rj]").forEach(b=>b.onclick=()=>el.querySelector("#rl"+b.dataset.rj).scrollIntoView({behavior:"smooth",block:"start"}));
+}
 function renderItemGacha(){
-  $("#stage").innerHTML = `<h2>召喚の祭壇</h2><p class="sub">アイテムガチャは1回 ${ITEM_COST.toLocaleString()}コイン。アイテムはランキングで相手をタップして使えます（覚醒の石は魔物の画面で使います）。</p>
+  $("#stage").innerHTML = `${rulesBtn()}<h2>召喚の祭壇</h2><p class="sub">アイテムガチャは1回 ${ITEM_COST.toLocaleString()}コイン。アイテムはランキングで相手をタップして使えます（覚醒の石は魔物の画面で使います）。</p>
   ${seg([["mon","魔物"],["frame","アイコン枠"],["item","アイテム"]],gachaMode)}
   <div class="altar">
     <div class="item-altar">${GACHA_ITEMS.map(i=>`<img src="${i.img}" alt="">`).join("")}</div>
@@ -1575,7 +1622,7 @@ function confirmMission(i){
 /* ---------- ボーナス・パスワード ---------- */
 function renderBonus(){
   const dr=dailyReady(), left=hourlyLeft(), l1=hour1Left();
-  $("#stage").innerHTML=`<h2>ボーナス</h2><p class="sub">コインを受け取って、ガチャをまわそう。 <button class="chip" type="button" data-news="1">お知らせ</button></p>
+  $("#stage").innerHTML=`${rulesBtn()}<h2>ボーナス</h2><p class="sub">コインを受け取って、ガチャをまわそう。 <button class="chip" type="button" data-news="1">お知らせ</button></p>
   <div class="bonus ${dr?"ready":""}"><h3>毎日ボーナス</h3><p>1日1回 ・ <span class="amt">${DAILY.toLocaleString()}コイン</span></p>
     ${dr?`<button class="btn gold" id="cDaily" type="button">受け取る</button>`:`<div class="cd">受け取り済み<small>明日またどうぞ</small></div>`}</div>
   <div class="bonus ${left===0?"ready":""}"><h3>15分ボーナス</h3><p>15分ごと ・ <span class="amt">${HOURLY}コイン</span></p>
@@ -1767,7 +1814,7 @@ function renderRanking(segHtml){
         ${i<50&&r.comment?`<div class="rk-cmt">「${esc(r.comment)}」</div>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}</div></li>`).join("")}</ol>`;
-  $("#stage").innerHTML=`${segHtml}<h2>ランキング</h2>
+  $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
     <div class="season-box"><div><small>シーズン終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-Date.now())}</b></div>
       <div class="note" style="margin:2px 0 0;${S.lateSeen===seasonNow()?"color:var(--moss)":""}">${S.lateSeen===seasonNow()?"✅ 景品の受け取り条件クリア（終了前6時間以内にログイン済み）":"⏰ 景品をもらうには、18:00〜24:00に1度ログインしてね"}</div>
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日0:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>⏰ <b>景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度ログインしておく必要があります。</b><br>
