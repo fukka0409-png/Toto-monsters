@@ -1576,7 +1576,8 @@ const I18N_EN = {
 "2位 5倍": "2nd: 5x",
 "投資額の7倍": "7x your investment",
 "5倍": "5x",
-"投資額の7倍もらえる": "get 7x your investment"
+"投資額の7倍もらえる": "get 7x your investment",
+"いまの順位（{0}位）のまま終わると": "If the season ends at the current rank (#{0})"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -3481,8 +3482,9 @@ function investStatusHtml(iv){
   const r=(INV_LIST||[]).find(x=>x.id===iv.def), cur=r?r._rank:null, a=iv.amt;
   const now=cur?(INV_MUL[cur]||0):null;
   const res=iv.void?`<div class="inv-res"><span class="down">−${(iv.lost||0).toLocaleString()}コイン</span></div><p class="note" style="margin:6px 0 0;color:#555">あなたが3位以内に入ったので、この投資は無効になりました（投資額を没収）</p>`
-    :`<div class="inv-res"><span class="up">+${(a*INV_MUL[1]).toLocaleString()}コイン</span><span class="or">or</span><span class="down">−${(a*INV_LOSE).toLocaleString()}コイン</span></div>
-      ${cur?`<p class="note" style="margin:6px 0 0;color:#555">いまの順位（${cur}位）のまま終わると：${now?`<b style="color:#2fa53a">+${(a*now).toLocaleString()}コイン</b>`:`<b style="color:#d8342a">−${(a*INV_LOSE).toLocaleString()}コイン</b>`}</p>`:""}
+    :`${cur?`<p class="note" style="margin:4px 0 0;color:#555">いまの順位（${cur}位）のまま終わると</p>
+      <div class="inv-res"><span class="${now?"up":"down"}" style="font-size:34px">${now?"+"+(a*now).toLocaleString():"−"+(a*INV_LOSE).toLocaleString()}コイン</span></div>`
+      :`<p class="note" style="margin:4px 0 0;color:#555">順位を読み込み中…</p>`}
       <table class="inv-tbl"><tr class="${cur===1?"now":""}"><td>🥇 1位</td><td class="up">+${(a*INV_MUL[1]).toLocaleString()}</td></tr><tr class="${cur===2?"now":""}"><td>🥈 2位</td><td class="up">+${(a*INV_MUL[2]).toLocaleString()}</td></tr>
       <tr class="${cur===3?"now":""}"><td>🥉 3位</td><td class="up">+${(a*2).toLocaleString()}</td></tr><tr class="${cur&&cur>3?"now":""}"><td>4位以下</td><td class="down">−${(a*INV_LOSE).toLocaleString()}</td></tr></table>`;
   return `<div class="inv-time"><small>今シーズンの残り時間</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
