@@ -1662,7 +1662,20 @@ const I18N_EN = {
 "はZランク1体と交換（10回防ぐ）。ホームの「🛡 盾」から装備。盾の情報は自分にしか見えない": " = trade 1 Z-rank (blocks 10). Equip from \"🛡 Shield\" on Home. Only you can see shield info",
 "🛡 盾によりアイテムが無効化されました(泣)": "🛡 Your item was nullified by a shield (sob)",
 "（{0}さんへの{1}）": "(your {1} on {0})",
-"使ったアイテムの結果": "Results of your items"
+"使ったアイテムの結果": "Results of your items",
+"⏱ 上位キープボーナス！": "⏱ Top Rank Bonus!",
+"🏆 1〜10位をキープ ×{0}回": "🏆 Held 1st–10th ×{0}",
+"冒険者Lv+{0}・+{1}コイン": "Adventurer Lv+{0} · +{1} coins",
+"🎖 11〜30位をキープ ×{0}回": "🎖 Held 11th–30th ×{0}",
+"10分ごとに、ランキング上位の冒険者にボーナスが付きます": "Every 10 minutes, top-ranked adventurers get a bonus",
+"⏱ 上位キープボーナスまで": "⏱ Top Rank Bonus in",
+"10分ごとに 1〜10位：冒険者Lv+1＆{0}コイン／11〜30位：{1}コイン（ログインしたときに受け取れます）": "Every 10 min: 1st–10th get Adventurer Lv+1 & {0} coins / 11th–30th get {1} coins (claimed when you log in)",
+"ランキングは、ログインしていない人の分も最新の状態に更新される": "The ranking is kept up to date with everyone's latest state, including players who aren't logged in",
+"⏱ 10分ごとの": "⏱ Every 10 minutes, the ",
+"上位キープボーナス": "Top Rank Bonus",
+"：1〜10位は冒険者Lv+1＆{0}コイン、11〜30位は{1}コイン（ログインしたときにまとめて受け取れる）": ": 1st–10th get Adventurer Lv+1 & {0} coins, 11th–30th get {1} coins (claimed together when you log in)",
+"毎日22:00（日本時間）に終了。ランキングは、ログインしていない人の分も最新の状態に更新されます{0}": "Ends daily at 22:00 (JST). The ranking is kept up to date with everyone's latest state, including players who aren't logged in{0}",
+"⏱ 上位キープボーナス {0}+{1}コイン": "⏱ Top Rank Bonus {0}+{1} coins"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -2140,7 +2153,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkSeason(); await checkGifts(db); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkTicks(); await checkGifts(db); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // シーズンの切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -2694,6 +2707,8 @@ setInterval(()=>{
   const sc=$("#seasonCd"); if(sc) sc.textContent=fmtDays(seasonEnd(seasonNow())-gnow());
   const ic=$("#invCd"); if(ic) ic.textContent=fmtDays(seasonEnd(seasonNow())-gnow());
   markActive();
+  const tk=$("#tickCd"); if(tk) tk.textContent=fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"");
+  if(DB && MYID && tickNow()!==window._lastTick){ const first=window._lastTick==null; window._lastTick=tickNow(); if(!first) setTimeout(loadRanking, 1500+Math.random()*4000); }
   if(DB && MYID && S.season!=null && S.season<seasonNow() && !inFreeze() && !seasonBusy) checkSeason();
   const fz=$("#freezeCd"); if(fz){ if(inFreeze()) fz.textContent=fmt(freezeLeft()); else if(tab==="rank") render(); }
   const io=$("#invOpenCd"); if(io){ const left=seasonEnd(seasonNow())-INV_CLOSE_MS-gnow(); if(left<=0&&tab==="home"&&homeMode==="invest"){ closeSheet(); render(); } else io.textContent=fmtDays(left); }
@@ -2838,13 +2853,13 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-18s";
+const RULES_VER = "2026-10-18t";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
 // U(...) で囲んだところが「今回の更新で変わったところ」。NEWが付いている間だけ赤で目立たせる
-const RULES_TAG = "s";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
+const RULES_TAG = "t";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
 const U = (t, tag="c") => tag===RULES_TAG ? `<span class="upd">${t}</span>` : t;
 function openRules(){
   const fresh=rulesNew();
@@ -2858,7 +2873,7 @@ function openRules(){
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>2時間「現在配置不可」</b>","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（24時間で最大10レベルまで）","j")}。</li><li>${U("バトルで負けると枠が空になる（自動では補充されない）。別の魔物を配置し直そう","f")}</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>冒険者Lv−${LOSE_LV}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物1体と交換（アイテム攻撃を4回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（10回防ぐ）。ホームの「🛡 盾」から装備。盾の情報は自分にしか見えない`,"s")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
-    ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も30分ごとに最新の状態に更新される","p")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
+    ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・<b>シーズン終了の10時間前＝12:00まで</b>）。</li><li>シーズン終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"q")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
@@ -3234,7 +3249,7 @@ async function loadRanking(){
   try{
     const q=await DB.collection("profiles").orderBy("score","desc").limit(200).get();
     const now=gnow();
-    await loadSeasonEvents(seasonNow(), true);
+    await loadSeasonEvents(seasonNow(), true); TICKS={s:seasonNow(), list:await loadTicks(seasonNow())};
     RANK=q.docs.map(d=>liveAdjust(normRank({id:d.id,...d.data()},now))).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
@@ -3242,7 +3257,7 @@ async function loadRanking(){
     try{ const col=DB.collection("profiles");   // ランキングの参加人数（まとめて数えるだけなので通信は少ない）
       RANK_TOTAL = col.count ? (await col.count().get()).data().count : Math.max(RANK_TOTAL, q.size); }catch(e){ RANK_TOTAL=Math.max(RANK_TOTAL, q.size); }
     rankErr=false;
-    resetOldInvest(); await loadInvestCounts(); checkInvestVoid();
+    resetOldInvest(); await loadInvestCounts(); checkInvestVoid(); snapTick(); checkTicks(true);
   }catch(e){ rankErr=true; }
   if(tab==="rank"||tab==="home") render();
 }
@@ -3803,7 +3818,8 @@ function renderRanking(segHtml){
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
     ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のシーズンの順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
     <div class="season-box"><div><small>シーズン終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
-      <div class="note" style="display:block;margin:2px 0 0">毎日22:00（日本時間）に終了。ランキングは、ログインしていない人の分も30分ごとに最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
+      <div class="note" style="display:block;margin:2px 0 0">毎日22:00（日本時間）に終了。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
+      <div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日22:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
@@ -3988,23 +4004,66 @@ function liveAdjust(r){
     else if(e.result==="att"){ lv=Math.max(1,lv-LOSE_LV); ch=true; }
     else if(e.result==="def"){ lv+=1; ch=true; }
     else if(e.result==="draw"){ lv=Math.max(1,lv-DRAW_LV); ch=true; } }
+  const tl=TICKS.s===seasonNow()?tickLv(TICKS.list, r.id, r.pub):0; if(tl){ lv+=tl; ch=true; }
   if(ch){ r.lv=lv; r.exp=0; }
   return r;
 }
 async function loadSeasonEvents(s, live){
-  if(live && LIVE_EV.s===s && gnow()-RANK_AT<25*60*1000) return;
+  if(live && LIVE_EV.s===s && gnow()-RANK_AT<9*60*1000) return;
   const from=seasonEnd(s-1), to=seasonEnd(s); const list=[];
   try{ const b=await DB.collection("battles").where("at",">=",from).get(); b.docs.forEach(x=>{ const v=x.data(); if(v.at<to) list.push({...v, k:"battle"}); }); }catch(e){}
   // 爆弾は盾で防がれることがある（盾は本人にしか分からない）ので、ここでは数えない
   if(live){ LIVE_EV={s, list:list.sort((a,b)=>a.at-b.at)}; RANK_AT=gnow(); }
-  else SEASON_EV={s, list:list.sort((a,b)=>a.at-b.at)};
+  else SEASON_EV={s, list:list.sort((a,b)=>a.at-b.at), ticks:await loadTicks(s)};
 }
-setInterval(()=>{ if(DB && document.visibilityState==="visible") loadRanking(); }, 30*60*1000);   // 30分ごとにランキングを更新
+/* ---------- 上位キープボーナス（10分ごと） ----------
+   10分ごとに、そのときのランキングを記録（ticks/番号）。1〜10位：冒険者Lv+1＆300コイン／11〜30位：400コイン。
+   記録はそのときアプリを開いている誰かが作る。もらう人はログインしたときにまとめて受け取る */
+const TICK_MS = 10*60*1000, TOP10_COIN = 300, TOP30_COIN = 400;
+const tickNow = () => Math.floor(gnow()/TICK_MS);
+let TICKS={s:null, list:[]};
+async function loadTicks(s){ try{ const q=await DB.collection("ticks").where("ss","==",s).get(); return q.docs.map(x=>x.data()).sort((a,b)=>a.n-b.n); }catch(e){ return []; } }
+async function snapTick(){
+  if(!DB||!RANK||!RANK.length) return; const n=tickNow(); if(snapTick.done===n) return;
+  try{ const ref=DB.doc("ticks/"+n); const ex=await ref.get();
+    if(!ex.exists) await ref.set({n, ss:seasonNow(), at:gnow(), t10:RANK.slice(0,10).map(r=>r.id), t30:RANK.slice(10,30).map(r=>r.id)});
+    snapTick.done=n; }catch(e){}
+}
+// まだ受け取っていない「上位キープ」の分（ほかの人のランキング表示・集計用）
+const tickLv = (list, id, after) => list.filter(t=>t.at>(after||0) && (t.t10||[]).includes(id)).length;
+let tickBusy=false;
+async function checkTicks(silent){
+  if(tickBusy||!DB||!MYID) return; tickBusy=true;
+  try{
+    if(S.tickSeen==null){ S.tickSeen=tickNow()-1; save(); }
+    const q=await DB.collection("ticks").where("n",">",S.tickSeen).get();
+    const list=q.docs.map(x=>x.data()).sort((a,b)=>a.n-b.n);
+    if(list.length){
+      let n10=0, n30=0, lv=0, coins=0;
+      for(const t of list){
+        if(t.ss>(S.season??0)) break;   // 新しいシーズンの分は、シーズンの切り替え（精算）のあとで受け取る
+        if((t.t10||[]).includes(MYID)){ n10++; coins+=TOP10_COIN; if(t.ss===S.season){ S.plv+=1; bumpMaxLv(); lv++; } }
+        else if((t.t30||[]).includes(MYID)){ n30++; coins+=TOP30_COIN; }
+        S.tickSeen=Math.max(S.tickSeen,t.n);
+      }
+      S.coins+=coins; save(); queueProfile(true); renderCoins();
+      if((n10||n30) && silent){ toast(`⏱ 上位キープボーナス ${lv?`Lv+${lv}・`:""}+${coins.toLocaleString()}コイン`); render(); }
+      else if(n10||n30){ const el=document.createElement("div"); el.className="reveal";
+        el.innerHTML=`<div class="burst"></div><h3>⏱ 上位キープボーナス！</h3><p class="note" style="text-align:center;max-width:320px">
+          ${n10?`🏆 1〜10位をキープ ×${n10}回<br><b style="color:var(--staff);font-size:18px">冒険者Lv+${lv}・+${(n10*TOP10_COIN).toLocaleString()}コイン</b><br>`:""}
+          ${n30?`🎖 11〜30位をキープ ×${n30}回<br><b style="color:var(--staff);font-size:18px">+${(n30*TOP30_COIN).toLocaleString()}コイン</b><br>`:""}
+          <small>10分ごとに、ランキング上位の冒険者にボーナスが付きます</small></p><button class="btn gold" type="button">OK</button>`;
+        document.body.appendChild(el); SFX.reveal("S"); SFX.coin(); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); }; }
+    }
+  }catch(e){}
+  tickBusy=false;
+}
 function finalScore(id, p, s){
   const base=seasonScore(p,s); if(base==null) return null;
   if(p.sv && p.sv[s]!=null) return base;              // 本人が精算ずみ（すべて反映ずみ）
   if(SEASON_EV.s!==s) return base;
   let lv=Math.floor(base/1e6), exp=base%1e6, ch=false;
+  const tl=tickLv(SEASON_EV.ticks||[], id, p.pub); if(tl){ lv+=tl; ch=true; }
   for(const e of SEASON_EV.list){ if(e.def!==id || e.at<=(p.pub||0)) continue;   // 本人がもう反映した分は数えない
     if(e.k==="bomb"){ lv=Math.max(1,lv-BOMB_LV*Math.max(1,e.qty||1)); ch=true; }
     else if(e.result==="att"){ lv=Math.max(1,lv-LOSE_LV); ch=true; }
