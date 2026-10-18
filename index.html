@@ -1703,7 +1703,8 @@ const I18N_EN = {
 "盾に鍵をかけました": "Locked the shield",
 "盾の鍵を外しました": "Unlocked the shield",
 "耐久{0}{1}": "Dur {0}{1}",
-"はZランク1体と交換（10回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない": " = trade 1 Z-rank (blocks 10). See them in BOX → Shields. When one breaks, your next shield is equipped automatically (locked ones aren't used). Only you can see shield info"
+"はZランク1体と交換（10回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない": " = trade 1 Z-rank (blocks 10). See them in BOX → Shields. When one breaks, your next shield is equipped automatically (locked ones aren't used). Only you can see shield info",
+"全員の最新の状態に更新しました": "Updated everyone to their latest state"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -3294,12 +3295,12 @@ function queueProfile(now){
     try{ await DB.doc("profiles/"+MYID).set(p); lastPub=key; }catch(e){}
   }, now?300:20000);
 }
-async function loadRanking(){
+async function loadRanking(force){
   if(!DB) return;
   try{
     const q=await DB.collection("profiles").orderBy("score","desc").limit(200).get();
     const now=gnow();
-    await loadSeasonEvents(seasonNow(), true); TICKS={s:seasonNow(), list:await loadTicks(seasonNow())};
+    await loadSeasonEvents(seasonNow(), true, force); TICKS={s:seasonNow(), list:await loadTicks(seasonNow())};
     RANK=q.docs.map(d=>liveAdjust(normRank({id:d.id,...d.data()},now))).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
@@ -3876,7 +3877,7 @@ function renderRanking(segHtml){
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>
     ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
-  $("#reRank").onclick=()=>{ RANK=null; render(); loadRanking(); };
+  $("#reRank").onclick=async()=>{ RANK=null; render(); await loadRanking(true); if(!rankErr) toast("全員の最新の状態に更新しました"); };
   const qi=$("#rkQ"); if(qi){ qi.oninput=()=>{ rankQ=qi.value; filterRank(); }; qi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); qi.blur(); if(!filterRank()) searchOutside(); } }; filterRank(); }
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
     const open=()=>openOtherProfile(RANK[+li.dataset.ri], +li.dataset.ri+1);
@@ -4060,8 +4061,8 @@ function liveAdjust(r){
   if(ch){ r.lv=lv; r.exp=0; }
   return r;
 }
-async function loadSeasonEvents(s, live){
-  if(live && LIVE_EV.s===s && gnow()-RANK_AT<9*60*1000) return;
+async function loadSeasonEvents(s, live, force){
+  if(live && !force && LIVE_EV.s===s && gnow()-RANK_AT<9*60*1000) return;
   const from=seasonEnd(s-1), to=seasonEnd(s); const list=[];
   try{ const b=await DB.collection("battles").where("at",">=",from).get(); b.docs.forEach(x=>{ const v=x.data(); if(v.at<to) list.push({...v, k:"battle"}); }); }catch(e){}
   // 爆弾は盾で防がれることがある（盾は本人にしか分からない）ので、ここでは数えない
