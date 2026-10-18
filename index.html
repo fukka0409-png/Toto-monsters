@@ -1735,6 +1735,8 @@ const I18N=(()=>{
       for(const p of pats){ const m=s.match(p.re); if(!m) continue;
         out=p.en.replace(/\{(\d+)\}/g,(_,i)=>{ const v=m[p.order.indexOf(+i)+1]??""; return depth<4?tr(v,depth+1):v; }); break; }
     }
+    if(out===undefined && depth<4){ const t=s.replace(/[。、！？]+$/,"");   // 最後の句読点だけ違うときは、中身を訳してつなぐ
+      if(t && t!==s){ const mid=tr(t,depth+1); if(!JPC.test(mid)) out=mid+punc(s.slice(t.length)); } }
     if(out===undefined){ out=seg?s.replace(seg,k=>exact.get(k)):s; out=punc(out).replace(/ {2,}/g," "); }
     if(cache.size>20000) cache.clear(); cache.set(s,out); return out;
   }
