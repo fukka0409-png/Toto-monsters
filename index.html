@@ -185,6 +185,17 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .bonus .amt{font-family:var(--f-pix);color:var(--staff);font-size:15px}
 .bonus .btn{grid-row:1/span 2;grid-column:2;min-width:110px}
 .bonus.ready{border-color:var(--moss)}
+.dm{position:relative;background:var(--bark);border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.dm.ready{border-color:var(--moss)}.dm.done{opacity:.75}
+.dm h3{margin:0 34px 4px 0;font-size:15px;line-height:1.5}
+.dm .dm-sub{font-size:12px;color:var(--mist-dim);margin:0 0 8px}
+.dm .dm-sub .amt{font-family:var(--f-pix);color:var(--staff)}
+.dm-gauge{height:12px;border-radius:999px;background:var(--night);border:1px solid var(--line);overflow:hidden;margin:2px 0 4px}
+.dm-gauge i{display:block;height:100%;background:linear-gradient(90deg,#8fd14f,#e0ad4f);border-radius:999px}
+.dm-meta{font-size:11px;color:var(--mist-dim);margin:0 0 8px}
+.dm .btn{width:100%}
+.dm .dm-state{text-align:center;font-size:13px;font-weight:900;color:var(--mist-dim);padding:6px 0}
+.dm-info{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:var(--night);color:var(--mist);font:inherit;font-weight:900;font-size:13px;padding:0}
 .cd{font-family:var(--f-pix);font-variant-numeric:tabular-nums;font-size:14px;color:var(--mist);text-align:center;grid-row:1/span 2;grid-column:2;background:var(--night);border-radius:10px;padding:8px 10px;min-width:110px}
 .cd small{display:block;font-family:var(--f-body);font-size:11px;color:var(--mist-dim)}
 .code-box{background:var(--bark);border:2px solid var(--line);border-radius:16px;padding:14px 16px}
@@ -1577,7 +1588,25 @@ const I18N_EN = {
 "投資額の7倍": "7x your investment",
 "5倍": "5x",
 "投資額の7倍もらえる": "get 7x your investment",
-"いまの順位（{0}位）のまま終わると": "If the season ends at the current rank (#{0})"
+"いまの順位（{0}位）のまま終わると": "If the season ends at the current rank (#{0})",
+"💰 「冒険者に投資する」とは？": "💰 What is \"Invest in an Adventurer\"?",
+"デイリーミッション（各1日2回まで）：Cランクの魔物を500体集める／新しい魔物と出会う／冒険者に投資する": "Daily missions (up to 2 times each per day): collect 500 C-rank monsters / meet a new monster / invest in an adventurer",
+"📋 デイリーミッション": "📋 Daily Missions",
+"（それぞれ1日{0}回まで）": "(up to {0} times each per day)",
+"Cランクモンスターをガチャで500体集める！": "Collect 500 C-rank monsters from the gacha!",
+"ガチャで新たな魔物と出会う！": "Meet a new monster in the gacha!",
+"他の冒険者に投資してみる！": "Try investing in another adventurer!",
+"今日 {0}/{1}回 ・ 報酬": "Today {0}/{1} · Reward",
+"{0} / {1}体": "{0} / {1}",
+"魔物コンプ {0} / {1}{2}": "Monster completion {0} / {1}{2}",
+"（コンプリート！）": " (Complete!)",
+"投資中：{0}さん": "Investing in: {0}",
+"まだ今シーズンは投資していません": "You haven't invested this season yet",
+"冒険者に投資するとは": "About investing",
+"今日はもう{0}回クリアしました（明日またどうぞ）": "Cleared {0} times today (come back tomorrow)",
+"未達成": "Not yet cleared",
+"投資しに行く": "Go invest",
+"ホームの黄色いボタンから、ほかの冒険者にコインを投資できます。": "You can invest coins in other adventurers from the yellow button on Home."
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -2084,8 +2113,6 @@ function openNews(force){
       <p>🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個</p>
       <p>⚔️ 勝率でも景品！（5戦以上）<br>勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個</p>
       <p>集計のあと、冒険者レベルと勝率はリセット。プロフィールには今までの最高順位が残ります。</p>
-      <h4>⏰ 1時間ボーナス</h4>
-      <p>ミッションタブに、1時間ごとに1,000コインもらえるボーナスがあります！</p>
       <h4 style="margin-top:18px">🎰 アイテムガチャ</h4>
       <h4>🎰 アイテムガチャ</h4>
       <p>ガチャタブの「アイテムガチャ」で、1回1000コイン。4種類のアイテムが出ます。</p>
@@ -2438,7 +2465,9 @@ function pullMonsters(n, ticket){
   else { if(S.coins < COST*n) return toast("コインが足りません"); S.coins-=COST*n; }
   const res=[];
   S.stats.pulls+=n; gainPExp(PXP.pull*n);
-  for(let i=0;i<n;i++){ const m=rollMonster(); const isNew=!S.got[m.id]; if(isNew){ S.coins+=NEW_COIN; gainPExp(PXP.newMon); }
+  dmFix();
+  for(let i=0;i<n;i++){ const m=rollMonster(); const isNew=!S.got[m.id]; if(isNew){ S.coins+=NEW_COIN; gainPExp(PXP.newMon); S.dm.nw=(S.dm.nw||0)+1; }
+    if(m.rank==="C") S.dm.c=(S.dm.c||0)+1;
     S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:false});
     res.push({img:cardURL(m.id,0),name:m.name,rank:m.rank,isNew}); }
   save(); renderCoins(); openPack(res,"mon","魔物があらわれた！");
@@ -2582,9 +2611,9 @@ document.addEventListener("click",e=>{ if(e.target.closest("#unitWarnX")){ warnO
 function renderCoins(){
   updateUnitWarn();
   $("#coins").textContent=S.coins.toLocaleString();
-  const ready = dailyReady() || hourlyLeft()===0 || hour1Left()===0;
+  const ready = dailyReady() || hourlyLeft()===0;
   const b=$("#bonusBtn"); b.classList.toggle("ready",ready); b.textContent= ready?"ボーナスあり":"ボーナス";
-  document.querySelector('.tabs button[data-tab="mission"]').classList.toggle("dot",ready||MISSIONS.some((_,i)=>missionLeft(i)===0));
+  document.querySelector('.tabs button[data-tab="mission"]').classList.toggle("dot",ready||MISSIONS.some((_,i)=>missionLeft(i)===0)||DMS.some(m=>dmReady(m)));
 }
 function claimDaily(){ if(!dailyReady()) return; S.lastDaily=today(); S.coins+=DAILY; save(); SFX.coin(); toast(`毎日ボーナス +${DAILY}コイン`); render(); }
 function claimHour1(){ if(hour1Left()>0) return; S.lastHour1=gnow(); S.coins+=HOUR_BONUS; save(); SFX.coin(); toast(`1時間ボーナス +${HOUR_BONUS.toLocaleString()}コイン`); render(); }
@@ -2594,11 +2623,10 @@ const fmt=ms=>{const t=Math.ceil(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%36
 let wasReady=null, wasMission=null;
 const missionLeft=i=>Math.max(0,((S.missions||{})[i]||0)+MISSION_MS-gnow());
 setInterval(()=>{
-  const left=hourlyLeft(), l1=hour1Left(), r=left===0||l1===0||dailyReady();
-  const mr=MISSIONS.map((_,i)=>missionLeft(i)===0).join();
+  const left=hourlyLeft(), r=left===0||dailyReady();
+  const mr=MISSIONS.map((_,i)=>missionLeft(i)===0).join()+DMS.map(m=>dmReady(m)).join();
   if(r!==wasReady || mr!==wasMission){ const changed=wasReady!==null; wasReady=r; wasMission=mr; renderCoins(); if(changed && tab==="mission") return render(); }
   const cd=$("#hourlyCd"); if(cd) cd.firstChild.textContent=fmt(left);
-  const cd1=$("#hour1Cd"); if(cd1) cd1.firstChild.textContent=fmt(l1);
   const sc=$("#seasonCd"); if(sc) sc.textContent=fmtDays(seasonEnd(seasonNow())-gnow());
   const ic=$("#invCd"); if(ic) ic.textContent=fmtDays(seasonEnd(seasonNow())-gnow());
   markActive();
@@ -2746,13 +2774,13 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-18q";
+const RULES_VER = "2026-10-18r";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
 // U(...) で囲んだところが「今回の更新で変わったところ」。NEWが付いている間だけ赤で目立たせる
-const RULES_TAG = "q";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
+const RULES_TAG = "r";   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
 const U = (t, tag="c") => tag===RULES_TAG ? `<span class="upd">${t}</span>` : t;
 function openRules(){
   const fresh=rulesNew();
@@ -2760,7 +2788,7 @@ function openRules(){
   const n=v=>Number(v).toLocaleString();
   const secs=[
     ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>毎日22:00の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
-    ["💰","コインの集め方",`<ul><li>毎日ボーナス：<b>${n(DAILY)}コイン</b>（1日1回）</li><li>15分ボーナス：<b>${HOURLY}コイン</b>（15分ごと）</li><li>1時間ボーナス：<b>${n(HOUR_BONUS)}コイン</b>（1時間ごと）</li><li>はじめて手に入れた魔物・アイコン枠：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
+    ["💰","コインの集め方",`<ul><li>毎日ボーナス：<b>${n(DAILY)}コイン</b>（1日1回）</li><li>15分ボーナス：<b>${HOURLY}コイン</b>（15分ごと）</li><li>${U("デイリーミッション（各1日2回まで）：Cランクの魔物を500体集める／新しい魔物と出会う／冒険者に投資する","r")}</li><li>はじめて手に入れた魔物・アイコン枠：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
     ["🎰","ガチャ（パック）",`<ul><li>魔物パック・アイコン枠パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span>。出る確率は C ${RATES.C}%／B ${RATES.B}%／A ${RATES.A}%／S ${RATES.S}%／Z ${RATES.Z}%</li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b>（${GACHA_ITEMS.map(i=>i.name+" "+i.rate+"%").join("／")}）</li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>2時間「現在配置不可」</b>","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（24時間で最大10レベルまで）","j")}。</li><li>${U("バトルで負けると枠が空になる（自動では補充されない）。別の魔物を配置し直そう","f")}</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
@@ -2989,7 +3017,47 @@ function renderMissionPage(){
   renderMission();
   const sec=document.createElement("div"); sec.id="shopSec";
   const h=$("#stage").querySelector("h2"); h.insertAdjacentElement("afterend",sec); renderBonus(sec);
+  const dm=document.createElement("div"); dm.id="dmSec"; sec.insertAdjacentElement("afterend",dm); renderDaily(dm);
 }
+/* ---------- デイリーミッション（それぞれ1日2回まで） ----------
+   ①Cランクの魔物をガチャで500体 ②ガチャで新しい魔物と出会う ③冒険者に投資する */
+const DM_MAX = 2;
+const DMS = [
+  { k:"c",   title:"Cランクモンスターをガチャで500体集める！", coins:5000 },
+  { k:"nw",  title:"ガチャで新たな魔物と出会う！",             coins:1000 },
+  { k:"inv", title:"他の冒険者に投資してみる！",               coins:1000 },
+];
+const DM_C_GOAL = 500;
+function dmFix(){ S.dm=S.dm||{}; if(S.dm.day!==today()){ S.dm.day=today(); S.dm.done={}; } S.dm.done=S.dm.done||{}; }
+const dmCount = m => { dmFix(); return S.dm.done[m.k]||0; };
+function dmMet(m){ dmFix();
+  if(m.k==="c") return (S.dm.c||0)>=DM_C_GOAL;
+  if(m.k==="nw") return (S.dm.nw||0)>=1;
+  if(m.k==="inv"){ const iv=myInv(); return !!(iv && !iv.void && S.dm.invAt!==iv.at); }
+  return false; }
+const dmReady = m => dmCount(m)<DM_MAX && dmMet(m);
+function claimDM(k){ const m=DMS.find(x=>x.k===k); if(!m||!dmReady(m)) return;
+  if(k==="c") S.dm.c=Math.max(0,(S.dm.c||0)-DM_C_GOAL);
+  if(k==="nw") S.dm.nw=0;
+  if(k==="inv") S.dm.invAt=myInv().at;
+  S.dm.done[k]=(S.dm.done[k]||0)+1; S.coins+=m.coins; save(); SFX.coin(); toast(`ミッションクリア！ +${m.coins.toLocaleString()}コイン`); render(); }
+function renderDaily(target){
+  dmFix();
+  const owned=MONSTERS.filter(m=>S.got[m.id]).length;
+  target.innerHTML=`<h3 class="inv-h">📋 デイリーミッション <small style="font-size:12px;opacity:.7">（それぞれ1日${DM_MAX}回まで）</small></h3>
+  ${DMS.map(m=>{ const n=dmCount(m), full=n>=DM_MAX, ok=dmMet(m);
+    let extra="";
+    if(m.k==="c"){ const v=Math.min(DM_C_GOAL,S.dm.c||0); extra=`<div class="dm-gauge" role="progressbar" aria-valuemin="0" aria-valuemax="${DM_C_GOAL}" aria-valuenow="${v}"><i style="width:${v/DM_C_GOAL*100}%"></i></div><p class="dm-meta">${v} / ${DM_C_GOAL}体</p>`; }
+    if(m.k==="nw") extra=`<p class="dm-meta">魔物コンプ ${owned} / ${MONSTERS.length}${owned>=MONSTERS.length?"（コンプリート！）":""}</p>`;
+    if(m.k==="inv") extra=`<p class="dm-meta">${myInv()&&!myInv().void?`投資中：${esc(myInv().name||"")}さん`:"まだ今シーズンは投資していません"}</p>`;
+    return `<div class="dm ${!full&&ok?"ready":""} ${full?"done":""}">${m.k==="inv"?`<button class="dm-info" type="button" data-invhelp="1" aria-label="冒険者に投資するとは">？</button>`:""}
+      <h3>${m.title}</h3><p class="dm-sub">今日 ${n}/${DM_MAX}回 ・ 報酬 <span class="amt">${m.coins.toLocaleString()}コイン</span></p>${extra}
+      ${full?`<div class="dm-state">今日はもう${DM_MAX}回クリアしました（明日またどうぞ）</div>`:ok?`<button class="btn gold" type="button" data-dm="${m.k}">受け取る</button>`
+        :m.k==="inv"?`<button class="btn" type="button" data-goinv="1">投資しに行く</button>`:`<div class="dm-state">未達成</div>`}</div>`; }).join("")}`;
+  target.querySelectorAll("[data-dm]").forEach(b=>b.onclick=()=>claimDM(b.dataset.dm));
+  target.querySelectorAll("[data-goinv]").forEach(b=>b.onclick=()=>{ tab="home"; homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); });
+}
+document.addEventListener("click",e=>{ if(e.target.closest("[data-invhelp]")) openInvestHelp(); });
 function renderBonus(target){
   const dr=dailyReady(), left=hourlyLeft(), l1=hour1Left();
   target.innerHTML=`<h3 class="inv-h">🎁 ボーナス <button class="chip" type="button" data-news="1">お知らせ</button></h3>
@@ -2997,8 +3065,6 @@ function renderBonus(target){
     ${dr?`<button class="btn gold" id="cDaily" type="button">受け取る</button>`:`<div class="cd">受け取り済み<small>明日またどうぞ</small></div>`}</div>
   <div class="bonus ${left===0?"ready":""}"><h3>15分ボーナス</h3><p>15分ごと ・ <span class="amt">${HOURLY}コイン</span></p>
     ${left===0?`<button class="btn" id="cHourly" type="button">受け取る</button>`:`<div class="cd" id="hourlyCd">${fmt(left)}<small>次の受け取りまで</small></div>`}</div>
-  <div class="bonus ${l1===0?"ready":""}"><h3>1時間ボーナス</h3><p>1時間ごと ・ <span class="amt">${HOUR_BONUS.toLocaleString()}コイン</span></p>
-    ${l1===0?`<button class="btn gold" id="cHour1" type="button">受け取る</button>`:`<div class="cd" id="hour1Cd">${fmt(l1)}<small>次の受け取りまで</small></div>`}</div>
   <div class="code-box"><h3>呪文</h3><p class="sub" style="margin:0">お知らせされた呪文をとなえると、コインがもらえます。1つの呪文につき1回だけです。</p>
     <form id="codeForm" autocomplete="off"><input id="codeIn" type="text" placeholder="呪文を入力" aria-label="呪文" autocapitalize="off" spellcheck="false">
     <button class="btn gold" type="submit">受け取る</button></form><div class="code-msg" id="codeMsg" role="status"></div></div>`;
@@ -3434,11 +3500,13 @@ async function openLastResult(){
 function showInvestIntro(){
   if(S.invIntro || !DB) return;
   if(document.querySelector(".sheet-bg.center,.reveal,.rules-stage")) return setTimeout(showInvestIntro, 3000);
-  S.invIntro=1; save();
+  S.invIntro=1; save(); openInvestHelp(true);
+}
+function openInvestHelp(intro){
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
-  bg.innerHTML=`<div class="swear news" role="dialog" aria-modal="true" aria-labelledby="ivT"><p id="ivT">💰 新機能「冒険者に投資する」</p>
+  bg.innerHTML=`<div class="swear news" role="dialog" aria-modal="true" aria-labelledby="ivT"><p id="ivT">${intro?"💰 新機能「冒険者に投資する」":"💰 「冒険者に投資する」とは？"}</p>
     <div class="news-body">
-      <p>ホームの黄色いボタンから、ほかの冒険者にコインを投資できるようになりました！</p>
+      <p>${intro?"ホームの黄色いボタンから、ほかの冒険者にコインを投資できるようになりました！":"ホームの黄色いボタンから、ほかの冒険者にコインを投資できます。"}</p>
       <p>🥇 投資先がシーズン1位 → <b>投資額の7倍</b>もらえる<br>🥈 2位 → <b>5倍</b> ／ 🥉 3位 → <b>2倍</b><br>💸 4位以下 → <b>投資額の10倍を失う</b>（0コインまで）</p>
       <p>・投資は1シーズンに1人だけ。投資した時点でコインが減ります<br>・投資できるのは毎日22:00〜翌12:00<br>・自分が3位以内に入ると投資は無効（没収）<br>・投資された人は投資額の10%をもらえる</p>
       <p>強い冒険者を見きわめて、一発逆転をねらおう！</p></div>
