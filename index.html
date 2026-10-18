@@ -48,6 +48,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--moss);outl
 .snd svg{width:18px;height:18px}
 html[lang=en] .logo{font-size:15px;letter-spacing:0}
 html[lang=en] .logo small{display:none}
+.snd-set{gap:12px}.snd-row{display:flex;align-items:center;gap:10px;text-align:left}.snd-row b{flex:0 0 5.2em;font-size:14px}.snd-row .seg{flex:1;margin:0}.snd-row.vol span{flex:0 0 2.4em;text-align:right;font-weight:900}.snd-row input:disabled{opacity:.4}
 .snd.lang{font-family:var(--f-pix);font-size:12px;font-weight:900;color:var(--mist);letter-spacing:0}
 .daily:disabled{border-color:var(--line);background:none;color:var(--mist-dim);cursor:default}
 .stage{flex:1;overflow-y:auto;overflow-x:hidden;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:4px 120px}
@@ -499,7 +500,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
     <div class="logo">トトと<wbr>魔物たち<small>TOTO &amp; MONSTERS</small></div>
     <button class="daily" id="bonusBtn" type="button">ボーナス</button>
     <button class="snd lang" id="langBtn" type="button" translate="no" aria-label="Language / 言語">EN</button>
-    <button class="snd" id="snd" type="button" aria-label="効果音"></button>
+    <button class="snd" id="snd" type="button" aria-label="サウンド設定"></button>
     <div class="coin" aria-label="コイン"><i></i><span id="coins">0</span></div>
   </header>
   <div class="warn-bar" id="unitWarn" role="alert" hidden>⚠️ モンスターの手持ちが1000体を超えているのでゲームが動かなくなる場合があります！<small>売却や合成で数を減らしてね</small><button class="x warn-x" id="unitWarnX" type="button" aria-label="閉じる">✕</button></div>
@@ -517,6 +518,13 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
 "効果音": "Sound",
+"サウンド設定": "Sound settings",
+"🎵 BGM": "🎵 Music",
+"BGM": "Music",
+"音量": "Volume",
+"🔔 効果音": "🔔 Effects",
+"BGMの音量": "Music volume",
+"iPhoneはマナーモードだと音が出ません": "On iPhone, no sound plays in silent mode",
 "コイン": "Coins",
 "閉じる": "Close",
 "トトと魔物たち": "Toto & Monsters",
@@ -2746,8 +2754,56 @@ let NOISE=null;
 document.addEventListener("pointerdown",e=>{ const b=e.target.closest("button,.chip"); if(b && !b.disabled && b.id!=="snd") SFX.tap(); },true);
 const SND_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>';
 const SND_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
-function renderSnd(){ const b=document.getElementById("snd"); b.innerHTML=muted?SND_OFF:SND_ON; b.setAttribute("aria-pressed",String(!muted)); b.setAttribute("aria-label",muted?"効果音オフ":"効果音オン"); }
-document.getElementById("snd").onclick=()=>{ muted=!muted; try{localStorage.setItem(SND_KEY,muted?"off":"on")}catch(e){} renderSnd(); if(!muted) SFX.tap(); };
+/* ===== BGM：曲の最後をフェードアウトさせ、次の周回をフェードインで重ねてなめらかにループ ===== */
+const BGM_KEY="toto-bgm", BGM_XF=4;   // XF＝前の周回の終わりと次の周回の始まりを重ねる秒数
+let BGM={on:true,vol:40}; try{ Object.assign(BGM,JSON.parse(localStorage.getItem(BGM_KEY)||"{}")); }catch(e){}
+const BG={ctx:null,gain:null,buf:null,loading:null,next:0,timer:null,srcs:[],playing:false};
+function bgmSave(){ try{ localStorage.setItem(BGM_KEY,JSON.stringify({on:BGM.on,vol:BGM.vol})); }catch(e){} }
+function bgmLevel(){ const v=Math.max(0,Math.min(100,+BGM.vol||0))/100; return v*v*.9; }
+function bgmCtx(){ if(!BG.ctx){ try{ BG.ctx=new (window.AudioContext||window.webkitAudioContext)(); BG.gain=BG.ctx.createGain(); BG.gain.gain.value=.0001; BG.gain.connect(BG.ctx.destination); }catch(e){ BG.ctx=null; return null; } } return BG.ctx; }
+function bgmLoad(){ if(BG.buf) return Promise.resolve(BG.buf); if(BG.loading) return BG.loading;
+  BG.loading=fetch("bgm.mp3").then(r=>{ if(!r.ok) throw new Error("bgm"); return r.arrayBuffer(); })
+    .then(a=>new Promise((res,rej)=>{ const p=BG.ctx.decodeAudioData(a,res,rej); if(p&&p.then) p.then(res,rej); }))
+    .then(b=>(BG.buf=b)).catch(e=>{ BG.loading=null; throw e; });
+  return BG.loading; }
+function bgmFade(v,d){ if(!BG.gain) return; const g=BG.gain.gain, t=BG.ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(Math.max(g.value,.0001),t); g.exponentialRampToValueAtTime(Math.max(v,.0001),t+d); }
+function bgmPlayAt(t){ const s=BG.ctx.createBufferSource(); s.buffer=BG.buf; s.connect(BG.gain); s.onended=()=>{ BG.srcs=BG.srcs.filter(x=>x!==s); }; s.start(t); BG.srcs.push(s); BG.next=t+BG.buf.duration-BGM_XF; }
+function bgmPump(){ if(!BG.playing||!BG.buf) return; const c=BG.ctx; while(BG.next<c.currentTime+6) bgmPlayAt(Math.max(BG.next,c.currentTime+.05)); }
+function bgmStart(){ if(!BGM.on) return; const c=bgmCtx(); if(!c) return; if(c.state!=="running") c.resume().catch(()=>{}); if(BG.playing) return;
+  BG.playing=true;
+  bgmLoad().then(()=>{ if(!BG.playing) return; BG.next=c.currentTime+.05; bgmPump(); clearInterval(BG.timer); BG.timer=setInterval(bgmPump,1000); bgmFade(bgmLevel(),2.5); })
+    .catch(()=>{ BG.playing=false; }); }
+function bgmStop(){ BG.playing=false; clearInterval(BG.timer); if(!BG.ctx) return; bgmFade(.0001,.6); const t=BG.ctx.currentTime+.7, ss=BG.srcs.splice(0); ss.forEach(s=>{ try{ s.stop(t); }catch(e){} }); }
+function bgmSetVol(v){ BGM.vol=v; bgmSave(); if(BG.playing&&BG.gain){ const g=BG.gain.gain, t=BG.ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(Math.max(g.value,.0001),t); g.linearRampToValueAtTime(Math.max(bgmLevel(),.0001),t+.08); } }
+// ブラウザのきまりで、最初に画面を触ったときから鳴らす
+["pointerdown","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,()=>{ if(BGM.on) bgmStart(); },true));
+document.addEventListener("visibilitychange",()=>{ if(!BG.ctx) return; if(document.hidden) BG.ctx.suspend().catch(()=>{}); else if(BG.playing) BG.ctx.resume().catch(()=>{}); });
+
+function renderSnd(){ const b=document.getElementById("snd"); const off=muted&&!BGM.on; b.innerHTML=off?SND_OFF:SND_ON; b.setAttribute("aria-label","サウンド設定"); }
+function openSound(){
+  document.querySelectorAll(".snd-sheet").forEach(x=>x.remove());
+  const bg=document.createElement("div"); bg.className="sheet-bg center snd-sheet";
+  const onoff=(k,on)=>`<div class="seg snd-seg" data-k="${k}">${[[1,"ON"],[0,"OFF"]].map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${!!v===on}" translate="no">${l}</button>`).join("")}</div>`;
+  bg.innerHTML=`<div class="swear snd-set" role="dialog" aria-modal="true" aria-labelledby="sndT">
+    <p id="sndT">サウンド設定</p>
+    <div class="snd-row"><b>🎵 BGM</b>${onoff("bgm",BGM.on)}</div>
+    <div class="snd-row vol"><b>音量</b><input type="range" id="bgmVol" min="0" max="100" step="5" value="${BGM.vol}" aria-label="BGMの音量"><span id="bgmVolN" translate="no">${BGM.vol}</span></div>
+    <div class="snd-row"><b>🔔 効果音</b>${onoff("sfx",!muted)}</div>
+    <div class="note" style="margin:0">iPhoneはマナーモードだと音が出ません</div>
+    <button class="btn ghost" id="sndX" type="button">閉じる</button></div>`;
+  document.body.appendChild(bg);
+  const vol=bg.querySelector("#bgmVol"), volN=bg.querySelector("#bgmVolN");
+  const sync=()=>{ bg.querySelectorAll(".snd-seg").forEach(sg=>{ const on=sg.dataset.k==="bgm"?BGM.on:!muted; sg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(!!+x.dataset.v===on))); }); vol.disabled=!BGM.on; renderSnd(); };
+  bg.querySelectorAll(".snd-seg button").forEach(x=>x.onclick=()=>{ const on=!!+x.dataset.v, k=x.parentNode.dataset.k;
+    if(k==="bgm"){ BGM.on=on; bgmSave(); on?bgmStart():bgmStop(); }
+    else { muted=!on; try{localStorage.setItem(SND_KEY,muted?"off":"on")}catch(e){} if(on) SFX.tap(); }
+    sync(); });
+  vol.oninput=()=>{ volN.textContent=vol.value; bgmSetVol(+vol.value); };
+  bg.querySelector("#sndX").onclick=()=>bg.remove();
+  bg.onclick=e=>{ if(e.target===bg) bg.remove(); };
+  sync();
+}
+document.getElementById("snd").onclick=openSound;
 renderSnd();
 
 /* ---------- UI ---------- */
