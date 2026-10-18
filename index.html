@@ -54,6 +54,7 @@ html[lang=en] .logo small{display:none}
 .fr-list{display:flex;flex-direction:column;gap:10px}.fr-item{background:var(--bark-2);border:2px solid var(--line);border-radius:14px;padding:10px}
 .fr-top{display:flex;align-items:center;gap:10px}.fr-body{display:flex;flex-direction:column;min-width:0}.fr-body b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fr-body small{color:var(--mist-dim)}
 .fr-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.fr-btns .btn{flex:1}.fr-btns .chip:disabled{opacity:.55}.fr-del{margin-left:auto;color:#ff8a7a}.fr-lock{color:var(--mist-dim);font-size:11px}
+.fr-new{align-self:flex-start;margin-top:4px;background:#ff5f8f;color:#fff;font-weight:900;font-size:12px;border-radius:999px;padding:2px 10px;animation:rulesPulse 1.6s ease-in-out infinite}.fr-hot{background:#ff5f8f!important;color:#fff!important;border-color:#ff5f8f!important}
 .fr-msg{margin-top:8px;background:var(--bark);border-radius:10px;padding:8px 10px;font-size:14px;line-height:1.6;word-break:break-word}
 .fr-ta{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;background:var(--bark-2);color:var(--mist);border:2px solid var(--line);border-radius:12px;padding:10px;font:inherit;font-size:16px;resize:none}
 .fr-pbtn{grid-template-columns:1fr 1fr}.fr-pbtn .iu img{width:28px;height:28px}
@@ -1764,6 +1765,9 @@ const I18N_EN = {
 "メッセージのやりとりができなくなります。親密度は残ります。": "You won't be able to message each other. Your affinity stays.",
 "解除する": "Unfriend",
 "フレンド解除": "Unfriend",
+"💬 メッセージが届いています！": "💬 You have a new message!",
+"さんからメッセージが届いています！": "sent you a message!",
+"💬 {0}さんからメッセージが届きました！": "💬 New message from {0}!",
 "さん": "",
 "さんにフレンド申請": ": send a friend request",
 "ひとことコメント（{0}文字以上）": "A short comment ({0}+ characters)",
@@ -4573,6 +4577,7 @@ async function checkFriends(){
     S.lastHeart=last; Object.keys(seen).forEach(k=>{ if(seen[k]<last-win) delete seen[k]; }); S.hIds=seen;
     if(tot){ S.heart=(S.heart||0)+tot; await Promise.all(Object.keys(got).map(frProfile));
       Object.entries(got).forEach(([id,n])=>lines.push(`💗 ${frName(id)}さんからハート石が${n}個届いた！（親密度 ${intimacy(id)}）`)); }
+    FR.friends.filter(frUnread).forEach(f=>{ if(((S.fMsgSeen||{})[f.pair]||0)>=(f.lm.at||0)) return; lines.push(`💬 ${frName(f.id)}さんからメッセージが届いています！`); S.fMsgSeen=S.fMsgSeen||{}; S.fMsgSeen[f.pair]=f.lm.at||0; });
     const fresh=FR.reqIn.filter(q=>!(S.frSeen||[]).includes(q.doc));
     if(fresh.length) lines.unshift(`📨 フレンド申請が${fresh.length}件届いています`);
     S.frSeen=FR.reqIn.map(q=>q.doc);
@@ -4582,6 +4587,13 @@ async function checkFriends(){
   }catch(e){}
   frBusy=false;
 }
+// アプリを開いている間も、2分ごとに新しいメッセージ・申請を確認する（ホームの赤い数字に反映）
+setInterval(async()=>{ if(!DB||!MYID||frBusy||document.hidden) return; const before=frBadge();
+  try{ await loadFriends(); }catch(e){ return; }
+  const n=frBadge(); if(n!==before){ if(tab==="home"&&!document.querySelector(".sheet-bg")) render(); if(document.querySelector(".fr-sheet")) drawFriends(); }
+  const nw=FR.friends.filter(f=>frUnread(f)&&((S.fMsgSeen||{})[f.pair]||0)<(f.lm.at||0));
+  if(nw.length){ S.fMsgSeen=S.fMsgSeen||{}; nw.forEach(f=>S.fMsgSeen[f.pair]=f.lm.at||0); save(); toast(`💬 ${(FR.prof[nw[0].id]||{}).name||"フレンド"}さんからメッセージが届きました！`); }
+},120000);
 // 機能オフの相手に送った申請は、少し時間をおいて「却下」と同じ伝言を出す
 setInterval(()=>{ if(!S||!S.frNotes||!S.frNotes.length) return; const due=S.frNotes.filter(t=>t<=gnow()); if(!due.length) return;
   S.frNotes=S.frNotes.filter(t=>t>gnow()); save(); frNotice(due.map(()=>FR_NO_MSG)); },20000);
@@ -4600,8 +4612,8 @@ function drawFriends(){
   if(frMode==="list"){
     const L=[...FR.friends].sort((a,b)=>frUnread(b)-frUnread(a)||intimacy(b.id)-intimacy(a.id));
     html=head("📋 フレンド一覧")+back+(!FR.loaded?`<div class="empty">読み込み中…</div>`:L.length?`<div class="fr-list">${L.map(f=>{ const p=FR.prof[f.id]||{}, it=intimacy(f.id), open=it>=TRADE_INT;
-      return `<div class="fr-item"><div class="fr-top">${avatarImg(p.icon,44)}<div class="fr-body"><b>${uname(p.name)}${frUnread(f)?' <span class="same">NEW</span>':""}</b><small>💞 親密度 <b translate="no">${it.toLocaleString()}</b></small></div></div>
-        <div class="fr-btns"><button class="chip" type="button" data-frchat="${esc(f.id)}">💬 メッセージ</button><button class="chip" type="button" data-frheart="${esc(f.id)}">💗 ハート石を送る</button>
+      return `<div class="fr-item"><div class="fr-top">${avatarImg(p.icon,44)}<div class="fr-body"><b>${uname(p.name)}</b><small>💞 親密度 <b translate="no">${it.toLocaleString()}</b></small>${frUnread(f)?'<span class="fr-new">💬 メッセージが届いています！</span>':""}</div></div>
+        <div class="fr-btns"><button class="chip ${frUnread(f)?"fr-hot":""}" type="button" data-frchat="${esc(f.id)}">💬 メッセージ</button><button class="chip" type="button" data-frheart="${esc(f.id)}">💗 ハート石を送る</button>
         <button class="chip" type="button" data-frtrade="${esc(f.id)}" ${open?"":"disabled"}>${open?"🔄 トレード":"🔒 トレード"}</button><button class="chip fr-del" type="button" data-frdel="${esc(f.id)}">フレンド解除</button></div>
         ${open?"":`<div class="dm-gauge" style="margin-top:6px"><i style="width:${Math.min(100,it/TRADE_INT*100)}%"></i></div><small class="fr-lock">親密度${TRADE_INT}でトレード解放（あと${(TRADE_INT-it).toLocaleString()}）</small>`}</div>`; }).join("")}</div>`
       :`<div class="empty">まだフレンドがいません<br><small>ランキングで冒険者をタップして「フレンド申請」を送ろう</small></div>`);
@@ -4622,7 +4634,7 @@ function drawFriends(){
   if(bg) bg.querySelector(".sheet").innerHTML=html; else { bg=sheet(html); bg.classList.add("fr-sheet"); }
   bg.querySelector(".sheet").scrollTop=top;
   const $$=s=>bg.querySelector(s);
-  $$(".x").onclick=closeSheet;
+  $$(".x").onclick=()=>{ closeSheet(); if(tab==="home") render(); };
   if($$("#frBack")) $$("#frBack").onclick=()=>{ frMode="menu"; drawFriends(); };
   if($$("#frList")) $$("#frList").onclick=()=>{ frMode="list"; drawFriends(); };
   if($$("#frReq")) $$("#frReq").onclick=()=>{ frMode="req"; drawFriends(); };
