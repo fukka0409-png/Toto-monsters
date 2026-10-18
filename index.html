@@ -48,6 +48,20 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--moss);outl
 .snd svg{width:18px;height:18px}
 html[lang=en] .logo{font-size:15px;letter-spacing:0}
 html[lang=en] .logo small{display:none}
+.fr-stones{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}.fr-stones span{display:flex;align-items:center;gap:6px;background:var(--bark-2);border-radius:12px;padding:6px 10px;font-size:13px;font-weight:700}.fr-stones img{width:26px;height:26px}
+.fr-menu{display:flex;flex-direction:column;gap:10px}.fr-menu .btn{position:relative;font-size:16px;padding:14px}
+.fr-n{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:var(--berry,#e8336b);color:#fff;border-radius:999px;min-width:24px;padding:2px 7px;font-size:13px}
+.fr-list{display:flex;flex-direction:column;gap:10px}.fr-item{background:var(--bark-2);border:2px solid var(--line);border-radius:14px;padding:10px}
+.fr-top{display:flex;align-items:center;gap:10px}.fr-body{display:flex;flex-direction:column;min-width:0}.fr-body b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fr-body small{color:var(--mist-dim)}
+.fr-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.fr-btns .btn{flex:1}.fr-btns .chip:disabled{opacity:.55}.fr-del{margin-left:auto;color:#ff8a7a}.fr-lock{color:var(--mist-dim);font-size:11px}
+.fr-msg{margin-top:8px;background:var(--bark);border-radius:10px;padding:8px 10px;font-size:14px;line-height:1.6;word-break:break-word}
+.fr-ta{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;background:var(--bark-2);color:var(--mist);border:2px solid var(--line);border-radius:12px;padding:10px;font:inherit;font-size:16px;resize:none}
+.fr-pbtn{grid-template-columns:1fr 1fr}.fr-pbtn .iu img{width:28px;height:28px}
+.chat-log{max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px 8px}
+.chat-m{align-self:flex-start;max-width:82%;background:var(--bark-2);border-radius:14px 14px 14px 4px;padding:7px 11px;word-break:break-word;line-height:1.55}
+.chat-m.me{align-self:flex-end;background:#3d5a2a;border-radius:14px 14px 4px 14px}.chat-m small{display:block;color:var(--mist-dim);font-size:10px;margin-bottom:2px}
+.chat-in{display:flex;gap:8px;align-items:flex-end;margin-top:8px}.chat-in .btn{flex:0 0 auto}
+.hm-btn .fr-badge{right:-6px}
 .snd-set{gap:12px}.snd-row{display:flex;align-items:center;gap:10px;text-align:left}.snd-row b{flex:0 0 5.2em;font-size:14px}.snd-row .seg{flex:1;margin:0}.snd-row.vol span{flex:0 0 2.4em;text-align:right;font-weight:900}.snd-row input:disabled{opacity:.4}
 .snd.lang{font-family:var(--f-pix);font-size:12px;font-weight:900;color:var(--mist);letter-spacing:0}
 .daily:disabled{border-color:var(--line);background:none;color:var(--mist-dim);cursor:default}
@@ -1687,6 +1701,95 @@ const I18N_EN = {
 "に入ったごほうびに、": " in the 10/18 season,",
 "が届きました！": " has arrived!",
 "上位3人だけの配布限定モンスターです（ガチャには出ません）": "A limited monster given only to the top 3 (not in the gacha)",
+"ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。": "From “🤝 Friends” on the home screen you can see your friend list and friend requests. The friend feature can be turned ON/OFF.",
+"ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。": "Tap an adventurer in the ranking → “Friend Request”. A comment of 3+ characters is required.",
+"届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。": "Requests you receive pile up in “Friend Requests”. Accept one to become friends. You can unfriend at any time.",
+"フレンドの人数は、ほかの人からは見えない。": "Other players can't see how many friends you have.",
+"フレンドとは、2人だけの掲示板でメッセージをやりとりできる。": "You can exchange messages with a friend on a private board just for the two of you.",
+"羽根つきハート石は最大10個。シーズンが変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。": "You can hold up to 10 Winged Heart Stones. They refill to 10 every season. Send as many as you like to anyone in the ranking.",
+"送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。": "Winged Heart Stones you send arrive as Heart Stones. The total sent and received is your affinity with that person (no limit).",
+"親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。": "Monster trading unlocks with friends once your affinity reaches 500 (coming soon).",
+"フレンド": "Friends",
+"🤝 フレンド": "🤝 Friends",
+"フレンド機能": "Friend feature",
+"フレンド機能はオフです。新しいフレンド申請は届きません（今のフレンドはそのまま）。": "The friend feature is off. You won't receive new friend requests (your current friends stay).",
+"羽根つきハート石": "Winged Heart Stones",
+"ハート石": "Heart Stones",
+"羽根つきハート石はシーズンが変わるたびに{0}個に補充（最大{1}個）。ランキングの冒険者をタップして送れます。送った相手との": "Winged Heart Stones refill to {0} every season (max {1}). Tap an adventurer in the ranking to send them. Your",
+"親密度": "affinity",
+"が上がります。": "with them goes up.",
+"📋 フレンド一覧": "📋 Friend List",
+"📨 フレンド申請": "📨 Friend Requests",
+"← フレンドメニューへ": "← Back to Friends",
+"まだフレンドがいません": "No friends yet",
+"ランキングで冒険者をタップして「フレンド申請」を送ろう": "Tap an adventurer in the ranking and send a “Friend Request”",
+"届いているフレンド申請はありません": "No friend requests",
+"💞 親密度": "💞 Affinity",
+"💬 メッセージ": "💬 Messages",
+"💗 ハート石を送る": "💗 Send Hearts",
+"🔒 トレード": "🔒 Trade",
+"🔄 トレード": "🔄 Trade",
+"親密度{0}でトレード解放（あと{1}）": "Trading unlocks at affinity {0} ({1} to go)",
+"許可する": "Accept",
+"却下する": "Decline",
+"フレンドのお知らせ": "Friend News",
+"フレンド申請を見る": "See Friend Requests",
+"📨 フレンド申請が{0}件届いています": "📨 You have {0} friend request(s)",
+"さんとフレンドになりました！": "is now your friend!",
+"さんからハート石が{0}個届いた！（親密度 {1}）": "sent you {0} Heart Stone(s)! (affinity {1})",
+"フレンド申請した相手からの伝言「もう少し先でまた会おう😎」": "A message from the adventurer you sent a friend request to: “Let's meet again a little further down the road 😎”",
+"フレンド機能をオフにしました": "Friend feature turned off",
+"フレンド機能をオンにしました": "Friend feature turned on",
+"{0}さんとフレンドになりました！": "{0} is now your friend!",
+"フレンド申請を却下しました": "Friend request declined",
+"うまくいきませんでした。少し時間をおいてためしてください": "That didn't work. Please try again in a little while",
+"解除できませんでした。少し時間をおいてためしてください": "Couldn't unfriend. Please try again in a little while",
+"フレンドを解除しました": "Unfriended",
+"ログインが必要です": "You need to log in",
+"フレンド機能を使うには、ログインが必要です。": "You need to log in to use friends.",
+"フレンド機能がオフになっています（フレンドメニューでオンにできます）": "Your friend feature is off (turn it on in the Friends menu)",
+"もうフレンドです": "You're already friends",
+"この冒険者からフレンド申請が届いています。「フレンド」→「フレンド申請」から許可できます": "This adventurer already sent you a friend request. Accept it from “Friends” → “Friend Requests”",
+"この冒険者には申請中です。返事を待ってね": "Your request is pending. Wait for their reply",
+"フレンド申請を送りました！": "Friend request sent!",
+"申請を送れませんでした。少し時間をおいてためしてください": "Couldn't send the request. Please try again in a little while",
+"羽根つきハート石がありません（シーズンが変わると{0}個に補充されます）": "No Winged Heart Stones left (they refill to {0} when the season changes)",
+"送れませんでした。少し時間をおいてためしてください": "Couldn't send. Please try again in a little while",
+"{0}さんに羽根つきハート石を{1}個送りました！（親密度 {2}）": "Sent {1} Winged Heart Stone(s) to {0}! (affinity {2})",
+"トレード機能は準備中です。もう少し待っててね": "Trading is coming soon. Please wait a little longer",
+"フレンドではありません": "Not a friend",
+"送信できませんでした": "Couldn't send",
+"さんとのフレンドを解除しますか？": ": unfriend this adventurer?",
+"メッセージのやりとりができなくなります。親密度は残ります。": "You won't be able to message each other. Your affinity stays.",
+"解除する": "Unfriend",
+"フレンド解除": "Unfriend",
+"さん": "",
+"さんにフレンド申請": ": send a friend request",
+"ひとことコメント（{0}文字以上）": "A short comment ({0}+ characters)",
+"あと{0}文字以上入力してね": "Type {0} more character(s)",
+"{0}/60文字": "{0}/60 characters",
+"申請を送る": "Send Request",
+"さんに羽根つきハート石を送る": ": send Winged Heart Stones",
+"何個送る？（持っている数：{0}）": "How many? (you have {0})",
+"さんに「ハート石」が{0}個届きます。": "will receive {0} Heart Stone(s).",
+"さんとの親密度が": "Your affinity with them goes",
+"になります。": ".",
+"送る！": "Send!",
+"2人だけの掲示板です。💞 親密度": "A board just for you two. 💞 Affinity",
+"🔄 更新": "🔄 Refresh",
+"まだメッセージはありません。最初のひとことを送ろう！": "No messages yet. Send the first one!",
+"読み込めませんでした。フレンドが解除されたかもしれません": "Couldn't load. You may no longer be friends",
+"メッセージを書く（{0}文字まで）": "Write a message (up to {0} characters)",
+"送信": "Send",
+"送信中…": "Sending…",
+"一覧を開く": "Open list",
+"🤝 フレンド申請": "🤝 Friend Request",
+"コメント{0}文字以上": "Comment {0}+ chars",
+"羽根つきハート石を送る": "Send Winged Hearts",
+"のこり": "Left",
+"💞 あなたとの親密度：": "💞 Your affinity:",
+"（{0}でトレード解放）": "(trading unlocks at {0})",
+"処理中…": "Working…",
 "シーズンが終わったので、盾が{0}個消えました": "The season ended, so {0} shield(s) disappeared",
 "装備中の盾": "Equipped shield",
 "のこり耐久 {0} / {1}": "Durability {0} / {1}",
@@ -2282,7 +2385,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkTicks(); await checkGifts(db); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // シーズンの切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -3028,13 +3131,13 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-18y";
+const RULES_VER = "2026-10-19a";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-rules]")) openRules(); });
 // U(...) で囲んだところが「今回の更新で変わったところ」。NEWが付いている間だけ赤で目立たせる
-const RULES_TAG = ["w","x"];   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
+const RULES_TAG = ["z"];   // 今回の更新の印。U(文, "d") のように同じ印のところだけ赤くなる（前の更新の印は普通の文字に戻る）
 const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd">${t}</span>` : t;
 function openRules(){
   const fresh=rulesNew();
@@ -3050,6 +3153,7 @@ function openRules(){
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物1体と交換（アイテム攻撃を4回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（10回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"u")}${U("。<b>盾は作ったシーズンの間だけ</b>持てる（22:00のシーズン終了で消える・次のシーズンに持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
     ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・<b>シーズン終了の10時間前＝12:00まで</b>）。</li><li>シーズン終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのシーズンはもう投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"w")],
+    ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。シーズンが変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li>${U("<li>💰 Sランクの魔物を売却すると、コインに加えて<b>冒険者Lv+5</b>、Zランクは<b>冒険者Lv+15</b>上がる（A・B・Cランクはコインのみ）。</li>","x")}<li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
@@ -3429,7 +3533,7 @@ function profilePayload(){
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, pub:gnow() };
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow() };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -3657,6 +3761,7 @@ function renderHome(){
       <div class="hm-btns">
         <button class="hm-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖 最新ルール確認${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>
         <button class="hm-btn" type="button" id="hmStats">📊 自己記録確認</button>
+        <button class="hm-btn" type="button" id="hmFriend">🤝 フレンド${DB&&MYID&&frBadge()?`<span class="rules-new fr-badge">${frBadge()}</span>`:""}</button>
       </div>
     </div>
     ${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
@@ -3669,6 +3774,7 @@ function renderHome(){
   $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   $("#hmChange").onclick=()=>openHomeEdit("m");
 
+  $("#hmFriend").onclick=()=>openFriends();
   $("#hmInvest").onclick=()=>{ homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); };
 }
 function openHomeEdit(mode){
@@ -4401,6 +4507,243 @@ async function checkBattles(){
   battleBusy=false;
 }
 /* ---------- アイテムを使う ---------- */
+/* ===================== フレンド・羽根つきハート石 =====================
+   friendReq/{from_to}：フレンド申請（st: p=申請中 / no=却下）。許可されたら申請は消して friends/{a_b} を作る
+   friends/{a_b}：フレンド（u:[a,b]）。メンバーしか読めないので、ほかの人からフレンドの人数は見えない
+   friends/{a_b}/msgs：2人だけの掲示板
+   hearts：羽根つきハート石を送った記録。受け取った側では「ハート石」になる
+   親密度＝自分が送った数＋相手から届いた数（上限なし） */
+const FR_NO_MSG="フレンド申請した相手からの伝言「もう少し先でまた会おう😎」";
+const WING_MAX=10, TRADE_INT=500, FR_MSG_MAX=200, FR_REQ_MIN=3;
+const WING_IMG="data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M20 30C10 22 2 24 2 30c4-1 8 0 10 2-5 0-8 3-8 6 4-2 9-2 13 0-3 1-5 4-4 7 5-4 10-5 15-5z" fill="#fff" stroke="#9aa7c7" stroke-width="2"/><path d="M44 30c10-8 18-6 18 0-4-1-8 0-10 2 5 0 8 3 8 6-4-2-9-2-13 0 3 1 5 4 4 7-5-4-10-5-15-5z" fill="#fff" stroke="#9aa7c7" stroke-width="2"/><path d="M32 54 16 37c-6-7-2-17 7-17 4 0 7 2 9 6 2-4 5-6 9-6 9 0 13 10 7 17z" fill="#ff5f8f" stroke="#a3204b" stroke-width="2.5"/><path d="M22 27c2-2 5-2 6 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>');
+const HEART_IMG="data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M32 58 10 35c-8-9-3-23 9-23 6 0 10 3 13 8 3-5 7-8 13-8 12 0 17 14 9 23z" fill="#e8336b" stroke="#7a1033" stroke-width="3"/><path d="M32 58 22 30h20z" fill="#ff7aa2" opacity=".75"/><path d="M10 35 22 30 19 12M54 35 42 30 45 12M22 30 32 20 42 30" stroke="#7a1033" stroke-width="1.5" fill="none" opacity=".6"/><path d="M17 22c2-4 5-5 8-4" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg>');
+const pairId=(a,b)=>a<b?a+"_"+b:b+"_"+a;
+const intimacy=id=>((S.hs||{})[id]||0)+((S.hr||{})[id]||0);
+function wingFix(){ const s=seasonNow(); if(S.wingSs!==s){ S.wing=WING_MAX; S.wingSs=s; save(); } }   // シーズンが変わるたびに10個に補充
+const FR={friends:[], reqIn:[], loaded:false, prof:{}};
+let frMode="menu", frBusy=false;
+const isFriend=id=>FR.friends.some(x=>x.id===id);
+const frName=id=>uname((FR.prof[id]||findRank(id)||{}).name);
+async function frProfile(id){
+  if(FR.prof[id]) return FR.prof[id];
+  try{ const d=await DB.doc("profiles/"+id).get(); FR.prof[id]=d.exists?{id,...d.data()}:{id,name:""}; }catch(e){ return {id,name:""}; }
+  return FR.prof[id];
+}
+async function loadFriends(){
+  if(!DB||!MYID) return;
+  const [f,r]=await Promise.all([withTO(DB.collection("friends").where("u","array-contains",MYID).get()), withTO(DB.collection("friendReq").where("to","==",MYID).get())]);
+  FR.friends=f.docs.map(d=>{ const x=d.data(); return {pair:d.id, id:(x.u||[]).find(u=>u!==MYID), lm:x.lm||null, at:x.at||0}; }).filter(x=>x.id);
+  FR.reqIn=r.docs.map(d=>({doc:d.id,...d.data()})).filter(x=>x.st==="p").sort((a,b)=>(b.at||0)-(a.at||0));
+  await Promise.all([...new Set([...FR.friends.map(x=>x.id),...FR.reqIn.map(x=>x.from)])].map(frProfile));
+  FR.loaded=true;
+}
+const frUnread=f=>!!(f.lm && f.lm.from!==MYID && (f.lm.at||0)>((S.fRead||{})[f.pair]||0));
+const frBadge=()=>FR.reqIn.length + FR.friends.filter(frUnread).length;
+function frNotice(lines, withReq){
+  const bg=document.createElement("div"); bg.className="sheet-bg center fr-note"; bg.style.zIndex=54;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="frnT"><div class="swear-face">🤝</div><p id="frnT">フレンドのお知らせ</p>
+    <div class="note" style="margin:0;text-align:left">${lines.map(m=>"・"+m).join("<br>")}</div>
+    ${withReq?`<button class="btn gold" type="button" id="frnGo">フレンド申請を見る</button>`:""}<button class="btn ${withReq?"ghost":"gold"}" type="button" id="frnX">OK</button></div>`;
+  document.body.appendChild(bg);
+  bg.querySelector("#frnX").onclick=()=>bg.remove();
+  const g=bg.querySelector("#frnGo"); if(g) g.onclick=()=>{ bg.remove(); openFriends("req"); };
+}
+// ログイン時：申請・却下・新しいフレンド・ハート石をまとめて確認
+async function checkFriends(){
+  if(frBusy||!DB||!MYID) return; frBusy=true;
+  try{
+    wingFix(); await loadFriends();
+    const lines=[];
+    if(S.fOff && FR.reqIn.length){ for(const q of FR.reqIn){ try{ await DB.doc("friendReq/"+q.doc).update({st:"no"}); }catch(e){} } FR.reqIn=[]; }   // 機能オフ中に届いた申請は自動で却下
+    let no=0;
+    const mine=await withTO(DB.collection("friendReq").where("from","==",MYID).get());
+    for(const d of mine.docs){ if(d.data().st==="no"){ no++; try{ await d.ref.delete(); }catch(e){} } }
+    const due=(S.frNotes||[]).filter(t=>t<=gnow()); if(due.length){ no+=due.length; S.frNotes=S.frNotes.filter(t=>t>gnow()); }
+    for(let i=0;i<no;i++) lines.push(FR_NO_MSG);
+    const known=new Set(S.fKnown||[]), ids=FR.friends.map(x=>x.id);
+    ids.filter(id=>!known.has(id)).forEach(id=>lines.push(`🤝 ${frName(id)}さんとフレンドになりました！`));
+    S.fKnown=ids;
+    // 羽根つきハート石 → ハート石として受け取る（同じ記録を2回数えないように、最近の分はIDでも確認）
+    const h=await withTO(DB.collection("hearts").where("to","==",MYID).get());
+    const win=15*60*1000, seen=S.hIds||{}, got={}; let tot=0, last=S.lastHeart||0;
+    h.docs.forEach(d=>{ const x=d.data(); if(!x||!x.from||(x.at||0)<=(S.lastHeart||0)-win||seen[d.id]) return;
+      const n=Math.max(1,Math.min(WING_MAX,Math.floor(x.n||1))); S.hr=S.hr||{}; S.hr[x.from]=(S.hr[x.from]||0)+n; got[x.from]=(got[x.from]||0)+n; tot+=n; seen[d.id]=x.at||0; last=Math.max(last,x.at||0);
+      d.ref.delete().catch(()=>{}); });
+    S.lastHeart=last; Object.keys(seen).forEach(k=>{ if(seen[k]<last-win) delete seen[k]; }); S.hIds=seen;
+    if(tot){ S.heart=(S.heart||0)+tot; await Promise.all(Object.keys(got).map(frProfile));
+      Object.entries(got).forEach(([id,n])=>lines.push(`💗 ${frName(id)}さんからハート石が${n}個届いた！（親密度 ${intimacy(id)}）`)); }
+    const fresh=FR.reqIn.filter(q=>!(S.frSeen||[]).includes(q.doc));
+    if(fresh.length) lines.unshift(`📨 フレンド申請が${fresh.length}件届いています`);
+    S.frSeen=FR.reqIn.map(q=>q.doc);
+    save();
+    if(lines.length){ if(tot) SFX.sparkle(); frNotice(lines, fresh.length>0); }
+    if(tab==="home") render();
+  }catch(e){}
+  frBusy=false;
+}
+// 機能オフの相手に送った申請は、少し時間をおいて「却下」と同じ伝言を出す
+setInterval(()=>{ if(!S||!S.frNotes||!S.frNotes.length) return; const due=S.frNotes.filter(t=>t<=gnow()); if(!due.length) return;
+  S.frNotes=S.frNotes.filter(t=>t>gnow()); save(); frNotice(due.map(()=>FR_NO_MSG)); },20000);
+
+function openFriends(mode){
+  if(!DB||!MYID){ const bg=sheet(`<div class="sheet-h"><h3>🤝 フレンド</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${loginBox("フレンド機能を使うには、ログインが必要です。")}`); bg.querySelector(".x").onclick=closeSheet; return; }
+  frMode=mode||"menu"; wingFix(); drawFriends();
+  loadFriends().then(()=>{ if(document.querySelector(".fr-sheet")) drawFriends(); }).catch(()=>{});
+}
+function drawFriends(){
+  const keep=document.querySelector(".fr-sheet .sheet"); const top=keep?keep.scrollTop:0;
+  const head=t=>`<div class="sheet-h"><h3>${t}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>`;
+  const back=`<button class="chip" type="button" id="frBack" style="margin-bottom:10px">← フレンドメニューへ</button>`;
+  const stones=`<div class="fr-stones"><span><img src="${WING_IMG}" alt="">羽根つきハート石 <b translate="no">${S.wing??WING_MAX}</b>/${WING_MAX}</span><span><img src="${HEART_IMG}" alt="">ハート石 <b translate="no">${(S.heart||0).toLocaleString()}</b></span></div>`;
+  let html;
+  if(frMode==="list"){
+    const L=[...FR.friends].sort((a,b)=>frUnread(b)-frUnread(a)||intimacy(b.id)-intimacy(a.id));
+    html=head("📋 フレンド一覧")+back+(!FR.loaded?`<div class="empty">読み込み中…</div>`:L.length?`<div class="fr-list">${L.map(f=>{ const p=FR.prof[f.id]||{}, it=intimacy(f.id), open=it>=TRADE_INT;
+      return `<div class="fr-item"><div class="fr-top">${avatarImg(p.icon,44)}<div class="fr-body"><b>${uname(p.name)}${frUnread(f)?' <span class="same">NEW</span>':""}</b><small>💞 親密度 <b translate="no">${it.toLocaleString()}</b></small></div></div>
+        <div class="fr-btns"><button class="chip" type="button" data-frchat="${esc(f.id)}">💬 メッセージ</button><button class="chip" type="button" data-frheart="${esc(f.id)}">💗 ハート石を送る</button>
+        <button class="chip" type="button" data-frtrade="${esc(f.id)}" ${open?"":"disabled"}>${open?"🔄 トレード":"🔒 トレード"}</button><button class="chip fr-del" type="button" data-frdel="${esc(f.id)}">フレンド解除</button></div>
+        ${open?"":`<div class="dm-gauge" style="margin-top:6px"><i style="width:${Math.min(100,it/TRADE_INT*100)}%"></i></div><small class="fr-lock">親密度${TRADE_INT}でトレード解放（あと${(TRADE_INT-it).toLocaleString()}）</small>`}</div>`; }).join("")}</div>`
+      :`<div class="empty">まだフレンドがいません<br><small>ランキングで冒険者をタップして「フレンド申請」を送ろう</small></div>`);
+  } else if(frMode==="req"){
+    html=head("📨 フレンド申請")+back+(!FR.loaded?`<div class="empty">読み込み中…</div>`:FR.reqIn.length?`<div class="fr-list">${FR.reqIn.map(q=>{ const p=FR.prof[q.from]||{name:q.fromName};
+      return `<div class="fr-item"><div class="fr-top">${avatarImg(p.icon,44)}<div class="fr-body"><b>${uname(p.name||q.fromName)}</b><small>冒険者 Lv${esc(p.lv||1)}</small></div></div>
+        <div class="fr-msg" translate="no">「${esc(q.msg||"")}」</div>
+        <div class="fr-btns"><button class="btn gold" type="button" data-frok="${esc(q.doc)}">許可する</button><button class="btn ghost" type="button" data-frno="${esc(q.doc)}">却下する</button></div></div>`; }).join("")}</div>`
+      :`<div class="empty">届いているフレンド申請はありません</div>`);
+  } else {
+    const n=FR.reqIn.length, un=FR.friends.filter(frUnread).length;
+    html=head("🤝 フレンド")+`<div class="snd-row" style="margin:0 0 10px"><b style="flex-basis:7em">フレンド機能</b><div class="seg" id="frOnOff" style="flex:1;margin:0">${[["on","ON"],["off","OFF"]].map(([k,l])=>`<button type="button" data-fo="${k}" aria-pressed="${(k==="off")===!!S.fOff}" translate="no">${l}</button>`).join("")}</div></div>
+      ${S.fOff?`<div class="note" style="margin:0 0 10px">フレンド機能はオフです。新しいフレンド申請は届きません（今のフレンドはそのまま）。</div>`:""}
+      ${stones}<div class="note" style="margin:0 0 12px">羽根つきハート石はシーズンが変わるたびに${WING_MAX}個に補充（最大${WING_MAX}個）。ランキングの冒険者をタップして送れます。送った相手との<b>親密度</b>が上がります。</div>
+      <div class="fr-menu"><button class="btn gold" type="button" id="frList">📋 フレンド一覧${un?`<span class="fr-n">${un}</span>`:""}</button><button class="btn gold" type="button" id="frReq">📨 フレンド申請${n?`<span class="fr-n">${n}</span>`:""}</button></div>`;
+  }
+  let bg=document.querySelector(".fr-sheet");
+  if(bg) bg.querySelector(".sheet").innerHTML=html; else { bg=sheet(html); bg.classList.add("fr-sheet"); }
+  bg.querySelector(".sheet").scrollTop=top;
+  const $$=s=>bg.querySelector(s);
+  $$(".x").onclick=closeSheet;
+  if($$("#frBack")) $$("#frBack").onclick=()=>{ frMode="menu"; drawFriends(); };
+  if($$("#frList")) $$("#frList").onclick=()=>{ frMode="list"; drawFriends(); };
+  if($$("#frReq")) $$("#frReq").onclick=()=>{ frMode="req"; drawFriends(); };
+  bg.querySelectorAll("[data-fo]").forEach(b=>b.onclick=()=>{ S.fOff=b.dataset.fo==="off"; save(); queueProfile(true); toast(S.fOff?"フレンド機能をオフにしました":"フレンド機能をオンにしました"); drawFriends(); render(); });
+  bg.querySelectorAll("[data-frok]").forEach(b=>b.onclick=e=>busyRun(e.currentTarget,"処理中…",()=>answerReq(b.dataset.frok,true)));
+  bg.querySelectorAll("[data-frno]").forEach(b=>b.onclick=e=>busyRun(e.currentTarget,"処理中…",()=>answerReq(b.dataset.frno,false)));
+  bg.querySelectorAll("[data-frchat]").forEach(b=>b.onclick=()=>openChat(b.dataset.frchat));
+  bg.querySelectorAll("[data-frheart]").forEach(b=>b.onclick=()=>heartDialog(FR.prof[b.dataset.frheart]||{id:b.dataset.frheart}));
+  bg.querySelectorAll("[data-frtrade]").forEach(b=>b.onclick=()=>toast("トレード機能は準備中です。もう少し待っててね"));
+  bg.querySelectorAll("[data-frdel]").forEach(b=>b.onclick=()=>unfriend(b.dataset.frdel));
+}
+async function answerReq(doc, ok){
+  const q=FR.reqIn.find(x=>x.doc===doc); if(!q) return false;
+  try{
+    if(ok){ const u=[MYID,q.from].sort(); await withTO(DB.doc("friends/"+u.join("_")).set({u, at:gnow()})); await DB.doc("friendReq/"+doc).delete();
+      FR.friends.push({pair:u.join("_"), id:q.from, lm:null, at:gnow()}); S.fKnown=[...new Set([...(S.fKnown||[]),q.from])]; SFX.reveal("S"); toast(`${(FR.prof[q.from]||{}).name||q.fromName||"名無しの召喚士"}さんとフレンドになりました！`); }
+    else { await withTO(DB.doc("friendReq/"+doc).update({st:"no"})); toast("フレンド申請を却下しました"); }
+  }catch(e){ toast("うまくいきませんでした。少し時間をおいてためしてください"); return false; }
+  FR.reqIn=FR.reqIn.filter(x=>x.doc!==doc); S.frSeen=(S.frSeen||[]).filter(x=>x!==doc); save(); drawFriends(); render(); return true;
+}
+function unfriend(id){
+  const nm=(FR.prof[id]||{}).name||"名無しの召喚士";
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="fdT"><p id="fdT"><span translate="no">${esc(nm)}</span>さんとのフレンドを解除しますか？</p>
+    <div class="note" style="margin:0">メッセージのやりとりができなくなります。親密度は残ります。</div>
+    <button class="btn gold" type="button" id="fdGo">解除する</button><button class="btn ghost" type="button" id="fdNo">やめる</button></div>`;
+  document.body.appendChild(bg);
+  bg.querySelector("#fdNo").onclick=()=>bg.remove();
+  bg.querySelector("#fdGo").onclick=async()=>{ try{ await withTO(DB.doc("friends/"+pairId(MYID,id)).delete()); }catch(e){ return toast("解除できませんでした。少し時間をおいてためしてください"); }
+    FR.friends=FR.friends.filter(x=>x.id!==id); S.fKnown=(S.fKnown||[]).filter(x=>x!==id); save(); bg.remove(); toast("フレンドを解除しました"); drawFriends(); };
+}
+// ランキングのプロフィールから：フレンド申請
+function openFriendReq(r){
+  if(!DB||!MYID) return toast("ログインが必要です");
+  if(r.id===MYID) return;
+  if(S.fOff) return toast("フレンド機能がオフになっています（フレンドメニューでオンにできます）");
+  if(isFriend(r.id)) return toast("もうフレンドです");
+  if(FR.reqIn.some(q=>q.from===r.id)) return toast("この冒険者からフレンド申請が届いています。「フレンド」→「フレンド申請」から許可できます");
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="frqT"><div class="swear-face">🤝</div><p id="frqT">${uname(r.name)}さんにフレンド申請</p>
+    <textarea id="frqM" class="fr-ta" maxlength="60" rows="3" placeholder="${LANG==="en"?`A short comment (${FR_REQ_MIN}+ characters)`:`ひとことコメント（${FR_REQ_MIN}文字以上）`}"></textarea>
+    <div class="note" style="margin:0" id="frqN"></div>
+    <button class="btn gold" type="button" id="frqGo" disabled>申請を送る</button><button class="btn ghost" type="button" id="frqNo">やめる</button></div>`;
+  document.body.appendChild(bg);
+  const ta=bg.querySelector("#frqM"), go=bg.querySelector("#frqGo"), nt=bg.querySelector("#frqN");
+  const len=()=>[...ta.value.trim()].length;
+  const upd=()=>{ const n=len(); go.disabled=n<FR_REQ_MIN; nt.textContent=n<FR_REQ_MIN?`あと${FR_REQ_MIN-n}文字以上入力してね`:`${n}/60文字`; };
+  ta.oninput=upd; upd(); setTimeout(()=>ta.focus(),50);
+  bg.querySelector("#frqNo").onclick=()=>bg.remove();
+  go.onclick=async e=>{ if(len()<FR_REQ_MIN) return; if(await busyRun(e.currentTarget,"送っています…",()=>sendFriendReq(r,ta.value.trim().slice(0,60)))) bg.remove(); };
+}
+async function sendFriendReq(r,msg){
+  if([...msg].length<FR_REQ_MIN) return false;
+  const id=MYID+"_"+r.id;
+  try{
+    const [p,ex]=await withTO(Promise.all([DB.doc("profiles/"+r.id).get(), DB.doc("friendReq/"+id).get()]));
+    if(ex.exists && ex.data().st==="p"){ toast("この冒険者には申請中です。返事を待ってね"); return false; }
+    if(p.exists && p.data().fOff){   // 相手が機能オフ：申請は届けず、少しあとで却下と同じ伝言を出す
+      S.frNotes=(S.frNotes||[]).concat(gnow()+Math.floor((60+Math.random()*180)*1000)); save(); toast("フレンド申請を送りました！"); return true; }
+    if(ex.exists) await ex.ref.delete();
+    await withTO(DB.doc("friendReq/"+id).set({from:MYID, to:r.id, fromName:myName().slice(0,12), msg, st:"p", at:gnow()}));
+  }catch(e){ toast("申請を送れませんでした。少し時間をおいてためしてください"); return false; }
+  SFX.coin(); toast("フレンド申請を送りました！"); return true;
+}
+// 羽根つきハート石を送る（何人にでも、好きな数ずつ）
+function heartDialog(r){
+  if(!DB||!MYID) return toast("ログインが必要です");
+  if(!r||r.id===MYID) return;
+  wingFix(); if(!S.wing) return toast(`羽根つきハート石がありません（シーズンが変わると${WING_MAX}個に補充されます）`);
+  const who=uname(r.name||(FR.prof[r.id]||{}).name);
+  qtyDialog({img:WING_IMG, title:`${who}さんに羽根つきハート石を送る`, max:S.wing, ok:"送る！", unit:"個", ask:"何個送る？",
+    desc:n=>`${who}さんに「ハート石」が${n}個届きます。<br>${who}さんとの親密度が <b>${intimacy(r.id)} → ${intimacy(r.id)+n}</b> になります。`}, n=>sendHearts(r,n));
+}
+async function sendHearts(r,n){
+  wingFix(); n=Math.floor(n); if(!(n>=1&&n<=S.wing)) return;
+  try{ await withTO(DB.collection("hearts").add({from:MYID, to:r.id, n, at:gnow()})); }
+  catch(e){ toast("送れませんでした。少し時間をおいてためしてください"); return false; }
+  S.wing-=n; S.hs=S.hs||{}; S.hs[r.id]=(S.hs[r.id]||0)+n; save(); SFX.sparkle();
+  toast(`${r.name||(FR.prof[r.id]||{}).name||"名無しの召喚士"}さんに羽根つきハート石を${n}個送りました！（親密度 ${intimacy(r.id)}）`);
+  if(document.querySelector(".fr-sheet")) drawFriends();
+  document.querySelectorAll("[data-wingleft]").forEach(x=>x.textContent=S.wing);
+}
+// フレンドとだけ使える掲示板
+async function openChat(id){
+  const f=FR.friends.find(x=>x.id===id); if(!f) return toast("フレンドではありません");
+  const p=FR.prof[id]||{};
+  const bg=document.createElement("div"); bg.className="sheet-bg chat-sheet"; bg.style.zIndex=56;
+  bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><div class="sheet-h"><h3>💬 ${uname(p.name)}さん</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <div class="note" style="margin:0 0 8px">2人だけの掲示板です。💞 親密度 <b translate="no">${intimacy(id).toLocaleString()}</b> <button class="chip" type="button" id="chR" style="margin-left:6px">🔄 更新</button></div>
+    <div class="chat-log" id="chLog"><div class="empty">読み込み中…</div></div>
+    <div class="chat-in"><textarea id="chT" class="fr-ta" maxlength="${FR_MSG_MAX}" rows="2" placeholder="${LANG==="en"?`Write a message (up to ${FR_MSG_MAX} characters)`:`メッセージを書く（${FR_MSG_MAX}文字まで）`}"></textarea><button class="btn gold" type="button" id="chGo">送信</button></div></div>`;
+  document.body.appendChild(bg);
+  const close=()=>bg.remove(); bg.querySelector(".x").onclick=close; bg.onclick=e=>{ if(e.target===bg) close(); };
+  const col=DB.collection("friends").doc(f.pair).collection("msgs"), log=bg.querySelector("#chLog");
+  const load=async()=>{
+    try{ const q=await withTO(col.orderBy("at","desc").limit(50).get()); const L=q.docs.map(d=>d.data()).reverse();
+      log.innerHTML=L.length?L.map(m=>`<div class="chat-m ${m.from===MYID?"me":""}"><small>${m.from===MYID?"あなた":uname(p.name)} ・ <span translate="no">${new Date(m.at||0).toLocaleString(LANG==="en"?"en-US":"ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</span></small><div translate="no">${esc(m.text||"").replace(/\n/g,"<br>")}</div></div>`).join(""):`<div class="empty">まだメッセージはありません。最初のひとことを送ろう！</div>`;
+      log.scrollTop=log.scrollHeight; S.fRead=S.fRead||{}; S.fRead[f.pair]=gnow(); save(); if(document.querySelector(".fr-sheet")) drawFriends(); }
+    catch(e){ log.innerHTML=`<div class="empty">読み込めませんでした。フレンドが解除されたかもしれません</div>`; }
+  };
+  bg.querySelector("#chR").onclick=load;
+  const ta=bg.querySelector("#chT");
+  bg.querySelector("#chGo").onclick=async e=>{ const t=ta.value.trim().slice(0,FR_MSG_MAX); if(!t) return;
+    const ok=await busyRun(e.currentTarget,"送信中…",async()=>{ try{ const at=gnow(); await withTO(col.add({from:MYID, text:t, at})); DB.doc("friends/"+f.pair).update({lm:{from:MYID, at}}).catch(()=>{}); return true; }catch(err){ toast("送信できませんでした"); return false; } });
+    if(ok){ ta.value=""; load(); } };
+  load();
+}
+// プロフィール（ほかの冒険者）に出すフレンド欄。人数はどこにも出さない
+function friendBox(r){
+  if(!DB||!MYID||r.id===MYID) return "";
+  wingFix(); const fr=isFriend(r.id), it=intimacy(r.id);
+  return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">フレンド</div><div class="item-use fr-pbtn">
+    ${fr?`<button type="button" class="iu" data-frgo="1"><b>🤝 フレンド</b><small>一覧を開く</small></button>`:`<button type="button" class="iu" data-frapply="${esc(r.id)}"><b>🤝 フレンド申請</b><small>コメント${FR_REQ_MIN}文字以上</small></button>`}
+    <button type="button" class="iu" data-wingto="${esc(r.id)}" ${S.wing?"":"disabled"}><img src="${WING_IMG}" alt=""><b>羽根つきハート石を送る</b><small>のこり <span data-wingleft>${S.wing}</span>/${WING_MAX}</small></button></div>
+    <div class="note" style="margin:6px 0 0">💞 あなたとの親密度：<b translate="no">${it.toLocaleString()}</b>${fr&&it<TRADE_INT?`（${TRADE_INT}でトレード解放）`:""}</div></div>`;
+}
+document.addEventListener("click",e=>{
+  const a=e.target.closest("[data-frapply]"); if(a){ const r=findRank(a.dataset.frapply)||FR.prof[a.dataset.frapply]; if(r) openFriendReq(r); return; }
+  const w=e.target.closest("[data-wingto]"); if(w&&!w.disabled){ const r=findRank(w.dataset.wingto)||FR.prof[w.dataset.wingto]; if(r) heartDialog(r); return; }
+  if(e.target.closest("[data-frgo]")){ openFriends("list"); }
+});
+
 function itemBox(r){
   if(!DB) return "";
   if(inFreeze() && r.id!==MYID) return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="note" style="margin:0">${FREEZE_TXT}</div></div>`;
@@ -4469,17 +4812,17 @@ async function useItem(r,k,qty=1){
   return true;
 }
 // 何セット使うか選ぶ画面（神からの贈り物・ガチャチケット）
-function qtyDialog({img,title,max,desc,ok="決定"},onOk){
+function qtyDialog({img,title,max,desc,ok="決定",unit="セット",ask="何セット？"},onOk){
   let n=Math.min(1,max);
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="qdT"><img src="${img}" alt="" style="width:96px;height:96px;margin:0 auto;object-fit:contain;image-rendering:pixelated"><p id="qdT">${title}</p>
-    <div class="note" style="margin:0">何セット？（持っている数：${max.toLocaleString()}）</div>
+    <div class="note" style="margin:0">${ask}（持っている数：${max.toLocaleString()}）</div>
     <div class="aw-row"><button class="chip" type="button" data-d="-10">−10</button><button class="chip" type="button" data-d="-1">−1</button><b id="qdN"></b><button class="chip" type="button" data-d="1">+1</button><button class="chip" type="button" data-d="10">+10</button></div>
     <button class="chip" id="qdAll" type="button">ぜんぶ</button>
     <div class="note" style="margin:0" id="qdDesc"></div>
     <button class="btn gold" id="qdGo" type="button">${ok}</button><button class="btn ghost" id="qdNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
-  const upd=()=>{ n=Math.max(max?1:0,Math.min(max,n)); bg.querySelector("#qdN").textContent=n+"セット"; bg.querySelector("#qdDesc").innerHTML=desc(n); bg.querySelector("#qdGo").disabled=!n; };
+  const upd=()=>{ n=Math.max(max?1:0,Math.min(max,n)); bg.querySelector("#qdN").textContent=n+unit; bg.querySelector("#qdDesc").innerHTML=desc(n); bg.querySelector("#qdGo").disabled=!n; };
   bg.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ n+=+b.dataset.d; upd(); });
   bg.querySelector("#qdAll").onclick=()=>{ n=max; upd(); };
   bg.querySelector("#qdNo").onclick=()=>bg.remove();
@@ -4579,7 +4922,7 @@ function openOtherProfile(r,rank){
     ${r.id===MYID?"":`<div class="guard-box ${r.gm?"":"warn"}">${r.gm&&mon(r.gm)?`<img src="${cardURL(r.gm,0,128)}" alt="">`:""}
       <div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物</div>
       ${r.gm&&mon(r.gm)?`<b>${esc(mon(r.gm).name)}</b><div class="note" style="margin:0">レベルは ？？？</div>`:`<div class="note" style="margin:0">配置なし（戦えません）</div>`}
-      ${fightButton(r)}</div></div>${itemBox(r)}`}
+      ${fightButton(r)}</div></div>${itemBox(r)}${friendBox(r)}`}
     ${r.id===MYID?itemBox(r):""}
     ${rank<=50&&r.comment?`<div class="rk-cmt" translate="no" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
     ${radarHtml(r)}
