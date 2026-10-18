@@ -246,6 +246,12 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-shield{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:34px;padding:4px 3px;border-radius:12px;background:#f3f0e6;border:2px solid #1d1d1d;color:#1d1d1d;font-weight:900;cursor:pointer}
 .hm-shield i{font-style:normal;font-size:16px;line-height:1}.hm-shield small{font-size:9px;white-space:nowrap}
 .hm-shield:active{transform:scale(.95)}
+.nm-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.nm-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
+.nm-sil{width:84px;height:84px;border-radius:14px;background:radial-gradient(circle,#e9f1ea,#9fb3a8);overflow:hidden;display:grid;place-items:center;border:2px solid var(--line)}
+.nm-sil img{width:100%;height:100%;object-fit:contain;filter:brightness(0) opacity(.85)}
+.nm-sil{position:relative}.nm-sil.photo::after{content:"？";position:absolute;inset:0;display:grid;place-items:center;font:900 38px var(--f-pix);color:#e9f1ea;text-shadow:0 2px 6px #000}
+.nm-sil img.photo{filter:blur(9px) brightness(.25);transform:scale(1.15)}
 .hm-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
 .hm-invest{align-self:flex-start;display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;background:#f2dc3a;border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font:inherit;font-weight:900;font-size:14px}
 .hm-invest.last{background:#fff;font-size:13px;padding:7px 14px}
@@ -1717,7 +1723,10 @@ const I18N_EN = {
 "・冒険者レベルが3下がります": "• Your Adventurer Level drops by 3",
 "将軍ライオン": "General Lion",
 "ほこり": "Hokori",
-"ちむた": "Chimuta"
+"ちむた": "Chimuta",
+"新モンスターが追加されました！": "New monsters have been added!",
+"どんな魔物かは、ガチャで出会ってのお楽しみ！": "Meet them in the gacha to find out what they are!",
+"ガチャへ行く": "Go to Gacha"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -4520,6 +4529,23 @@ async function saveIcon(){
 loadImages().then(()=>{
   // 2026-10-18：アイコンの内側の丸をなくした新しい形で、自分のアイコンを作り直す（1回だけ）
   if(S.avatar && S.dress && S.avaV!==2){ try{ S.avatar=composeIcon(128).toDataURL("image/jpeg",0.82); }catch(e){} S.avaV=2; save(); try{ queueProfile(true); }catch(e){} }
-  render(); });
+  render(); setTimeout(showNewMonsters, 700); });
+// 新しい魔物が追加されたら、次に開いたときに1回だけお知らせ（ランクとシルエット）
+function showNewMonsters(){
+  const maxId=Math.max(...MONSTERS.map(m=>m.id));
+  if(S.monSeen==null){ S.monSeen = isFreshSave(S) ? maxId : 75; save(); }   // 75＝2026-10-18の追加より前
+  const L=MONSTERS.filter(m=>m.id>S.monSeen).sort((a,b)=>RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank)||a.id-b.id);
+  if(!L.length) return;
+  if(document.querySelector(".sheet-bg.center,.reveal,.rules-stage")) return setTimeout(showNewMonsters, 2500);
+  S.monSeen=maxId; save();
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="nmT"><div class="swear-face">✨</div><p id="nmT">新モンスターが追加されました！</p>
+    <div class="nm-grid">${L.map(m=>`<div class="nm-cell"><div class="nm-sil ${m.img.startsWith("data:image/jpeg")?"photo":""}"><img src="${m.img}" alt="" class="${m.img.startsWith("data:image/jpeg")?"photo":""}"></div><span class="rk rk-${m.rank}">${m.rank}</span></div>`).join("")}</div>
+    <div class="note" style="margin:0">どんな魔物かは、ガチャで出会ってのお楽しみ！</div>
+    <button class="btn gold" type="button" id="nmGo">ガチャへ行く</button><button class="btn ghost" type="button" id="nmX">とじる</button></div>`;
+  document.body.appendChild(bg); SFX.reveal("S");
+  bg.querySelector("#nmX").onclick=()=>bg.remove();
+  bg.querySelector("#nmGo").onclick=()=>{ bg.remove(); tab="gacha"; render(); };
+}
 </script>
 </body></html>
