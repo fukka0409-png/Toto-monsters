@@ -4069,7 +4069,7 @@ async function loadSeasonEvents(s, live){
 /* ---------- 上位キープボーナス（10分ごと） ----------
    10分ごとに、そのときのランキングを記録（ticks/番号）。1〜10位：冒険者Lv+1＆300コイン／11〜30位：400コイン。
    記録はそのときアプリを開いている誰かが作る。もらう人はログインしたときにまとめて受け取る */
-const TICK_MS = 10*60*1000, TOP10_COIN = 300, TOP30_COIN = 400;
+const TICK_MS = 10*60*1000, TOP10_COIN = 300, TOP30_COIN = 200;
 const tickNow = () => Math.floor(gnow()/TICK_MS);
 let TICKS={s:null, list:[]};
 async function loadTicks(s){ try{ const q=await DB.collection("ticks").where("ss","==",s).get(); return q.docs.map(x=>x.data()).sort((a,b)=>a.n-b.n); }catch(e){ return []; } }
