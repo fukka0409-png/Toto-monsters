@@ -1765,6 +1765,19 @@ const I18N_EN = {
 "メッセージのやりとりができなくなります。親密度は残ります。": "You won't be able to message each other. Your affinity stays.",
 "解除する": "Unfriend",
 "フレンド解除": "Unfriend",
+"：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。": ": trade 3 S-rank monsters in BOX (blocks 2 item attacks). ",
+"はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない": " = trade 1 Z-rank (blocks 5). Check it in \"🛡 Shields\" in BOX. When one breaks, your next shield is equipped automatically (locked shields are skipped). Only you can see shield info",
+"作り方：「🛠 盾を作る」で": "How to make: in \"🛠 Make a Shield\", pick 3 ",
+"の魔物を3体えらぶ → 盾（2回防ぐ）／": " monsters → Shield (blocks 2) / ",
+"の魔物1体 → スーパー盾（5回防ぐ）": " monster → Super Shield (blocks 5)",
+"（{0}ランクの魔物{1}体 → {2}回防ぐ）": "({1} {0}-rank monster(s) → blocks {2})",
+"🛡 えらんだ{0}体で盾を作る（{1}/{2}）": "🛡 Make a Shield from the {0} picked ({1}/{2})",
+"盾はSランクの魔物を": "For a Shield, pick ",
+"えらんでから「盾を作る」。スーパー盾はZランクの魔物を1体タップ。鍵付き・配置中の魔物は使えません。": " S-rank monsters, then tap “Make a Shield”. For a Super Shield, tap 1 Z-rank monster. Locked or placed monsters can't be used.",
+"えらべるのは{0}体までです": "You can pick up to {0}",
+"{0}を作るには{1}ランクの魔物が{2}体必要です": "You need {2} {1}-rank monsters to make a {0}",
+"🛡 盾を作る（Sランク3体）": "🛡 Make a Shield (3 S-rank)",
+"を{0}と交換しますか？": "Trade these for a {0}?",
 "💬 メッセージが届いています！": "💬 You have a new message!",
 "さんからメッセージが届いています！": "sent you a message!",
 "💬 {0}さんからメッセージが届きました！": "💬 New message from {0}!",
@@ -2075,9 +2088,9 @@ const ITEM_COST = 1000, MAGNET = 0.10, FIRE_LV = 30, BOMB_LV = 2;
 const BOMB_MIN_LV = 15;                         // 爆弾を使えるのは冒険者Lv15から
 const USE_COST = { fire:500, bomb:3000 };       // アイテムを使うときに必要なコイン
 /* ---------- 盾 ----------
-   Sランクの魔物1体 → 盾（アイテム攻撃を4回防ぐ）／ Zランクの魔物1体 → スーパー盾（10回防ぐ）
+   Sランクの魔物3体 → 盾（アイテム攻撃を2回防ぐ）／ Zランクの魔物1体 → スーパー盾（5回防ぐ）
    装備・所持数・耐久力は自分にしか見えない（サーバーにも送らない） */
-const SHIELDS = { n:{ name:"盾", dur:4, rank:"S", ic:"🛡" }, s:{ name:"スーパー盾", dur:10, rank:"Z", ic:"🛡✨" } };
+const SHIELDS = { n:{ name:"盾", dur:2, rank:"S", need:3, ic:"🛡" }, s:{ name:"スーパー盾", dur:5, rank:"Z", need:1, ic:"🛡✨" } };   // 盾＝Sランク3体で耐久2／スーパー盾＝Zランク1体で耐久5
 const LOOT_FROM = Date.parse("2026-10-18T13:03:00+09:00");   // これ以降のマグネットは、うばったコインを相手が開いたときに届ける
 // 盾は1つずつ持つ（S.shieldList）。装備中の盾がこわれたら、鍵のかかっていない盾を自動で装備する（盾→スーパー盾の順）
 function shFix(){
@@ -2086,6 +2099,7 @@ function shFix(){
   if(S.shields){ for(const t of ["n","s"]) for(let i=0;i<(S.shields[t]||0);i++) S.shieldList.push({id:S.shNext++, t, dur:SHIELDS[t].dur, k:false}); delete S.shields; }
   if(S.shield){ if(S.shield.dur>0){ const it={id:S.shNext++, t:S.shield.t, dur:S.shield.dur, k:false}; S.shieldList.push(it); S.shieldEq=it.id; } delete S.shield; }
   S.shieldList=S.shieldList.filter(x=>x.dur>0);
+  S.shieldList.forEach(x=>{ const mx=(SHIELDS[x.t]||SHIELDS.n).dur; if(x.dur>mx) x.dur=mx; });   // 耐久の上限を下げたので、今ある盾もそろえる
   S.shieldList.forEach(x=>{ if(x.ss==null) x.ss=SH_LEGACY_SS; });   // 期限の決まりより前に作った盾は、2026-10-18 22:00 に終わるシーズンのもの
   if(S.shieldEq && !S.shieldList.some(x=>x.id===S.shieldEq)) S.shieldEq=null;
 }
@@ -3136,7 +3150,7 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-19a";
+const RULES_VER = "2026-10-19b";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
@@ -3155,7 +3169,7 @@ function openRules(){
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>2時間「現在配置不可」</b>","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（24時間で最大10レベルまで）","j")}。</li><li>${U("バトルで負けると枠が空になる（自動では補充されない）。別の魔物を配置し直そう","f")}</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
-    ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物1体と交換（アイテム攻撃を4回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（10回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"u")}${U("。<b>盾は作ったシーズンの間だけ</b>持てる（22:00のシーズン終了で消える・次のシーズンに持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
+    ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったシーズンの間だけ</b>持てる（22:00のシーズン終了で消える・次のシーズンに持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li></ul>`],
     ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・<b>シーズン終了の10時間前＝12:00まで</b>）。</li><li>シーズン終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのシーズンはもう投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。シーズンが変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
@@ -3228,38 +3242,54 @@ function openUnit(uid){
   <div class="row"><button class="btn gold" id="awaken" type="button" ${inv("stone")?"":"disabled"}>💎 覚醒の石を合成（${inv("stone").toLocaleString()}個）</button></div>
   <div class="row"><button class="btn ${S.guard===x.u?"ghost":""}" id="guardBtn" type="button" ${isDown(x)&&S.guard!==x.u?"disabled":""}>${S.guard===x.u?"配置を外す":isDown(x)?`現在配置不可（あと${Math.ceil((x.down-gnow())/HOUR_MS)}時間）`:"プロフィールに配置する"}</button></div>
   <div class="row"><button class="btn ghost" id="sell" type="button" ${x.k?"disabled":""}>売却する（+${sellPrice(x).toLocaleString()}コイン）</button></div>
-  ${m.rank==="S"||m.rank==="Z"?`<div class="row"><button class="btn" id="toShield" type="button" ${x.k||S.guard===x.u?"disabled":""}>${m.rank==="Z"?"🛡✨ スーパー盾と交換する":"🛡 盾と交換する"}</button></div>${x.k||S.guard===x.u?`<p class="note" style="margin:0">鍵付き・配置中の魔物は交換できません</p>`:""}`:""}
+  ${m.rank==="S"||m.rank==="Z"?`<div class="row"><button class="btn" id="toShield" type="button" ${x.k||S.guard===x.u?"disabled":""}>${m.rank==="Z"?"🛡✨ スーパー盾と交換する":"🛡 盾を作る（Sランク3体）"}</button></div>${x.k||S.guard===x.u?`<p class="note" style="margin:0">鍵付き・配置中の魔物は交換できません</p>`:""}`:""}
   <p class="note">保護した魔物は合成の素材に選ばれず、売却もできません。素材の経験値はレベルが高いほど増え、同じ魔物なら2倍。合成1回に50コイン必要で、合成1回で10コイン、Lvが10上がるごとに100コイン。最大Lv100（覚醒の石を合成すると、さらに上げられます）。ランクが高い魔物ほど、レベルアップに多くの経験値が必要です。</p>`);
   bg.querySelector("#lock").onclick=()=>{ x.k=!x.k; save(); render(); openUnit(uid); };
   bg.querySelector("#guardBtn").onclick=()=>{ if(S.guard===x.u){ clearGuard(); save(); toast(`配置を外しました。枠が空のあいだは${EMPTY_TXT}`); } else { if(isDown(x)) return toast(`${m.name}は現在配置不可です（あと${Math.ceil((x.down-gnow())/HOUR_MS)}時間）`); setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); } render(); openUnit(uid); };
   bg.querySelector("#sell").onclick=()=>confirmSell([uid],()=>{ closeSheet(); render(); });
   bg.querySelector("#fuse").onclick=()=>openFuse(uid);
-  const ts=bg.querySelector("#toShield"); if(ts) ts.onclick=()=>exchangeShield(uid);
+  const ts=bg.querySelector("#toShield"); if(ts) ts.onclick=()=>{ if(m.rank==="Z") exchangeShield([uid]); else openShieldMake(uid); };
   const aw=bg.querySelector("#awaken"); if(aw) aw.onclick=()=>openAwaken(uid);
 }
 
-// 魔物 → 盾（Sランク）／スーパー盾（Zランク）
-function exchangeShield(uid){
-  const x=S.units.find(z=>z.u===uid); if(!x||x.k||S.guard===x.u) return; const m=mon(x.m), t=m.rank==="Z"?"s":m.rank==="S"?"n":null; if(!t) return;
-  const sh=SHIELDS[t], bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
-  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="shT"><div class="swear-face">${sh.ic}</div><p id="shT">${esc(m.name)}（Lv${x.l}）を${sh.name}と交換しますか？</p>
+// 魔物 → 盾（Sランク3体）／スーパー盾（Zランク1体）
+function exchangeShield(uids){
+  uids=[].concat(uids); const xs=uids.map(u=>S.units.find(z=>z.u===u)).filter(Boolean);
+  if(!xs.length||xs.length!==uids.length||xs.some(x=>x.k||S.guard===x.u)) return toast("鍵付き・配置中の魔物は使えません");
+  const rk=mon(xs[0].m).rank, t=rk==="Z"?"s":rk==="S"?"n":null; if(!t||xs.some(x=>mon(x.m).rank!==rk)) return;
+  const sh=SHIELDS[t]; if(xs.length!==sh.need) return toast(`${sh.name}を作るには${rk}ランクの魔物が${sh.need}体必要です`);
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="shT"><div class="swear-face">${sh.ic}</div><p id="shT">${xs.map(x=>`${esc(mon(x.m).name)}（Lv${x.l}）`).join("<br>")}<br>を${sh.name}と交換しますか？</p>
     <div class="note" style="margin:0">${sh.name}を装備すると、アイテムからの攻撃を<b>${sh.dur}回</b>防げます。交換した魔物は戻りません（図鑑の記録は残ります）。<br><b>盾は作ったシーズンの間だけ</b>持てます（22:00に消えます）。</div>
     <button class="btn gold" id="shGo" type="button">交換する</button><button class="btn ghost" id="shNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#shNo").onclick=()=>bg.remove();
-  bg.querySelector("#shGo").onclick=()=>{ S.units=S.units.filter(z=>z.u!==uid); shFix(); S.shieldList.push({id:S.shNext++, t, dur:sh.dur, k:false, ss:seasonNow()}); const auto=shAutoEquip(); save(); bg.remove(); closeSheet(); render(); SFX.reveal("S");
+  bg.querySelector("#shGo").onclick=()=>{ const set=new Set(uids); S.units=S.units.filter(z=>!set.has(z.u)); if(S.dress && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
+    shFix(); S.shieldList.push({id:S.shNext++, t, dur:sh.dur, k:false, ss:seasonNow()}); const auto=shAutoEquip(); save(); bg.remove(); closeSheet(); render(); SFX.reveal("S");
     toast(auto?`${sh.name}を手に入れて、装備しました！`:`${sh.name}を手に入れた！（BOXの「盾」で確認できます）`); };
 }
 // 盾を作る：Sランク（盾）・Zランク（スーパー盾）の魔物を選んで交換
-function openShieldMake(){
-  const ok=x=>!x.k && S.guard!==x.u;
-  const sec=(rank,t)=>{ const sh=SHIELDS[t], L=S.units.filter(x=>mon(x.m)?.rank===rank).sort((a,b)=>ok(b)-ok(a)||a.l-b.l);
-    return `<h4 style="margin:12px 0 6px">${sh.ic} ${sh.name}を作る <small style="font-weight:400;opacity:.75">（${rank}ランクの魔物1体 → ${sh.dur}回防ぐ）</small></h4>
-      ${L.length?`<div class="grid">${L.map(x=>`<div class="${ok(x)?"":"dim"}" data-mk="${x.u}" role="button" tabindex="0">${unitCard(x,ok(x)?"":"dim")}</div>`).join("")}</div>`:`<div class="empty" style="padding:12px">${rank}ランクの魔物を持っていません</div>`}`; };
-  const bg=sheet(`<div class="sheet-h"><h3>🛠 盾を作る</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
-    <p class="note" style="margin:0">交換に使う魔物をタップしてね。鍵付き・配置中の魔物は使えません。</p>${sec("S","n")}${sec("Z","s")}`);
-  bg.querySelectorAll("[data-mk]").forEach(el=>el.addEventListener("click",e=>{ e.stopPropagation(); e.preventDefault(); const u=+el.dataset.mk, x=S.units.find(z=>z.u===u);
-    if(!x||!ok(x)) return toast("鍵付き・配置中の魔物は使えません"); exchangeShield(u); }, true));
+function openShieldMake(pre){
+  const ok=x=>!x.k && S.guard!==x.u; const pick=new Set(pre&&S.units.some(z=>z.u===pre&&ok(z)&&mon(z.m).rank==="S")?[pre]:[]);
+  const draw=()=>{
+    const sec=(rank,t)=>{ const sh=SHIELDS[t], L=S.units.filter(x=>mon(x.m)?.rank===rank).sort((a,b)=>ok(b)-ok(a)||a.l-b.l);
+      return `<h4 style="margin:12px 0 6px">${sh.ic} ${sh.name}を作る <small style="font-weight:400;opacity:.75">（${rank}ランクの魔物${sh.need}体 → ${sh.dur}回防ぐ）</small></h4>
+        ${t==="n"?`<button class="btn gold" type="button" id="mkN" style="width:100%;margin:0 0 8px" ${pick.size===sh.need?"":"disabled"}>🛡 えらんだ${sh.need}体で盾を作る（${pick.size}/${sh.need}）</button>`:""}
+        ${L.length?`<div class="grid">${L.map(x=>`<div data-mk="${x.u}" role="button" tabindex="0">${unitCard(x,(ok(x)?"":"dim")+(pick.has(x.u)?" sel":""))}</div>`).join("")}</div>`:`<div class="empty" style="padding:12px">${rank}ランクの魔物を持っていません</div>`}`; };
+    const html=`<div class="sheet-h"><h3>🛠 盾を作る</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+      <p class="note" style="margin:0">盾はSランクの魔物を<b>${SHIELDS.n.need}体</b>えらんでから「盾を作る」。スーパー盾はZランクの魔物を1体タップ。鍵付き・配置中の魔物は使えません。</p>${sec("S","n")}${sec("Z","s")}`;
+    let bg=document.querySelector(".shmk-sheet"); const top=bg?bg.querySelector(".sheet").scrollTop:0;
+    if(bg) bg.querySelector(".sheet").innerHTML=html; else { bg=sheet(html); bg.classList.add("shmk-sheet"); }
+    bg.querySelector(".sheet").scrollTop=top;
+    bg.querySelector(".x").onclick=closeSheet;
+    const mk=bg.querySelector("#mkN"); if(mk) mk.onclick=()=>exchangeShield([...pick]);
+    bg.querySelectorAll("[data-mk]").forEach(el=>el.addEventListener("click",e=>{ e.stopPropagation(); e.preventDefault(); const u=+el.dataset.mk, x=S.units.find(z=>z.u===u);
+      if(!x||!ok(x)) return toast("鍵付き・配置中の魔物は使えません");
+      if(mon(x.m).rank==="Z") return exchangeShield([u]);
+      if(pick.has(u)) pick.delete(u); else { if(pick.size>=SHIELDS.n.need) return toast(`えらべるのは${SHIELDS.n.need}体までです`); pick.add(u); }
+      draw(); }, true));
+  };
+  draw();
 }
 // 盾の画面 → BOXの「盾」タブへ
 function openShield(){ closeSheet(); tab="box"; boxMode="shield"; render(); $("#stage").scrollTop=0; }
@@ -3278,7 +3308,7 @@ function renderShieldBox(){
         <div class="sh-btns">${on?"":`<button class="chip" type="button" data-sheq="${x.id}">装備</button>`}<button class="chip" type="button" data-shlock="${x.id}">${x.k?"🔓 鍵を外す":"🔒 鍵"}</button></div></div>`; }).join("")}</div>
       <p class="note">🔒 鍵をかけた盾は、自動の入れかえには使われません（自分で「装備」を押せば使えます）。</p>`
     :`<div class="empty">まだ盾を持っていません</div>`}
-    <p class="note">作り方：「手持ち」で<b>Sランク</b>の魔物をタップ →「盾と交換する」（4回防ぐ）／<b>Zランク</b>の魔物 →「スーパー盾と交換する」（10回防ぐ）</p>`;
+    <p class="note">作り方：「🛠 盾を作る」で<b>Sランク</b>の魔物を3体えらぶ → 盾（2回防ぐ）／<b>Zランク</b>の魔物1体 → スーパー盾（5回防ぐ）</p>`;
   bindSeg(k=>{boxMode=k;render();$("#stage").scrollTop=0});
   $("#shMake").onclick=openShieldMake;
   document.querySelectorAll("[data-sheq]").forEach(b=>b.onclick=()=>{ S.shieldEq=+b.dataset.sheq; save(); SFX.coin(); toast(`${SHIELDS[S.shieldList.find(x=>x.id===S.shieldEq).t].name}を装備した！`); render(); });
