@@ -1959,7 +1959,7 @@ const FRAME_IN = 0.30;                           // アイコン枠の内側の�
 const CODES = [
   { h: "8235da9ccb4062943ef947b83f043be2d35b327097fb2adb58f8c59c11f6ff6b", coins: 3000 },  // 2026-10-16 追加
   { h: "bca2b41a2b25e137c83fee346af7bd1e0f52bd560583ca07a1b42f9944c5c50b", coins: 1000000 },  // 2026-10-16 追加
-  { h: "ad3b0ddb5abf8ab440d6cec789cb373b42bb7ecb6fd9b666e924a0699a396344", item: "gift", qty: 30, repeat: true },
+  { h: "8def03595eb23ad85b04b01d69e0324900be92ca406e9332d9b8edd3293980df", item: "gift", qty: 30, repeat: true },   // 2026-10-18 変更：「神プレゼント2609」（前の呪文は使えない）
   { h: "f97eae9a567862f473cae21581786e18ccaba6af1ca1ff3169abd9f26d011461", coins: 50000, stone: 50 },  // 2026-10-17 追加「100人ありがとう」（1回だけ）
   { h: "b69aa8ecc74fd7ff50dc344f0ac2fcea4d8665c2c55246d0e09371aa4bad5a7d", art: "usagi" },  // 2026-10-18 追加：特別イラスト「トランプの白うさぎ」（何回でも）
   { h: "d73e7060973e5bc18620b1162798db67e681c645d9522325354b4acbfb48543f", item: "ticket", qty: 50, repeat: true },  // ガチャチケット×50（何回でも）  // 何回でも使える
@@ -2027,6 +2027,7 @@ S.units.forEach(u=>{ u.s=0; const cap=100+(u.a||0); if(u.l>cap) u.l=cap; });   /
 const PXP = { pull:5, fuse:10, newMon:30 };
 const pNeed = lv => 40 + 10*lv;               // Lv → Lv+1 に必要な経験値
 function fixPlayer(){ S.plv=S.plv||1; S.pexp=S.pexp||0;
+  if(S.giftReset!==1){ S.items=S.items||{}; S.items.gift=0; S.giftReset=1; }   /* 2026-10-18：神からの贈り物の所持数を全員0にリセット（1回だけ） */
   Object.values(S.sv||{}).forEach(v=>{ const l=Math.floor((v||0)/1e6); if(l>(S.maxPlv||0)) S.maxPlv=l; });   /* 過去のシーズンの最終レベルも最高記録に入れる */ S.stats=S.stats||{pulls:0,fuses:0}; if(S.name==null) S.name=""; }
 fixPlayer();
 function gainPExp(n){
