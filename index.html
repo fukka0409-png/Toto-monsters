@@ -1708,7 +1708,12 @@ const I18N_EN = {
 "1枚で魔物の10連パック、またはアイテムガチャ2回ぶん（ほかの人に贈ることもできる）": "1 ticket = a 10-Pack of monsters or 2 Item Gacha spins (can also be gifted to others)",
 "はじめて手に入れた魔物：": "First-time monster: ",
 "魔物パックは": "Monster Packs cost ",
-"集めた魔物で、プロフィールやSNS用のアイコンを作ろう。": "Make icons for your profile or social media with your monsters."
+"集めた魔物で、プロフィールやSNS用のアイコンを作ろう。": "Make icons for your profile or social media with your monsters.",
+"🛠 盾を作る": "🛠 Make a Shield",
+"{0}を作る": "Make a {0}",
+"（{0}ランクの魔物1体 → {1}回防ぐ）": "(1 {0}-rank monster → blocks {1})",
+"交換に使う魔物をタップしてね。鍵付き・配置中の魔物は使えません。": "Tap the monster to trade. Locked or placed monsters can't be used.",
+"鍵付き・配置中の魔物は使えません": "Locked or placed monsters can't be used"
 };
 /* ---------- 言語切り替え（日本語 / English） ----------
    画面に出た日本語を、下の辞書で英語に置きかえる。新しい文を足したら I18N_EN にも英語を足す。
@@ -3008,6 +3013,17 @@ function exchangeShield(uid){
   bg.querySelector("#shGo").onclick=()=>{ S.units=S.units.filter(z=>z.u!==uid); shFix(); S.shieldList.push({id:S.shNext++, t, dur:sh.dur, k:false}); const auto=shAutoEquip(); save(); bg.remove(); closeSheet(); render(); SFX.reveal("S");
     toast(auto?`${sh.name}を手に入れて、装備しました！`:`${sh.name}を手に入れた！（BOXの「盾」で確認できます）`); };
 }
+// 盾を作る：Sランク（盾）・Zランク（スーパー盾）の魔物を選んで交換
+function openShieldMake(){
+  const ok=x=>!x.k && S.guard!==x.u;
+  const sec=(rank,t)=>{ const sh=SHIELDS[t], L=S.units.filter(x=>mon(x.m)?.rank===rank).sort((a,b)=>ok(b)-ok(a)||a.l-b.l);
+    return `<h4 style="margin:12px 0 6px">${sh.ic} ${sh.name}を作る <small style="font-weight:400;opacity:.75">（${rank}ランクの魔物1体 → ${sh.dur}回防ぐ）</small></h4>
+      ${L.length?`<div class="grid">${L.map(x=>`<div class="${ok(x)?"":"dim"}" data-mk="${x.u}" role="button" tabindex="0">${unitCard(x,ok(x)?"":"dim")}</div>`).join("")}</div>`:`<div class="empty" style="padding:12px">${rank}ランクの魔物を持っていません</div>`}`; };
+  const bg=sheet(`<div class="sheet-h"><h3>🛠 盾を作る</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <p class="note" style="margin:0">交換に使う魔物をタップしてね。鍵付き・配置中の魔物は使えません。</p>${sec("S","n")}${sec("Z","s")}`);
+  bg.querySelectorAll("[data-mk]").forEach(el=>el.addEventListener("click",e=>{ e.stopPropagation(); e.preventDefault(); const u=+el.dataset.mk, x=S.units.find(z=>z.u===u);
+    if(!x||!ok(x)) return toast("鍵付き・配置中の魔物は使えません"); exchangeShield(u); }, true));
+}
 // 盾の画面 → BOXの「盾」タブへ
 function openShield(){ closeSheet(); tab="box"; boxMode="shield"; render(); $("#stage").scrollTop=0; }
 // 盾BOX（自分にしか見えない）
@@ -3015,6 +3031,7 @@ function renderShieldBox(){
   shFix(); const eq=shEquipped(), L=[...S.shieldList].sort((a,b)=>(b.id===S.shieldEq)-(a.id===S.shieldEq)||(a.t===b.t?0:a.t==="n"?-1:1)||a.id-b.id);
   $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}
     <p class="sub">盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げます。1回防ぐたびに耐久力が1へり、こわれたら<b>鍵のかかっていない盾を自動で装備</b>します（盾→スーパー盾の順）。<b>盾の情報はあなたにしか見えません。</b></p>
+    <button class="btn gold" type="button" id="shMake" style="width:100%;margin:0 0 10px">🛠 盾を作る</button>
     <div class="toolbar"><span class="chip" style="cursor:default">🛡 盾 ${S.shieldList.filter(x=>x.t==="n").length}個</span><span class="chip" style="cursor:default">🛡✨ スーパー盾 ${S.shieldList.filter(x=>x.t==="s").length}個</span></div>
     ${L.length?`<div class="sh-list">${L.map(x=>{ const sh=SHIELDS[x.t], on=x.id===S.shieldEq;
       return `<div class="sh-item ${on?"on":""} ${x.t==="s"?"super":""}"><div class="sh-ic">${sh.ic}</div>
@@ -3025,6 +3042,7 @@ function renderShieldBox(){
     :`<div class="empty">まだ盾を持っていません</div>`}
     <p class="note">作り方：「手持ち」で<b>Sランク</b>の魔物をタップ →「盾と交換する」（4回防ぐ）／<b>Zランク</b>の魔物 →「スーパー盾と交換する」（10回防ぐ）</p>`;
   bindSeg(k=>{boxMode=k;render();$("#stage").scrollTop=0});
+  $("#shMake").onclick=openShieldMake;
   document.querySelectorAll("[data-sheq]").forEach(b=>b.onclick=()=>{ S.shieldEq=+b.dataset.sheq; save(); SFX.coin(); toast(`${SHIELDS[S.shieldList.find(x=>x.id===S.shieldEq).t].name}を装備した！`); render(); });
   document.querySelectorAll("[data-shlock]").forEach(b=>b.onclick=()=>{ const x=S.shieldList.find(z=>z.id===+b.dataset.shlock); if(!x) return; x.k=!x.k; save(); toast(x.k?"盾に鍵をかけました":"盾の鍵を外しました"); render(); });
 }
