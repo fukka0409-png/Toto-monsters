@@ -3525,8 +3525,7 @@ function renderHome(){
         <span class="hm-shield" id="hmShield" role="button" tabindex="0" aria-label="盾"><i>🛡</i><small>${shieldOn()?`耐久${shEquipped().dur}${S.shieldList.length>1?`+${S.shieldList.length-1}`:""}`:"盾"}</small></span>
         <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
       </button>
-      <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${S.inv&&S.inv.ss===seasonNow()&&!S.inv.void?'<small>投資中</small>':""}</button>
-      <button class="hm-invest last" type="button" id="hmLast">🏆 前回のランキング結果</button></div>
+      <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${S.inv&&S.inv.ss===seasonNow()&&!S.inv.void?'<small>投資中</small>':""}</button></div>
       <div class="hm-btns">
         <button class="hm-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖 最新ルール確認${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>
         <button class="hm-btn" type="button" id="hmStats">📊 自己記録確認</button>
@@ -3541,7 +3540,6 @@ function renderHome(){
   $("#hmProf").onclick=e=>{ if(e.target.closest("#hmShield")) return openShield(); if(e.target.closest("#hmRank")){ tab="rank"; profMode="rank"; loadRanking(); render(); return; } homeMode="me"; render(); $("#stage").scrollTop=0; };
   $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   $("#hmChange").onclick=()=>openHomeEdit("m");
-  $("#hmLast").onclick=openLastResult;
 
   $("#hmInvest").onclick=()=>{ homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); };
 }
