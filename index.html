@@ -508,6 +508,41 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 64px);transform:translateX(-50%);background:var(--mist);color:var(--night);font-weight:900;padding:8px 16px;border-radius:999px;z-index:60;box-shadow:0 6px 20px #0006;font-size:14px;max-width:90vw;text-align:center;animation:tin .25s ease-out}
 @keyframes tin{from{opacity:0;transform:translate(-50%,-10px)}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}.rv{opacity:1;transform:none}}
+/* ===== PC向けの画面（横幅1100px以上）：左にメニュー、まん中にゲーム、右にランキングとフレンド ===== */
+.side{display:none}
+@media (min-width:1100px){
+  .app{max-width:1400px;display:grid;grid-template-columns:210px minmax(0,1fr) 330px;grid-template-rows:auto auto minmax(0,1fr);column-gap:20px;padding:0 20px}
+  .app>header.top{grid-column:1/-1}
+  .app>.warn-bar{grid-column:1/-1}
+  .stage{grid-column:2;grid-row:3;padding-bottom:28px;border-radius:18px}
+  .tabs{position:static;grid-column:1;grid-row:3;align-self:start;background:var(--bark);border:2px solid var(--line);border-radius:18px;padding:10px 8px}
+  .tabs nav{display:flex;flex-direction:column;gap:4px;max-width:none}
+  .tabs button{flex-direction:row;justify-content:flex-start;gap:12px;padding:12px 14px;border-radius:12px;font-size:15px;text-align:left}
+  .tabs button svg{width:24px;height:24px;flex:0 0 auto}
+  .tabs button:hover{background:var(--bark-2)}
+  .tabs button[aria-selected="true"]{background:var(--bark-2);box-shadow:inset 3px 0 0 var(--moss)}
+  .tabs button.dot::after{top:50%;right:14px;transform:translateY(-50%)}
+  .side{display:flex;flex-direction:column;gap:14px;grid-column:3;grid-row:3;overflow-y:auto;padding-bottom:24px;min-height:0}
+  .home{height:calc(100dvh - 120px);margin-left:0;margin-right:0;border-radius:18px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}
+  .sheet-bg{align-items:center}
+  .sheet{max-width:760px;max-height:88%;border-radius:20px;border:2px solid var(--line)}
+  .toast{max-width:420px}
+  button:not(:disabled),[role=button]{cursor:pointer}
+}
+.sd-box{background:var(--bark);border:2px solid var(--line);border-radius:18px;padding:12px 12px 10px}
+.sd-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+.sd-h b{font-size:16px}
+.sd-list{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
+.sd-row{display:grid;grid-template-columns:30px 34px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 6px;border-radius:10px;cursor:pointer}
+.sd-row:hover{background:var(--bark-2)}
+.sd-row.me{background:#3d5a2a}
+.sd-row .no{font-family:var(--f-pix);font-weight:900;text-align:center;color:var(--mist-dim)}
+.sd-row .no.t1{color:#ffd75e}.sd-row .no.t2{color:#d9e2ea}.sd-row .no.t3{color:#f0a06a}
+.sd-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:14px}
+.sd-row .lv{font-family:var(--f-pix);font-size:13px;color:var(--staff)}
+.sd-row .ava,.sd-row .ava-empty{width:34px;height:34px}
+.sd-new{background:#ff5f8f;color:#fff;border-radius:999px;font-size:10px;padding:1px 7px;font-weight:900}
 </style>
 </head><body>
 
@@ -521,6 +556,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
   </header>
   <div class="warn-bar" id="unitWarn" role="alert" hidden>⚠️ モンスターの手持ちが1000体を超えているのでゲームが動かなくなる場合があります！<small>売却や合成で数を減らしてね</small><button class="x warn-x" id="unitWarnX" type="button" aria-label="閉じる">✕</button></div>
   <main class="stage" id="stage"></main>
+  <aside class="side" id="side" aria-label="ランキングとフレンド"></aside>
   <div class="tabs"><nav role="tablist">
     <button role="tab" data-tab="home" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ホーム</button>
     <button role="tab" data-tab="box" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-4 9 4v9l-9 4-9-4z"/><path d="M3 8l9 4 9-4M12 12v9"/></svg>BOX</button>
@@ -1777,6 +1813,14 @@ const I18N_EN = {
 "メッセージのやりとりができなくなります。親密度は残ります。": "You won't be able to message each other. Your affinity stays.",
 "解除する": "Unfriend",
 "フレンド解除": "Unfriend",
+"🏆 ランキング": "🏆 Ranking",
+"🏆 ランキングとシーズン": "🏆 Ranking & Seasons",
+"すべて見る": "See all",
+"あなたは": "You're",
+"ログインするとランキングが見られます": "Log in to see the ranking",
+"開く": "Open",
+"⏳ シーズン終了まで": "⏳ Season ends in",
+"ランキングとフレンド": "Ranking and friends",
 "S・Z確率{0}倍！": "S/Z odds ×{0}!",
 "🎫 ガチャチケットで引くと、": "🎫 With a Gacha Ticket, ",
 "Sランク・Zランクの確率が{0}倍": "S-rank and Z-rank odds are ×{0}",
@@ -3072,8 +3116,36 @@ setInterval(()=>{
 },1000);
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ tab=b.dataset.tab; if(tab==="home") homeMode="scene"; render(); $("#stage").scrollTop=0; });
 
+/* ===== PC向け：右側のランキング・フレンド欄 ===== */
+const isPC=()=>window.matchMedia("(min-width:1100px)").matches;
+let sideAsked=false;
+function renderSide(){
+  const el=document.getElementById("side"); if(!el) return;
+  if(!isPC()){ if(el.innerHTML) el.innerHTML=""; return; }
+  if(!RANK && DB && !sideAsked){ sideAsked=true; loadRanking(); }
+  const top=(RANK||[]).slice(0,10);
+  const row=(r,i)=>`<li class="sd-row ${r.id===MYID?"me":""}" data-sdr="${esc(r.id)}" data-sdn="${i+1}"><span class="no ${i<3?"t"+(i+1):""}">${i+1}</span>${avatarImg(r.icon,34)}<span class="nm">${uname(r.name)}</span><span class="lv" translate="no">Lv${esc(r.lv||1)}</span></li>`;
+  const rk=tab==="rank"?"":`<section class="sd-box"><div class="sd-h"><b>🏆 ランキング</b><button class="chip" type="button" id="sdMore">すべて見る</button></div>
+    ${myRank?`<p class="note" style="margin:0 0 6px">あなたは <b>${myRank}位</b>${RANK_TOTAL?` / ${RANK_TOTAL.toLocaleString()}人`:""}</p>`:""}
+    ${!DB?`<p class="note" style="margin:0">ログインするとランキングが見られます</p>`:RANK?`<ol class="sd-list">${top.map(row).join("")}</ol>`:`<p class="note" style="margin:0">読み込み中…</p>`}</section>`;
+  let fr="";
+  if(DB&&MYID&&typeof FR!=="undefined"){
+    const L=[...FR.friends].sort((a,b)=>frUnread(b)-frUnread(a)||intimacy(b.id)-intimacy(a.id)).slice(0,12);
+    fr=`<section class="sd-box"><div class="sd-h"><b>🤝 フレンド</b><button class="chip" type="button" id="sdFr">開く${frBadge()?` <span class="sd-new">${frBadge()}</span>`:""}</button></div>
+      ${FR.reqIn.length?`<p class="note" style="margin:0 0 6px">📨 フレンド申請が${FR.reqIn.length}件届いています</p>`:""}
+      ${L.length?`<ol class="sd-list">${L.map(f=>{ const p=FR.prof[f.id]||{}; return `<li class="sd-row" data-sdf="${esc(f.id)}"><span class="no">💞</span>${avatarImg(p.icon,34)}<span class="nm">${uname(p.name)}</span><span class="lv" translate="no">${frUnread(f)?'<span class="sd-new">💬</span>':intimacy(f.id)}</span></li>`; }).join("")}</ol>`:`<p class="note" style="margin:0">${FR.loaded?"まだフレンドがいません":"読み込み中…"}</p>`}</section>`;
+  }
+  const t=`<section class="sd-box"><div class="sd-h"><b>⏳ シーズン終了まで</b></div><div style="font-family:var(--f-pix);font-size:26px;font-weight:900;text-align:center" id="sdCd" translate="no">${fmtDays(seasonEnd(seasonNow())-gnow())}</div></section>`;
+  el.innerHTML=t+rk+fr;
+  el.querySelectorAll("[data-sdr]").forEach(li=>li.onclick=()=>{ const r=findRank(li.dataset.sdr); if(r) openOtherProfile(r,+li.dataset.sdn); });
+  el.querySelectorAll("[data-sdf]").forEach(li=>li.onclick=()=>openChat(li.dataset.sdf));
+  const m=el.querySelector("#sdMore"); if(m) m.onclick=()=>{ tab="rank"; profMode="rank"; render(); $("#stage").scrollTop=0; };
+  const f=el.querySelector("#sdFr"); if(f) f.onclick=()=>openFriends();
+}
+setInterval(()=>{ const c=document.getElementById("sdCd"); if(c) c.textContent=fmtDays(seasonEnd(seasonNow())-gnow()); },1000);
+window.matchMedia("(min-width:1100px)").addEventListener("change",()=>{ renderSide(); if(tab==="home") render(); });
 function render(){
-  renderCoins();
+  renderCoins(); try{ renderSide(); }catch(e){}
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
   ({home:renderHome, gacha:renderGachaShop, box:renderBox, mission:renderMissionPage, rank:renderRankTab})[tab]();
 }
@@ -3651,7 +3723,7 @@ async function loadRanking(force){
     rankErr=false;
     resetOldInvest(); await loadInvestCounts(); checkInvestVoid(); snapTick(); checkTicks(true);
   }catch(e){ rankErr=true; }
-  if(tab==="rank"||tab==="home") render();
+  if(tab==="rank"||tab==="home") render(); else try{ renderSide(); }catch(e){}
 }
 // ランキング表示用に、シーズンや空枠の状態を反映する
 function normRank(r,now=gnow()){
@@ -4636,7 +4708,7 @@ async function loadFriends(){
   FR.friends=f.docs.map(d=>{ const x=d.data(); return {pair:d.id, id:(x.u||[]).find(u=>u!==MYID), lm:x.lm||null, at:x.at||0}; }).filter(x=>x.id);
   FR.reqIn=r.docs.map(d=>({doc:d.id,...d.data()})).filter(x=>x.st==="p").sort((a,b)=>(b.at||0)-(a.at||0));
   await Promise.all([...new Set([...FR.friends.map(x=>x.id),...FR.reqIn.map(x=>x.from)])].map(frProfile));
-  FR.loaded=true;
+  FR.loaded=true; try{ renderSide(); }catch(e){}
 }
 const frUnread=f=>!!(f.lm && f.lm.from!==MYID && (f.lm.at||0)>((S.fRead||{})[f.pair]||0));
 const frBadge=()=>FR.reqIn.length + FR.friends.filter(frUnread).length;
