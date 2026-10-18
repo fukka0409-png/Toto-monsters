@@ -3945,6 +3945,7 @@ async function doFight(r){
   if(inFreeze()){ toast(FREEZE_TXT); closeSheet(); return false; }
   let d; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get()); d=snap.exists?snap.data():null; }catch(e){ toast("通信できませんでした。電波のよい所でもう一度ためしてください"); return false; }
   if(!d||!d.gm||!mon(d.gm)) return toast("相手は魔物を配置していません");
+  d=effProfile(r.id,d);   // ランキングと同じ「最新の状態」のレベルで判定する（未受け取りのボーナス・留守中のバトルをふくむ）
   if((d.lv||1)<SAFE_LV) return toast(`相手はLv${SAFE_LV}未満なので、まだ攻撃できません`);
   const day=`${todayN()}-${d.gu||0}`, id=`${MYID}_${r.id}_${day}`;   // 相手の配置魔物が変わればまた戦える
   const myLv=g.l, theirLv=d.gl||1;
@@ -4046,6 +4047,7 @@ const bestTextOf = r => !r.best ? "―" : r.best===1 && (r.f1||0)>1 ? `1位×${r
 // まだアプリを開いていない人にも、シーズン中に受けたバトル・爆弾の結果を反映した最終スコアを計算する
 let SEASON_EV={s:null, list:[]}, LIVE_EV={s:null, list:[]}, RANK_AT=0;
 // ログインしていない人も「ログインした状態」にする：まだ反映していないバトル・爆弾の結果をランキングに反映
+function effProfile(id,d){ const x=liveAdjust(normRank({id,...d})); const shown=(RANK||[]).find(z=>z.id===id); if(shown && (shown.lv||1)>(x.lv||1)) x.lv=shown.lv; return x; }
 function liveAdjust(r){
   if(r.id===MYID || LIVE_EV.s!==seasonNow() || (r.ss??0)!==seasonNow()) return r;
   let lv=r.lv||1, ch=false;
@@ -4276,6 +4278,7 @@ async function useItem(r,k,qty=1){
   if(inFreeze()){ toast(FREEZE_TXT); return false; }
   let d; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get()); d=snap.exists?snap.data():null; }catch(e){ toast("通信できませんでした。電波のよい所でもう一度ためしてください"); return false; }
   if(!d) { toast("相手が見つかりませんでした"); return false; }
+  d=effProfile(r.id,d);
   if(!SENDABLE.includes(k) && (d.lv||1)<SAFE_LV) { toast(`相手はLv${SAFE_LV}未満なので、まだアイテムを使えません`); return false; }
   if(k==="fire"&&(!d.gm||!mon(d.gm))) { toast("相手は魔物を配置していません"); return false; }
   if(k==="bomb"&&S.plv<BOMB_MIN_LV) { toast(`爆弾は冒険者Lv${BOMB_MIN_LV}から使えます`); return false; }
