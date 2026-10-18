@@ -1675,6 +1675,13 @@ const I18N_EN = {
 "持てます（22:00に消えます）。": " (they disappear at 22:00).",
 "。": ".",
 "持てる（22:00のシーズン終了で消える・次のシーズンに持ち越せない）": " (they disappear when the season ends at 22:00 and don't carry over)",
+"冒険者Lv +{0}": "Adventurer Lv +{0}",
+"{0}体を売却 +{1}コイン ・ 冒険者Lv+{2}（Lv{3}）": "Sold {0} +{1} coins ・ Adventurer Lv+{2} (Lv{3})",
+"💰 Sランクの魔物を売却すると、コインに加えて": "💰 Selling an S-rank monster gives coins plus ",
+"冒険者Lv+5": "Adventurer Lv+5",
+"、Zランクは": ", and a Z-rank gives ",
+"冒険者Lv+15": "Adventurer Lv+15",
+"上がる（A・B・Cランクはコインのみ）。": " (A/B/C ranks give coins only).",
 "シーズンが終わったので、盾が{0}個消えました": "The season ended, so {0} shield(s) disappeared",
 "装備中の盾": "Equipped shield",
 "のこり耐久 {0} / {1}": "Durability {0} / {1}",
@@ -2979,12 +2986,16 @@ function renderBox(){
 
 let sellMode=false, lockMode=false; const sellSel=new Set();
 const sellPrice=u=>mon(u.m).sell ?? SELL[mon(u.m).rank];
+// 2026-10-18 22:00 のシーズンから：S・Zランクを売却すると冒険者レベルも上がる
+const SELL_LV={S:5,Z:15}, SELL_LV_FROM=Date.parse("2026-10-18T22:00:00+09:00");
+const sellLv=list=>gnow()<SELL_LV_FROM?0:list.reduce((t,u)=>t+(SELL_LV[mon(u.m).rank]||0),0);
 function doSell(uids){
   const list=S.units.filter(z=>uids.includes(z.u)&&!z.k&&z.u!==S.guard); if(!list.length) return 0;
   const total=list.reduce((t,u)=>t+sellPrice(u),0);
   S.units=S.units.filter(z=>!list.includes(z));
   if(S.dress && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
-  S.coins+=total; save(); SFX.coin(); toast(`${list.length}体を売却 +${total.toLocaleString()}コイン`); return total;
+  const lv=sellLv(list); if(lv){ S.plv+=lv; bumpMaxLv(); }
+  S.coins+=total; save(); SFX.coin(); toast(`${list.length}体を売却 +${total.toLocaleString()}コイン`+(lv?` ・ 冒険者Lv+${lv}（Lv${S.plv}）`:"")); if(lv) setTimeout(()=>{ try{ SFX.level(); }catch(e){} },350); return total;
 }
 function confirmSell(uids,onDone){
   const list=S.units.filter(z=>uids.includes(z.u)&&!z.k&&z.u!==S.guard); if(!list.length) return toast("配置中・保護中の魔物は売却できません");
@@ -2993,7 +3004,7 @@ function confirmSell(uids,onDone){
   const bg=document.createElement("div"); bg.className="sheet-bg center";
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="sellT">
     <p id="sellT">${list.length===1?mon(list[0].m).name+" (Lv"+list[0].l+")":list.length+"体"}を売却しますか？</p>
-    <div class="m-text" style="color:var(--staff);font-family:var(--f-pix);font-size:20px">+${total.toLocaleString()}コイン</div>
+    <div class="m-text" style="color:var(--staff);font-family:var(--f-pix);font-size:20px">+${total.toLocaleString()}コイン</div>${sellLv(list)?`<div class="m-text" style="color:#5fd36a;font-weight:900;font-size:17px">冒険者Lv +${sellLv(list)}</div>`:""}
     ${rare.length?`<div class="note" style="color:var(--berry);margin:0">${rare.map(u=>mon(u.m).rank+"ランク「"+mon(u.m).name+"」").join("・")} が含まれています</div>`:""}
     <div class="note" style="margin:0">売却した魔物は戻りません。図鑑の記録は残ります。</div>
     <button class="btn gold" id="sellOk" type="button">売却する</button><button class="btn ghost" id="sellNo" type="button">やめる</button></div>`;
@@ -3009,7 +3020,7 @@ function sheet(html){ closeSheet(); const bg=document.createElement("div"); bg.c
 
 /* ---------- （必見）最新ルール確認！ ----------
    ルールを変えたら RULES_VER を上げる → ボタンに NEW が付く。数字は定数から読むので自動で最新になる */
-const RULES_VER = "2026-10-18x";
+const RULES_VER = "2026-10-18y";
 const RULES_KEY = "toto-rules-seen";
 const rulesNew = () => { try{ return localStorage.getItem(RULES_KEY)!==RULES_VER; }catch(e){ return true; } };
 const rulesBtn = () => `<button class="rules-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖（必見）最新ルール確認！${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>`;
@@ -3032,7 +3043,7 @@ function openRules(){
     ["🏆","ランキングとシーズン",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1シーズンに1人・金額は自由・<b>シーズン終了の10時間前＝12:00まで</b>）。</li><li>シーズン終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はシーズン終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのシーズンはもう投資できない。</li><li>投資された冒険者は、シーズン終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"w")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
-    ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li><li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
+    ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li>${U("<li>💰 Sランクの魔物を売却すると、コインに加えて<b>冒険者Lv+5</b>、Zランクは<b>冒険者Lv+15</b>上がる（A・B・Cランクはコインのみ）。</li>","x")}<li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
   const el=document.createElement("div"); el.className="rules-stage"+(fresh?" fresh":""); el.setAttribute("role","dialog"); el.setAttribute("aria-label","最新ルール");
   el.innerHTML=`<div class="rules-card"><div class="rules-h"><h3>📖 最新ルール</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
