@@ -4450,12 +4450,11 @@ const BGS=["#2f4a40","#f4efe2","#ffd6e0","#cfe9ff","#1b1b2e","#ffe7a3","#d9f2c4"
 function composeIcon(size){
   const cv=document.createElement("canvas"); cv.width=cv.height=size; const c=cv.getContext("2d"); const d=S.dress;
   c.fillStyle=BGS[d.bg]; c.fillRect(0,0,size,size);
-  const r=size*FRAME_IN;
+  const r=size/2;   // 枠がなくなったので、丸いアイコンの外側いっぱいまで使う
   c.save(); c.beginPath(); c.arc(size/2,size/2,r,0,7); c.clip();
   const ig=c.createRadialGradient(size/2,size*.45,4,size/2,size/2,r); ig.addColorStop(0,"#ffffff33"); ig.addColorStop(1,"#00000022"); c.fillStyle=ig; c.fillRect(0,0,size,size);
   if(IMG[d.m]){ const s=r*2*(d.zoom/100); c.drawImage(IMG[d.m],size/2-s/2,size/2-s/2+d.y/100*r,s,s); }
   c.restore();
-  if(d.f) drawFrame(c,d.f,size); else { c.lineWidth=size*.02; c.strokeStyle="#ffffffaa"; c.beginPath(); c.arc(size/2,size/2,r,0,7); c.stroke(); }
   return cv;
 }
 function renderDress(){
@@ -4495,6 +4494,9 @@ async function saveIcon(){
   toast("アイコンを保存しました");
 }
 
-loadImages().then(render);
+loadImages().then(()=>{
+  // 2026-10-18：アイコンの内側の丸をなくした新しい形で、自分のアイコンを作り直す（1回だけ）
+  if(S.avatar && S.dress && S.avaV!==2){ try{ S.avatar=composeIcon(128).toDataURL("image/jpeg",0.82); }catch(e){} S.avaV=2; save(); try{ queueProfile(true); }catch(e){} }
+  render(); });
 </script>
 </body></html>
