@@ -2442,16 +2442,20 @@ async function pushRemote(){
   })();
   try{ await pushing; } finally { pushing=null; }
 }
-async function pullRemote(fromPush){
+async function pullRemote(fromPush, force){
   if(!remoteDoc || !remoteReady) return false;
   if(pushing && !fromPush) return false;
+  if(seasonBusy && !force) return false;   // シーズンの精算中は記録を入れかえない
   try{
     const snap=await remoteDoc.get(); if(!snap.exists) return false;
     const d=snap.data(), ru=d.updated||0;
-    if(ru > lastRemote){
+    let r=null; try{ r=JSON.parse(d.json); }catch(e){}
+    // 別の端末がもう新しいシーズンに進んでいたら、日時に関係なくそちらを使う（古い記録でシーズンを2回精算しないため）
+    const aheadSeason = r && (r.season??0) > (S.season??0);
+    if(ru > lastRemote || aheadSeason){
       // この端末でまだ送っていない、もっと新しい記録があるときは、この端末の記録を優先する
-      if((S.updated||0) > ru){ lastRemote=ru; return false; }
-      const r=JSON.parse(d.json); if(!r || !Array.isArray(r.units)) return false;
+      if(!aheadSeason && (S.updated||0) > ru){ lastRemote=ru; return false; }
+      if(!r || !Array.isArray(r.units)) return false;
       S=r; fixPlayer(); fixGuard(); lastRemote=ru;
       try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
       render(); return true;              // 画面だけ静かに更新する（メッセージは出さない）
@@ -4583,10 +4587,14 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 let seasonBusy=false;
 async function checkSeason(){
   if(seasonBusy||!DB||!MYID) return;
-  const cur=seasonNow(); if(S.season==null) S.season=0;
-  if(S.season>=cur) return;
-  if(S.season===cur-1 && inFreeze()) return;   // 0:03の結果発表まで待つ
+  if((S.season??0)>=seasonNow()) return;
   seasonBusy=true;
+  // 精算の前に、クラウドの記録を読み直す。ほかの端末やタブでもう精算ずみなら、そちらを使って終わる
+  //（バックグラウンドに置いたままの古い画面が、あとから同じシーズンをもう一度精算してしまうのを防ぐ）
+  try{ if(remoteDoc&&remoteReady) await pullRemote(true,true); }catch(e){}
+  const cur=seasonNow(); if(S.season==null) S.season=0;
+  if(S.season>=cur || (S.season===cur-1 && inFreeze())){ seasonBusy=false; return; }
+  const S0=S;
   try{
     const old=S.season, mine=S.plv*1e6+S.pexp;
     S.sv=S.sv||{}; S.sv[old]=mine;
@@ -4608,6 +4616,7 @@ async function checkSeason(){
     if(rank){ if(!S.best||rank<S.best) S.best=rank; if(rank===1) S.firsts=(S.firsts||0)+1; }
     // 投資の精算（自分が投資した分・自分に投資された分）
     const iv=await settleInvest(old, rank, q, mine, coins); coins+=iv.delta; lines.push(...iv.lines);
+    if(S!==S0 || (S.season??0)>=cur){ seasonBusy=false; return; }   // 途中で記録が入れかわったら何もしない
     S.coins=Math.max(0,S.coins+coins); if(stones) addItem("stone",stones);
     // リセット
     const beforeLv=S.plv;
