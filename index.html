@@ -235,6 +235,10 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-id{display:flex;flex-direction:column;align-items:flex-start;min-width:0}.hm-id>b{font-size:13px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#86bcbc;border-radius:8px;padding:1px 8px}
 .hm-lv{font-size:10px;margin-top:4px;background:#86bcbc;border-radius:8px;padding:1px 8px;white-space:nowrap}.hm-lv b{font-size:14px}
 .hm-rank{display:flex;flex-direction:column;align-items:center;background:#86bcbc;border-radius:10px;padding:3px 6px;border:2px solid #1d1d1d}.hm-rank small{font-size:9px}.hm-rank b{font-size:16px}
+.hm-card{grid-template-columns:auto 1fr auto auto!important}
+.hm-shield{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:34px;padding:4px 3px;border-radius:12px;background:#f3f0e6;border:2px solid #1d1d1d;color:#1d1d1d;font-weight:900;cursor:pointer}
+.hm-shield i{font-style:normal;font-size:16px;line-height:1}.hm-shield small{font-size:9px;white-space:nowrap}
+.hm-shield:active{transform:scale(.95)}
 .hm-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
 .hm-invest{align-self:flex-start;display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;background:#f2dc3a;border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font:inherit;font-weight:900;font-size:14px}
 .hm-invest.last{background:#fff;font-size:13px;padding:7px 14px}
@@ -3433,6 +3437,7 @@ function renderHome(){
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
         ${avatarImg(S.avatar,44)}
         <span class="hm-id"><b id="hmName"></b><span class="hm-lv">冒険者 Lv <b>${S.plv}</b></span></span>
+        <span class="hm-shield" id="hmShield" role="button" tabindex="0" aria-label="盾"><i>🛡</i><small>${shieldOn()?`耐久${S.shield.dur}`:"盾"}</small></span>
         <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
       </button>
       <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${S.inv&&S.inv.ss===seasonNow()&&!S.inv.void?'<small>投資中</small>':""}</button>
@@ -3440,7 +3445,6 @@ function renderHome(){
       <div class="hm-btns">
         <button class="hm-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖 最新ルール確認${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>
         <button class="hm-btn" type="button" id="hmStats">📊 自己記録確認</button>
-        <button class="hm-btn" type="button" id="hmShield">🛡 盾${shieldOn()?` <small style="font-size:10px">耐久${S.shield.dur}</small>`:""}</button>
       </div>
     </div>
     ${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
@@ -3449,11 +3453,11 @@ function renderHome(){
     <button class="hm-change" type="button" id="hmChange">🎨「魔物／装飾」変更</button>
   </div>`;
   $("#hmName").textContent=myName();
-  $("#hmProf").onclick=e=>{ if(e.target.closest("#hmRank")){ tab="rank"; profMode="rank"; loadRanking(); render(); return; } homeMode="me"; render(); $("#stage").scrollTop=0; };
+  $("#hmProf").onclick=e=>{ if(e.target.closest("#hmShield")) return openShield(); if(e.target.closest("#hmRank")){ tab="rank"; profMode="rank"; loadRanking(); render(); return; } homeMode="me"; render(); $("#stage").scrollTop=0; };
   $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   $("#hmChange").onclick=()=>openHomeEdit("m");
   $("#hmLast").onclick=openLastResult;
-  $("#hmShield").onclick=openShield;
+
   $("#hmInvest").onclick=()=>{ homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); };
 }
 function openHomeEdit(mode){
