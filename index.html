@@ -2516,7 +2516,7 @@ const CODES = [
 ];
 const MAX_LV = 100;
 // 進化する魔物：段階ごとのレベル上限（cap）。上限に達したら、進化するまで合成ではレベルは上がらない（2026-10-19から覚醒の石はどのレベルでも使える）
-const capOf = x => { const m=mon(x.m); return m&&m.cap!=null ? m.cap : MAX_LV; };
+const capOf = x => { const m=mon(x.m); return m&&m.cap!=null&&isFinite(m.cap) ? m.cap : MAX_LV; };   // 最後の段階（上限なし）も、合成はほかの魔物と同じLv100まで（そこから先は覚醒の石）
 const evoLocked = x => { const m=mon(x.m); return !!(m && m.cap!=null && isFinite(m.cap)); };   // 段階の上限がある魔物（合成でのレベル上げは上限まで）
 // Lv → Lv+1 に必要な経験値: 後半ほど大きく、ランクが高いほど多い (Cランクは Lv1→100 で合計約10万)
 const RANK_STEP = 1.7;   // ランクが1つ上がるごとに、さらに1.7倍むずかしく
@@ -2785,7 +2785,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -5050,6 +5050,12 @@ function checkComp1019b(){
   if(S.comp1019b||!S.comp1019) return;
   if(normName(myName())===normName("yoko★") && S.best===1 && !((S.firsts||0)>0)){ S.best=2; queueProfile(true); try{ render(); }catch(e){} }
   S.comp1019b=1; save();
+}
+// 補償のつづき（1回だけ）：🦄さんの「1位の回数」を1つ戻す（補償で1回多く数えてしまった：1位×4 → 1位×3）
+function checkComp1019d(){
+  if(S.comp1019d||!S.comp1019) return;
+  if(normName(myName())===normName("🦄") && (S.firsts||0)>0){ S.firsts--; queueProfile(true); try{ render(); }catch(e){} }
+  S.comp1019d=1; save();
 }
 // 補償のつづき（1回だけ）：🦄さんの勝率の賞品。終了後に受けたバトルまで勝率に入っていたので、
 // ランク戦（2）の期間中のバトルの記録だけで勝率を計算しなおして、その勝率の賞品（覚醒の石）をわたす
