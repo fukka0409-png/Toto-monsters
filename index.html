@@ -610,6 +610,15 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
 .ah-cnt b{display:block;font:900 20px/1.1 var(--f-pix,monospace)}
 .adv-msg{position:absolute;left:50%;top:22%;transform:translate(-50%,-10px);background:#000c;color:#fff;font:800 14px/1.4 var(--f-body);padding:8px 14px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;max-width:88%;text-align:center}
 .adv-msg.on{opacity:1;transform:translate(-50%,0)}
+.adv-pause{position:absolute;left:50%;top:calc(max(8px,env(safe-area-inset-top,0px)) + 100px);transform:translateX(-50%);z-index:4;background:#2a1a0a;color:#fff8e8;font:900 13px/1 var(--f-body);padding:6px 14px;border-radius:999px;display:none}
+.adv-pause.on{display:block}
+.ap-auto{position:absolute;left:8px;top:calc(max(8px,env(safe-area-inset-top,0px)) + 62px);z-index:3;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border:3px solid #2a1a0a;border-radius:999px;background:#fff8e8;box-shadow:0 3px 0 #0006;cursor:pointer;font:900 12px/1 var(--f-body);color:#2a1a0a}
+.ap-auto i{font-style:normal;font:900 11px/1 var(--f-pix,monospace);background:#9a8f80;color:#fff;border-radius:999px;padding:4px 7px}
+.ap-auto[aria-pressed="true"] i{background:#3fae2a}
+.ap-auto:active{transform:translateY(2px)}
+.ad-coin{margin-top:4px;padding:10px;border:2px dashed #ffd75e;color:#ffe9a8;font:800 14px/1.4 var(--f-body);text-align:center}
+.ad-coin b{font-size:22px;color:#ffd75e}
+.ad-coin small{display:block;font-size:11px;color:#ddd}
 .adv-pad{position:absolute;left:0;right:0;bottom:0;height:25%;display:grid;grid-template-columns:1fr 1.25fr 1fr;grid-template-rows:1fr 1fr;padding:10px 12px max(8px,env(safe-area-inset-bottom,0px));gap:4px 6px;align-items:center;justify-items:center}
 .ap-btn{width:min(21vw,13dvh,96px);aspect-ratio:1;border-radius:50%;border:4px solid #2a1a0a;background:radial-gradient(circle at 40% 35%,#fff8e8,#f0d9ae);box-shadow:0 5px 0 #2a1a0a,inset 0 -5px 0 #d7b880;font:900 clamp(13px,3.6vw,18px)/1 var(--f-body);color:#2a1a0a;cursor:pointer;padding:0;touch-action:none}
 .ap-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #2a1a0a,inset 0 -5px 0 #d7b880}
@@ -657,7 +666,7 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
 .adv-sheet.memo{inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px;z-index:6}
 .am-paper{width:100%;max-width:420px;background:#f6e3b4;border:4px solid #8a6a3a;border-radius:8px;padding:10px;box-shadow:0 10px 30px #000a;display:flex;flex-direction:column;gap:6px}
 .am-h{position:relative;font:900 16px/28px var(--f-body);color:#4a3218}
-.am-paper textarea{width:100%;min-height:42dvh;resize:vertical;border:2px solid #c9a96a;border-radius:4px;background:#fffaf0 repeating-linear-gradient(#fffaf0 0 27px,#e8d6b0 27px 28px);font:700 15px/28px var(--f-body);color:#2a1a0a;padding:0 8px;box-sizing:border-box;user-select:text;-webkit-user-select:text}
+.am-paper textarea{width:100%;min-height:42dvh;resize:vertical;border:2px solid #c9a96a;border-radius:4px;background:#fffaf0 repeating-linear-gradient(#fffaf0 0 27px,#e8d6b0 27px 28px);font:700 16px/28px var(--f-body);color:#2a1a0a;padding:0 8px;box-sizing:border-box;user-select:text;-webkit-user-select:text}
 .am-paper small{font:700 11px/1.3 var(--f-body);color:#6b4a2a}
 .adv-dead{position:absolute;inset:0;z-index:8;background:#000c;display:flex;align-items:center;justify-content:center;padding:18px;animation:advFade .5s ease}
 @keyframes advFade{from{opacity:0}}
@@ -5532,8 +5541,12 @@ function showNewMonsters(){
 /* ===================== トトの冒険（2Dアクション） =====================
    タイトル画面の「トトの冒険」から遊ぶ。世界はどこまでも続く横スクロール。
    ・タイマーは始まった瞬間から進み、上限なし。30秒をこえたら冒険回数+1（1回の冒険で1回だけ）
-   ・敵（スライム）は2分ごとにLv+1。Lvが1上がるごとに 速さ×1.2・体力×1.7
-   ・トトはLv1で体力10。Lvが上がるたびに体力上限+2・体力1回復・攻撃力×1.5
+   ・敵（スライム）は2分ごとにLv+1。Lvが1上がるごとに 速さ×1.2・攻撃力+7・体力+30
+   ・攻撃する0.5秒前に、敵の頭上に「❗」と、攻撃が当たる範囲（地面の赤い帯）が出る
+   ・トトはLv1で体力10。Lvが上がるたびに体力上限+8・体力4回復。攻撃力は 装備なし+5／魔法の欠片+10
+   ・トトより強い敵ほど経験値が多く、弱い敵ばかり倒してもLvは上がりにくい（敵Lv10あたりから魔法の欠片が必須）
+   ・リュックを開いている間は、タイマーも魔物も止まる
+   ・タイトルに戻るとき、記録に応じてコイン（1分ごとに1枚＋到達Lvの数）。ランキング1位を更新したら10倍（両方なら20倍）
    ・宝箱：新しい場所に進むと30%で出現（ふつう80%／赤い宝石19%／虹0.01%）。中身は50%で魔法の欠片
    ・30秒動かないとLv100の魔物がおそってくる
    ・死んだらお墓→記録。ハート石1個で、その場から続きができる
@@ -5541,8 +5554,9 @@ function showNewMonsters(){
 const ADV_MEMO_FIRST = "魔法の欠片の特徴と融合方法を忘れないように....！";
 const ADV = {
   COUNT_SEC: 30, LEVEL_EVERY: 120, IDLE_SEC: 30, INV_MAX: 20,
-  HP0: 10, HP_PER_LV: 2, ATK0: 2, ATK_MUL: 1.5,
-  SL_HP: 10, SL_ATK: 1, SL_SPD: 0.20, SL_SPD_MUL: 1.2, SL_HP_MUL: 1.7, SL_ATK_MUL: 1.25, SL_XP: 0.3,
+  HP0: 10, HP_PER_LV: 8, HEAL_PER_LV: 4, ATK0: 2, ATK_PER_LV: 5, MAG_PER_LV: 10,
+  SL_HP: 10, SL_ATK: 1, SL_SPD: 0.20, SL_SPD_MUL: 1.2, SL_HP_PER: 30, SL_ATK_PER: 7, SL_XP: 0.3,
+  WARN: 0.5, ZOOM: 0.68, MAX_ENEMIES: 10,
   CHEST_CHANCE: 0.30, CHUNK: 3.2,
   SHARD: { g:{ name:"魔法の欠片（金）", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"魔法の欠片（青）", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:5 } },
 };
@@ -5557,7 +5571,10 @@ const advItemImg = it => it.k==="key" ? null : advImg(ADV.SHARD[it.k].img).src;
 let A=null, advRaf=0;
 const advLv = () => Math.floor(A.lvf);
 const advMaxHp = () => ADV.HP0 + ADV.HP_PER_LV*(advLv()-1);
-const advAtkMul = () => Math.pow(ADV.ATK_MUL, advLv()-1);
+const advMeleeDmg = () => ADV.ATK0 + ADV.ATK_PER_LV*(advLv()-1);
+const advShardDmg = k => ADV.SHARD[k].dmg + ADV.MAG_PER_LV*(advLv()-1);
+const advPaused = () => !!document.querySelector("#adv .adv-sheet");   // リュック（とメモ）を開いている間は止まる
+let advAuto=false; try{ advAuto=localStorage.getItem("toto-adv-auto")==="1"; }catch(e){}
 
 function openAdventure(){
   advPreload();
@@ -5571,6 +5588,8 @@ function openAdventure(){
       <div class="ah ah-cnt"><small>${advT("冒険回数")}</small><b id="ahCnt"></b></div>
     </div>
     <div class="adv-msg" id="advMsg"></div>
+    <div class="adv-pause" id="advPause">⏸ ${advT("一時停止中")}</div>
+    <button class="ap-auto" id="apAuto" type="button" aria-pressed="false"></button>
     <div class="adv-pad">
       <button class="ap-btn ap-jump" id="apJump" type="button">${advT("ジャンプ")}</button>
       <div class="ap-stick" id="apStick"><div class="ap-knob" id="apKnob"></div></div>
@@ -5582,7 +5601,7 @@ function openAdventure(){
   document.body.appendChild(el);
   advStart();
   advBindInput(el);
-  advResize(); addEventListener("resize",advResize);
+  advResize(); addEventListener("resize",advResize); window.visualViewport?.addEventListener("resize",advFixView);
   cancelAnimationFrame(advRaf); A.last=performance.now(); advRaf=requestAnimationFrame(advLoop);
 }
 const advT = t => (LANG==="en" && ADV_EN[t]) || t;
@@ -5597,7 +5616,8 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
   "虹の宝箱は「伝説の鍵」を使わないと開かない…":"The rainbow chest only opens with a Legendary Key...","虹の宝箱を開けられる":"Opens a rainbow chest",
   "融合する":"Fuse","融合成功！ 新しい魔法の欠片ができた！":"Fusion success! A new magic shard was made!","装備する":"Equip","記録":"Record",
   "近くに虹の宝箱がない…":"No rainbow chest nearby...","達成レベル":"Level reached","魔法の欠片を使い切った":"The magic shard is used up",
-  "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","魔法の欠片（金）":"Magic Shard (Gold)","魔法の欠片（青）":"Magic Shard (Blue)","伝説の鍵":"Legendary Key" };
+  "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","魔法の欠片（金）":"Magic Shard (Gold)","魔法の欠片（青）":"Magic Shard (Blue)","伝説の鍵":"Legendary Key",
+  "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward" };
 const advRk = n => n ? (LANG==="en" ? "#"+n.toLocaleString() : n.toLocaleString()+"位") : "―";
 
 function advStart(){
@@ -5611,9 +5631,12 @@ function advResize(){
   const box=cv.parentElement, r=box.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
   cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); cv.style.width=r.width+"px"; cv.style.height=r.height+"px";
   A.dpr=dpr; A.W=cv.width; A.H=cv.height; A.SH=A.H*0.75;   // 空3：地面1
+  A.P=A.SH*ADV.ZOOM;   // 少し引いたカメラ（1マス＝空の高さ×0.68）
 }
+// iPhoneでメモ（文字入力）を開くと画面が拡大・スクロールされたままになるので、元に戻す
+function advFixView(){ if(document.activeElement?.tagName==="TEXTAREA") return; try{ window.scrollTo(0,0); document.documentElement.scrollTop=0; document.body.scrollTop=0; }catch(e){} if(A) advResize(); }
 function advClose(){
-  cancelAnimationFrame(advRaf); removeEventListener("resize",advResize);
+  cancelAnimationFrame(advRaf); removeEventListener("resize",advResize); window.visualViewport?.removeEventListener("resize",advFixView);
   document.getElementById("adv")?.remove(); document.querySelectorAll(".adv-sheet").forEach(x=>x.remove());
   A=null; try{ titleRanks(); }catch(e){}
 }
@@ -5631,6 +5654,8 @@ function advBindInput(el){
   el.querySelector("#apJump").addEventListener("pointerdown",e=>{ e.preventDefault(); advJump(); });
   el.querySelector("#apAtk").addEventListener("pointerdown",e=>{ e.preventDefault(); advAttack(); });
   el.querySelector("#apBag").onclick=()=>advBag();
+  const au=el.querySelector("#apAuto"); const auView=()=>{ au.setAttribute("aria-pressed",String(advAuto)); au.innerHTML=`<b>${advT("オート移動")}</b><i>${advAuto?"ON":"OFF"}</i>`; };
+  au.onclick=()=>{ advAuto=!advAuto; try{ localStorage.setItem("toto-adv-auto",advAuto?"1":"0"); }catch(e){} auView(); try{ SFX.tap(); }catch(e){} }; auView();
   el.querySelector("#apEquip").onclick=()=>advBag();
   el.addEventListener("touchmove",e=>{ if(!e.target.closest(".adv-sheet")) e.preventDefault(); },{passive:false});
 }
@@ -5638,14 +5663,15 @@ document.addEventListener("keydown",e=>{ if(!A||A.dead||e.target.closest&&e.targ
   const k=e.key.toLowerCase(); A.keys[k]=true;
   if(k===" "||k==="w"||k==="arrowup"){ e.preventDefault(); if(!e.repeat) advJump(); }
   if(k==="j"||k==="k"||k==="enter"){ e.preventDefault(); if(!e.repeat) advAttack(); }
-  if(k==="b"||k==="i"){ advBag(); } });
+  if(k==="b"||k==="i"){ advBag(); }
+  if(k==="o"&&!e.repeat){ document.getElementById("apAuto")?.click(); } });
 document.addEventListener("keyup",e=>{ if(A) A.keys[e.key.toLowerCase()]=false; });
 
-function advJump(){ if(!A||A.dead) return;
+function advJump(){ if(!A||A.dead||advPaused()) return;
   if(A.onGround){ A.vy=1.25; A.onGround=false; A.jumps=1; try{ SFX.tap(); }catch(e){} }
   else if(A.jumps<3){ A.vy=1.12; A.jumps++; A.flapT=0.35; try{ voice&&ac()&&voice(ac(),{f:660,f2:990,dur:.09,vol:.06}); }catch(e){} }   // 翼をパタパタさせて2段・3段ジャンプ
 }
-function advAttack(){ if(!A||A.dead||A.atk) return;
+function advAttack(){ if(!A||A.dead||A.atk||advPaused()) return;
   const it=A.eq>=0?A.inv[A.eq]:null;
   if(it && ADV.SHARD[it.k]){ const sh=ADV.SHARD[it.k]; A.atk={kind:sh.anim, t:0, dur:0.42, fired:false, it}; }
   else A.atk={kind:"tm", t:0, dur:0.38, hit:false};
@@ -5661,10 +5687,13 @@ function advLoop(now){
 }
 function advStep(dt){
   if(A.dead){ A.deadT+=dt; return; }
+  const pz=advPaused(); document.getElementById("advPause")?.classList.toggle("on",pz);
+  if(pz) return;   // リュックを開いている間は、タイマーも魔物も止まる
   A.t+=dt*1000;
   if(!A.counted && A.t>=ADV.COUNT_SEC*1000){ A.counted=true; S.advCount=(S.advCount||0)+1; save(); }   // 30秒をこえたら冒険回数+1
   // 移動
   let mv=A.moveIn; if(A.keys["arrowleft"]||A.keys["a"]) mv=-1; if(A.keys["arrowright"]||A.keys["d"]) mv=1;
+  if(!mv && advAuto) mv=A.dir;   // オート移動：向いている方へ歩きつづける（スティックで向きを変えられる）
   const spd=0.55; A.vx=mv*spd; if(mv) A.dir=mv>0?1:-1;
   A.x+=A.vx*dt; if(mv) A.walkT+=dt*8;
   A.vy-=3.4*dt; A.y+=A.vy*dt; if(A.y<=0){ A.y=0; A.vy=0; if(!A.onGround){ A.onGround=true; A.jumps=0; } }
@@ -5673,12 +5702,13 @@ function advStep(dt){
   if(Math.abs(A.x-A.lastX)>0.02 || !A.onGround){ A.lastX=A.x; A.idleT=0; A.idleSpawned=false; } else A.idleT+=dt;
   if(A.idleT>=ADV.IDLE_SEC && !A.idleSpawned){ A.idleSpawned=true; advSpawn(100,true); advMsg(advT2("⚠️ 動かずにいたら、Lv100の魔物がやってきた…！")); }
   // カメラ
-  const viewW=A.W/A.SH; A.cam+=(A.x-viewW*0.38-A.cam)*Math.min(1,dt*6);
+  const viewW=A.W/A.P; A.cam+=(A.x-viewW*0.38-A.cam)*Math.min(1,dt*6);
   // 宝箱：新しい場所へ進むたび
   const ch=Math.floor(A.x/ADV.CHUNK);
   if(ch>A.chunksR){ A.chunksR=ch; advMaybeChest(1); } if(ch<A.chunksL){ A.chunksL=ch; advMaybeChest(-1); }
   // 敵の出現
-  A.nextSpawn-=dt; if(A.nextSpawn<=0){ const alive=A.enemies.filter(e=>!e.dead).length; if(alive<6) advSpawn(1+Math.floor(A.t/1000/ADV.LEVEL_EVERY)); A.nextSpawn=2+Math.random()*3.5; }
+  const elv=1+Math.floor(A.t/1000/ADV.LEVEL_EVERY);
+  A.nextSpawn-=dt; if(A.nextSpawn<=0){ const alive=A.enemies.filter(e=>!e.dead).length; if(alive<ADV.MAX_ENEMIES) advSpawn(elv); A.nextSpawn=(0.8+Math.random()*1.4)/(1+0.04*(elv-1)); }
   // 攻撃
   if(A.atk){ const a=A.atk; a.t+=dt;
     if(a.kind==="tm" && !a.hit && a.t>=0.16){ a.hit=true; advMelee(); }
@@ -5692,6 +5722,7 @@ function advStep(dt){
   // 敵
   A.enemies.forEach(e=>advEnemy(e,dt));
   A.enemies=A.enemies.filter(e=>!(e.dead&&e.deadT>0.6) && Math.abs(e.x-A.x)<14);
+  A.chests.forEach(c=>{ if(c.open) c.openT+=dt; });
   A.chests=A.chests.filter(c=>!(c.open&&c.openT>4) && Math.abs(c.x-A.x)<20);
   A.pops.forEach(p=>{ p.t+=dt; }); A.pops=A.pops.filter(p=>p.t<1.1);
   if(A.hp<=0) advDie();
@@ -5702,41 +5733,49 @@ function advPop(x,y,txt,col){ A.pops.push({x,y,txt,col:col||"#fff",t:0}); }
 
 /* ---------- 敵 ---------- */
 function advSpawn(lv,boss){
-  const viewW=A.W/A.SH, side=Math.random()<0.5?-1:1;
+  const viewW=A.W/A.P, side=Math.random()<0.5?-1:1;
   const x = side<0 ? A.cam-0.3 : A.cam+viewW+0.3;
-  const hp=ADV.SL_HP*Math.pow(ADV.SL_HP_MUL,lv-1);
-  A.enemies.push({ x, lv, hp, max:hp, atk:ADV.SL_ATK*Math.pow(ADV.SL_ATK_MUL,lv-1), spd:Math.min(boss?0.75:1.1, ADV.SL_SPD*Math.pow(ADV.SL_SPD_MUL,lv-1)),
+  const hp=ADV.SL_HP+ADV.SL_HP_PER*(lv-1);
+  A.enemies.push({ x, lv, hp, max:hp, atk:ADV.SL_ATK+ADV.SL_ATK_PER*(lv-1), warn:0, zone:null, spd:Math.min(boss?0.75:1.1, ADV.SL_SPD*Math.pow(ADV.SL_SPD_MUL,lv-1)),
     w:boss?0.32:0.17, dir:-side, cd:0.8, st:null, frozen:0, dead:false, deadT:0, boss, hurt:0 });
 }
 function advEnemy(e,dt){
   if(e.dead){ e.deadT+=dt; return; }
   e.hurt=Math.max(0,e.hurt-dt);
-  if(e.frozen>0){ e.frozen-=dt; e.st=null; return; }   // 氷づけ：動けない
+  if(e.frozen>0){ e.frozen-=dt; e.st=null; e.warn=0; e.zone=null; return; }   // 氷づけ：動けない（攻撃も取り消し）
   const dx=A.x-e.x, dist=Math.abs(dx); e.cd-=dt;
+  // ❗：攻撃の0.5秒前に頭上に出る。そのあいだ敵は止まり、当たる範囲が地面に赤く出る
+  if(e.warn>0){ e.warn-=dt; if(e.warn<=0){ e.warn=0; e.st={t:0,hit:false}; } return; }
   if(e.st){ e.st.t+=dt; const T=e.st.t;
     if(T>0.25 && T<0.5) e.x+=e.dir*0.35*dt*(e.boss?1.5:1);   // とびかかる
-    if(!e.st.hit && T>=0.45){ e.st.hit=true; if(!A.dead && Math.abs(A.x-e.x)<e.w*0.5+0.12 && A.y<0.22) advHurt(e.atk); }
-    if(T>=0.75){ e.st=null; e.cd=1.0+Math.random()*0.5; }
+    if(!e.st.hit && T>=0.45){ e.st.hit=true; const z=e.zone; if(!A.dead && z && A.x+0.05>z.a && A.x-0.05<z.b && A.y<0.2) advHurt(e.atk); }
+    if(T>=0.75){ e.st=null; e.zone=null; e.cd=1.0+Math.random()*0.5; }
     return; }
   e.dir=dx>0?1:-1;
-  if(dist>e.w*0.5+0.1) e.x+=e.dir*e.spd*dt;
-  else if(e.cd<=0) e.st={t:0,hit:false};
+  // 前にいる仲間とは重ならないように、少し間をあけて並ぶ
+  const blocked=A.enemies.some(o=>o!==e&&!o.dead&&(o.x-e.x)*e.dir>0&&Math.abs(o.x-e.x)<(o.w+e.w)*0.42);
+  if(dist>e.w*0.5+0.1){ if(!blocked) e.x+=e.dir*e.spd*dt; }
+  else if(e.cd<=0){ e.warn=ADV.WARN; const reach=e.w*0.5+0.14+(e.boss?0.13:0.09);   // 当たる範囲＝体の前側〜とびかかる先
+    e.zone = e.dir>0 ? {a:e.x-e.w*0.3, b:e.x+reach} : {a:e.x-reach, b:e.x+e.w*0.3}; }
 }
 function advHurt(d){ if(A.inv0>0||A.dead) return; A.hp=Math.max(0,A.hp-d); A.hurtT=0.3; A.inv0=0.6; advPop(A.x,0.25,"-"+advNum(d),"#ff6a5a"); try{ SFX.ng(); }catch(e){} }
 const advNum = n => n>=100?Math.round(n).toLocaleString():(Math.round(n*10)/10).toString();
 function advDamageEnemy(e,d){
   e.hp-=d; e.hurt=0.15; advPop(e.x,0.22+(e.boss?0.15:0),advNum(d),"#ffe14a"); try{ SFX.tap(); }catch(x){}
-  if(e.hp<=0 && !e.dead){ e.dead=true; const gain=ADV.SL_XP*Math.pow(1.35,e.lv-1); advGainLv(gain); try{ SFX.coin(); }catch(x){} }
+  if(e.hp<=0 && !e.dead){ e.dead=true; e.zone=null;
+    // 経験値：Lv1同士なら+0.3。敵が強いほど多く、トトのLvが敵より上なほど少なくなる
+    const gain=ADV.SL_XP*(1+0.3*(e.lv-1))*Math.pow(0.5,Math.max(0,advLv()-e.lv));
+    advGainLv(gain); try{ SFX.coin(); }catch(x){} }
 }
 function advGainLv(g){ const before=advLv(); A.lvf+=g; const up=advLv()-before;
-  if(up>0){ A.hp=Math.min(advMaxHp(), A.hp+up); advPop(A.x,0.42,"Lv UP!","#7cf07c"); try{ SFX.level(); }catch(e){} } }
+  if(up>0){ A.hp=Math.min(advMaxHp(), A.hp+up*ADV.HEAL_PER_LV); advPop(A.x,0.42,"Lv UP!","#7cf07c"); try{ SFX.level(); }catch(e){} } }
 function advMelee(){
-  const reach=0.26, dmg=ADV.ATK0*advAtkMul();
+  const reach=0.26, dmg=advMeleeDmg();
   A.enemies.forEach(e=>{ if(!e.dead && (e.x-A.x)*A.dir>-0.05 && Math.abs(e.x-A.x)<reach+e.w*0.5) advDamageEnemy(e,dmg); });
   A.chests.forEach(c=>{ if(!c.open && (c.x-A.x)*A.dir>-0.05 && Math.abs(c.x-A.x)<reach+0.08) advHitChest(c); });
 }
 function advFire(it){ const sh=ADV.SHARD[it.k];
-  A.bolts.push({ x:A.x+A.dir*0.18, v:A.dir*1.9, life:1.6, dmg:sh.dmg*advAtkMul(), img:sh.bolt, freeze:sh.freeze||0, dir:A.dir, hitSet:new Set() });
+  A.bolts.push({ x:A.x+A.dir*0.18, v:A.dir*1.9, life:1.6, dmg:advShardDmg(it.k), img:sh.bolt, freeze:sh.freeze||0, dir:A.dir, hitSet:new Set() });
   it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0) A.inv.splice(i,1); A.eq=-1; advMsg(advT2("魔法の欠片を使い切った")); }
   else A.eq=A.inv.indexOf(it);
   advEquipView(); advBagRefresh();
@@ -5746,7 +5785,7 @@ function advFire(it){ const sh=ADV.SHARD[it.k];
 function advMaybeChest(side){
   if(Math.random()>=ADV.CHEST_CHANCE) return;
   const r=Math.random()*100, type = r<0.01?3 : r<19.01?2 : 1;   // 虹0.01%／赤い宝石19%／ふつう80%
-  const viewW=A.W/A.SH; A.chests.push({ x: side>0 ? A.cam+viewW+0.4+Math.random()*1.5 : A.cam-0.4-Math.random()*1.5, type, open:false, openT:0 });
+  const viewW=A.W/A.P; A.chests.push({ x: side>0 ? A.cam+viewW+0.4+Math.random()*1.5 : A.cam-0.4-Math.random()*1.5, type, open:false, openT:0 });
 }
 function advHitChest(c){
   if(c.type===3){ advMsg(advT2("虹の宝箱は「伝説の鍵」を使わないと開かない…")); return; }
@@ -5764,12 +5803,11 @@ function advOpenChest(c){
     A.inv.push(it); setTimeout(()=>A&&advPop(c.x,0.3+i*0.08,"+"+advT2(advItemName(it)),"#ffe14a"),i*250); });
   advBagRefresh();
 }
-setInterval(()=>{ if(A) A.chests.forEach(c=>{ if(c.open) c.openT+=0.25; }); },250);
 
 /* ---------- 死亡・復活 ---------- */
 function advDie(){
   if(A.dead) return; A.dead=true; A.deadT=0; A.atk=null; try{ SFX.ng(); }catch(e){}
-  const t=Math.floor(A.t), lv=advLv(); let rec=false;
+  const t=Math.floor(A.t), lv=advLv(); let rec=false; A.final={t,lv};
   if(t>(S.advBestT||0)){ S.advBestT=t; rec=true; } if(lv>(S.advBestL||0)){ S.advBestL=lv; rec=true; }
   save(); queueProfile(true);
   setTimeout(()=>advDeathScreen(t,lv,rec),1300);
@@ -5785,14 +5823,33 @@ async function advDeathScreen(t,lv,rec){
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
     <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません）")}</p>
     <button class="ad-btn" id="adRev" type="button" ${hearts?"":"disabled"}><img src="${typeof HEART_IMG!=="undefined"?HEART_IMG:""}" alt="">${advT2("ハート石を1個消費してこのまま復活する")}<small>${advT2("のこり")} ${hearts.toLocaleString()}${advT2("個")}</small></button>
+    <div class="ad-coin" id="adCoin"></div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
   document.getElementById("adv").appendChild(el);
-  el.querySelector("#adBack").onclick=()=>advClose();
+  const rw=advReward(t,lv,null); const cEl=el.querySelector("#adCoin");
+  const showRw=r=>{ cEl.innerHTML=`🪙 ${advT2("タイトルに戻ると")} <b>${r.coins.toLocaleString()}</b> ${advT2("コイン")}<small>${advT2("時間")} ${r.tc} ＋ Lv ${r.lc}${r.mul>1?` ×${r.mul}（${advT2("ランキング1位更新！")}）`:""}</small>`; };
+  showRw(rw); let rwFinal=rw;
+  advTop1(t,lv).then(top=>{ rwFinal=advReward(t,lv,top); if(el.isConnected) showRw(rwFinal); });
+  el.querySelector("#adBack").onclick=()=>{ const r=rwFinal; advClose(); advGiveCoins(r); };
   el.querySelector("#adRev").onclick=()=>{ if(!(S.heart>0)) return; S.heart--; save(); el.remove();
     A.dead=false; A.hp=advMaxHp(); A.inv0=3; A.revives++; A.enemies.forEach(e=>{ if(Math.abs(e.x-A.x)<1.2) e.x+=(e.x>=A.x?1:-1)*1.5; }); A.idleT=0; A.last=performance.now(); advMsg(advT2("ハート石の力で復活した！")); try{ SFX.reveal("S"); }catch(e){} };
   const r=await advRanks(); const a=el.querySelector("#adR1"), b=el.querySelector("#adR2");
   if(a) a.textContent=advRk(r.t); if(b) b.textContent=advRk(r.l);
 }
+// 冒険の報酬：生き延びた1分ごとに1コイン＋死亡したときのLvの数。ランキング1位を更新したら10倍、両方なら20倍
+function advReward(t,lv,top){ const tc=Math.floor(t/60000), lc=lv; const mul=((top&&top.t)?10:0)+((top&&top.l)?10:0)||1; return { tc, lc, mul, coins:(tc+lc)*mul }; }
+async function advTop1(t,lv){ const out={t:false,l:false}; if(!DB||!MYID) return out;
+  const cnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.limit(1).get())).size; }catch(e){ return null; } };
+  const col=DB.collection("profiles");
+  if(t>0 && t>=(S.advBestT||0)){ const c=await cnt(col.where("advT",">",t)); out.t=c===0; }   // この冒険の記録より上がだれもいない＝1位を更新
+  if(lv>0 && lv>=(S.advBestL||0)){ const c=await cnt(col.where("advL",">",lv)); out.l=c===0; }
+  return out; }
+function advGiveCoins(r){ if(!r||!r.coins) return; S.coins=(S.coins||0)+r.coins; save(); try{ SFX.coin(); }catch(e){}
+  const bg=document.createElement("div"); bg.className="sheet-bg center ttl-top"; bg.style.zIndex=130;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🪙</div><p>${advT2("冒険の報酬")}</p>
+    <div class="note" style="margin:0;text-align:center"><b style="font-size:22px">+${r.coins.toLocaleString()}</b> ${advT2("コイン")}<br><small>${advT2("時間")} ${r.tc} ＋ Lv ${r.lc}${r.mul>1?` ×${r.mul}`:""}</small></div>
+    <button class="btn gold" type="button">OK</button></div>`;
+  bg.setAttribute("translate","no"); document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); try{ render(); }catch(e){} }
 // 自分の自己ベストの順位だけを数える（ほかの人の順位や記録は表示しない）
 async function advRanks(){
   const out={t:null,l:null}; if(!DB||!MYID) return out;
@@ -5823,7 +5880,7 @@ function advBagRefresh(){
       <button class="ab-memo" type="button" id="abMemo">📜<br>${advT2("メモ")}</button></div>
       <button class="ab-fbtn" type="button" id="abFuse" ${a&&b?"":"disabled"}>${advT2("融合する")}</button></div>
     <div class="ab-bottom"><div class="ab-grid">${Array.from({length:ADV.INV_MAX},(_,i)=>slot(i)).join("")}</div>
-      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):`${advT2("攻撃力")} ${ADV.SHARD[sel.k].dmg}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("5秒こおらせる")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
+      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):`${advT2("攻撃力")} ${advShardDmg(sel.k)}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("5秒こおらせる")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
         <button class="ab-act use" type="button" id="abUse" ${sel&&sel.k==="key"?"":"disabled"}>${advT2("使う")}</button>
         <button class="ab-act eq" type="button" id="abEq" ${sel&&sel.k!=="key"?"":"disabled"}>${A.sel>=0&&A.eq===A.sel?advT2("外す"):advT2("装備する")}</button>
         <button class="ab-act drop" type="button" id="abDrop" ${sel?"":"disabled"}>${advT2("捨てる")}</button>
@@ -5857,7 +5914,8 @@ function advMemo(){
   document.getElementById("adv").appendChild(el);
   const ta=el.querySelector("#amT"); ta.value=S.advMemo;
   ta.oninput=()=>{ S.advMemo=ta.value; clearTimeout(ta._t); ta._t=setTimeout(save,600); };
-  el.querySelector("#amX").onclick=()=>{ S.advMemo=ta.value; save(); el.remove(); };
+  ta.onblur=()=>setTimeout(advFixView,60);
+  el.querySelector("#amX").onclick=()=>{ S.advMemo=ta.value; save(); ta.blur(); el.remove(); setTimeout(advFixView,60); setTimeout(advFixView,400); };
 }
 function advEquipView(){ const s=document.getElementById("apEqSlot"); if(!s||!A) return; const it=A.eq>=0?A.inv[A.eq]:null;
   s.innerHTML=it?`<img src="${advItemImg(it)}" alt=""><small>${it.u}</small>`:""; }
@@ -5871,14 +5929,14 @@ function advHud(){
 
 /* ---------- 描画 ---------- */
 function advDraw(){
-  const cv=document.getElementById("advCv"); if(!cv||!A||!A.W) return; const g=cv.getContext("2d"), W=A.W, H=A.H, SH=A.SH, GY=SH;
+  const cv=document.getElementById("advCv"); if(!cv||!A||!A.W) return; const g=cv.getContext("2d"), W=A.W, H=A.H, SH0=A.SH, GY=SH0, SH=A.P;
   g.imageSmoothingEnabled=false;
   // 空
   const sk=g.createLinearGradient(0,0,0,GY); sk.addColorStop(0,"#5ab8f5"); sk.addColorStop(1,"#bfe7ff"); g.fillStyle=sk; g.fillRect(0,0,W,GY);
   // 雲（遠くはゆっくり）
   const cl=["cl_c1","cl_c3","cl_c2","cl_c4","cl_c1"];
-  cl.forEach((n,i)=>{ const im=ADV_IMG[n]; if(!im||!im.complete) return; const span=W*1.6, w=SH*(0.35+0.08*i), h=w*im.height/im.width;
-    let x=((i*0.37*span - A.cam*SH*0.15 - performance.now()*0.008*(1+i*0.3))%span+span)%span-w; g.globalAlpha=.95; g.drawImage(im,x,SH*(0.06+0.11*i),w,h); g.globalAlpha=1; });
+  cl.forEach((n,i)=>{ const im=ADV_IMG[n]; if(!im||!im.complete) return; const span=W*1.6, w=SH0*(0.35+0.08*i), h=w*im.height/im.width;
+    let x=((i*0.37*span - A.cam*SH*0.2 - performance.now()*0.008*(1+i*0.3))%span+span)%span-w; g.globalAlpha=.95; g.drawImage(im,x,SH0*(0.06+0.11*i),w,h); g.globalAlpha=1; });
   // 地面
   const sx=x=>(x-A.cam)*SH, gy=y=>GY-y*SH;
   g.fillStyle="#9a6a3c"; g.fillRect(0,GY,W,H-GY);
@@ -5887,6 +5945,9 @@ function advDraw(){
   // 宝箱
   A.chests.forEach(c=>{ const im=advImg("ch"+c.type+(c.open?"o":"")); if(!im.complete) return; const h=SH*(c.type===3?0.17:0.13), w=h*im.width/im.height;
     g.globalAlpha=c.open?Math.max(0,1-(c.openT-2.5)/1.5):1; g.drawImage(im,sx(c.x)-w/2,GY-h+SH*0.01,w,h); g.globalAlpha=1; });
+  // 敵の攻撃が当たる範囲（❗が出てから攻撃が終わるまで、地面を赤く）
+  A.enemies.forEach(e=>{ if(e.dead||!e.zone) return; const a=sx(e.zone.a), b=sx(e.zone.b), on=e.warn>0?0.25+0.2*Math.abs(Math.sin(performance.now()/60)):0.5;
+    g.fillStyle=`rgba(255,40,40,${on})`; g.fillRect(a,GY-SH*0.02,b-a,SH*0.05); g.strokeStyle="rgba(255,60,60,.9)"; g.lineWidth=2*A.dpr; g.strokeRect(a,GY-SH*0.02,b-a,SH*0.05); });
   // 敵
   A.enemies.forEach(e=>{ const bh=SH*(e.boss?0.26:0.12);
     let im, h, w, cx=sx(e.x), flip=false, alpha=e.dead?Math.max(0,1-e.deadT/0.6):1;
@@ -5897,9 +5958,10 @@ function advDraw(){
       if(e.boss) g.filter="hue-rotate(150deg) saturate(2)"; else if(e.frozen>0) g.filter="hue-rotate(20deg) brightness(1.3) saturate(.6)"; else if(e.hurt>0) g.filter="brightness(2)";
       g.drawImage(im,-w/2,-h,w,h); g.restore(); g.filter="none"; }
     if(e.frozen>0&&!e.dead){ g.fillStyle="rgba(170,225,255,.45)"; g.fillRect(cx-bh*0.75,GY-bh*1.05,bh*1.5,bh*1.05); }
-    if(!e.dead){ g.font=`900 ${Math.round(SH*0.035)}px sans-serif`; g.textAlign="center"; g.fillStyle=e.boss?"#ff4d4d":"#fff"; g.strokeStyle="#000"; g.lineWidth=3*A.dpr;
+    if(!e.dead){ g.font=`900 ${Math.round(Math.max(11*A.dpr,SH*0.04))}px sans-serif`; g.textAlign="center"; g.fillStyle=e.boss?"#ff4d4d":"#fff"; g.strokeStyle="#000"; g.lineWidth=3*A.dpr;
       const ly=GY-bh-SH*0.03; g.strokeText("Lv"+e.lv,cx,ly); g.fillText("Lv"+e.lv,cx,ly);
-      g.fillStyle="#000a"; g.fillRect(cx-bh*0.5,ly+4*A.dpr,bh,4*A.dpr); g.fillStyle="#ff5a5a"; g.fillRect(cx-bh*0.5,ly+4*A.dpr,bh*Math.max(0,e.hp/e.max),4*A.dpr); } });
+      g.fillStyle="#000a"; g.fillRect(cx-bh*0.5,ly+4*A.dpr,bh,4*A.dpr); g.fillStyle="#ff5a5a"; g.fillRect(cx-bh*0.5,ly+4*A.dpr,bh*Math.max(0,e.hp/e.max),4*A.dpr);
+      if(e.warn>0){ const fs=Math.round(Math.max(16*A.dpr,SH*0.07)); g.font=`${fs}px sans-serif`; g.textAlign="center"; g.fillText("❗",cx,ly-fs*0.35); } } });
   // 弾
   A.bolts.forEach(b=>{ const im=advImg(b.img); if(!im.complete) return; const h=SH*0.07, w=h*im.width/im.height; g.save(); g.translate(sx(b.x),GY-SH*0.09); if(b.dir<0) g.scale(-1,1); g.drawImage(im,-w/2,-h/2,w,h); g.restore(); });
   // トト
@@ -5917,7 +5979,7 @@ function advDraw(){
     if(A.flapT>0){ g.strokeStyle="#ffffffcc"; g.lineWidth=2*A.dpr; for(let i=0;i<3;i++){ g.beginPath(); g.arc(tx-A.dir*TH*0.45,ty-TH*0.55,TH*(0.2+i*0.08),-0.6,0.6); g.stroke(); } }
   }
   // 数字
-  A.pops.forEach(p=>{ g.globalAlpha=Math.max(0,1-p.t/1.1); g.font=`900 ${Math.round(SH*0.045)}px sans-serif`; g.textAlign="center"; g.lineWidth=4*A.dpr; g.strokeStyle="#000"; g.fillStyle=p.col;
+  A.pops.forEach(p=>{ g.globalAlpha=Math.max(0,1-p.t/1.1); g.font=`900 ${Math.round(Math.max(14*A.dpr,SH*0.055))}px sans-serif`; g.textAlign="center"; g.lineWidth=4*A.dpr; g.strokeStyle="#000"; g.fillStyle=p.col;
     const y=gy(p.y)-p.t*SH*0.12; g.strokeText(p.txt,sx(p.x),y); g.fillText(p.txt,sx(p.x),y); g.globalAlpha=1; });
 }
 /* ---------- タイトル画面のランキング表示 ---------- */
