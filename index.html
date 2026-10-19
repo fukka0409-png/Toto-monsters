@@ -1988,6 +1988,9 @@ const I18N_EN = {
 "冒険者Lv+15": "Adventurer Lv+15",
 "上がる（A・B・Cランクはコインのみ）。": " (A/B/C ranks give coins only).",
 "🎁 特別配布！": "🎁 Special Gift!",
+"🙏 お詫び": "🙏 Our apologies",
+"一部バグが起こっていたので修正しました🙏": "We found and fixed a bug 🙏",
+"お詫びの{0}コインです🙏": "Here are {0} coins as an apology 🙏",
 "10/18のランク戦で": "For placing ",
 "10/19のランク戦で": "For placing ",
 "に入ったごほうびとして、": " in the 10/19 Ranked Match,",
@@ -2624,7 +2627,8 @@ function applyLoginDecay(){
   const today="ss"+seasonNow();
   if(S.lastLogin!==today){ S.lastLogin=today; try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
 }
-setTimeout(applyLoginDecay,0);   // ランク戦タイマー（seasonNow）の準備ができてから
+setTimeout(applyLoginDecay,0);
+setTimeout(()=>{ try{ checkApology(); }catch(e){} },4000);   // バグのお詫び（ログインしていない人にも）   // ランク戦タイマー（seasonNow）の準備ができてから
 
 /* ---------- 配置モンスター・バトル ----------
    ・プロフィールに魔物を1体配置できる（レベルは自分にしか見えない）
@@ -2806,7 +2810,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); checkApology(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -5047,6 +5051,24 @@ async function checkSeason(){
     setTimeout(()=>{ try{ hourlyDecay(); checkBattles(); checkItems(); }catch(e){} },2500);   // 終了後に受けた分は、新しいランク戦に反映
   }catch(e){}
   seasonBusy=false;
+}
+/* ---------- バグのお詫び ----------
+   バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
+   まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
+const APOLOGIES = [
+  { id:"fix-2026-10-20-ranktick", coins:1000 },   // 上位キープボーナスが止まっていた・「あなたは◯位」のずれ
+];
+function checkApology(){
+  S.apol=S.apol||[];
+  if(isFreshSave(S)){ APOLOGIES.forEach(a=>{ if(!S.apol.includes(a.id)) S.apol.push(a.id); }); return; }
+  const fresh=APOLOGIES.filter(a=>!S.apol.includes(a.id)); if(!fresh.length) return;
+  const total=fresh.reduce((t,a)=>t+a.coins,0);
+  fresh.forEach(a=>S.apol.push(a.id)); S.coins+=total; save(); try{ renderCoins(); }catch(e){}
+  const show=()=>{ if(document.querySelector(".reveal")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
+    const g=document.createElement("div"); g.className="reveal";
+    g.innerHTML=`<div class="burst"></div><h3>🙏 お詫び</h3><p class="note" style="text-align:center;max-width:320px">一部バグが起こっていたので修正しました🙏<br>お詫びの${total.toLocaleString()}コインです🙏</p><button class="btn gold" type="button">OK</button>`;
+    document.body.appendChild(g); try{ SFX.coin(); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
+  show();
 }
 // 特別配布：2026-10-18 22:00に終わったランク戦（1）の1〜3位に Zランク「トランプウサギ」（1回だけ）
 const USAGI_SS=1, USAGI_ID=87;
