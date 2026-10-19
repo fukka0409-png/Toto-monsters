@@ -5648,7 +5648,7 @@ const advItemIcon = it => it.k==="key" ? `<span class="ab-key">🗝</span>` : `<
 // 記録は「どの区切りか」の番号といっしょに保存する
 const advPer = () => ADV.PERIOD_BASE + Math.floor((gnow()-ADV.PERIOD_ORIGIN)/ADV.PERIOD_MS);
 const advPerEnd = p => ADV.PERIOD_ORIGIN + (p-ADV.PERIOD_BASE+1)*ADV.PERIOD_MS;
-function advSync(){ const p=advPer(); if(S.advP!==p){ if(S.advP!=null&&(S.advBestT||S.advBestL)) S.advPrev={p:S.advP,end:S.advPEnd||(S.advP+1)*(S.advPMs||3600000),t:S.advBestT||0,l:S.advBestL||0}; S.advP=p; S.advPEnd=advPerEnd(p); S.advBestT=0; S.advBestL=0; } return p; }
+function advSync(){ const p=advPer(); if(S.advP!==p){ if(S.advP!=null&&(S.advBestT||S.advBestL)) S.advPrev={p:S.advP,end:S.advPEnd||(S.advP+1)*(S.advPMs||3600000),t:S.advBestT||0,l:S.advBestL||0}; S.advP=p; S.advPEnd=advPerEnd(p); S.advBestT=0; S.advBestL=0; S.advHiT=0; S.advHiL=0; } return p; }
 const ADV_PRIZE=[5000,3000,1000];   // 3時間ごとのランキング報酬（1位・2位・3位）。生き延びた時間・最高レベルのそれぞれで
 const advCnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
 // 前の3時間のランキングが終わっていたら、自分の順位をしらべて報酬をわたす（1回だけ）
@@ -5694,7 +5694,7 @@ function openAdventureIntro(){
     ["🦅","Tap Jump again in the air to flap your wings (up to 3 jumps)."],
     ["⭐","Toto levels up from the damage dealt. Higher Lv = more power and HP."],
     ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones! Use a Heal-a-thing to restore 30 HP."],
-    ["🏆","Rankings (time survived / best Lv) reset every 3 hours. When the 3 hours end, #1 gets 5,000, #2 3,000 and #3 1,000 coins (in each ranking)."],
+    ["🏆","Rankings (time survived / best Lv) reset every 3 hours. Your rank uses your LATEST record in those 3 hours (a lower record lowers your rank). When the 3 hours end, #1 gets 5,000, #2 3,000 and #3 1,000 coins (in each ranking)."],
     ["🏃","After 1 minute you can escape and clear. Beating the boss gives 10× the reward!"],
     ["🪦","If you die: no reward, and your memo is erased. (You can revive with a heart stone.)"]]:[
     ["⚔️","敵はLv1〜Lv9まで、各Lvを10体ずつたおすと次のLvへ。最後にLv10のボスが登場！ たおせばステージクリア！"],
@@ -5702,7 +5702,7 @@ function openAdventureIntro(){
     ["🦅","空中でもう一度ジャンプを押すと、翼でパタパタ（3段ジャンプまで）"],
     ["⭐","トトのLvは、敵に与えたダメージで上がる。Lvが上がると攻撃力と体力がアップ"],
     ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！「回復するやつ」を使うと体力が30回復"],
-    ["🏆","ランキング（生き延びた時間・最高レベル）は3時間ごとにリセット。終わったときに1位5000・2位3000・3位1000コイン（それぞれのランキングで）"],
+    ["🏆","ランキング（生き延びた時間・最高レベル）は3時間ごとにリセット。順位は、その3時間で最後に出した記録で決まる（前より下がればその分順位も下がる）。終わったときに1位5000・2位3000・3位1000コイン（それぞれのランキングで）"],
     ["🏃","1分をこえたら「脱出してクリアする」ができる。ボスをたおしてクリアすると報酬10倍！"],
     ["🪦","死亡すると報酬はなし、メモも消えてしまう…（ハート石で復活はできる）"]];
   bg.innerHTML=`<div class="swear adv-intro" role="dialog" aria-modal="true" aria-labelledby="aiT"><p id="aiT">🗺️ ${L?"Toto's Adventure":"トトの冒険"}</p>
@@ -5760,7 +5760,7 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
   "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward",
   "脱出してクリアする":"Escape & clear","{n}を補充した！（のこり{m}個）":"Reloaded {n}! ({m} left)","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
   "回復するやつを使った！ 体力が回復した":"Used the Heal-a-thing! HP restored","宝箱のコイン":"chest coins","🪙 {n}コインを見つけた！（脱出・クリアするともらえる）":"🪙 Found {n} coins! (You get them when you escape or clear)",
-  "ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・3時間ごとにリセット）":"Ranks are for your personal best (others' ranks are hidden · resets every 3 hours)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
+  "ランキングは、この3時間で最後に出した記録の順位です（ほかの冒険者の順位は見えません・3時間ごとにリセット）":"Ranks use your latest record in these 3 hours (others' ranks are hidden · resets every 3 hours)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
   "👑 Lv10のボスが現れた！":"👑 The Lv10 BOSS appeared!","Lv9の魔物をすべてたおした！ ボスがやってくる…！":"All Lv9 monsters defeated! The boss is coming...!",
   "Lv{n}の魔物が現れはじめた！":"Lv{n} monsters are appearing!","このままタイトルに戻ると、報酬はなし。メモも消えてしまう…":"If you return to the title now: no reward, and your memo is erased...",
   "脱出してクリアしますか？（ボスをたおすと報酬は10倍）":"Escape and clear now? (Beating the boss gives 10× the reward)","ステージクリア！":"Stage clear!","脱出成功！":"Escaped!",
@@ -5996,8 +5996,11 @@ function advOpenChest(c){
 }
 
 /* ---------- 死亡・復活 ---------- */
+// ランキングに出るのは「この区切りの中で最後に出した記録」（前より下がっていても、その記録で順位が決まる）
+// advBestT/L＝ランキング用の最新の記録、advHiT/L＝この区切りの自己ベスト（画面の「最高記録」表示用）
 function advRecord(t,lv){ let rec=false; advSync();
-  if(t>(S.advBestT||0)){ S.advBestT=t; rec=true; } if(lv>(S.advBestL||0)){ S.advBestL=lv; rec=true; }
+  if(t>(S.advHiT||0)){ S.advHiT=t; rec=true; } if(lv>(S.advHiL||0)){ S.advHiL=lv; rec=true; }
+  S.advBestT=t; S.advBestL=lv;
   save(); queueProfile(true); return rec; }
 function advDie(){
   if(A.dead||A.over) return; A.dead=true; A.deadT=0; A.atk=null; try{ SFX.ng(); }catch(e){}
@@ -6013,7 +6016,7 @@ async function advDeathScreen(t,lv,rec){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・3時間ごとにリセット）")}</p><div class="ad-next"></div>
+    <p class="ad-sub">${advT2("ランキングは、この3時間で最後に出した記録の順位です（ほかの冒険者の順位は見えません・3時間ごとにリセット）")}</p><div class="ad-next"></div>
     <button class="ad-btn" id="adRev" type="button" ${hearts?"":"disabled"}><img src="${typeof HEART_IMG!=="undefined"?HEART_IMG:""}" alt="">${advT2("ハート石を1個消費してこのまま復活する")}<small>${advT2("のこり")} ${hearts.toLocaleString()}${advT2("個")}</small></button>
     <div class="ad-coin lost">${advT2("このままタイトルに戻ると、報酬はなし。メモも消えてしまう…")}</div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
@@ -6036,7 +6039,7 @@ async function advFinish(kind){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・3時間ごとにリセット）")}</p><div class="ad-next"></div>
+    <p class="ad-sub">${advT2("ランキングは、この3時間で最後に出した記録の順位です（ほかの冒険者の順位は見えません・3時間ごとにリセット）")}</p><div class="ad-next"></div>
     <div class="ad-coin" id="adCoin"></div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
   document.getElementById("adv").appendChild(el);
@@ -6145,7 +6148,7 @@ function advHud(){
   if(!A) return; const $$=id=>document.getElementById(id);
   const lv=advLv(), mx=advMaxHp(); if(A.hp>mx) A.hp=mx;
   $$("ahLv").textContent=lv; $$("ahHp").style.width=Math.max(0,A.hp/mx*100)+"%"; $$("ahHpN").textContent=`${advNum(A.hp)}/${mx}`;
-  $$("ahT").textContent=advFmt(A.t); advSync(); $$("ahBest").textContent=`${advFmt(S.advBestT||0)}/Lv.${S.advBestL||1}`;
+  $$("ahT").textContent=advFmt(A.t); advSync(); $$("ahBest").textContent=`${advFmt(S.advHiT||S.advBestT||0)}/Lv.${S.advHiL||S.advBestL||1}`;
   $$("ahCnt").textContent=(S.advCount||0)+(LANG==="en"?"":"回");
   const pg=$$("advProg"); if(pg){ const lv=A.stageLv; const txt = A.bossDown ? advT2("ボス討伐！") : lv>=10 ? "👑 "+advT2("ボス Lv10") : advT2("敵Lv{n} あと{m}体").replace("{n}",lv).replace("{m}",ADV.PER_LV-A.killed);
     if(pg.textContent!==txt) pg.textContent=txt; pg.classList.toggle("boss",lv>=10); }
