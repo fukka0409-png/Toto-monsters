@@ -1715,8 +1715,8 @@ const I18N_EN = {
 "自分が": "If you ",
 "3位以内に入ったら、その時点で投資は無効": "reach the top 3 yourself, your investment is void at that moment",
 "（投資額は没収）。自分には投資できない。": " (the amount is confiscated). You can't invest in yourself.",
-"投資された冒険者は、ランク戦終了時に投資額の合計の": "Adventurers who receive investments get ",
-"をもらえる。": " of the total at season end.",
+"投資された冒険者は、投資されたときに、すぐに投資額の": "Adventurers who receive an investment immediately get ",
+"をもらえる。": " of it.",
 "投資中": "Investing",
 "💰 冒険者に投資する{0}": "💰 Invest in an Adventurer{0}",
 "💰 冒険者に投資する": "💰 Invest in an Adventurer",
@@ -1729,6 +1729,9 @@ const I18N_EN = {
 "順位なし": "unranked",
 "💸 投資先の{0}さんは{1}…（−{2}コイン）": "💸 Your pick {0} finished {1}… (−{2} coins)",
 "🤝 投資家{0}人から、投資額の10%（+{1}コイン）": "🤝 10% of investments from {0} investor(s) (+{1} coins)",
+"💰 投資家から投資されました！": "💰 An investor invested in you!",
+"あなたは今期待されています✨": "You're in the spotlight right now ✨",
+"{0}コインの10%を受け取りました！！（+{1}コイン）": "You received 10% of {0} coins!! (+{1} coins)",
 "💰 投資家 {0}人": "💰 {0} investor(s)",
 "現在{0}位 ・ Lv{1}": "Now #{0} · Lv{1}",
 "詳細": "Info",
@@ -1749,7 +1752,7 @@ const I18N_EN = {
 "（0コインまで）": " (down to 0 coins)",
 "・投資は1回のランク戦で1人だけ。投資したときにコインは減りません": "• 1 investment per season. Investing doesn't take coins up front",
 "・あなたが3位以内に入ったら、その時点で投資は無効（投資額は没収）": "• If you reach the top 3, your investment is void at that moment (amount confiscated)",
-"・投資された冒険者は、ランク戦終了時に投資額の10%をもらえる": "• Adventurers who receive investments get 10% at season end",
+"・投資された冒険者は、投資されたときに、すぐに投資額の10%をもらえる": "• Adventurers who receive an investment immediately get 10% of it",
 "あなたが3位以内に入ったので、この投資は無効になりました（投資額を没収）": "You reached the top 3, so this investment was voided (amount confiscated)",
 "いまの順位（{0}位）のまま終わると：{1}": "If the season ends at the current rank (#{0}): {1}",
 "🥇 1位": "🥇 1st",
@@ -2792,8 +2795,9 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
+    clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
 }
@@ -3599,7 +3603,7 @@ function openRules(){
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（22:00のランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>${SELL.L.toLocaleString()}コイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
     ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
-    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前＝12:00まで</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、ランク戦終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"w")],
+    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前＝12:00まで</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>10%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>${U(`📖 魔物のコンプ率が<b>100%</b>（限定ランクをのぞく全種）になると、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが${COMP_EXP_MUL}倍</b>`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li>${U("<li>💰 Sランクの魔物を売却すると、コインに加えて<b>冒険者Lv+5</b>、Zランクは<b>冒険者Lv+15</b>上がる（A・B・Cランクはコインのみ）。</li>","x")}<li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
@@ -4343,7 +4347,7 @@ function pullDeco(n, ticket){
    1回のランク戦で2人まで（同じ人には1回）。金額は自由（持っているコインまで）。投資した時点でコインが減る。
    ランク戦終了時の投資先の順位で：1位 投資額の7倍もらえる／2位 5倍／3位 2倍／4位以下 投資額の10倍を失う（投資した分もふくめて合計。0コインまで）
    投資した自分が3位以内に入ったら、その時点で投資は無効（投資した分は戻らない）
-   投資された人は、ランク戦終了時に投資額の合計の10%をもらえる */
+   投資された人は、投資されたときにすぐ投資額の10%をもらえる（2026-10-20〜。checkInvestIncoming） */
 const INV_MUL = {1:7, 2:5, 3:2}, INV_LOSE = 10, INV_GIVE = 0.1;
 const INV_CLOSE_MS = 10*HOUR_MS;   // 投資できるのはランク戦終了の10時間前（12:00）まで
 const INV_RESET_AT = Date.parse("2026-10-17T19:45:00+09:00");   // これより前の投資はすべて解除（払ったコインは返す）
@@ -4398,6 +4402,31 @@ function checkInvestVoid(){
   el.innerHTML=`<h3>投資が無効になりました</h3><p class="note" style="text-align:center;max-width:320px">あなたがランキング${myRank}位に入ったので、${L.map(iv=>`<span translate="no">${esc(iv.name||"")}</span>さん`).join("・")}への投資は無効になりました。<br><b style="color:#ff6a5a">−${lose.toLocaleString()}コイン</b>（投資額を没収）</p><button class="btn" type="button">OK</button>`;
   document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); };
 }
+// 投資されたら、すぐに投資額の10%を受け取る（1つの投資につき1回だけ）
+let invInBusy=false;
+async function checkInvestIncoming(ss){
+  if(invInBusy||!DB||!MYID) return; invInBusy=true;
+  try{
+    ss = ss ?? seasonNow();
+    const r=await withTO(DB.collection("invests").where("def","==",MYID).where("ss","==",ss).get());
+    S.invGot=S.invGot||{}; const got=S.invGot;
+    const fresh=r.docs.filter(d=>{ const x=d.data(); return x && (x.at||0)>=INV_RESET_AT && !x.void && x.att!==MYID && !got[d.id]; });
+    if(fresh.length){
+      const items=fresh.map(d=>{ const x=d.data(), g=Math.floor((x.amt||0)*INV_GIVE); got[d.id]=1; return {amt:x.amt||0, g}; });
+      const total=items.reduce((a,x)=>a+x.g,0);
+      // 古いランク戦の受け取り記録は消す（データを軽く）
+      Object.keys(got).forEach(k=>{ const m=k.match(/_(\d+)(?:_2)?$/); if(m && +m[1]<seasonNow()-2) delete got[k]; });
+      S.coins+=total; save(); renderCoins(); try{ SFX.reveal("S"); SFX.coin(); }catch(e){}
+      const show=()=>{ if(document.querySelector(".reveal")) return setTimeout(show,1500);
+        const el=document.createElement("div"); el.className="reveal";
+        el.innerHTML=`<div class="burst"></div><h3>💰 投資家から投資されました！</h3><p class="note" style="text-align:center;max-width:330px">あなたは今期待されています✨<br><br>
+          ${items.map(x=>`${x.amt.toLocaleString()}コインの10%を受け取りました！！（+${x.g.toLocaleString()}コイン）`).join("<br>")}</p><button class="btn gold" type="button">OK</button>`;
+        document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); }; };
+      show(); render();
+    }
+  }catch(e){}
+  invInBusy=false;
+}
 async function settleInvest(old, rank, q, mine, coinsSoFar){
   const out={delta:0, lines:[]};
   resetOldInvest();
@@ -4416,9 +4445,8 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
     }
   }
   S.invs=invFix().filter(x=>x.ss>old);
-  try{ const r=await DB.collection("invests").where("def","==",MYID).where("ss","==",old).get();
-    const docs=r.docs.map(d=>d.data()).filter(invValid), sum=docs.reduce((a,x)=>a+(x.amt||0),0), give=Math.floor(sum*INV_GIVE);
-    if(give>0){ out.delta+=give; out.lines.push(`🤝 投資家${docs.length}人から、投資額の10%（+${give.toLocaleString()}コイン）`); } }catch(e){}
+  // 投資された分の10%は、投資されたときにすぐ受け取る（checkInvestIncoming）。精算では受け取らない
+  try{ await checkInvestIncoming(old); }catch(e){}   // まだ受け取っていない前のランク戦の分だけ、ここで受け取る
   return out;
 }
 const invRow=(r,i)=>`<li data-iv="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button">${avatarImg(r.icon,56)}
@@ -4490,7 +4518,7 @@ function renderInvest(){
       ・投資できるのはランク戦終了の10時間前（12:00）まで<br>
       ・あなたが3位以内に入ったら、その時点で投資は無効（投資額は没収）<br>
       ・一度3位以内に入ったら、4位以下になってもそのランク戦は投資できない<br>
-      ・投資された冒険者は、ランク戦終了時に投資額の10%をもらえる</div>${body}`;
+      ・投資された冒険者は、投資されたときに、すぐに投資額の10%をもらえる</div>${body}`;
   $("#backHome").onclick=()=>{ homeMode="scene"; render(); };
   const qi=$("#ivQ"); if(qi){ const f=()=>{ const q=normName(invQ); let n=0; document.querySelectorAll(".inv-list li").forEach(li=>{ const ok=!q||li.dataset.nm.includes(q); li.hidden=!ok; if(ok) n++; });
       const h=$("#ivHit"); if(h) h.innerHTML=q&&!n?`<div class="empty" style="padding:14px">「${esc(invQ)}」さんは見つかりませんでした</div>`:""; };
