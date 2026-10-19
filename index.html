@@ -5600,10 +5600,11 @@ function showNewMonsters(){
    ・ボスをたおせばステージクリア（報酬10倍）。1分をこえたら「脱出してクリアする」もできる
    ・死亡すると報酬はなく、メモも消える（ハート石で復活はできる）
    ・トトのLvは「与えたダメージ」で上がる。攻撃力は 装備なし+5／魔法の欠片+10（Lvごと）、体力上限+12・体力6回復
-   ・攻撃する0.5秒前に、敵の頭上に「❗」と、攻撃が当たる範囲（地面の赤い帯）が出る
+   ・攻撃する0.2秒前に、敵の頭上に「❗」と、攻撃が当たる範囲（地面の赤い帯）が出る
    ・魔法は、向いている方向でいちばん近い的（敵か宝箱）に飛んでいく。装備なしより遠くまで届く
    ・リュックを開いている間は、タイマーも魔物も止まる
    ・魔物をたおすと 波動魔法の欠片20%・回復するやつ40%・氷魔法の欠片10% で落とす
+   ・画面から見えなくなって2秒たった魔物は、トトの進む方向の少し先の上空から降ってくる
    ・魔物は基本、右からやってくる。トトより左へ通りすぎた魔物は、はなれるほど速く近づいてくる
    ・30秒動かないと、ボスなみに強い魔物がおそってくる（たおしてもクリアにはならない）
    ・宝箱：新しい場所に進むと45%で出現（ふつう80%／赤い宝石19%／虹0.01%）
@@ -5614,20 +5615,20 @@ const ADV = {
   COUNT_SEC: 30, IDLE_SEC: 30, INV_MAX: 20, ESCAPE_SEC: 60, PER_LV: 10, CLEAR_MUL: 10,
   HP0: 10, HP_PER_LV: 12, HEAL_PER_LV: 6, ATK0: 2, ATK_PER_LV: 5, MAG_PER_LV: 10,
   MELEE_REACH: 0.2, MAGIC_RANGE: 1.5,
-  WARN: 0.5, ZOOM: 0.68,
+  WARN: 0.2, ZOOM: 0.68,
   CHEST_CHANCE: 0.45, CHUNK: 2.6,
   // 敵のLvごとの強さ（体力・攻撃力・速さ・同時に出てくる数）。Lv10はボス（Lv9のおよそ3倍）
   SL: [null,
-    {hp:6,   atk:1,   spd:.20, max:4},
-    {hp:14,  atk:2,   spd:.24, max:4},
-    {hp:28,  atk:4,   spd:.29, max:4},
-    {hp:70,  atk:10,  spd:.35, max:3},
-    {hp:100, atk:14,  spd:.41, max:3},
-    {hp:140, atk:19,  spd:.50, max:3},
-    {hp:220, atk:28,  spd:.60, max:2},
-    {hp:280, atk:34,  spd:.70, max:2},
-    {hp:350, atk:40,  spd:.80, max:2},
-    {hp:1050,atk:120, spd:.70, max:1}],
+    {hp:6,   atk:1,   spd:0.1, max:5},
+    {hp:14,  atk:2,   spd:0.12, max:5},
+    {hp:28,  atk:4,   spd:0.145, max:5},
+    {hp:70,  atk:10,  spd:0.175, max:4},
+    {hp:100, atk:14,  spd:0.205, max:4},
+    {hp:140, atk:19,  spd:0.25, max:4},
+    {hp:220, atk:28,  spd:0.3, max:3},
+    {hp:280, atk:34,  spd:0.35, max:3},
+    {hp:350, atk:40,  spd:0.4, max:3},
+    {hp:1050,atk:120, spd:0.35, max:1}],
   // トトのLvが上がるのに必要な「与えたダメージの合計」
   XP: [0,0,40,150,300,450,1100,2000,3400,5500,8300,11800,16000],
   HEAL: 30, PERIOD_MS: 60*60000,
@@ -5687,7 +5688,7 @@ function openAdventureIntro(){
   const L=LANG==="en";
   const rows=L?[
     ["⚔️","Defeat 10 monsters of each level (Lv1→Lv9). Then the Lv10 BOSS appears — beat it to clear the stage!"],
-    ["❗","A monster shows ❗ 0.5s before it attacks. The red band on the ground is where it hits — jump or step away!"],
+    ["❗","A monster shows ❗ 0.2s before it attacks. The red band on the ground is where it hits — jump or step away!"],
     ["🦅","Tap Jump again in the air to flap your wings (up to 3 jumps)."],
     ["⭐","Toto levels up from the damage dealt. Higher Lv = more power and HP."],
     ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones! Use a Heal-a-thing to restore 30 HP."],
@@ -5695,7 +5696,7 @@ function openAdventureIntro(){
     ["🏃","After 1 minute you can escape and clear. Beating the boss gives 10× the reward!"],
     ["🪦","If you die: no reward, and your memo is erased. (You can revive with a heart stone.)"]]:[
     ["⚔️","敵はLv1〜Lv9まで、各Lvを10体ずつたおすと次のLvへ。最後にLv10のボスが登場！ たおせばステージクリア！"],
-    ["❗","敵は攻撃する0.5秒前に頭上に「❗」を出す。地面の赤い帯が攻撃の当たる範囲。ジャンプかはなれてよけよう！"],
+    ["❗","敵は攻撃する0.2秒前に頭上に「❗」を出す。地面の赤い帯が攻撃の当たる範囲。ジャンプかはなれてよけよう！"],
     ["🦅","空中でもう一度ジャンプを押すと、翼でパタパタ（3段ジャンプまで）"],
     ["⭐","トトのLvは、敵に与えたダメージで上がる。Lvが上がると攻撃力と体力がアップ"],
     ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！「回復するやつ」を使うと体力が30回復"],
@@ -5755,7 +5756,7 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
   "近くに虹の宝箱がない…":"No rainbow chest nearby...","達成レベル":"Level reached","魔法の欠片を使い切った":"The magic shard is used up",
   "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","波動魔法の欠片":"Wave Magic Shard","氷魔法の欠片":"Ice Magic Shard","伝説の鍵":"Legendary Key",
   "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward",
-  "脱出してクリアする":"Escape & clear","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
+  "脱出してクリアする":"Escape & clear","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
   "回復するやつを使った！ 体力が回復した":"Used the Heal-a-thing! HP restored","宝箱のコイン":"chest coins","🪙 {n}コインを見つけた！（脱出・クリアするともらえる）":"🪙 Found {n} coins! (You get them when you escape or clear)",
   "ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）":"Ranks are for your personal best (others' ranks are hidden · resets every hour)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
   "👑 Lv10のボスが現れた！":"👑 The Lv10 BOSS appeared!","Lv9の魔物をすべてたおした！ ボスがやってくる…！":"All Lv9 monsters defeated! The boss is coming...!",
@@ -5867,7 +5868,7 @@ function advStep(dt){
   // 弾
   // 魔法：ねらった的（敵か宝箱）に向かって飛んでいく
   A.bolts.forEach(b=>{ b.life-=dt; const tg=b.tg;
-    if(tg && !(tg.dead||tg.open)){ const tx=tg.x, ty=tg.chest?0.05:advEH(tg)*0.5, dx=tx-b.x, dy=ty-b.y, d=Math.hypot(dx,dy), st=2.4*dt;
+    if(tg && !(tg.dead||tg.open)){ const tx=tg.x, ty=tg.chest?0.05:(tg.y||0)+advEH(tg)*0.5, dx=tx-b.x, dy=ty-b.y, d=Math.hypot(dx,dy), st=2.4*dt;
       if(d<=st+0.02){ b.life=0; if(tg.chest) advHitChest(tg); else { advDamageEnemy(tg,b.dmg); if(b.freeze) tg.frozen=b.freeze; } }
       else { b.x+=dx/d*st; b.y+=dy/d*st; } }
     else { b.tg=null; b.x+=b.dir*2.4*dt; if(Math.abs(b.x-b.x0)>ADV.MAGIC_RANGE) b.life=0; } });
@@ -5888,17 +5889,23 @@ function advPop(x,y,txt,col){ A.pops.push({x,y,txt,col:col||"#fff",t:0}); }
 /* ---------- 敵 ---------- */
 function advSpawn(lv,kind){
   const viewW=A.W/A.P, side=1;   // 魔物は基本、右からやってくる
-  const x = side<0 ? A.cam-0.3 : A.cam+viewW+0.3, d=ADV.SL[lv], big=lv>=10;
+  const d=ADV.SL[lv], big=lv>=10, hw=(big?0.32:0.17)*0.5+0.02, x = side<0 ? A.cam-hw : A.cam+viewW+hw;   // 画面のすぐ外から
   A.enemies.push({ x, lv, hp:d.hp, max:d.hp, atk:d.atk, spd:d.spd, warn:0, zone:null,
-    w:big?0.32:0.17, dir:-side, cd:0.8, st:null, frozen:0, dead:false, deadT:0, boss:big, extra:kind==="idle", hurt:0 });
+    w:big?0.32:0.17, dir:-side, cd:0.8, y:0, vy:0, off:0, st:null, frozen:0, dead:false, deadT:0, boss:big, extra:kind==="idle", hurt:0 });
 }
 const advEH = e => e.boss?0.26:0.12;   // 敵の背の高さ
 function advEnemy(e,dt){
   if(e.dead){ e.deadT+=dt; return; }
   e.hurt=Math.max(0,e.hurt-dt);
+  // 空から降ってきている間は、着地するまで何もしない
+  if(e.y>0){ e.vy-=3.4*dt; e.y+=e.vy*dt; if(e.y<=0){ e.y=0; e.vy=0; e.cd=Math.max(e.cd,0.5); advPop(e.x,0.05,advT2("ドスン"),"#fff"); } return; }
+  // 画面から見えなくなって2秒たつと、トトの進む方向の少し先の上空から急に降ってくる
+  const vw=A.W/A.P, seen=e.x>A.cam-e.w*0.5 && e.x<A.cam+vw+e.w*0.5;
+  if(seen) e.off=0; else if((e.off+=dt)>=2){ e.off=0; e.st=null; e.warn=0; e.zone=null; e.frozen=0;
+    e.x=Math.max(A.cam+e.w, Math.min(A.cam+vw-e.w, A.x+A.dir*(0.45+Math.random()*0.25))); e.y=1.25; e.vy=-0.6; e.dir=A.x>e.x?1:-1; return; }
   if(e.frozen>0){ e.frozen-=dt; e.st=null; e.warn=0; e.zone=null; return; }   // 氷づけ：動けない（攻撃も取り消し）
   const dx=A.x-e.x, dist=Math.abs(dx); e.cd-=dt;
-  // ❗：攻撃の0.5秒前に頭上に出る。そのあいだ敵は止まり、当たる範囲が地面に赤く出る
+  // ❗：攻撃の0.2秒前に頭上に出る。そのあいだ敵は止まり、当たる範囲が地面に赤く出る
   if(e.warn>0){ e.warn-=dt; if(e.warn<=0){ e.warn=0; e.st={t:0,hit:false}; } return; }
   if(e.st){ e.st.t+=dt; const T=e.st.t;
     if(T>0.25 && T<0.5) e.x+=e.dir*0.35*dt*(e.boss?1.5:1);   // とびかかる
@@ -5935,7 +5942,7 @@ function advGainXp(d){ const before=advLv(); A.xp+=d; const up=advLv()-before;
 function advMelee(){
   const reach=ADV.MELEE_REACH, dmg=advMeleeDmg(), front=A.x+A.dir*0.03;
   const inFront=(x,hw)=>{ const near=(x-front)*A.dir-hw; return (x-A.x)*A.dir>0 && near<=reach; };
-  A.enemies.forEach(e=>{ if(!e.dead && inFront(e.x,e.w*0.4) && A.y<advEH(e)+0.03) advDamageEnemy(e,dmg); });
+  A.enemies.forEach(e=>{ if(!e.dead && inFront(e.x,e.w*0.4) && A.y<(e.y||0)+advEH(e)+0.03 && A.y+0.15>(e.y||0)) advDamageEnemy(e,dmg); });
   A.chests.forEach(c=>{ if(!c.open && inFront(c.x,0.06) && A.y<0.12) advHitChest(c); });
 }
 // 魔法：向いている方向でいちばん近い的（敵・宝箱）をねらう。装備なしより遠くまで届く。間に宝箱があれば宝箱に当たる
@@ -6136,7 +6143,7 @@ function advHud(){
 
 /* ---------- 描画 ---------- */
 function advDraw(){
-  const cv=document.getElementById("advCv"); if(!cv||!A||!A.W) return; const g=cv.getContext("2d"), W=A.W, H=A.H, SH0=A.SH, GY=SH0, SH=A.P;
+  const cv=document.getElementById("advCv"); if(!cv||!A||!A.W) return; const g=cv.getContext("2d"), W=A.W, H=A.H, SH0=A.SH, GY=SH0, GY0=SH0, SH=A.P;
   g.imageSmoothingEnabled=false;
   // 空
   const sk=g.createLinearGradient(0,0,0,GY); sk.addColorStop(0,"#5ab8f5"); sk.addColorStop(1,"#bfe7ff"); g.fillStyle=sk; g.fillRect(0,0,W,GY);
@@ -6156,7 +6163,8 @@ function advDraw(){
   A.enemies.forEach(e=>{ if(e.dead||!e.zone) return; const a=sx(e.zone.a), b=sx(e.zone.b), on=e.warn>0?0.25+0.2*Math.abs(Math.sin(performance.now()/60)):0.5;
     g.fillStyle=`rgba(255,40,40,${on})`; g.fillRect(a,GY-SH*0.02,b-a,SH*0.05); g.strokeStyle="rgba(255,60,60,.9)"; g.lineWidth=2*A.dpr; g.strokeRect(a,GY-SH*0.02,b-a,SH*0.05); });
   // 敵
-  A.enemies.forEach(e=>{ const bh=SH*(e.boss?0.26:0.12);
+  A.enemies.forEach(e=>{ const bh=SH*(e.boss?0.26:0.12), GY=GY0-(e.y||0)*SH;
+    if((e.y||0)>0){ g.fillStyle="rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(sx(e.x),GY0,bh*0.5*Math.max(.3,1-e.y),bh*0.12,0,0,7); g.fill(); }   // 落ちてくる場所の影
     let im, h, w, cx=sx(e.x), flip=false, alpha=e.dead?Math.max(0,1-e.deadT/0.6):1;
     if(e.st&&!e.frozen){ const f=ADV_FRAMES.sd, k=Math.min(5,Math.floor(e.st.t/0.75*6)); im=advImg("sd"+k); h=bh/f.h; w=h*im.width/im.height; flip=e.dir>0;
       const ax=f.cx*w; g.save(); g.globalAlpha=alpha; g.translate(cx,GY+h*(f.b||0)); if(flip) g.scale(-1,1); g.drawImage(im,-ax,-h,w,h); g.restore(); }
