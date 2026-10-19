@@ -1324,7 +1324,7 @@ const I18N_EN = {
 "バトルに勝つとLv+1": "Win a battle: Lv+1",
 "枠が空で30分ごと−1（24時間で最大10）": "Empty slot: −1 every 30 min (max 10 per 24h)",
 "上がる：ガチャ1回+{0}EXP／合成1回+{1}EXP／新しい魔物+{2}EXP／{3}": "Up: Gacha +{0} EXP each / Fusion +{1} EXP each / New monster +{2} EXP / {3}",
-"下がる：バトルで負け−{0}／引き分け−{1}／爆弾−{2}／{3}／ログインしなかった日1日ごと−2": "Down: Lose a battle −{0} / Draw −{1} / Bomb −{2} / {3} / −2 for each day you don't log in",
+"下がる：バトルで負け−{0}／引き分け−{1}／爆弾−{2}／{3}": "Down: Lose a battle −{0} / Draw −{1} / Bomb −{2} / {3}",
 "そのほか": "Other",
 "覚醒の石1個": "1 Awakening Stone",
 "に変わる": ".",
@@ -1793,6 +1793,13 @@ const I18N_EN = {
 "さんへの投資は無効になりました。": "has been voided.",
 "投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。": "The coins are taken when you invest. At 4th or lower you lose 10x in total, including what you invested. Results apply the next time you open the app after the season ends.",
 "（投資した分は戻らない）。自分には投資できない。": " (what you invested isn't returned). You can't invest in yourself.",
+"（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。": " (what you invested isn't returned). But for the first hour of a ranked match there are no ranks, so anyone can invest. You can't invest in yourself.",
+"🕐 順位がつくまで": "🕐 Ranks start in",
+"⏱ 上位キープボーナスは、順位がつきはじめてから": "⏱ The Top Rank Bonus starts once ranks begin",
+"ランク戦が始まってから1時間は順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます": "For the first hour of a ranked match there are no ranks (and no Top Rank Bonus). During this time, anyone can invest in adventurers.",
+"Cを全部選ぶ": "Select all C",
+"Bを全部選ぶ": "Select all B",
+"Aを全部選ぶ": "Select all A",
 "投資するとすぐに {0}コイン 減ります": "{0} coins will be taken right away",
 "投資したコインはすでに支払い済みです。": "Your invested coins have already been paid. ",
 "{0}結果はランク戦終了（毎日0:00）のあと、次にアプリを開いたときに反映されます。": "{0}Results apply the next time you open the app after the season ends (daily at 0:00).",
@@ -2595,18 +2602,15 @@ function gainPExp(n){
   while(S.pexp>=pNeed(S.plv)){ S.pexp-=pNeed(S.plv); S.plv++; up++; bumpMaxLv(); }
   if(up) setTimeout(()=>toast(`冒険者レベルが ${S.plv} に上がった！`),900);
 }
-const dayNum = d => Math.floor((d.getTime()+9*3600000)/86400000);   // 日付はいつも日本時間で数える（端末のタイムゾーンを変えても同じ）
+
 let decayNote = 0;
 function applyLoginDecay(){
   fixPlayer();
-  const today=dayNum(new Date(gnow()));
-  if(S.lastLogin && today>S.lastLogin){
-    const missed=today-S.lastLogin-1;
-    if(missed>0){ const before=S.plv; S.plv=Math.max(1,S.plv-2*missed); if(S.plv<before){ S.pexp=0; decayNote=before-S.plv; } }
-  }
+  // 「1日」はランク戦タイマーの区切り（ランク戦の番号）で数える。冒険者レベルはランク戦ごとにリセットされるので、休んだ分の減少はなし
+  const today="ss"+seasonNow();
   if(S.lastLogin!==today){ S.lastLogin=today; try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
 }
-applyLoginDecay();
+setTimeout(applyLoginDecay,0);   // ランク戦タイマー（seasonNow）の準備ができてから
 
 /* ---------- 配置モンスター・バトル ----------
    ・プロフィールに魔物を1体配置できる（レベルは自分にしか見えない）
@@ -3355,7 +3359,7 @@ renderSnd();
 /* ---------- UI ---------- */
 const $ = s=>document.querySelector(s);
 let tab="home", homeMode="scene", gachaMode="mon", dexMode="mon", boxFilter="all", boxMode="units";
-const today=()=>{const d=new Date(gnow()+9*3600000);return d.getUTCFullYear()+"-"+(d.getUTCMonth()+1)+"-"+d.getUTCDate()};   // 日本時間の日付
+const today=()=>"ss"+seasonNow();   // 「今日」＝今のランク戦（ランク戦タイマーが切り替わると次の日）
 function toast(t){ document.querySelectorAll(".toast").forEach(x=>x.remove()); const el=document.createElement("div"); el.className="toast"; el.textContent=t; el.setAttribute("role","status"); document.body.appendChild(el); setTimeout(()=>el.remove(),2200); }
 const dailyReady=()=>S.lastDaily!==today();
 const hourlyLeft=()=>Math.max(0,(S.lastHourly||0)+HOURLY_MS-gnow());
@@ -3399,6 +3403,8 @@ setInterval(()=>{
   if(DB && MYID && tickNow()!==window._lastTick){ const first=window._lastTick==null; window._lastTick=tickNow(); if(!first) setTimeout(loadRanking, 1500+Math.random()*4000); }
   if(DB && MYID && S.season!=null && S.season<seasonNow() && !inFreeze() && !seasonBusy) checkSeason();
   const fz=$("#freezeCd"); if(fz){ if(inFreeze()) fz.textContent=fmt(freezeLeft()); else if(tab==="rank") render(); }
+  const rl=$("#rlCd"); if(rl&&rankless()) rl.textContent=fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow());
+  { const nowRl=rankless(); if(window.__rl===true && !nowRl && DB){ loadRanking(true).then(()=>{ try{ render(); }catch(e){} }); } window.__rl=nowRl; }   // 順位がつきはじめたら読み直す
   const io=$("#invOpenCd"); if(io){ const left=seasonEnd(seasonNow())-INV_CLOSE_MS-gnow(); if(left<=0&&tab==="home"&&homeMode==="invest"){ closeSheet(); render(); } else io.textContent=fmtDays(left); }
   document.querySelectorAll("[data-shopcd]").forEach(el=>{ const l=shopLeft(el.dataset.shopcd); if(!l&&tab==="mission") return render(); el.textContent=fmt(l); });
   document.querySelectorAll("[data-mcd]").forEach(el=>{ el.textContent=fmt(missionLeft(+el.dataset.mcd)); });
@@ -3413,7 +3419,7 @@ function renderSide(){
   if(!isPC()){ if(el.innerHTML) el.innerHTML=""; return; }
   if(!RANK && DB && !sideAsked){ sideAsked=true; loadRanking(); }
   const top=(RANK||[]).slice(0,10);
-  const row=(r,i)=>`<li class="sd-row ${r.id===MYID?"me":""}" data-sdr="${esc(r.id)}" data-sdn="${i+1}"><span class="no ${i<3?"t"+(i+1):""}">${i+1}</span>${avatarImg(r.icon,34)}<span class="nm">${uname(r.name)}</span><span class="lv" translate="no">Lv${esc(r.lv||1)}</span></li>`;
+  const row=(r,i)=>`<li class="sd-row ${r.id===MYID?"me":""}" data-sdr="${esc(r.id)}" data-sdn="${i+1}"><span class="no ${i<3&&!rankless()?"t"+(i+1):""}">${rkNo(i+1)}</span>${avatarImg(r.icon,34)}<span class="nm">${uname(r.name)}</span><span class="lv" translate="no">Lv${esc(r.lv||1)}</span></li>`;
   const rk=tab==="rank"?"":`<section class="sd-box"><div class="sd-h"><b>🏆 ランキング</b><button class="chip" type="button" id="sdMore">すべて見る</button></div>
     ${myRank?`<p class="note" style="margin:0 0 6px">あなたは <b>${myRank}位</b>${RANK_TOTAL?` / ${RANK_TOTAL.toLocaleString()}人`:""}</p>`:""}
     ${!DB?`<p class="note" style="margin:0">ログインするとランキングが見られます</p>`:RANK?`<ol class="sd-list">${top.map(row).join("")}</ol>`:`<p class="note" style="margin:0">読み込み中…</p>`}</section>`;
@@ -3513,7 +3519,7 @@ function renderBox(){
     <button class="chip" id="lockToggle" type="button" aria-pressed="${lockMode}" style="margin-left:auto">${lockMode?"鍵をおわる":"🔒 鍵をかける"}</button>
     <button class="chip" id="sellToggle" type="button" aria-pressed="${sellMode}">${sellMode?"売却をやめる":"まとめて売却"}</button></div>
   ${sellMode?`<div class="sellbar"><span>${sellSel.size}体 ・ <b>+${total.toLocaleString()}</b>コイン</span>
-    <button class="chip" id="sellAllC" type="button">C・Bを全部選ぶ</button><button class="chip" id="sellClear" type="button">解除</button>
+    <button class="chip" type="button" data-sellr="C">Cを全部選ぶ</button><button class="chip" type="button" data-sellr="B">Bを全部選ぶ</button><button class="chip" type="button" data-sellr="A">Aを全部選ぶ</button><button class="chip" id="sellClear" type="button">解除</button>
     <button class="btn gold" id="sellGo" type="button" ${sellSel.size?"":"disabled"}>売却</button></div>`:""}
   ${list.length?`<div class="grid">${list.map(x=>unitCard(x,sellMode?((x.k?"dim":"")+(sellSel.has(x.u)?" sel":"")):"")).join("")}</div>`:`<div class="empty">このランクの魔物はまだいません</div>`}`;
   bindSeg(k=>{boxMode=k;sellMode=false;lockMode=false;sellSel.clear();render();$("#stage").scrollTop=0});
@@ -3521,7 +3527,7 @@ function renderBox(){
   $("#sellToggle").onclick=()=>{ sellMode=!sellMode; lockMode=false; sellSel.clear(); render(); };
   $("#lockToggle").onclick=()=>{ lockMode=!lockMode; sellMode=false; sellSel.clear(); render(); };
   if(sellMode){
-    $("#sellAllC").onclick=()=>{ S.units.forEach(x=>{ if(!x.k && x.u!==S.guard && ["C","B"].includes(mon(x.m).rank)) sellSel.add(x.u); }); render(); };
+    document.querySelectorAll("[data-sellr]").forEach(b=>b.onclick=()=>{ const rk=b.dataset.sellr; S.units.forEach(x=>{ if(!x.k && x.u!==S.guard && mon(x.m).rank===rk) sellSel.add(x.u); }); render(); });   // 鍵付き・配置中はえらばない
     $("#sellClear").onclick=()=>{ sellSel.clear(); render(); };
     $("#sellGo").onclick=()=>confirmSell([...sellSel],()=>{ sellSel.clear(); render(); });
   }
@@ -3593,9 +3599,9 @@ function openRules(){
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（22:00のランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>${SELL.L.toLocaleString()}コイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
     ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
-    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前＝12:00まで</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、ランク戦終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"w")],
+    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前＝12:00まで</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、ランク戦終了時に投資額の合計の<b>10%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
-    ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>${U(`📖 魔物のコンプ率が<b>100%</b>（限定ランクをのぞく全種）になると、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが${COMP_EXP_MUL}倍</b>`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}／ログインしなかった日1日ごと−2</li></ul>`],
+    ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+1")}</li><li>${U(`📖 魔物のコンプ率が<b>100%</b>（限定ランクをのぞく全種）になると、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが${COMP_EXP_MUL}倍</b>`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li>${U("<li>💰 Sランクの魔物を売却すると、コインに加えて<b>冒険者Lv+5</b>、Zランクは<b>冒険者Lv+15</b>上がる（A・B・Cランクはコインのみ）。</li>","x")}<li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
   const el=document.createElement("div"); el.className="rules-stage"+(fresh?" fresh":""); el.setAttribute("role","dialog"); el.setAttribute("aria-label","最新ルール");
@@ -4069,7 +4075,8 @@ async function loadRanking(force){
     RANK=q.docs.map(d=>liveAdjust(normRank({id:d.id,...d.data()},now))).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
     if(i>=0) myRank=i+1;
-    else { const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
+    if(rankless()){ myRank=null; }
+    else if(!rankless()){ const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
     try{ const col=DB.collection("profiles");   // ランキングの参加人数（まとめて数えるだけなので通信は少ない）
       RANK_TOTAL = col.count ? (await col.count().get()).data().count : Math.max(RANK_TOTAL, q.size); }catch(e){ RANK_TOTAL=Math.max(RANK_TOTAL, q.size); }
     rankErr=false;
@@ -4379,11 +4386,11 @@ const TOP3_AMNESTY_SS = 2;
 function top3Amnesty(){ if(seasonNow()!==TOP3_AMNESTY_SS || S.top3amn) return; S.top3amn=1; if(S.top3ss===TOP3_AMNESTY_SS) S.top3ok=S.top3ss; save(); }
 const top3Pardoned = () => { top3Amnesty(); return S.top3ok!=null && S.top3ok===S.top3ss; };
 const top3Locked = () => (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRank && myRank<=3);
-function markTop3(){ if(!myRank || myRank>3 || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
+function markTop3(){ if(!myRank || myRank>3 || rankless() || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
   if(S.top3ss!==seasonNow() || top3Pardoned()){ S.top3ss=seasonNow(); S.top3ok=null; save(); if(tab==="home"&&homeMode==="invest") render(); } }
 function checkInvestVoid(){
   markTop3();
-  const L=activeInvs(); if(!L.length||!myRank||myRank>3||seasonBusy||(S.season??0)<seasonNow()) return;
+  const L=activeInvs(); if(!L.length||!myRank||myRank>3||rankless()||seasonBusy||(S.season??0)<seasonNow()) return;
   let lose=0; L.forEach(iv=>{ const l=iv.paid?iv.amt:Math.min(iv.amt,S.coins); if(!iv.paid) S.coins-=l; iv.void=1; iv.lost=l; lose+=l;
     try{ DB&&DB.doc("invests/"+invDocId(iv)).update({void:true}).catch(()=>{}); }catch(e){} });
   save(); renderCoins();
@@ -4415,7 +4422,7 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
   return out;
 }
 const invRow=(r,i)=>`<li data-iv="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button">${avatarImg(r.icon,56)}
-  <div class="rk-body"><div class="rk-name">${uname(r.name)}</div><div class="rk-sub">現在${r._rank}位 ・ Lv${esc(r.lv||1)}</div>${INV_CNT[r.id]?`<div class="rk-inv">💰 投資家 ${INV_CNT[r.id]}人</div>`:""}</div>
+  <div class="rk-body"><div class="rk-name">${uname(r.name)}</div><div class="rk-sub">現在${rkNo(r._rank)}${rankless()?"":"位"} ・ Lv${esc(r.lv||1)}</div>${INV_CNT[r.id]?`<div class="rk-inv">💰 投資家 ${INV_CNT[r.id]}人</div>`:""}</div>
   <button class="inv-info" type="button" data-ivinfo="${i}">詳細</button></li>`;
 // 前回のランク戦のランキング結果（上位5人）：0:00の集計とまったく同じ計算で出す
 let LAST_RES={s:null, list:null};
@@ -4494,7 +4501,7 @@ function renderInvest(){
   document.querySelectorAll("[data-ivprof]").forEach(li=>li.addEventListener("click",()=>{ const r=(INV_LIST||[]).find(x=>x.id===li.dataset.ivprof); if(r) openOtherProfile(r,r._rank); }));
 }
 function investStatusHtml(iv){
-  const r=(INV_LIST||[]).find(x=>x.id===iv.def), cur=r?r._rank:null, a=iv.amt;
+  const r=(INV_LIST||[]).find(x=>x.id===iv.def), cur=r&&!rankless()?r._rank:null, a=iv.amt;
   const now=cur?(INV_MUL[cur]||0):null;
   const res=iv.void?`<div class="inv-res"><span class="down">−${(iv.lost||0).toLocaleString()}コイン</span></div><p class="note" style="margin:6px 0 0;color:#555">あなたが3位以内に入ったので、この投資は無効になりました（投資額を没収）</p>`
     :`${cur?`<p class="note" style="margin:4px 0 0;color:#555">いまの順位（${cur}位）のまま終わると</p>
@@ -4508,7 +4515,7 @@ function investStatusHtml(iv){
 }
 function openInvestForm(r){
   const bg=sheet(`<div class="sheet-h"><h3>投資する</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
-    <ol class="rank" style="margin-bottom:10px"><li>${avatarImg(r.icon,56)}<div class="rk-body"><div class="rk-name">${uname(r.name)}</div><div class="rk-sub">現在${r._rank}位 ・ Lv${esc(r.lv||1)}</div></div></li></ol>
+    <ol class="rank" style="margin-bottom:10px"><li>${avatarImg(r.icon,56)}<div class="rk-body"><div class="rk-name">${uname(r.name)}</div><div class="rk-sub">現在${rkNo(r._rank)}${rankless()?"":"位"} ・ Lv${esc(r.lv||1)}</div></div></li></ol>
     <p class="pick-label" style="margin:0 0 4px">投資金額（持っているコイン：${S.coins.toLocaleString()}）</p>
     <input class="inv-amt" id="ivAmt" type="number" inputmode="numeric" min="1" max="${S.coins}" step="1" placeholder="0" aria-label="投資金額">
     <div class="toolbar" style="margin:8px 0"><button class="chip" type="button" data-ia="100">+100</button><button class="chip" type="button" data-ia="1000">+1,000</button><button class="chip" type="button" data-ia="10000">+10,000</button><button class="chip" type="button" data-ia="all">ぜんぶ</button><button class="chip" type="button" data-ia="0">クリア</button></div>
@@ -4645,8 +4652,8 @@ function renderRanking(segHtml){
   else if(rankErr) body=`<div class="empty">ランキングを読み込めませんでした。少し時間をおいて開き直してください。</div>`;
   else if(!RANK) body=`<div class="empty">読み込み中…</div>`;
   else if(!RANK.length) body=`<div class="empty">まだ誰もいません</div>`;
-  else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3?"top"+(i+1):""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
-      <span class="rk-no">${i+1}</span>${avatarImg(r.icon,56)}
+  else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3&&!rankless()?"top"+(i+1):""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
+      <span class="rk-no">${rkNo(i+1)}</span>${avatarImg(r.icon,56)}
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>
         ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${INV_CNT[r.id]}人ついています</div>`:""}
@@ -4655,9 +4662,10 @@ function renderRanking(segHtml){
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
     ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のランク戦の順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
+    ${rankless()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🕐 順位がつくまで</small><b id="rlCd">${fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow())}</b></div><div class="note" style="display:block;margin:2px 0 0">ランク戦が始まってから1時間は順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます</div></div>`:""}
     <div class="season-box"><div><small>ランク戦終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
       <div class="note" style="display:block;margin:2px 0 0">毎日22:00（日本時間）に終了。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
-      <div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>
+      ${rankless()?`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスは、順位がつきはじめてから</div>`:`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>`}
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日22:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
@@ -4667,7 +4675,7 @@ function renderRanking(segHtml){
   $("#reRank").onclick=async()=>{ RANK=null; render(); await loadRanking(true); if(!rankErr) toast("全員の最新の状態に更新しました"); };
   const qi=$("#rkQ"); if(qi){ qi.oninput=()=>{ rankQ=qi.value; filterRank(); }; qi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); qi.blur(); if(!filterRank()) searchOutside(); } }; filterRank(); }
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
-    const open=()=>openOtherProfile(RANK[+li.dataset.ri], +li.dataset.ri+1);
+    const open=()=>openOtherProfile(RANK[+li.dataset.ri], rankless()?null:+li.dataset.ri+1);
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } };
   });
 }
@@ -4690,12 +4698,12 @@ async function searchOutside(){
   for(const r of list){ try{ const h=await DB.collection("profiles").where("score",">",r.score||0).get(); r._rank=h.size+1; }catch(e){ r._rank=0; } }
   RANK_EXTRA=list;
   hit.innerHTML=`<p class="sub" style="margin:0 0 6px">ランキング外で見つかりました</p><ol class="rank">${list.map((r,i)=>`<li data-xi="${i}" tabindex="0" role="button">
-    <span class="rk-no">${r._rank||"―"}</span>${avatarImg(r.icon,56)}<div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}</div>
+    <span class="rk-no">${rankless()?"―":(r._rank||"―")}</span>${avatarImg(r.icon,56)}<div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}</div>
     <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div></div><div class="rk-lv"><small>Lv</small>${esc(r.lv||1)}</div></li>`).join("")}</ol>`;
   hit.querySelectorAll("li[data-xi]").forEach(li=>{ const r=list[+li.dataset.xi]; const open=()=>openOtherProfile(r, r._rank||"―");
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } }; });
 }
-const todayN=()=>dayNum(new Date(gnow()));
+const todayN=()=>seasonNow();   // バトル・ボットの「1日1回」もランク戦タイマーで区切る
 function fightButton(r){
   if(!DB) return "";
   if(noAct()) return `<div class="note" style="margin:0">${FREEZE_TXT}</div>`;
@@ -4817,6 +4825,10 @@ const JST = 9*HOUR_MS, DAY_MS = 24*HOUR_MS;
 const SEASON_SHIFT = 2*HOUR_MS;
 const seasonNow = () => Math.floor((Math.floor((gnow()+JST+SEASON_SHIFT)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);
 const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1))*DAY_MS - JST - SEASON_SHIFT;
+// ランク戦が始まってから1時間は順位をつけない（その間は上位3人もふくめ、だれでも投資できる）。上位キープボーナスもなし
+const RANKLESS_MS = HOUR_MS;
+const rankless = () => gnow() < seasonEnd(seasonNow()-1) + RANKLESS_MS;
+const rkNo = n => rankless() ? "―" : n;
 // ランク戦終了後の待ち時間（集計タイム）はなし：0:00になったらすぐ結果発表＆報酬
 // （0より大きくすると、その間は攻撃・アイテムが使えなくなる）
 const FREEZE_MS = 0;
@@ -4866,7 +4878,7 @@ const tickNow = () => Math.floor(gnow()/TICK_MS);
 let TICKS={s:null, list:[]};
 async function loadTicks(s){ try{ const q=await DB.collection("ticks").where("ss","==",s).get(); return q.docs.map(x=>x.data()).sort((a,b)=>a.n-b.n); }catch(e){ return []; } }
 async function snapTick(){
-  if(!DB||!RANK||!RANK.length) return; const n=tickNow(); if(snapTick.done===n) return;
+  if(!DB||!RANK||!RANK.length||rankless()) return;   // 順位がない1時間は、上位キープボーナスなし const n=tickNow(); if(snapTick.done===n) return;
   try{ const ref=DB.doc("ticks/"+n); const ex=await ref.get();
     if(!ex.exists) await ref.set({n, ss:seasonNow(), at:gnow(), t10:RANK.slice(0,10).map(r=>r.id), t30:RANK.slice(10,30).map(r=>r.id)});
     snapTick.done=n; }catch(e){}
@@ -5598,14 +5610,14 @@ function openOtherProfile(r,rank){
     <div class="prof-top">${avatarImg(r.icon,108)}
       <div class="prof-id"><div class="prof-name">${uname(r.name)}${r.id===MYID?` <span class="same">あなた</span>`:""}</div>
 </div>
-      <div class="prof-rank"><small>ランキング</small><b>${rank}位</b></div></div>
+      <div class="prof-rank"><small>ランキング</small><b>${rank?rank+"位":"―"}</b></div></div>
     <div class="plv"><span>冒険者 Lv</span><b>${esc(r.lv||1)}</b></div>
     ${r.id===MYID?"":`<div class="guard-box ${r.gm?"":"warn"}">${r.gm&&mon(r.gm)?`<img src="${cardURL(r.gm,0,128)}" alt="">`:""}
       <div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物</div>
       ${r.gm&&mon(r.gm)?`<b>${esc(mon(r.gm).name)}</b><div class="note" style="margin:0">レベルは ？？？</div>`:`<div class="note" style="margin:0">配置なし（戦えません）</div>`}
       ${fightButton(r)}</div></div>${itemBox(r)}${friendBox(r)}`}
     ${r.id===MYID?itemBox(r):""}
-    ${rank<=50&&r.comment?`<div class="rk-cmt" translate="no" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
+    ${(rank==null||rank<=50)&&r.comment?`<div class="rk-cmt" translate="no" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
     ${radarHtml(r)}
     <div class="stats">
       <div><i class="st-ic" aria-hidden="true">🏆</i><small>勝利数</small><b>${n(r.w)}</b></div>
