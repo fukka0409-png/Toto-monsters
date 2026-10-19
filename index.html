@@ -5608,7 +5608,7 @@ function showNewMonsters(){
    ・魔物は基本、右からやってくる。トトより左へ通りすぎた魔物は、はなれるほど速く近づいてくる
    ・30秒動かないと、ボスなみに強い魔物がおそってくる（たおしてもクリアにはならない）
    ・宝箱：新しい場所に進むと45%で出現（ふつう80%／赤い宝石19%／虹0.01%）
-   ・ランキングは3時間ごとにリセット（0時・3時・6時…）。終わったときの順位で 1位5000・2位3000・3位1000コイン（生き延びた時間・最高レベルのそれぞれで）
+   ・ランキングは3時間ごとにリセット（ゲーム内オリジナルのタイマー）。終わったときの順位で 1位5000・2位3000・3位1000コイン（生き延びた時間・最高レベルのそれぞれで）
    ・タイマーが30秒をこえたら冒険回数+1（1回の冒険で1回だけ） */
 const ADV_MEMO_FIRST = "魔法の欠片の特徴と融合方法を忘れないように....！";
 const ADV = {
@@ -5631,7 +5631,7 @@ const ADV = {
     {hp:1050,atk:120, spd:0.35, max:1}],
   // トトのLvが上がるのに必要な「与えたダメージの合計」
   XP: [0,0,40,150,300,450,1100,2000,3400,5500,8300,11800,16000],
-  HEAL: 30, PERIOD_MS: 3*60*60000,
+  HEAL: 30, PERIOD_MS: 3*60*60000, PERIOD_ORIGIN: Date.parse("2026-10-19T18:17:00+09:00"), PERIOD_BASE: 1e6,
   SHARD: { g:{ name:"波動魔法の欠片", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"氷魔法の欠片", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:5 } },
 };
 const ADV_FRAMES = { tm:{n:5,cx:.22,h:.86}, tj:{n:5,cx:.24,h:.76}, tk:{n:5,cx:.24,h:.78}, sd:{n:6,cx:.66,h:.69,b:.09} };
@@ -5644,15 +5644,17 @@ const advItemName = it => it.k==="key" ? "伝説の鍵" : it.k==="heal" ? "回�
 const advItemImg = it => it.k==="key" ? null : it.k==="heal" ? advImg("potion").src : advImg(ADV.SHARD[it.k].img).src;
 const advIsShard = it => !!(it && ADV.SHARD[it.k]);
 const advItemIcon = it => it.k==="key" ? `<span class="ab-key">🗝</span>` : `<img src="${advItemImg(it)}" alt="">`;
-// ランキングは3時間ごとにリセット（0時・3時・6時…21時）。記録は「どの3時間か」といっしょに保存する
-const advPer = () => Math.floor(gnow()/ADV.PERIOD_MS);
-function advSync(){ const p=advPer(); if(S.advP!==p){ if(S.advP!=null&&(S.advBestT||S.advBestL)) S.advPrev={p:S.advP,ms:S.advPMs||3600000,t:S.advBestT||0,l:S.advBestL||0}; S.advP=p; S.advPMs=ADV.PERIOD_MS; S.advBestT=0; S.advBestL=0; } return p; }
+// ランキングは3時間ごとにリセット。時計の時刻（0時・3時…）ではなく、ゲーム内オリジナルのタイマーで区切る
+// 記録は「どの区切りか」の番号といっしょに保存する
+const advPer = () => ADV.PERIOD_BASE + Math.floor((gnow()-ADV.PERIOD_ORIGIN)/ADV.PERIOD_MS);
+const advPerEnd = p => ADV.PERIOD_ORIGIN + (p-ADV.PERIOD_BASE+1)*ADV.PERIOD_MS;
+function advSync(){ const p=advPer(); if(S.advP!==p){ if(S.advP!=null&&(S.advBestT||S.advBestL)) S.advPrev={p:S.advP,end:S.advPEnd||(S.advP+1)*(S.advPMs||3600000),t:S.advBestT||0,l:S.advBestL||0}; S.advP=p; S.advPEnd=advPerEnd(p); S.advBestT=0; S.advBestL=0; } return p; }
 const ADV_PRIZE=[5000,3000,1000];   // 3時間ごとのランキング報酬（1位・2位・3位）。生き延びた時間・最高レベルのそれぞれで
 const advCnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
 // 前の3時間のランキングが終わっていたら、自分の順位をしらべて報酬をわたす（1回だけ）
 let advSettling=false;
 async function advSettle(){
-  if(advSettling||!DB||!MYID) return; advSync(); const pv=S.advPrev; if(!pv||(pv.p+1)*(pv.ms||3600000)>gnow()||S.advPaid===pv.p) return;   // その区切りが終わってから
+  if(advSettling||!DB||!MYID) return; advSync(); const pv=S.advPrev; if(!pv||(pv.end||(pv.p+1)*(pv.ms||3600000))>gnow()||S.advPaid===pv.p) return;   // その区切りが終わってから
   advSettling=true;
   try{
     const col=DB.collection("profiles"), P=pv.p;
@@ -6236,7 +6238,7 @@ async function titleRanks(){
   setTimeout(()=>{ try{ titleRanks(); }catch(e){} },2500);
   // ランキングがリセットされるまでのタイマー（3時間ごと）
   let rtPer=null; const rtEl=document.getElementById("ttlRt");
-  const rtTick=()=>{ if(T.hidden) return; const now=gnow(), per=Math.floor(now/ADV.PERIOD_MS), left=(per+1)*ADV.PERIOD_MS-now;
+  const rtTick=()=>{ if(T.hidden) return; const now=gnow(), per=advPer(), left=advPerEnd(per)-now;
     const hh=Math.floor(left/3600000), mm=String(Math.floor(left/60000)%60).padStart(2,"0"), ss=String(Math.floor(left/1000)%60).padStart(2,"0");
     rtEl.innerHTML=`<span>⏱ ${LANG==="en"?"Ranking resets in":"ランキングリセットまで"}</span><b>${hh}:${mm}:${ss}</b>`;
     if(rtPer!==null && per!==rtPer){ try{ titleRanks(); }catch(e){} } rtPer=per; };
