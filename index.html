@@ -591,7 +591,9 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
 .ttl-rk>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .ttl-rk>div+div{border-left:5px solid #3a2306}
 .ttl .ttl-rk small{display:block;font:800 19px/1 var(--f-body);color:#f6e6c4;white-space:nowrap}
-.ttl-rt{position:absolute;left:288px;top:1238px;width:480px;height:58px;display:flex;align-items:center;justify-content:center;gap:12px;background:#2a1a0ae0;border:5px solid #3a2306;border-radius:999px;color:#fff8e8;box-shadow:0 5px 0 #0004}
+.ttl-nx{position:absolute;left:213px;top:1230px;width:630px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+.ttl .ttl-nx div{background:#fff8e8ee;border:4px solid #3a2306;border-radius:999px;padding:4px 18px;font:900 21px/1.15 var(--f-body);color:#3a2306;white-space:nowrap}
+.ttl-rt{position:absolute;left:288px;top:1326px;width:480px;height:52px;display:flex;align-items:center;justify-content:center;gap:12px;background:#2a1a0ae0;border:5px solid #3a2306;border-radius:999px;color:#fff8e8;box-shadow:0 5px 0 #0004}
 .ttl .ttl-rt span{display:block;font:800 22px/1 var(--f-body)}
 .ttl .ttl-rt b{font:900 32px/1 var(--f-pix,monospace);color:#ffd75e;letter-spacing:.04em}
 .ttl .ttl-rk b{font:900 44px/1 var(--f-body);color:#fff8e8;text-shadow:0 3px 0 #3a2306}
@@ -623,6 +625,8 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
 .ap-auto:active{transform:translateY(2px)}
 .ad-coin{margin-top:4px;padding:10px;border:2px dashed #ffd75e;color:#ffe9a8;font:800 14px/1.4 var(--f-body);text-align:center}
 .ad-coin b{font-size:22px;color:#ffd75e}
+.ad-next{display:flex;flex-direction:column;gap:4px;margin:-10px 0 14px}
+.ad-next div{font:800 13px/1.35 var(--f-body);color:#ffe9a8}
 .ad-coin.lost{border-color:#ff8a8a;color:#ffc4c4;font-size:12.5px}
 .adv-dead.clear{background:#0a1a0ccc}
 .adv-dead.clear h2{color:#ffe16a}
@@ -729,6 +733,7 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
     </div>
     <button class="ttl-adv" id="ttlAdv" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>トトの冒険</span></button>
     <div class="ttl-rk" id="ttlRk"><div><small>生き延びたランキング</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベルランキング</small><b id="ttlR2" translate="no">―</b></div></div>
+    <div class="ttl-nx" id="ttlNx" translate="no"></div>
     <div class="ttl-rt" id="ttlRt" translate="no"></div>
   </div>
   <button class="ttl-corner ttl-set" id="ttlSet" type="button" aria-label="設定"><img src="title/set.png" alt="" draggable="false"><span>設定</span></button>
@@ -4032,7 +4037,8 @@ function profilePayload(){
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advTk:(S.advP||0)*1e9+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0) };
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advTk:(S.advP||0)*1e9+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
+    advTkP:S.advPrev?S.advPrev.p*1e9+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0 };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -5601,6 +5607,7 @@ function showNewMonsters(){
    ・魔物は基本、右からやってくる。トトより左へ通りすぎた魔物は、はなれるほど速く近づいてくる
    ・30秒動かないと、ボスなみに強い魔物がおそってくる（たおしてもクリアにはならない）
    ・宝箱：新しい場所に進むと45%で出現（ふつう80%／赤い宝石19%／虹0.01%）
+   ・ランキングは1時間ごとにリセット。終わったときの順位で 1位5000・2位3000・3位1000コイン（生き延びた時間・最高レベルのそれぞれで）
    ・タイマーが30秒をこえたら冒険回数+1（1回の冒険で1回だけ） */
 const ADV_MEMO_FIRST = "魔法の欠片の特徴と融合方法を忘れないように....！";
 const ADV = {
@@ -5638,7 +5645,31 @@ const advIsShard = it => !!(it && ADV.SHARD[it.k]);
 const advItemIcon = it => it.k==="key" ? `<span class="ab-key">🗝</span>` : `<img src="${advItemImg(it)}" alt="">`;
 // ランキングは1時間ごとにリセット（毎時0分）。記録は「どの1時間か」といっしょに保存する
 const advPer = () => Math.floor(gnow()/ADV.PERIOD_MS);
-function advSync(){ const p=advPer(); if(S.advP!==p){ S.advP=p; S.advBestT=0; S.advBestL=0; } return p; }
+function advSync(){ const p=advPer(); if(S.advP!==p){ if(S.advP!=null&&(S.advBestT||S.advBestL)) S.advPrev={p:S.advP,t:S.advBestT||0,l:S.advBestL||0}; S.advP=p; S.advBestT=0; S.advBestL=0; } return p; }
+const ADV_PRIZE=[5000,3000,1000];   // 1時間ごとのランキング報酬（1位・2位・3位）。生き延びた時間・最高レベルのそれぞれで
+const advCnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
+// 前の1時間のランキングが終わっていたら、自分の順位をしらべて報酬をわたす（1回だけ）
+let advSettling=false;
+async function advSettle(){
+  if(advSettling||!DB||!MYID) return; advSync(); const pv=S.advPrev; if(!pv||pv.p>=advPer()||S.advPaid===pv.p) return;
+  advSettling=true;
+  try{
+    const col=DB.collection("profiles"), P=pv.p;
+    // まだ新しい1時間で遊んでいない人は advTk に、もう遊んだ人は advTkP に、前の1時間の記録が残っている
+    const rankOf=async(f,fp,v,base)=>{ if(!v) return 0; const lo=P*base+v, hi=(P+1)*base;
+      const a=await advCnt(col.where(f,">",lo).where(f,"<",hi)), b=await advCnt(col.where(fp,">",lo).where(fp,"<",hi)); return a==null||b==null?null:a+b+1; };
+    const rt=await rankOf("advTk","advTkP",pv.t,1e9), rl=await rankOf("advLk","advLkP",pv.l,1e6);
+    if(rt==null||rl==null) return;   // 通信できなかったら、あとでもう一度
+    const gT=rt>=1&&rt<=3?ADV_PRIZE[rt-1]:0, gL=rl>=1&&rl<=3?ADV_PRIZE[rl-1]:0;
+    S.advPaid=P; if(gT+gL) S.coins=(S.coins||0)+gT+gL; save();
+    if(gT+gL){ try{ SFX.reveal("S"); }catch(e){} const L=LANG==="en", rk=n=>L?"#"+n:n+"位";
+      const bg=document.createElement("div"); bg.className="sheet-bg center"+(document.querySelector("#title:not([hidden])")?" ttl-top":""); bg.style.zIndex=136; bg.setAttribute("translate","no");
+      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏆</div><p>${L?"Toto's Adventure ranking reward!":"トトの冒険 ランキング報酬！"}</p>
+        <div class="note" style="margin:0;text-align:center;line-height:1.7">${gT?`${L?"Time survived":"生き延びたランキング"} <b>${rk(rt)}</b> → <b>+${gT.toLocaleString()}</b><br>`:""}${gL?`${L?"Best level":"最高レベルランキング"} <b>${rk(rl)}</b> → <b>+${gL.toLocaleString()}</b><br>`:""}<small>${L?"Total":"合計"} +${(gT+gL).toLocaleString()} ${L?"coins":"コイン"}</small></div>
+        <button class="btn gold" type="button">OK</button></div>`;
+      document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); try{ render(); }catch(e){} }
+  } finally{ advSettling=false; }
+}
 let A=null, advRaf=0;
 const advNeed = L => L<ADV.XP.length ? ADV.XP[L] : ADV.XP[ADV.XP.length-1]+5000*(L-ADV.XP.length+1);
 const advLvOf = xp => { let L=1; while(xp>=advNeed(L+1)) L++; return L; };
@@ -5660,7 +5691,7 @@ function openAdventureIntro(){
     ["🦅","Tap Jump again in the air to flap your wings (up to 3 jumps)."],
     ["⭐","Toto levels up from the damage dealt. Higher Lv = more power and HP."],
     ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones! Use a Heal-a-thing to restore 30 HP."],
-    ["🏆","Rankings (time survived / best Lv) reset every hour."],
+    ["🏆","Rankings (time survived / best Lv) reset every hour. When the hour ends, #1 gets 5,000, #2 3,000 and #3 1,000 coins (in each ranking)."],
     ["🏃","After 1 minute you can escape and clear. Beating the boss gives 10× the reward!"],
     ["🪦","If you die: no reward, and your memo is erased. (You can revive with a heart stone.)"]]:[
     ["⚔️","敵はLv1〜Lv9まで、各Lvを10体ずつたおすと次のLvへ。最後にLv10のボスが登場！ たおせばステージクリア！"],
@@ -5668,7 +5699,7 @@ function openAdventureIntro(){
     ["🦅","空中でもう一度ジャンプを押すと、翼でパタパタ（3段ジャンプまで）"],
     ["⭐","トトのLvは、敵に与えたダメージで上がる。Lvが上がると攻撃力と体力がアップ"],
     ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！「回復するやつ」を使うと体力が30回復"],
-    ["🏆","ランキング（生き延びた時間・最高レベル）は1時間ごとにリセット"],
+    ["🏆","ランキング（生き延びた時間・最高レベル）は1時間ごとにリセット。終わったときに1位5000・2位3000・3位1000コイン（それぞれのランキングで）"],
     ["🏃","1分をこえたら「脱出してクリアする」ができる。ボスをたおしてクリアすると報酬10倍！"],
     ["🪦","死亡すると報酬はなし、メモも消えてしまう…（ハート石で復活はできる）"]];
   bg.innerHTML=`<div class="swear adv-intro" role="dialog" aria-modal="true" aria-labelledby="aiT"><p id="aiT">🗺️ ${L?"Toto's Adventure":"トトの冒険"}</p>
@@ -5965,7 +5996,7 @@ async function advDeathScreen(t,lv,rec){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）")}</p>
+    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）")}</p><div class="ad-next"></div>
     <button class="ad-btn" id="adRev" type="button" ${hearts?"":"disabled"}><img src="${typeof HEART_IMG!=="undefined"?HEART_IMG:""}" alt="">${advT2("ハート石を1個消費してこのまま復活する")}<small>${advT2("のこり")} ${hearts.toLocaleString()}${advT2("個")}</small></button>
     <div class="ad-coin lost">${advT2("このままタイトルに戻ると、報酬はなし。メモも消えてしまう…")}</div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
@@ -5974,7 +6005,7 @@ async function advDeathScreen(t,lv,rec){
   el.querySelector("#adRev").onclick=()=>{ if(!(S.heart>0)) return; S.heart--; save(); el.remove();
     A.dead=false; A.hp=advMaxHp(); A.inv0=3; A.revives++; A.enemies.forEach(e=>{ if(Math.abs(e.x-A.x)<1.2) e.x+=(e.x>=A.x?1:-1)*1.5; e.st=null; e.warn=0; e.zone=null; }); A.idleT=0; A.last=performance.now(); advMsg(advT2("ハート石の力で復活した！")); try{ SFX.reveal("S"); }catch(e){} };
   const r=await advRanks(); const a=el.querySelector("#adR1"), b=el.querySelector("#adR2");
-  if(a) a.textContent=advRk(r.t); if(b) b.textContent=advRk(r.l);
+  if(a) a.textContent=advRk(r.t); if(b) b.textContent=advRk(r.l); const nx=el.querySelector(".ad-next"); if(nx) nx.innerHTML=advNextTxt(r).map(x=>`<div>${x}</div>`).join("");
 }
 // 脱出クリア（1分をこえたら）／ボスをたおしてステージクリア
 function advEscapeAsk(){ if(!A||A.dead||A.over||A.t<ADV.ESCAPE_SEC*1000) return;
@@ -5988,7 +6019,7 @@ async function advFinish(kind){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）")}</p>
+    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）")}</p><div class="ad-next"></div>
     <div class="ad-coin" id="adCoin"></div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
   document.getElementById("adv").appendChild(el);
@@ -5996,19 +6027,12 @@ async function advFinish(kind){
   const showRw=r=>{ cEl.innerHTML=`🪙 ${advT2("報酬")} <b>${r.coins.toLocaleString()}</b> ${advT2("コイン")}<small>(${advT2("時間")} ${r.tc} ＋ Lv ${r.lc})${r.mul>1?` ×${r.mul}（${advT2("ランキング1位更新！")}）`:""}${r.boss?` ×${ADV.CLEAR_MUL}（${advT2("ボス討伐")}）`:""}${r.loot?` ＋ ${advT2("宝箱のコイン")} ${r.loot.toLocaleString()}`:""}</small>`; };
   let rw=advReward(t,lv,null,boss); showRw(rw);
   el.querySelector("#adBack").onclick=()=>{ const r=rw; advClose(); advGiveCoins(r); };
-  advTop1(t,lv).then(top=>{ rw=advReward(t,lv,top,boss); if(el.isConnected) showRw(rw); });
   const r=await advRanks(); const a=el.querySelector("#adR1"), b=el.querySelector("#adR2");
-  if(a) a.textContent=advRk(r.t); if(b) b.textContent=advRk(r.l);
+  if(a) a.textContent=advRk(r.t); if(b) b.textContent=advRk(r.l); const nx=el.querySelector(".ad-next"); if(nx) nx.innerHTML=advNextTxt(r).map(x=>`<div>${x}</div>`).join("");
 }
-// 冒険の報酬（脱出クリア）：生き延びた1分ごとに1コイン＋その時のLvの数。ランキング1位を更新したら10倍、両方なら20倍
+// 冒険の報酬（脱出クリア）：生き延びた1分ごとに1コイン＋その時のLvの数（ランキングの報酬は1時間ごとに別でわたす）
 // ボスをたおしてステージクリアしたら、さらに10倍
-function advReward(t,lv,top,boss){ const tc=Math.floor(t/60000), lc=lv; const mul=((top&&top.t)?10:0)+((top&&top.l)?10:0)||1; const loot=(A&&A.coins)||0; return { tc, lc, mul, boss:!!boss, loot, coins:(tc+lc)*mul*(boss?ADV.CLEAR_MUL:1)+loot }; }
-async function advTop1(t,lv){ const out={t:false,l:false}; if(!DB||!MYID) return out; const P=advSync();
-  const cnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.limit(1).get())).size; }catch(e){ return null; } };
-  const col=DB.collection("profiles");
-  if(t>0 && t>=(S.advBestT||0)){ const c=await cnt(col.where("advTk",">",P*1e9+t).where("advTk","<",(P+1)*1e9)); out.t=c===0; }   // この冒険の記録より上がだれもいない＝1位を更新
-  if(lv>0 && lv>=(S.advBestL||0)){ const c=await cnt(col.where("advLk",">",P*1e6+lv).where("advLk","<",(P+1)*1e6)); out.l=c===0; }
-  return out; }
+function advReward(t,lv,top,boss){ const tc=Math.floor(t/60000), lc=lv; const mul=1; const loot=(A&&A.coins)||0; return { tc, lc, mul, boss:!!boss, loot, coins:(tc+lc)*mul*(boss?ADV.CLEAR_MUL:1)+loot }; }
 function advGiveCoins(r){ if(!r||!r.coins) return; S.coins=(S.coins||0)+r.coins; save(); try{ SFX.coin(); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center ttl-top"; bg.style.zIndex=130;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🪙</div><p>${advT2("冒険の報酬")}</p>
@@ -6016,15 +6040,24 @@ function advGiveCoins(r){ if(!r||!r.coins) return; S.coins=(S.coins||0)+r.coins;
     <button class="btn gold" type="button">OK</button></div>`;
   bg.setAttribute("translate","no"); document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); try{ render(); }catch(e){} }
 // 自分の自己ベストの順位だけを数える（ほかの人の順位や記録は表示しない）
+// 自分の順位と「1つ上の人の記録」だけをしらべる（ほかの人の順位や名前は表示しない）
 async function advRanks(){
-  const out={t:null,l:null}; if(!DB||!MYID) return out;
-  const cnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
+  const out={t:null,l:null,nt:undefined,nl:undefined}; if(!DB||!MYID) return out;
   const col=DB.collection("profiles");
-  const P=advSync();   // 今の1時間の中での順位
-  if(S.advBestT){ const c=await cnt(col.where("advTk",">",P*1e9+S.advBestT).where("advTk","<",(P+1)*1e9)); if(c!=null) out.t=c+1; }
-  if(S.advBestL){ const c=await cnt(col.where("advLk",">",P*1e6+S.advBestL).where("advLk","<",(P+1)*1e6)); if(c!=null) out.l=c+1; }
+  const P=advSync(), bt=S.advBestT||0, bl=S.advBestL||0;   // 今の1時間の中での順位
+  const qT=col.where("advTk",">",P*1e9+bt).where("advTk","<",(P+1)*1e9), qL=col.where("advLk",">",P*1e6+bl).where("advLk","<",(P+1)*1e6);
+  const next=async(q,f,base)=>{ try{ const d=(await withTO(q.orderBy(f).limit(1).get())).docs[0]; return d?d.data()[f]-P*base:null; }catch(e){ return undefined; } };
+  const ct=await advCnt(qT); if(ct!=null&&bt) out.t=ct+1; out.nt = ct===0?null : ct==null?undefined : await next(qT,"advTk",1e9);
+  const cl=await advCnt(qL); if(cl!=null&&bl) out.l=cl+1; out.nl = cl===0?null : cl==null?undefined : await next(qL,"advLk",1e6);
   return out;
 }
+// 「00:07:35を超えたら順位が上がります！」
+function advNextTxt(r){ const L=LANG==="en", bt=S.advBestT||0, bl=S.advBestL||0, a=[];
+  if(r.nt!==undefined) a.push(r.nt===null ? (bt?(L?"⏱ You're #1 in time survived!":"⏱ 生き延びたランキングは1位！"):(L?"⏱ No records yet — be the first!":"⏱ まだだれも記録がない！一番乗りで1位に！"))
+    : (L?`⏱ Beat ${advFmt(r.nt)} to rank up!`:`⏱ ${advFmt(r.nt)}を超えたら順位が上がります！`));
+  if(r.nl!==undefined && (r.nl!==null||bl)) a.push(r.nl===null ? (L?"⭐ You're #1 in best level!":"⭐ 最高レベルランキングは1位！")
+    : (L?`⭐ Get past Lv.${r.nl} to rank up!`:`⭐ Lv.${r.nl}を超えると順位が上がります！`));
+  return a; }
 
 /* ---------- リュック（G） ---------- */
 function advBag(){
@@ -6159,8 +6192,10 @@ function advDraw(){
 /* ---------- タイトル画面のランキング表示 ---------- */
 async function titleRanks(){
   const a=document.getElementById("ttlR1"), b=document.getElementById("ttlR2"); if(!a||!b) return;
-  advSync(); if(!S.advBestT){ a.textContent="―"; b.textContent="―"; return; }
-  const r=await advRanks(); a.textContent=advRk(r.t); b.textContent=advRk(r.l);
+  try{ advSettle(); }catch(e){}
+  advSync(); const nx=document.getElementById("ttlNx");
+  const r=await advRanks(); a.textContent=S.advBestT?advRk(r.t):"―"; b.textContent=S.advBestL?advRk(r.l):"―";
+  if(nx) nx.innerHTML=advNextTxt(r).map(x=>`<div>${x}</div>`).join("");
 }
 
 /* ===== タイトル画面 ===== */
@@ -6193,6 +6228,7 @@ async function titleRanks(){
     const mm=String(Math.floor(left/60000)).padStart(2,"0"), ss=String(Math.floor(left/1000)%60).padStart(2,"0");
     rtEl.innerHTML=`<span>⏱ ${LANG==="en"?"Ranking resets in":"ランキングリセットまで"}</span><b>${mm}:${ss}</b>`;
     if(rtPer!==null && per!==rtPer){ try{ titleRanks(); }catch(e){} } rtPer=per; };
+  setInterval(()=>{ try{ advSettle(); }catch(e){} },60000);
   rtTick(); setInterval(rtTick,1000);
   document.getElementById("ttlStart").onclick=()=>{
     try{ SFX.reveal("S"); }catch(e){}
