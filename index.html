@@ -579,6 +579,103 @@ html[lang=en] .ttl-upd span{display:flex}
 .ttl-pick .swear{max-width:340px}
 .ttl-pick .btn{font-size:18px;padding:14px}
 body.ttl-open .ttl-top{z-index:130!important}
+/* ===== トトの冒険（2Dアクション） ===== */
+.ttl-adv{position:absolute;left:325px;top:905px;width:405px;height:182px;padding:0;border:0;background:none;cursor:pointer}
+.ttl-adv img{position:absolute;inset:0;width:100%;height:100%}
+html .ttl .ttl-adv span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 52px/1 var(--f-body);color:#3a1a08;white-space:nowrap}
+html[lang=en] .ttl .ttl-adv span{font-size:38px}
+.ttl-adv:active{transform:scale(.96)}
+.ttl-rk{position:absolute;left:288px;top:1102px;width:480px;height:118px;display:grid;grid-template-columns:1fr 1fr;background:#8a5a2b;border:6px solid #3a2306;border-radius:18px;box-shadow:inset 0 -8px 0 #6b4220,0 6px 0 #0004;overflow:hidden}
+.ttl-rk>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.ttl-rk>div+div{border-left:5px solid #3a2306}
+.ttl .ttl-rk small{display:block;font:800 19px/1 var(--f-body);color:#f6e6c4;white-space:nowrap}
+.ttl .ttl-rk b{font:900 44px/1 var(--f-body);color:#fff8e8;text-shadow:0 3px 0 #3a2306}
+.adv{position:fixed;inset:0;z-index:140;background:#1d140b;display:flex;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}
+.adv-box{position:relative;width:100%;max-width:calc(100dvh*.9);height:100%;overflow:hidden}
+.adv canvas{position:absolute;inset:0;display:block;image-rendering:pixelated}
+.adv-hud{position:absolute;left:0;right:0;top:max(8px,env(safe-area-inset-top,0px));display:flex;gap:6px;padding:0 8px;align-items:flex-start;pointer-events:none;font-family:var(--f-pix,monospace)}
+.ah{background:#fff8e8;border:3px solid #2a1a0a;border-radius:6px;box-shadow:0 3px 0 #0005;color:#2a1a0a}
+.ah small{display:block;font:800 10px/1.1 var(--f-body);color:#4a3218}
+.ah-lv{flex:1.25;padding:3px 6px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:6px;align-items:center}
+.ah-lvn{font:900 14px/1 var(--f-pix,monospace)}
+.ah-lv .ah-hp{grid-column:1/3;display:flex;align-items:center;gap:4px}
+.ah-bar{flex:1;height:10px;background:#b3261e;border:2px solid #2a1a0a;border-radius:3px;overflow:hidden}
+.ah-bar i{display:block;height:100%;background:linear-gradient(#7be05a,#3fae2a);transition:width .15s}
+.ah-hpn{grid-row:1;grid-column:2;text-align:right;font:800 11px/1 var(--f-pix,monospace)}
+.ah-time{flex:1.3;padding:3px 6px;text-align:center}
+.ah-time>b{display:block;font:900 20px/1.05 var(--f-pix,monospace);letter-spacing:.02em}
+.ah-best{display:flex;gap:4px;align-items:center;justify-content:center;border-top:2px solid #2a1a0a;margin-top:2px;padding-top:2px;font:800 10px/1 var(--f-pix,monospace)}
+.ah-best small{display:inline;white-space:nowrap;font-size:9px;background:#2a1a0a;color:#fff8e8;padding:1px 3px;border-radius:3px}
+.ah-cnt{flex:.7;padding:3px 6px;text-align:center}
+.ah-cnt b{display:block;font:900 20px/1.1 var(--f-pix,monospace)}
+.adv-msg{position:absolute;left:50%;top:22%;transform:translate(-50%,-10px);background:#000c;color:#fff;font:800 14px/1.4 var(--f-body);padding:8px 14px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;max-width:88%;text-align:center}
+.adv-msg.on{opacity:1;transform:translate(-50%,0)}
+.adv-pad{position:absolute;left:0;right:0;bottom:0;height:25%;display:grid;grid-template-columns:1fr 1.25fr 1fr;grid-template-rows:1fr 1fr;padding:10px 12px max(8px,env(safe-area-inset-bottom,0px));gap:4px 6px;align-items:center;justify-items:center}
+.ap-btn{width:min(21vw,13dvh,96px);aspect-ratio:1;border-radius:50%;border:4px solid #2a1a0a;background:radial-gradient(circle at 40% 35%,#fff8e8,#f0d9ae);box-shadow:0 5px 0 #2a1a0a,inset 0 -5px 0 #d7b880;font:900 clamp(13px,3.6vw,18px)/1 var(--f-body);color:#2a1a0a;cursor:pointer;padding:0;touch-action:none}
+.ap-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #2a1a0a,inset 0 -5px 0 #d7b880}
+.ap-atk{font-size:clamp(16px,4.6vw,24px)}
+.ap-jump{grid-column:1;grid-row:1}
+.ap-atk{grid-column:3;grid-row:1}
+.ap-stick{grid-column:2;grid-row:1/3;position:relative;width:min(34vw,21dvh,150px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#7a5530 0 52%,#e9d0a2 53% 62%,#b98b55 63%);border:4px solid #2a1a0a;box-shadow:0 5px 0 #0006;touch-action:none}
+.ap-knob{position:absolute;left:50%;top:50%;width:48%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 38% 32%,#9aa0a6,#4b5056 60%,#2b2f33);border:3px solid #1a1a1a;pointer-events:none}
+.ap-equip{grid-column:1;grid-row:2;width:min(19vw,11dvh,84px);aspect-ratio:1/1.05;background:#6b4a2a;border:4px solid #2a1a0a;border-radius:6px;display:flex;flex-direction:column;cursor:pointer;overflow:hidden}
+.ap-equip>small{background:#cfc4b0;color:#2a1a0a;font:900 11px/1.5 var(--f-body);text-align:center;border-bottom:3px solid #2a1a0a}
+.ap-eqslot{flex:1;position:relative;display:flex;align-items:center;justify-content:center}
+.ap-eqslot img{max-width:70%;max-height:80%;image-rendering:pixelated}
+.ap-eqslot small{position:absolute;right:3px;bottom:1px;font:900 11px/1 var(--f-pix,monospace);color:#fff;text-shadow:0 1px 0 #000}
+.ap-bag{grid-column:3;grid-row:2;width:min(16vw,10dvh,72px);aspect-ratio:1;border-radius:50%;border:4px solid #2a1a0a;background:#f0d9ae;box-shadow:0 4px 0 #2a1a0a;font-size:clamp(22px,6vw,32px);cursor:pointer;padding:0}
+.ap-bag:active{transform:translateY(3px)}
+.adv-sheet{position:absolute;z-index:5}
+.adv-sheet.bag{left:8px;right:8px;top:12%;max-width:460px;margin:0 auto;background:#3b3632;border:5px solid #1c1a18;border-radius:10px;box-shadow:0 10px 30px #000a;padding:8px;display:flex;flex-direction:column;gap:8px;max-height:84%;overflow:auto}
+.ab-top{position:relative;background:#e9dcc0;border:4px solid #5b4b38;border-radius:6px;padding:8px 10px 10px}
+.ab-top p{margin:0 26px 6px 0;font:900 13px/1.3 var(--f-body);color:#2a1a0a}
+.ab-x{position:absolute;right:4px;top:4px;width:28px;height:28px;border:3px solid #2a1a0a;border-radius:6px;background:#fff8e8;font:900 14px/1 sans-serif;cursor:pointer;padding:0;color:#2a1a0a}
+.ab-fuse{display:flex;align-items:center;gap:6px}
+.ab-fuse>b{font:900 22px/1 sans-serif;color:#2a1a0a}
+.ab-fz,.ab-res{width:46px;height:46px;border:3px solid #2a1a0a;border-radius:4px;background:#2f3b46;color:#fff;font:900 22px/1 sans-serif;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.ab-res{width:54px;height:54px;background:#222;font-size:30px;cursor:default}
+.ab-fz img,.ab-res img{max-width:78%;max-height:78%;image-rendering:pixelated}
+.ab-memo{margin-left:auto;width:58px;height:62px;border:3px solid #8a6a3a;border-radius:4px;background:#f6e3b4;font:900 13px/1.2 var(--f-body);color:#4a3218;cursor:pointer;padding:0}
+.ab-fbtn{margin-top:8px;padding:8px 16px;border:3px solid #1f3a12;border-radius:6px;background:linear-gradient(#5fb83a,#3f8a25);color:#fff;font:900 16px/1 var(--f-body);text-shadow:0 2px 0 #1f3a12;cursor:pointer}
+.ab-fbtn:disabled,.ab-act:disabled{filter:grayscale(.7) brightness(.8);cursor:default}
+.ab-bottom{display:grid;grid-template-columns:1fr 120px;gap:8px}
+.ab-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;background:#1c1a18;padding:4px;border-radius:4px;align-content:start}
+.ab-cell{position:relative;aspect-ratio:1;background:#55504a;border:2px solid #2a2724;border-radius:3px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.ab-cell.empty{cursor:default}
+.ab-cell img{max-width:76%;max-height:76%;image-rendering:pixelated}
+.ab-cell.sel{outline:3px solid #ffe14a;outline-offset:-2px}
+.ab-cell small{position:absolute;right:2px;bottom:1px;font:900 10px/1 var(--f-pix,monospace);color:#fff;text-shadow:0 1px 0 #000}
+.ab-cell em{position:absolute;left:2px;top:1px;font:900 10px/1 var(--f-pix,monospace);font-style:normal;background:#ffe14a;color:#2a1a0a;border-radius:2px;padding:1px 2px}
+.ab-key{font-size:22px}
+.ab-side{display:flex;flex-direction:column;gap:6px}
+.ab-info{background:#e9dcc0;border:3px solid #5b4b38;border-radius:4px;padding:5px;min-height:54px;color:#2a1a0a}
+.ab-info b{display:block;font:900 12px/1.3 var(--f-body)}
+.ab-info small{display:block;font:700 10.5px/1.35 var(--f-body)}
+.ab-act{padding:9px 4px;border:3px solid #2a1a0a;border-radius:5px;font:900 17px/1 var(--f-body);color:#2a1a0a;cursor:pointer;box-shadow:0 3px 0 #0006}
+.ab-act.use{background:#f2c94c}.ab-act.eq{background:#bfe88a}.ab-act.drop{background:#f28c7a}
+.ab-quit{margin-top:auto;padding:6px 4px;border:2px solid #a99;border-radius:5px;background:none;color:#ddd;font:800 11px/1.2 var(--f-body);cursor:pointer}
+.adv-sheet.memo{inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px;z-index:6}
+.am-paper{width:100%;max-width:420px;background:#f6e3b4;border:4px solid #8a6a3a;border-radius:8px;padding:10px;box-shadow:0 10px 30px #000a;display:flex;flex-direction:column;gap:6px}
+.am-h{position:relative;font:900 16px/28px var(--f-body);color:#4a3218}
+.am-paper textarea{width:100%;min-height:42dvh;resize:vertical;border:2px solid #c9a96a;border-radius:4px;background:#fffaf0 repeating-linear-gradient(#fffaf0 0 27px,#e8d6b0 27px 28px);font:700 15px/28px var(--f-body);color:#2a1a0a;padding:0 8px;box-sizing:border-box;user-select:text;-webkit-user-select:text}
+.am-paper small{font:700 11px/1.3 var(--f-body);color:#6b4a2a}
+.adv-dead{position:absolute;inset:0;z-index:8;background:#000c;display:flex;align-items:center;justify-content:center;padding:18px;animation:advFade .5s ease}
+@keyframes advFade{from{opacity:0}}
+.ad-box{width:100%;max-width:380px;color:#fff;font-family:var(--f-body)}
+.ad-box h2{margin:0 0 22px;font:800 30px/1.2 var(--f-body);letter-spacing:.06em}
+.ad-l{margin:0 0 6px;font:800 15px/1 var(--f-body)}
+.ad-new{background:#ffd75e;color:#3a2306;border-radius:999px;padding:2px 8px;font-size:11px;margin-left:6px}
+.ad-rec{display:grid;grid-template-columns:1fr 1fr;border:2px solid #fff;margin-bottom:6px}
+.ad-rec>div{padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.ad-rec>div+div{border-left:2px solid #fff}
+.ad-rec small{font:700 11px/1.2 var(--f-body);color:#ddd}
+.ad-rec b{font:800 26px/1.15 var(--f-pix,monospace);margin-bottom:4px}
+.ad-sub{margin:0 0 18px;font:600 10.5px/1.4 var(--f-body);color:#bbb}
+.ad-btn{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;width:100%;margin-top:12px;padding:12px;border:2px solid #fff;background:none;color:#fff;font:700 15px/1.3 var(--f-body);cursor:pointer}
+.ad-btn img{width:22px;height:22px}
+.ad-btn small{width:100%;font-size:11px;color:#ffd0dc}
+.ad-btn:disabled{opacity:.45;cursor:default}
+.ad-btn#adBack{font-size:19px;letter-spacing:.08em}
 @media (prefers-reduced-motion:reduce){.ttl-clouds img{animation-duration:400s}.ttl-banner,.ttl-start{animation:none}}
 </style>
 </head><body class="ttl-open">
@@ -600,6 +697,8 @@ body.ttl-open .ttl-top{z-index:130!important}
       <img src="title/c1.png" alt="" style="top:1180px;--w:280px;--d:115s;--o:-90s;opacity:.95">
       <img src="title/c2.png" alt="" style="top:960px;--w:200px;--d:100s;--o:-55s;opacity:.9">
     </div>
+    <button class="ttl-adv" id="ttlAdv" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>トトの冒険</span></button>
+    <div class="ttl-rk" id="ttlRk"><div><small>生き延びたランキング</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベルランキング</small><b id="ttlR2" translate="no">―</b></div></div>
   </div>
   <button class="ttl-corner ttl-set" id="ttlSet" type="button" aria-label="設定"><img src="title/set.png" alt="" draggable="false"><span>設定</span></button>
   <button class="ttl-corner ttl-upd" id="ttlUpd" type="button"><img src="title/upd.png" alt="" draggable="false"><span>最新アップデート情報</span></button>
@@ -1911,6 +2010,9 @@ const I18N_EN = {
 "🔊 サウンド設定（BGM・効果音）": "🔊 Sound settings (music & effects)",
 "🌐 言語": "🌐 Language",
 "ガチャ・育成": "Summon & Train",
+"トトの冒険": "Toto's Adventure",
+"生き延びたランキング": "Survival rank",
+"最高レベルランキング": "Best Lv rank",
 "最新アップデート情報": "Latest Updates",
 "🏆 ランキング": "🏆 Ranking",
 "🏆 ランキングとシーズン": "🏆 Ranking & Seasons",
@@ -2613,7 +2715,7 @@ async function startRemote(uid){
       }
     }
     if(LOGIN_NAME) S.name=LOGIN_NAME;
-    S.owner=uid; DB=db; MYID=uid; remoteReady=true; hourlyDecay(); save(); render();
+    S.owner=uid; DB=db; MYID=uid; remoteReady=true; hourlyDecay(); save(); render(); try{ titleRanks(); }catch(e){}
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
@@ -3873,7 +3975,7 @@ function profilePayload(){
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow() };
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0 };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -5427,6 +5529,404 @@ function showNewMonsters(){
   bg.querySelector("#nmGo").onclick=()=>{ bg.remove(); tab="gacha"; render(); };
 }
 
+/* ===================== トトの冒険（2Dアクション） =====================
+   タイトル画面の「トトの冒険」から遊ぶ。世界はどこまでも続く横スクロール。
+   ・タイマーは始まった瞬間から進み、上限なし。30秒をこえたら冒険回数+1（1回の冒険で1回だけ）
+   ・敵（スライム）は2分ごとにLv+1。Lvが1上がるごとに 速さ×1.2・体力×1.7
+   ・トトはLv1で体力10。Lvが上がるたびに体力上限+2・体力1回復・攻撃力×1.5
+   ・宝箱：新しい場所に進むと30%で出現（ふつう80%／赤い宝石19%／虹0.01%）。中身は50%で魔法の欠片
+   ・30秒動かないとLv100の魔物がおそってくる
+   ・死んだらお墓→記録。ハート石1個で、その場から続きができる
+   ・メモだけは冒険が終わっても、ずっと残る */
+const ADV_MEMO_FIRST = "魔法の欠片の特徴と融合方法を忘れないように....！";
+const ADV = {
+  COUNT_SEC: 30, LEVEL_EVERY: 120, IDLE_SEC: 30, INV_MAX: 20,
+  HP0: 10, HP_PER_LV: 2, ATK0: 2, ATK_MUL: 1.5,
+  SL_HP: 10, SL_ATK: 1, SL_SPD: 0.20, SL_SPD_MUL: 1.2, SL_HP_MUL: 1.7, SL_ATK_MUL: 1.25, SL_XP: 0.3,
+  CHEST_CHANCE: 0.30, CHUNK: 3.2,
+  SHARD: { g:{ name:"魔法の欠片（金）", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"魔法の欠片（青）", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:5 } },
+};
+const ADV_FRAMES = { tm:{n:5,cx:.22,h:.86}, tj:{n:5,cx:.24,h:.76}, tk:{n:5,cx:.24,h:.78}, sd:{n:6,cx:.66,h:.69,b:.09} };
+const ADV_IMG = {};
+const advImg = n => { if(!ADV_IMG[n]){ const im=new Image(); im.src="adv/"+n+".png"; ADV_IMG[n]=im; } return ADV_IMG[n]; };
+function advPreload(){ ["toto_s","toto_f","sl_s","sl_f","grave","sh_g","sh_b","bolt_g","bolt_b","ch1","ch1o","ch2","ch2o","ch3","ch3o"].forEach(advImg);
+  Object.entries(ADV_FRAMES).forEach(([k,v])=>{ for(let i=0;i<v.n;i++) advImg(k+i); }); ["c1","c2","c3","c4"].forEach(c=>{ if(!ADV_IMG["cl_"+c]){ const im=new Image(); im.src="title/"+c+".png"; ADV_IMG["cl_"+c]=im; } }); }
+const advFmt = ms => { ms=Math.max(0,Math.floor(ms)); const m=Math.floor(ms/60000), s=Math.floor(ms/1000)%60, c=Math.floor(ms/10)%100; return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}:${String(c).padStart(2,"0")}`; };
+const advItemName = it => it.k==="key" ? "伝説の鍵" : ADV.SHARD[it.k].name;
+const advItemImg = it => it.k==="key" ? null : advImg(ADV.SHARD[it.k].img).src;
+let A=null, advRaf=0;
+const advLv = () => Math.floor(A.lvf);
+const advMaxHp = () => ADV.HP0 + ADV.HP_PER_LV*(advLv()-1);
+const advAtkMul = () => Math.pow(ADV.ATK_MUL, advLv()-1);
+
+function openAdventure(){
+  advPreload();
+  document.getElementById("adv")?.remove();
+  const el=document.createElement("div"); el.id="adv"; el.className="adv"; el.setAttribute("translate","no");
+  el.innerHTML=`<div class="adv-box">
+    <canvas id="advCv"></canvas>
+    <div class="adv-hud">
+      <div class="ah ah-lv"><div class="ah-lvn">Lv.<b id="ahLv">1</b></div><div class="ah-hp"><small>${advT("体力")}</small><div class="ah-bar"><i id="ahHp"></i></div></div><div class="ah-hpn" id="ahHpN">10/10</div></div>
+      <div class="ah ah-time"><small>${advT("生き延びた時間")}</small><b id="ahT">00:00:00</b><div class="ah-best"><small>${advT("最高記録")}</small><span id="ahBest"></span></div></div>
+      <div class="ah ah-cnt"><small>${advT("冒険回数")}</small><b id="ahCnt"></b></div>
+    </div>
+    <div class="adv-msg" id="advMsg"></div>
+    <div class="adv-pad">
+      <button class="ap-btn ap-jump" id="apJump" type="button">${advT("ジャンプ")}</button>
+      <div class="ap-stick" id="apStick"><div class="ap-knob" id="apKnob"></div></div>
+      <button class="ap-btn ap-atk" id="apAtk" type="button">${advT("攻撃")}</button>
+      <div class="ap-equip" id="apEquip"><small>${advT("装備")}</small><div class="ap-eqslot" id="apEqSlot"></div></div>
+      <button class="ap-bag" id="apBag" type="button" aria-label="${advT("リュック")}">🎒</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+  advStart();
+  advBindInput(el);
+  advResize(); addEventListener("resize",advResize);
+  cancelAnimationFrame(advRaf); A.last=performance.now(); advRaf=requestAnimationFrame(advLoop);
+}
+const advT = t => (LANG==="en" && ADV_EN[t]) || t;
+const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
+  "5秒こおらせる":"freezes for 5s","⚠️ 動かずにいたら、Lv100の魔物がやってきた…！":"⚠️ You stood still too long... a Lv100 monster appeared!","からっぽ…":"Empty...",
+  "のこり":"Left:","アイテムをえらんでね":"Pick an item","タイトル画面に戻る":"Back to title","ハート石の力で復活した！":"Revived by the power of a heart stone!",
+  "ハート石を1個消費してこのまま復活する":"Use 1 heart stone to revive here","メモ":"Memo","メモは冒険が終わっても、ずっと残ります":"Your memo stays forever, even after an adventure ends",
+  "ランキング":"Rank","ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません）":"Ranks are for your personal best (other adventurers' ranks are hidden)",
+  "リュックがいっぱいで入らなかった…":"Your bag is full...","何も起きなかった…":"Nothing happened...","使う":"Use","個":"","回":"",
+  "先に下のマスからアイテムをえらんでね":"Pick an item from the slots below first","冒険をやめてタイトル画面に戻りますか？（記録は保存されます）":"Quit the adventure and return to the title? (Your record is saved)",
+  "冒険をやめる":"Quit adventure","外す":"Unequip","捨てる":"Discard","攻撃力":"Power","死亡してしまった":"You died","自己ベスト更新！":"New personal best!",
+  "虹の宝箱は「伝説の鍵」を使わないと開かない…":"The rainbow chest only opens with a Legendary Key...","虹の宝箱を開けられる":"Opens a rainbow chest",
+  "融合する":"Fuse","融合成功！ 新しい魔法の欠片ができた！":"Fusion success! A new magic shard was made!","装備する":"Equip","記録":"Record",
+  "近くに虹の宝箱がない…":"No rainbow chest nearby...","達成レベル":"Level reached","魔法の欠片を使い切った":"The magic shard is used up",
+  "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","魔法の欠片（金）":"Magic Shard (Gold)","魔法の欠片（青）":"Magic Shard (Blue)","伝説の鍵":"Legendary Key" };
+const advRk = n => n ? (LANG==="en" ? "#"+n.toLocaleString() : n.toLocaleString()+"位") : "―";
+
+function advStart(){
+  A={ t:0, lvf:1, hp:ADV.HP0, x:0, y:0, vy:0, vx:0, dir:1, jumps:0, onGround:true, atk:null, inv:[], eq:-1, enemies:[], chests:[], bolts:[], fx:[], pops:[],
+      inv0:0, hurtT:0, dead:false, deadT:0, counted:false, nextSpawn:2.5, idleT:0, idleSpawned:false, lastX:0, chunksL:0, chunksR:0, moveIn:0,
+      keys:{}, bestShown:false, revives:0, fuse:[-1,-1], sel:-1, cam:0, walkT:0, flapT:0 };
+  advHud(); advEquipView();
+}
+function advResize(){
+  const cv=document.getElementById("advCv"); if(!cv) return;
+  const box=cv.parentElement, r=box.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); cv.style.width=r.width+"px"; cv.style.height=r.height+"px";
+  A.dpr=dpr; A.W=cv.width; A.H=cv.height; A.SH=A.H*0.75;   // 空3：地面1
+}
+function advClose(){
+  cancelAnimationFrame(advRaf); removeEventListener("resize",advResize);
+  document.getElementById("adv")?.remove(); document.querySelectorAll(".adv-sheet").forEach(x=>x.remove());
+  A=null; try{ titleRanks(); }catch(e){}
+}
+
+/* ---------- 入力（ジョイスティック・ボタン・キーボード） ---------- */
+function advBindInput(el){
+  const st=el.querySelector("#apStick"), kn=el.querySelector("#apKnob");
+  let pid=null;
+  const move=e=>{ const r=st.getBoundingClientRect(), cx=r.left+r.width/2, R=r.width/2;
+    let dx=(e.clientX-cx)/R; dx=Math.max(-1,Math.min(1,dx)); A.moveIn=Math.abs(dx)<0.15?0:dx; kn.style.transform=`translate(calc(-50% + ${dx*R*0.55}px),-50%)`; };
+  st.addEventListener("pointerdown",e=>{ pid=e.pointerId; st.setPointerCapture(pid); move(e); e.preventDefault(); });
+  st.addEventListener("pointermove",e=>{ if(e.pointerId===pid) move(e); });
+  const up=e=>{ if(e.pointerId!==pid) return; pid=null; A&&(A.moveIn=0); kn.style.transform="translate(-50%,-50%)"; };
+  st.addEventListener("pointerup",up); st.addEventListener("pointercancel",up);
+  el.querySelector("#apJump").addEventListener("pointerdown",e=>{ e.preventDefault(); advJump(); });
+  el.querySelector("#apAtk").addEventListener("pointerdown",e=>{ e.preventDefault(); advAttack(); });
+  el.querySelector("#apBag").onclick=()=>advBag();
+  el.querySelector("#apEquip").onclick=()=>advBag();
+  el.addEventListener("touchmove",e=>{ if(!e.target.closest(".adv-sheet")) e.preventDefault(); },{passive:false});
+}
+document.addEventListener("keydown",e=>{ if(!A||A.dead||e.target.closest&&e.target.closest("textarea,input")) return;
+  const k=e.key.toLowerCase(); A.keys[k]=true;
+  if(k===" "||k==="w"||k==="arrowup"){ e.preventDefault(); if(!e.repeat) advJump(); }
+  if(k==="j"||k==="k"||k==="enter"){ e.preventDefault(); if(!e.repeat) advAttack(); }
+  if(k==="b"||k==="i"){ advBag(); } });
+document.addEventListener("keyup",e=>{ if(A) A.keys[e.key.toLowerCase()]=false; });
+
+function advJump(){ if(!A||A.dead) return;
+  if(A.onGround){ A.vy=1.25; A.onGround=false; A.jumps=1; try{ SFX.tap(); }catch(e){} }
+  else if(A.jumps<3){ A.vy=1.12; A.jumps++; A.flapT=0.35; try{ voice&&ac()&&voice(ac(),{f:660,f2:990,dur:.09,vol:.06}); }catch(e){} }   // 翼をパタパタさせて2段・3段ジャンプ
+}
+function advAttack(){ if(!A||A.dead||A.atk) return;
+  const it=A.eq>=0?A.inv[A.eq]:null;
+  if(it && ADV.SHARD[it.k]){ const sh=ADV.SHARD[it.k]; A.atk={kind:sh.anim, t:0, dur:0.42, fired:false, it}; }
+  else A.atk={kind:"tm", t:0, dur:0.38, hit:false};
+}
+
+/* ---------- ループ ---------- */
+function advLoop(now){
+  if(!A) return;
+  const dt=Math.min(0.05,(now-A.last)/1000); A.last=now;
+  if(!document.hidden) advStep(dt);
+  advDraw(); advHud();
+  advRaf=requestAnimationFrame(advLoop);
+}
+function advStep(dt){
+  if(A.dead){ A.deadT+=dt; return; }
+  A.t+=dt*1000;
+  if(!A.counted && A.t>=ADV.COUNT_SEC*1000){ A.counted=true; S.advCount=(S.advCount||0)+1; save(); }   // 30秒をこえたら冒険回数+1
+  // 移動
+  let mv=A.moveIn; if(A.keys["arrowleft"]||A.keys["a"]) mv=-1; if(A.keys["arrowright"]||A.keys["d"]) mv=1;
+  const spd=0.55; A.vx=mv*spd; if(mv) A.dir=mv>0?1:-1;
+  A.x+=A.vx*dt; if(mv) A.walkT+=dt*8;
+  A.vy-=3.4*dt; A.y+=A.vy*dt; if(A.y<=0){ A.y=0; A.vy=0; if(!A.onGround){ A.onGround=true; A.jumps=0; } }
+  A.flapT=Math.max(0,A.flapT-dt); A.hurtT=Math.max(0,A.hurtT-dt); A.inv0=Math.max(0,A.inv0-dt);
+  // 放置チェック：30秒動かないとLv100の魔物
+  if(Math.abs(A.x-A.lastX)>0.02 || !A.onGround){ A.lastX=A.x; A.idleT=0; A.idleSpawned=false; } else A.idleT+=dt;
+  if(A.idleT>=ADV.IDLE_SEC && !A.idleSpawned){ A.idleSpawned=true; advSpawn(100,true); advMsg(advT2("⚠️ 動かずにいたら、Lv100の魔物がやってきた…！")); }
+  // カメラ
+  const viewW=A.W/A.SH; A.cam+=(A.x-viewW*0.38-A.cam)*Math.min(1,dt*6);
+  // 宝箱：新しい場所へ進むたび
+  const ch=Math.floor(A.x/ADV.CHUNK);
+  if(ch>A.chunksR){ A.chunksR=ch; advMaybeChest(1); } if(ch<A.chunksL){ A.chunksL=ch; advMaybeChest(-1); }
+  // 敵の出現
+  A.nextSpawn-=dt; if(A.nextSpawn<=0){ const alive=A.enemies.filter(e=>!e.dead).length; if(alive<6) advSpawn(1+Math.floor(A.t/1000/ADV.LEVEL_EVERY)); A.nextSpawn=2+Math.random()*3.5; }
+  // 攻撃
+  if(A.atk){ const a=A.atk; a.t+=dt;
+    if(a.kind==="tm" && !a.hit && a.t>=0.16){ a.hit=true; advMelee(); }
+    if(a.kind!=="tm" && !a.fired && a.t>=0.3){ a.fired=true; advFire(a.it); }
+    if(a.t>=a.dur) A.atk=null; }
+  // 弾
+  A.bolts.forEach(b=>{ b.x+=b.v*dt; b.life-=dt;
+    for(const e of A.enemies){ if(e.dead||b.hitSet.has(e)) continue; if(Math.abs(e.x-b.x)<e.w*0.55){ b.hitSet.add(e); advDamageEnemy(e,b.dmg); if(b.freeze) e.frozen=b.freeze; b.life=0; break; } }
+    for(const c of A.chests){ if(!c.open && Math.abs(c.x-b.x)<0.12){ advHitChest(c); b.life=0; } } });
+  A.bolts=A.bolts.filter(b=>b.life>0);
+  // 敵
+  A.enemies.forEach(e=>advEnemy(e,dt));
+  A.enemies=A.enemies.filter(e=>!(e.dead&&e.deadT>0.6) && Math.abs(e.x-A.x)<14);
+  A.chests=A.chests.filter(c=>!(c.open&&c.openT>4) && Math.abs(c.x-A.x)<20);
+  A.pops.forEach(p=>{ p.t+=dt; }); A.pops=A.pops.filter(p=>p.t<1.1);
+  if(A.hp<=0) advDie();
+}
+const advT2 = t => advT(t);
+function advMsg(t){ const m=document.getElementById("advMsg"); if(!m) return; m.textContent=t; m.classList.add("on"); clearTimeout(m._t); m._t=setTimeout(()=>m.classList.remove("on"),2600); }
+function advPop(x,y,txt,col){ A.pops.push({x,y,txt,col:col||"#fff",t:0}); }
+
+/* ---------- 敵 ---------- */
+function advSpawn(lv,boss){
+  const viewW=A.W/A.SH, side=Math.random()<0.5?-1:1;
+  const x = side<0 ? A.cam-0.3 : A.cam+viewW+0.3;
+  const hp=ADV.SL_HP*Math.pow(ADV.SL_HP_MUL,lv-1);
+  A.enemies.push({ x, lv, hp, max:hp, atk:ADV.SL_ATK*Math.pow(ADV.SL_ATK_MUL,lv-1), spd:Math.min(boss?0.75:1.1, ADV.SL_SPD*Math.pow(ADV.SL_SPD_MUL,lv-1)),
+    w:boss?0.32:0.17, dir:-side, cd:0.8, st:null, frozen:0, dead:false, deadT:0, boss, hurt:0 });
+}
+function advEnemy(e,dt){
+  if(e.dead){ e.deadT+=dt; return; }
+  e.hurt=Math.max(0,e.hurt-dt);
+  if(e.frozen>0){ e.frozen-=dt; e.st=null; return; }   // 氷づけ：動けない
+  const dx=A.x-e.x, dist=Math.abs(dx); e.cd-=dt;
+  if(e.st){ e.st.t+=dt; const T=e.st.t;
+    if(T>0.25 && T<0.5) e.x+=e.dir*0.35*dt*(e.boss?1.5:1);   // とびかかる
+    if(!e.st.hit && T>=0.45){ e.st.hit=true; if(!A.dead && Math.abs(A.x-e.x)<e.w*0.5+0.12 && A.y<0.22) advHurt(e.atk); }
+    if(T>=0.75){ e.st=null; e.cd=1.0+Math.random()*0.5; }
+    return; }
+  e.dir=dx>0?1:-1;
+  if(dist>e.w*0.5+0.1) e.x+=e.dir*e.spd*dt;
+  else if(e.cd<=0) e.st={t:0,hit:false};
+}
+function advHurt(d){ if(A.inv0>0||A.dead) return; A.hp=Math.max(0,A.hp-d); A.hurtT=0.3; A.inv0=0.6; advPop(A.x,0.25,"-"+advNum(d),"#ff6a5a"); try{ SFX.ng(); }catch(e){} }
+const advNum = n => n>=100?Math.round(n).toLocaleString():(Math.round(n*10)/10).toString();
+function advDamageEnemy(e,d){
+  e.hp-=d; e.hurt=0.15; advPop(e.x,0.22+(e.boss?0.15:0),advNum(d),"#ffe14a"); try{ SFX.tap(); }catch(x){}
+  if(e.hp<=0 && !e.dead){ e.dead=true; const gain=ADV.SL_XP*Math.pow(1.35,e.lv-1); advGainLv(gain); try{ SFX.coin(); }catch(x){} }
+}
+function advGainLv(g){ const before=advLv(); A.lvf+=g; const up=advLv()-before;
+  if(up>0){ A.hp=Math.min(advMaxHp(), A.hp+up); advPop(A.x,0.42,"Lv UP!","#7cf07c"); try{ SFX.level(); }catch(e){} } }
+function advMelee(){
+  const reach=0.26, dmg=ADV.ATK0*advAtkMul();
+  A.enemies.forEach(e=>{ if(!e.dead && (e.x-A.x)*A.dir>-0.05 && Math.abs(e.x-A.x)<reach+e.w*0.5) advDamageEnemy(e,dmg); });
+  A.chests.forEach(c=>{ if(!c.open && (c.x-A.x)*A.dir>-0.05 && Math.abs(c.x-A.x)<reach+0.08) advHitChest(c); });
+}
+function advFire(it){ const sh=ADV.SHARD[it.k];
+  A.bolts.push({ x:A.x+A.dir*0.18, v:A.dir*1.9, life:1.6, dmg:sh.dmg*advAtkMul(), img:sh.bolt, freeze:sh.freeze||0, dir:A.dir, hitSet:new Set() });
+  it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0) A.inv.splice(i,1); A.eq=-1; advMsg(advT2("魔法の欠片を使い切った")); }
+  else A.eq=A.inv.indexOf(it);
+  advEquipView(); advBagRefresh();
+}
+
+/* ---------- 宝箱 ---------- */
+function advMaybeChest(side){
+  if(Math.random()>=ADV.CHEST_CHANCE) return;
+  const r=Math.random()*100, type = r<0.01?3 : r<19.01?2 : 1;   // 虹0.01%／赤い宝石19%／ふつう80%
+  const viewW=A.W/A.SH; A.chests.push({ x: side>0 ? A.cam+viewW+0.4+Math.random()*1.5 : A.cam-0.4-Math.random()*1.5, type, open:false, openT:0 });
+}
+function advHitChest(c){
+  if(c.type===3){ advMsg(advT2("虹の宝箱は「伝説の鍵」を使わないと開かない…")); return; }
+  advOpenChest(c);
+}
+function advOpenChest(c){
+  c.open=true; c.openT=0; try{ SFX.sparkle(); }catch(e){}
+  const got=[];
+  if(c.type===1){ if(Math.random()<0.5) got.push({k:"g"}); }
+  else if(c.type===2){ if(Math.random()<0.2) got.push({k:"key"}); if(Math.random()<0.5) got.push({k:"g"}); }
+  else { got.push({k:"b"},{k:"b"},{k:"g"},{k:"g"},{k:"g"}); }
+  if(!got.length){ advPop(c.x,0.3,advT2("からっぽ…"),"#ccc"); return; }
+  got.forEach((g,i)=>{ const it={k:g.k, u:g.k==="key"?1:ADV.SHARD[g.k].uses};
+    if(A.inv.length>=ADV.INV_MAX){ advMsg(advT2("リュックがいっぱいで入らなかった…")); return; }
+    A.inv.push(it); setTimeout(()=>A&&advPop(c.x,0.3+i*0.08,"+"+advT2(advItemName(it)),"#ffe14a"),i*250); });
+  advBagRefresh();
+}
+setInterval(()=>{ if(A) A.chests.forEach(c=>{ if(c.open) c.openT+=0.25; }); },250);
+
+/* ---------- 死亡・復活 ---------- */
+function advDie(){
+  if(A.dead) return; A.dead=true; A.deadT=0; A.atk=null; try{ SFX.ng(); }catch(e){}
+  const t=Math.floor(A.t), lv=advLv(); let rec=false;
+  if(t>(S.advBestT||0)){ S.advBestT=t; rec=true; } if(lv>(S.advBestL||0)){ S.advBestL=lv; rec=true; }
+  save(); queueProfile(true);
+  setTimeout(()=>advDeathScreen(t,lv,rec),1300);
+}
+async function advDeathScreen(t,lv,rec){
+  if(!A) return;
+  document.querySelectorAll(".adv-sheet").forEach(x=>x.remove());
+  const el=document.createElement("div"); el.className="adv-dead"; el.id="advDead";
+  const hearts=S.heart||0;
+  el.innerHTML=`<div class="ad-box"><h2>${advT2("死亡してしまった")}</h2>
+    <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
+    <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
+      <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
+    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません）")}</p>
+    <button class="ad-btn" id="adRev" type="button" ${hearts?"":"disabled"}><img src="${typeof HEART_IMG!=="undefined"?HEART_IMG:""}" alt="">${advT2("ハート石を1個消費してこのまま復活する")}<small>${advT2("のこり")} ${hearts.toLocaleString()}${advT2("個")}</small></button>
+    <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
+  document.getElementById("adv").appendChild(el);
+  el.querySelector("#adBack").onclick=()=>advClose();
+  el.querySelector("#adRev").onclick=()=>{ if(!(S.heart>0)) return; S.heart--; save(); el.remove();
+    A.dead=false; A.hp=advMaxHp(); A.inv0=3; A.revives++; A.enemies.forEach(e=>{ if(Math.abs(e.x-A.x)<1.2) e.x+=(e.x>=A.x?1:-1)*1.5; }); A.idleT=0; A.last=performance.now(); advMsg(advT2("ハート石の力で復活した！")); try{ SFX.reveal("S"); }catch(e){} };
+  const r=await advRanks(); const a=el.querySelector("#adR1"), b=el.querySelector("#adR2");
+  if(a) a.textContent=advRk(r.t); if(b) b.textContent=advRk(r.l);
+}
+// 自分の自己ベストの順位だけを数える（ほかの人の順位や記録は表示しない）
+async function advRanks(){
+  const out={t:null,l:null}; if(!DB||!MYID) return out;
+  const cnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
+  const col=DB.collection("profiles");
+  if(S.advBestT){ const c=await cnt(col.where("advT",">",S.advBestT)); if(c!=null) out.t=c+1; }
+  if(S.advBestL){ const c=await cnt(col.where("advL",">",S.advBestL)); if(c!=null) out.l=c+1; }
+  return out;
+}
+
+/* ---------- リュック（G） ---------- */
+function advBag(){
+  if(!A) return; if(document.querySelector(".adv-sheet.bag")){ document.querySelector(".adv-sheet.bag").remove(); return; }
+  const el=document.createElement("div"); el.className="adv-sheet bag";
+  document.getElementById("adv").appendChild(el); A.sel=-1; advBagRefresh();
+}
+function advBagRefresh(){
+  const el=document.querySelector(".adv-sheet.bag"); if(!el||!A) return;
+  A.fuse=A.fuse.map(i=>i<A.inv.length?i:-1);
+  const slot=i=>{ const it=A.inv[i]; if(!it) return `<div class="ab-cell empty"></div>`;
+    return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""}" type="button" data-ai="${i}">${it.k==="key"?`<span class="ab-key">🗝</span>`:`<img src="${advItemImg(it)}" alt="">`}${it.k!=="key"?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}</button>`; };
+  const fz=j=>{ const i=A.fuse[j], it=i>=0?A.inv[i]:null; return `<button class="ab-fz" type="button" data-fz="${j}">${it?(it.k==="key"?"🗝":`<img src="${advItemImg(it)}" alt="">`):"＋"}</button>`; };
+  const a=A.fuse[0]>=0?A.inv[A.fuse[0]]:null, b=A.fuse[1]>=0?A.inv[A.fuse[1]]:null;
+  const known=(S.advRecipes||[]).includes("g+g"), willB=a&&b&&a.k==="g"&&b.k==="g";
+  const sel=A.sel>=0?A.inv[A.sel]:null;
+  el.innerHTML=`<div class="ab-top"><p>${advT2("魔法の欠片を融合して新たな魔法を追求しよう！")}</p><button class="ab-x" type="button" id="abX">✕</button>
+      <div class="ab-fuse">${fz(0)}<b>＋</b>${fz(1)}<b>➡</b><div class="ab-res">${willB&&known?`<img src="${advImg("sh_b").src}" alt="">`:"？"}</div>
+      <button class="ab-memo" type="button" id="abMemo">📜<br>${advT2("メモ")}</button></div>
+      <button class="ab-fbtn" type="button" id="abFuse" ${a&&b?"":"disabled"}>${advT2("融合する")}</button></div>
+    <div class="ab-bottom"><div class="ab-grid">${Array.from({length:ADV.INV_MAX},(_,i)=>slot(i)).join("")}</div>
+      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):`${advT2("攻撃力")} ${ADV.SHARD[sel.k].dmg}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("5秒こおらせる")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
+        <button class="ab-act use" type="button" id="abUse" ${sel&&sel.k==="key"?"":"disabled"}>${advT2("使う")}</button>
+        <button class="ab-act eq" type="button" id="abEq" ${sel&&sel.k!=="key"?"":"disabled"}>${A.sel>=0&&A.eq===A.sel?advT2("外す"):advT2("装備する")}</button>
+        <button class="ab-act drop" type="button" id="abDrop" ${sel?"":"disabled"}>${advT2("捨てる")}</button>
+        <button class="ab-quit" type="button" id="abQuit">${advT2("冒険をやめる")}</button></div></div>`;
+  el.querySelector("#abX").onclick=()=>el.remove();
+  el.querySelectorAll("[data-ai]").forEach(b=>b.onclick=()=>{ A.sel=+b.dataset.ai===A.sel?-1:+b.dataset.ai; advBagRefresh(); });
+  el.querySelectorAll("[data-fz]").forEach(b=>b.onclick=()=>{ const j=+b.dataset.fz;
+    if(A.fuse[j]>=0){ A.fuse[j]=-1; } else if(A.sel>=0 && A.fuse[1-j]!==A.sel){ A.fuse[j]=A.sel; A.sel=-1; } else advMsg(advT2("先に下のマスからアイテムをえらんでね"));
+    advBagRefresh(); });
+  el.querySelector("#abFuse").onclick=()=>{ const [i,j]=A.fuse; const x=A.inv[i], y=A.inv[j]; if(!x||!y) return;
+    if(x.k==="g"&&y.k==="g"){ const keep=A.inv.filter((_,k)=>k!==i&&k!==j); const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv=keep; A.inv.push({k:"b",u:ADV.SHARD.b.uses}); A.eq=eqIt?A.inv.indexOf(eqIt):-1;
+      S.advRecipes=[...new Set([...(S.advRecipes||[]),"g+g"])]; save(); A.fuse=[-1,-1]; A.sel=-1; advMsg(advT2("融合成功！ 新しい魔法の欠片ができた！")); try{ SFX.reveal("S"); }catch(e){} }
+    else { advMsg(advT2("何も起きなかった…")); A.fuse=[-1,-1]; }
+    advEquipView(); advBagRefresh(); };
+  el.querySelector("#abEq").onclick=()=>{ if(A.sel<0) return; A.eq = A.eq===A.sel ? -1 : A.sel; advEquipView(); advBagRefresh(); };
+  el.querySelector("#abUse").onclick=()=>{ const it=A.inv[A.sel]; if(!it||it.k!=="key") return;
+    const near=A.chests.find(c=>c.type===3&&!c.open&&Math.abs(c.x-A.x)<1.6);
+    if(!near) return advMsg(advT2("近くに虹の宝箱がない…"));
+    const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv.splice(A.sel,1); A.eq=eqIt?A.inv.indexOf(eqIt):-1; A.sel=-1; advOpenChest(near); advEquipView(); advBagRefresh(); };
+  el.querySelector("#abDrop").onclick=()=>{ if(A.sel<0) return; const eqIt=A.eq>=0?A.inv[A.eq]:null; const dropped=A.inv.splice(A.sel,1)[0];
+    A.eq=eqIt&&eqIt!==dropped?A.inv.indexOf(eqIt):-1; A.fuse=[-1,-1]; A.sel=-1; advEquipView(); advBagRefresh(); };
+  el.querySelector("#abMemo").onclick=()=>advMemo();
+  el.querySelector("#abQuit").onclick=()=>{ if(confirm(advT2("冒険をやめてタイトル画面に戻りますか？（記録は保存されます）"))){ A.hp=0; advDie(); el.remove(); } };
+}
+function advMemo(){
+  document.querySelector(".adv-sheet.memo")?.remove();
+  if(S.advMemo==null){ S.advMemo=LANG==="en"?"Don't forget the traits of magic shards and how to fuse them....!":ADV_MEMO_FIRST; save(); }
+  const el=document.createElement("div"); el.className="adv-sheet memo";
+  el.innerHTML=`<div class="am-paper"><div class="am-h">📜 ${advT2("メモ")}<button class="ab-x" type="button" id="amX">✕</button></div>
+    <textarea id="amT" maxlength="2000" spellcheck="false"></textarea><small>${advT2("メモは冒険が終わっても、ずっと残ります")}</small></div>`;
+  document.getElementById("adv").appendChild(el);
+  const ta=el.querySelector("#amT"); ta.value=S.advMemo;
+  ta.oninput=()=>{ S.advMemo=ta.value; clearTimeout(ta._t); ta._t=setTimeout(save,600); };
+  el.querySelector("#amX").onclick=()=>{ S.advMemo=ta.value; save(); el.remove(); };
+}
+function advEquipView(){ const s=document.getElementById("apEqSlot"); if(!s||!A) return; const it=A.eq>=0?A.inv[A.eq]:null;
+  s.innerHTML=it?`<img src="${advItemImg(it)}" alt=""><small>${it.u}</small>`:""; }
+function advHud(){
+  if(!A) return; const $$=id=>document.getElementById(id);
+  const lv=advLv(), mx=advMaxHp(); if(A.hp>mx) A.hp=mx;
+  $$("ahLv").textContent=lv; $$("ahHp").style.width=Math.max(0,A.hp/mx*100)+"%"; $$("ahHpN").textContent=`${advNum(A.hp)}/${mx}`;
+  $$("ahT").textContent=advFmt(A.t); $$("ahBest").textContent=`${advFmt(S.advBestT||0)}/Lv.${S.advBestL||1}`;
+  $$("ahCnt").textContent=(S.advCount||0)+(LANG==="en"?"":"回");
+}
+
+/* ---------- 描画 ---------- */
+function advDraw(){
+  const cv=document.getElementById("advCv"); if(!cv||!A||!A.W) return; const g=cv.getContext("2d"), W=A.W, H=A.H, SH=A.SH, GY=SH;
+  g.imageSmoothingEnabled=false;
+  // 空
+  const sk=g.createLinearGradient(0,0,0,GY); sk.addColorStop(0,"#5ab8f5"); sk.addColorStop(1,"#bfe7ff"); g.fillStyle=sk; g.fillRect(0,0,W,GY);
+  // 雲（遠くはゆっくり）
+  const cl=["cl_c1","cl_c3","cl_c2","cl_c4","cl_c1"];
+  cl.forEach((n,i)=>{ const im=ADV_IMG[n]; if(!im||!im.complete) return; const span=W*1.6, w=SH*(0.35+0.08*i), h=w*im.height/im.width;
+    let x=((i*0.37*span - A.cam*SH*0.15 - performance.now()*0.008*(1+i*0.3))%span+span)%span-w; g.globalAlpha=.95; g.drawImage(im,x,SH*(0.06+0.11*i),w,h); g.globalAlpha=1; });
+  // 地面
+  const sx=x=>(x-A.cam)*SH, gy=y=>GY-y*SH;
+  g.fillStyle="#9a6a3c"; g.fillRect(0,GY,W,H-GY);
+  g.fillStyle="#8a5c32"; const off=((A.cam*SH)%40+40)%40; for(let x=-off;x<W;x+=40) for(let y=GY+26;y<H;y+=34) g.fillRect(x+((y/34)%2)*18,y,8*A.dpr,8*A.dpr);
+  g.fillStyle="#5ec53a"; g.fillRect(0,GY-2,W,14*A.dpr); g.fillStyle="#3f9a25"; for(let x=-((A.cam*SH)%16); x<W; x+=16){ g.fillRect(x,GY-6*A.dpr,6*A.dpr,8*A.dpr); g.fillRect(x+8,GY+12*A.dpr,6*A.dpr,6*A.dpr); }
+  // 宝箱
+  A.chests.forEach(c=>{ const im=advImg("ch"+c.type+(c.open?"o":"")); if(!im.complete) return; const h=SH*(c.type===3?0.17:0.13), w=h*im.width/im.height;
+    g.globalAlpha=c.open?Math.max(0,1-(c.openT-2.5)/1.5):1; g.drawImage(im,sx(c.x)-w/2,GY-h+SH*0.01,w,h); g.globalAlpha=1; });
+  // 敵
+  A.enemies.forEach(e=>{ const bh=SH*(e.boss?0.26:0.12);
+    let im, h, w, cx=sx(e.x), flip=false, alpha=e.dead?Math.max(0,1-e.deadT/0.6):1;
+    if(e.st&&!e.frozen){ const f=ADV_FRAMES.sd, k=Math.min(5,Math.floor(e.st.t/0.75*6)); im=advImg("sd"+k); h=bh/f.h; w=h*im.width/im.height; flip=e.dir>0;
+      const ax=f.cx*w; g.save(); g.globalAlpha=alpha; g.translate(cx,GY+h*(f.b||0)); if(flip) g.scale(-1,1); g.drawImage(im,-ax,-h,w,h); g.restore(); }
+    else { im=advImg("sl_s"); h=bh; w=h*im.width/im.height; flip=e.dir<0; const sq=e.dead?0.6:1+Math.sin(performance.now()/180+e.x*7)*0.04;
+      g.save(); g.globalAlpha=alpha; g.translate(cx,GY); if(flip) g.scale(-1,1); g.scale(1/sq,sq);
+      if(e.boss) g.filter="hue-rotate(150deg) saturate(2)"; else if(e.frozen>0) g.filter="hue-rotate(20deg) brightness(1.3) saturate(.6)"; else if(e.hurt>0) g.filter="brightness(2)";
+      g.drawImage(im,-w/2,-h,w,h); g.restore(); g.filter="none"; }
+    if(e.frozen>0&&!e.dead){ g.fillStyle="rgba(170,225,255,.45)"; g.fillRect(cx-bh*0.75,GY-bh*1.05,bh*1.5,bh*1.05); }
+    if(!e.dead){ g.font=`900 ${Math.round(SH*0.035)}px sans-serif`; g.textAlign="center"; g.fillStyle=e.boss?"#ff4d4d":"#fff"; g.strokeStyle="#000"; g.lineWidth=3*A.dpr;
+      const ly=GY-bh-SH*0.03; g.strokeText("Lv"+e.lv,cx,ly); g.fillText("Lv"+e.lv,cx,ly);
+      g.fillStyle="#000a"; g.fillRect(cx-bh*0.5,ly+4*A.dpr,bh,4*A.dpr); g.fillStyle="#ff5a5a"; g.fillRect(cx-bh*0.5,ly+4*A.dpr,bh*Math.max(0,e.hp/e.max),4*A.dpr); } });
+  // 弾
+  A.bolts.forEach(b=>{ const im=advImg(b.img); if(!im.complete) return; const h=SH*0.07, w=h*im.width/im.height; g.save(); g.translate(sx(b.x),GY-SH*0.09); if(b.dir<0) g.scale(-1,1); g.drawImage(im,-w/2,-h/2,w,h); g.restore(); });
+  // トト
+  const tx=sx(A.x), ty=gy(A.y), TH=SH*0.15;
+  if(A.dead){ const im=advImg("grave"); if(im.complete){ const h=SH*0.16, w=h*im.width/im.height; g.drawImage(im,tx-w/2,GY-h+SH*0.01,w,h); } }
+  else {
+    const blink=A.inv0>0 && Math.floor(performance.now()/80)%2===0;
+    g.save(); if(blink) g.globalAlpha=.45;
+    if(A.atk){ const f=ADV_FRAMES[A.atk.kind], k=Math.min(f.n-1,Math.floor(A.atk.t/A.atk.dur*f.n)), im=advImg(A.atk.kind+k);
+      const h=TH/f.h, w=h*im.width/im.height; g.translate(tx,ty); if(A.dir<0) g.scale(-1,1); g.drawImage(im,-f.cx*w,-h,w,h); }
+    else { const im=advImg("toto_s"), h=TH, w=h*im.width/im.height, bob=A.onGround&&A.vx?Math.abs(Math.sin(A.walkT))*SH*0.012:0;
+      g.translate(tx,ty-bob); if(A.dir<0) g.scale(-1,1); if(A.hurtT>0) g.filter="brightness(1.8) sepia(1) hue-rotate(-40deg)";
+      const flap=A.flapT>0?1+Math.sin(A.flapT*60)*0.08:1; g.scale(flap,1/flap); g.drawImage(im,-w/2,-h,w,h); }
+    g.restore(); g.filter="none";
+    if(A.flapT>0){ g.strokeStyle="#ffffffcc"; g.lineWidth=2*A.dpr; for(let i=0;i<3;i++){ g.beginPath(); g.arc(tx-A.dir*TH*0.45,ty-TH*0.55,TH*(0.2+i*0.08),-0.6,0.6); g.stroke(); } }
+  }
+  // 数字
+  A.pops.forEach(p=>{ g.globalAlpha=Math.max(0,1-p.t/1.1); g.font=`900 ${Math.round(SH*0.045)}px sans-serif`; g.textAlign="center"; g.lineWidth=4*A.dpr; g.strokeStyle="#000"; g.fillStyle=p.col;
+    const y=gy(p.y)-p.t*SH*0.12; g.strokeText(p.txt,sx(p.x),y); g.fillText(p.txt,sx(p.x),y); g.globalAlpha=1; });
+}
+/* ---------- タイトル画面のランキング表示 ---------- */
+async function titleRanks(){
+  const a=document.getElementById("ttlR1"), b=document.getElementById("ttlR2"); if(!a||!b) return;
+  if(!S.advBestT){ a.textContent="―"; b.textContent="―"; return; }
+  const r=await advRanks(); a.textContent=advRk(r.t); b.textContent=advRk(r.l);
+}
+
 /* ===== タイトル画面 ===== */
 (function(){
   const T=document.getElementById("title"); if(!T) return;
@@ -5460,6 +5960,8 @@ function showNewMonsters(){
     bg.querySelectorAll("[data-tsl]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.tsl!==LANG) setLang(b.dataset.tsl); });
   });
   upd.onclick=()=>onTop(()=>openRules());
+  document.getElementById("ttlAdv").onclick=()=>{ try{ SFX.reveal("S"); }catch(e){} openAdventure(); };
+  setTimeout(()=>{ try{ titleRanks(); }catch(e){} },2500);
   document.getElementById("ttlStart").onclick=()=>{
     try{ SFX.reveal("S"); }catch(e){}
     T.classList.add("out"); document.body.classList.remove("ttl-open");
