@@ -2785,7 +2785,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -5056,6 +5056,12 @@ function checkComp1019d(){
   if(S.comp1019d||!S.comp1019) return;
   if(normName(myName())===normName("🦄") && (S.firsts||0)>0){ S.firsts--; queueProfile(true); try{ render(); }catch(e){} }
   S.comp1019d=1; save();
+}
+// 補償のつづき（1回だけ）：yoko★さんの最高順位を3位にする（運営の指定）
+function checkComp1019e(){
+  if(S.comp1019e||!S.comp1019) return;
+  if(normName(myName())===normName("yoko★")){ S.best=3; S.firsts=0; queueProfile(true); try{ render(); }catch(e){} }
+  S.comp1019e=1; save();
 }
 // 補償のつづき（1回だけ）：🦄さんの勝率の賞品。終了後に受けたバトルまで勝率に入っていたので、
 // ランク戦（2）の期間中のバトルの記録だけで勝率を計算しなおして、その勝率の賞品（覚醒の石）をわたす
