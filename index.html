@@ -6255,7 +6255,7 @@ function advBagClose(){ document.querySelectorAll("#adv .adv-sheet.bag,#adv .adv
 function advBagRefresh(){
   const el=document.querySelector(".adv-sheet.bag"); if(!el||!A) return;
   A.fuse=A.fuse.map(i=>i<A.inv.length?i:-1);
-  const slot=i=>{ const it=A.inv[i]; if(!it) return `<div class="ab-cell empty"></div>`;
+  const slot=i=>{ const it=A.inv[i]; if(!it||A.fuse.includes(i)) return `<div class="ab-cell empty"></div>`;   // 融合の枠に移した欠片は、下のマスから消える
     return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""} ${A.fuse.includes(i)?"infz":""}" type="button" data-ai="${i}">${advItemIcon(it)}${advIsShard(it)?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}</button>`; };
   const fz=j=>{ const i=A.fuse[j], it=i>=0?A.inv[i]:null; return `<button class="ab-fz" type="button" data-fz="${j}">${it?advItemIcon(it):"＋"}</button>`; };
   const a=A.fuse[0]>=0?A.inv[A.fuse[0]]:null, b=A.fuse[1]>=0?A.inv[A.fuse[1]]:null;
