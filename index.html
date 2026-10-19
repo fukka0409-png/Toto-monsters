@@ -1432,6 +1432,7 @@ const I18N_EN = {
 "{0}×{1}を手に入れた！": "Got {0} ×{1}!",
 "この呪文はもう使われています": "This spell has already been used",
 "{0}コインと覚醒の石{1}個を受け取りました！": "Received {0} coins and {1} Awakening Stones!",
+"{0}コインとガチャチケット{1}枚を受け取りました！": "Received {0} coins and {1} Gacha Tickets!",
 "{0}コインを受け取りました！": "Received {0} coins!",
 "呪文 +{0}コイン": "Spell +{0} coins",
 "ログイン / はじめて登録": "Log In / Sign Up",
@@ -2505,7 +2506,8 @@ const CODES = [
   { h: "f97eae9a567862f473cae21581786e18ccaba6af1ca1ff3169abd9f26d011461", coins: 50000, stone: 50 },  // 2026-10-17 追加「100人ありがとう」（1回だけ）
   { h: "b69aa8ecc74fd7ff50dc344f0ac2fcea4d8665c2c55246d0e09371aa4bad5a7d", art: "usagi" },  // 2026-10-18 追加：特別イラスト「トランプの白うさぎ」（何回でも）
   { h: "d73e7060973e5bc18620b1162798db67e681c645d9522325354b4acbfb48543f", item: "ticket", qty: 50, repeat: true },
-  { h: "947c3557aebb38ea6d5a0302baed8eca97dd5c38b0f6e39827967350495a186f", coins: 10000 },  // 2026-10-19 追加「シーズンリセットバグ」（1回だけ）  // ガチャチケット×50（何回でも）  // 何回でも使える
+  { h: "947c3557aebb38ea6d5a0302baed8eca97dd5c38b0f6e39827967350495a186f", coins: 10000 },
+  { h: "28b90b526c941d710190d4624f85511a5f5119b7e006cf739e41b9f48a9cd45b", coins: 10000, ticket: 2 },  // 2026-10-19 追加「ユニコーン」：1万コイン＋ガチャチケット2枚（1回だけ）  // 2026-10-19 追加「シーズンリセットバグ」（1回だけ）  // ガチャチケット×50（何回でも）  // 何回でも使える
 ];
 const MAX_LV = 100;
 // 進化する魔物：段階ごとのレベル上限（cap）。上限に達したら、進化するまでレベルは上がらない（覚醒の石も使えない）
@@ -4012,8 +4014,8 @@ function renderBonus(target){
     if(c.item){ const it=itemOf(c.item), q=c.qty||1; addItem(c.item,q); save(); $("#codeIn").value="";
       say(c.item==="ticket"?`「${it.name}」を${q}枚手に入れた！ガチャで使えます。ランキングで相手をタップすると贈ることもできます（持っている数：${inv(c.item)}枚）`:`「${it.name}」を${q}個手に入れた！ランキングで相手をタップすると使えます（持っている数：${inv(c.item)}）`,true); SFX.reveal("S"); toast(`${it.name}×${q}を手に入れた！`); return; }
     if(S.codes.includes(h)) return say("この呪文はもう使われています",false);
-    S.codes.push(h); S.coins+=c.coins; if(c.stone) addItem("stone",c.stone); save(); renderCoins(); $("#codeIn").value="";
-    say(c.stone?`${c.coins.toLocaleString()}コインと覚醒の石${c.stone}個を受け取りました！`:`${c.coins.toLocaleString()}コインを受け取りました！`,true); SFX.coin(); toast(`呪文 +${c.coins.toLocaleString()}コイン`);
+    S.codes.push(h); S.coins+=c.coins; if(c.stone) addItem("stone",c.stone); if(c.ticket) addItem("ticket",c.ticket); save(); renderCoins(); $("#codeIn").value="";
+    say(c.stone?`${c.coins.toLocaleString()}コインと覚醒の石${c.stone}個を受け取りました！`:c.ticket?`${c.coins.toLocaleString()}コインとガチャチケット${c.ticket}枚を受け取りました！`:`${c.coins.toLocaleString()}コインを受け取りました！`,true); SFX.coin(); toast(`呪文 +${c.coins.toLocaleString()}コイン`);
   };
 }
 async function sha256(t){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
