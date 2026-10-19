@@ -2785,7 +2785,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -5050,6 +5050,30 @@ function checkComp1019b(){
   if(S.comp1019b||!S.comp1019) return;
   if(normName(myName())===normName("yoko★") && S.best===1 && !((S.firsts||0)>0)){ S.best=2; queueProfile(true); try{ render(); }catch(e){} }
   S.comp1019b=1; save();
+}
+// 補償のつづき（1回だけ）：🦄さんの勝率の賞品。終了後に受けたバトルまで勝率に入っていたので、
+// ランク戦（2）の期間中のバトルの記録だけで勝率を計算しなおして、その勝率の賞品（覚醒の石）をわたす
+async function checkComp1019c(){
+  if(S.comp1019c||!DB||!MYID||(S.season||0)<=COMP_SS) return;
+  if(normName(myName())!==normName("🦄")){ S.comp1019c=1; save(); return; }
+  try{
+    const from=seasonEnd(COMP_SS-1), to=seasonEnd(COMP_SS);
+    const [a,d]=await Promise.all([withTO(DB.collection("battles").where("att","==",MYID).get()), withTO(DB.collection("battles").where("def","==",MYID).get())]);
+    let w=0,l=0,dr=0;
+    a.docs.map(x=>x.data()).filter(b=>b.at>=from&&b.at<to).forEach(b=>{ if(b.result==="att") w++; else if(b.result==="def") l++; else dr++; });
+    d.docs.map(x=>x.data()).filter(b=>b.at>=from&&b.at<to).forEach(b=>{ if(b.result==="def") w++; else if(b.result==="att") l++; else dr++; });
+    const t=w+l+dr, wr=t?w/t*100:0, wp=t>=WR_MIN_BATTLES?WR_PRIZE.find(([th])=>wr>=th):null;
+    S.comp1019c=1;
+    if(wp){ addItem("stone",wp[1]); save(); render(); const L=LANG==="en";
+      const show=()=>{ if(document.querySelector(".reveal")) return setTimeout(show,1500);
+        const g=document.createElement("div"); g.className="reveal"; g.setAttribute("translate","no");
+        g.innerHTML=`<div class="burst"></div><h3>${L?"🙇 Win-rate prize for the 10/19 Ranked Match":"🙇 10/19のランク戦の勝率の賞品"}</h3>
+          <p class="note" style="text-align:center;max-width:330px">${L?`Recalculated with only the battles during the match: ${w}W ${l}L ${dr}D (win rate ${Math.round(wr*10)/10}%)`:`ランク戦の期間中のバトルだけで計算しなおしました：${w}勝${l}敗${dr}分（勝率${Math.round(wr*10)/10}%）`}<br><br>
+          <b>${L?`+${wp[1]} Awakening Stones`:`覚醒の石 +${wp[1]}個`}</b></p><button class="btn gold" type="button">OK</button>`;
+        document.body.appendChild(g); SFX.reveal("S"); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
+      show(); }
+    else save();
+  }catch(e){}   // 読めなかったら、次に開いたときにもう一度
 }
 // 特別配布：2026-10-19 22:00に終わったランク戦（2）の1〜3位に 限定ランク「メイドトランプうさぎ」（1回だけ）
 const MAID_SS=2, MAID_ID=93;
