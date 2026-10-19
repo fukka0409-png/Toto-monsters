@@ -4089,9 +4089,9 @@ async function loadRanking(force){
     await loadSeasonEvents(seasonNow(), true, force); TICKS={s:seasonNow(), list:await loadTicks(seasonNow())};
     RANK=q.docs.map(d=>liveAdjust(normRank({id:d.id,...d.data()},now))).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0))).slice(0,100);
     const i=RANK.findIndex(r=>r.id===MYID);
-    if(i>=0) myRank=i+1;
-    if(rankless()){ myRank=null; }
-    else if(!rankless()){ const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
+    if(rankless()) myRank=null;   // ランク戦が始まって1時間は順位なし
+    else if(i>=0) myRank=i+1;     // 一覧（上位100人）に入っていれば、一覧と同じ順位
+    else { const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
     try{ const col=DB.collection("profiles");   // ランキングの参加人数（まとめて数えるだけなので通信は少ない）
       RANK_TOTAL = col.count ? (await col.count().get()).data().count : Math.max(RANK_TOTAL, q.size); }catch(e){ RANK_TOTAL=Math.max(RANK_TOTAL, q.size); }
     rankErr=false;
@@ -4917,7 +4917,8 @@ const tickNow = () => Math.floor(gnow()/TICK_MS);
 let TICKS={s:null, list:[]};
 async function loadTicks(s){ try{ const q=await DB.collection("ticks").where("ss","==",s).get(); return q.docs.map(x=>x.data()).sort((a,b)=>a.n-b.n); }catch(e){ return []; } }
 async function snapTick(){
-  if(!DB||!RANK||!RANK.length||rankless()) return;   // 順位がない1時間は、上位キープボーナスなし const n=tickNow(); if(snapTick.done===n) return;
+  if(!DB||!RANK||!RANK.length||rankless()) return;   // 順位がない1時間は、上位キープボーナスなし
+  const n=tickNow(); if(snapTick.done===n) return;
   try{ const ref=DB.doc("ticks/"+n); const ex=await ref.get();
     if(!ex.exists) await ref.set({n, ss:seasonNow(), at:gnow(), t10:RANK.slice(0,10).map(r=>r.id), t30:RANK.slice(10,30).map(r=>r.id)});
     snapTick.done=n; }catch(e){}
