@@ -2785,7 +2785,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -5043,6 +5043,13 @@ async function checkComp1019(){
       document.body.appendChild(g); SFX.reveal("S"); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
     show();
   }catch(e){}
+}
+// 補償のつづき（1回だけ）：yoko★さんのプロフィールの「最高順位 1位」は、まちがった1位によるものなので直す
+// 1位になった回数が0なら、最高順位は本来の2位（🦄さんのすぐ下）にする
+function checkComp1019b(){
+  if(S.comp1019b||!S.comp1019) return;
+  if(normName(myName())===normName("yoko★") && S.best===1 && !((S.firsts||0)>0)){ S.best=2; queueProfile(true); try{ render(); }catch(e){} }
+  S.comp1019b=1; save();
 }
 // 特別配布：2026-10-19 22:00に終わったランク戦（2）の1〜3位に 限定ランク「メイドトランプうさぎ」（1回だけ）
 const MAID_SS=2, MAID_ID=93;
