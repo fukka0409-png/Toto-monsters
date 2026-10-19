@@ -550,6 +550,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 /* ===== タイトル画面（ゲームを開いたら最初に出る） ===== */
 .ttl{position:fixed;inset:0;z-index:100;overflow:hidden;background:#3a9be8;transition:opacity .45s ease;--s:.5;user-select:none;-webkit-user-select:none}
 .ttl.out{opacity:0;pointer-events:none}
+.ttl[hidden]{display:none}
+.ttl:not(.laid) .ttl-stage,.ttl:not(.laid) .ttl-corner{visibility:hidden}
 .ttl-blur{position:absolute;inset:-40px;background:url(title/bg.jpg) center/cover;filter:blur(18px) brightness(.85)}
 .ttl-stage{position:absolute;left:0;top:0;width:1046px;height:1504px;transform-origin:0 0;overflow:hidden}
 .ttl-bg{position:absolute;inset:0;width:100%;height:100%}
@@ -713,6 +715,27 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
   <button class="ttl-corner ttl-upd" id="ttlUpd" type="button"><img src="title/upd.png" alt="" draggable="false"><span>最新アップデート情報</span></button>
   <div class="ttl-lang" translate="no"><button type="button" data-tl="ja">日本語</button><button type="button" data-tl="en">English</button></div>
 </div>
+<script>
+/* タイトル画面の大きさを、画面が出るより先に合わせる（開いた瞬間に一瞬ドアップになるのを防ぐ） */
+(function(){
+  const T=document.getElementById("title"); if(!T) return;
+  const W=1046, H=1504, st=document.getElementById("ttlStage");
+  const set=document.getElementById("ttlSet"), upd=document.getElementById("ttlUpd");
+  const lay=()=>{ if(T.hidden) return; const vw=innerWidth, vh=innerHeight; const s=vh/H;   // 高さに合わせる（スマホは左右が少し切れ、PCは左右にぼかした背景）
+    const sw=W*s, ox=(vw-sw)/2; st.style.transform=`translate(${ox}px,0) scale(${s})`;
+    // 画面がせまいときは、タイトルの巻物を見えている幅に合わせて小さくする
+    const vis=Math.min(W, vw/s), bw=Math.min(900, vis*0.96), bh=bw*350/900, bn=T.querySelector(".ttl-banner");
+    bn.style.width=bw+"px"; bn.style.height=bh+"px"; bn.style.left=(W-bw)/2+"px"; bn.style.top=(413-bh/2)+"px";
+    T.style.setProperty("--s",s);
+    const fl=Math.max(0,ox), fr=Math.min(vw,ox+sw), m=Math.max(10,30*s);
+    set.style.width=138*s+"px"; set.style.height=169*s+"px"; set.style.left=(fl+m)+"px"; set.style.top=Math.max(10,31*s)+"px";
+    upd.style.width=319*s+"px"; upd.style.height=97*s+"px"; upd.style.left=(fr-m-319*s)+"px"; upd.style.top=Math.max(10,47*s)+"px";
+    if(fr-fl<(138+319)*s+3*m){ const k=(fr-fl-3*m)/((138+319)*s); set.style.width=138*s*k+"px"; set.style.height=169*s*k+"px"; upd.style.width=319*s*k+"px"; upd.style.height=97*s*k+"px"; upd.style.left=(fr-m-319*s*k)+"px"; }
+  };
+  window.ttlLay=()=>{ lay(); T.classList.add("laid"); };
+  window.ttlLay(); addEventListener("resize",window.ttlLay);
+})();
+</script>
 
 <div class="app">
   <header class="top">
@@ -1422,6 +1445,7 @@ const I18N_EN = {
 "冒険者 Lv": "Adventurer Lv",
 "📖 最新ルール確認{0}": "📖 Latest Rules{0}",
 "📊 自己記録確認": "📊 My Records",
+"🏠 タイトル画面に戻る": "🏠 Back to Title",
 "🎨「魔物／装飾」変更": "🎨 Change Monster / Decor",
 "位": "",
 "{0}位": "#{0}",
@@ -3620,7 +3644,7 @@ function doEvolve(uid,pid,bg){
 // 進化できる状態になったらお知らせする（同じ状態では1回だけ）
 let evoCheckT=null;
 function checkEvo(){ clearTimeout(evoCheckT); evoCheckT=setTimeout(()=>{
-  if(document.getElementById("title")||document.querySelector(".sheet-bg.center,.reveal,.rules-stage")) return checkEvo();
+  if(document.querySelector("#title:not([hidden])")||document.querySelector(".sheet-bg.center,.reveal,.rules-stage")) return checkEvo();
   const ready=[]; const seenM=new Set();
   S.units.forEach(x=>{ if(seenM.has(x.m)) return; if(evoReady(x)){ seenM.add(x.m); ready.push(x); } });
   const keys=ready.map(x=>x.m+":"+capOf(x)), seen=S.evoSeen||[];
@@ -4212,6 +4236,7 @@ function renderHome(){
       <div class="hm-btns">
         <button class="hm-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖 最新ルール確認${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>
         <button class="hm-btn" type="button" id="hmStats">📊 自己記録確認</button>
+        <button class="hm-btn" type="button" id="hmTitle">🏠 タイトル画面に戻る</button>
         <button class="hm-btn" type="button" id="hmFriend">🤝 フレンド${DB&&MYID&&frBadge()?`<span class="rules-new fr-badge">${frBadge()}</span>`:""}</button>
       </div>
     </div>
@@ -4222,6 +4247,7 @@ function renderHome(){
   </div>`;
   $("#hmName").textContent=myName();
   $("#hmProf").onclick=e=>{ if(e.target.closest("#hmShield")) return openShield(); if(e.target.closest("#hmRank")){ tab="rank"; profMode="rank"; loadRanking(); render(); return; } homeMode="me"; render(); $("#stage").scrollTop=0; };
+  $("#hmTitle").onclick=()=>{ try{ SFX.tap(); }catch(e){} window.showTitle&&window.showTitle(); };
   $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   $("#hmChange").onclick=()=>openHomeEdit("m");
 
@@ -5994,18 +6020,7 @@ async function titleRanks(){
   const T=document.getElementById("title"); if(!T) return;
   const W=1046, H=1504, st=document.getElementById("ttlStage");
   const set=document.getElementById("ttlSet"), upd=document.getElementById("ttlUpd");
-  const lay=()=>{ const vw=innerWidth, vh=innerHeight; const s=vh/H;   // 高さに合わせる（スマホは左右が少し切れ、PCは左右にぼかした背景）
-    const sw=W*s, ox=(vw-sw)/2; st.style.transform=`translate(${ox}px,0) scale(${s})`;
-    // 画面がせまいときは、タイトルの巻物を見えている幅に合わせて小さくする
-    const vis=Math.min(W, vw/s), bw=Math.min(900, vis*0.96), bh=bw*350/900, bn=T.querySelector(".ttl-banner");
-    bn.style.width=bw+"px"; bn.style.height=bh+"px"; bn.style.left=(W-bw)/2+"px"; bn.style.top=(413-bh/2)+"px";
-    T.style.setProperty("--s",s);
-    const fl=Math.max(0,ox), fr=Math.min(vw,ox+sw), m=Math.max(10,30*s);
-    set.style.width=138*s+"px"; set.style.height=169*s+"px"; set.style.left=(fl+m)+"px"; set.style.top=Math.max(10,31*s)+"px";
-    upd.style.width=319*s+"px"; upd.style.height=97*s+"px"; upd.style.left=(fr-m-319*s)+"px"; upd.style.top=Math.max(10,47*s)+"px";
-    if(fr-fl<(138+319)*s+3*m){ const k=(fr-fl-3*m)/((138+319)*s); set.style.width=138*s*k+"px"; set.style.height=169*s*k+"px"; upd.style.width=319*s*k+"px"; upd.style.height=97*s*k+"px"; upd.style.left=(fr-m-319*s*k)+"px"; }
-  };
-  lay(); addEventListener("resize",lay);
+  const lay=window.ttlLay;
   if(LANG==="en"){ T.querySelector(".ttl-start img").src="title/btn_en.png"; upd.querySelector("img").src="title/upd_en.png"; set.querySelector("img").src="title/set_en.png"; }
   T.querySelectorAll("[data-tl]").forEach(b=>{ b.setAttribute("aria-pressed",String(b.dataset.tl===LANG)); b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.tl!==LANG) setLang(b.dataset.tl); }; });
   // タイトルの上に出す画面（設定・アップデート情報）は、タイトルより前に表示する
@@ -6027,8 +6042,11 @@ async function titleRanks(){
   document.getElementById("ttlStart").onclick=()=>{
     try{ SFX.reveal("S"); }catch(e){}
     T.classList.add("out"); document.body.classList.remove("ttl-open");
-    setTimeout(()=>{ T.remove(); document.querySelectorAll(".ttl-top").forEach(x=>x.classList.remove("ttl-top")); try{ render(); }catch(e){} },480);
+    setTimeout(()=>{ T.hidden=true; document.querySelectorAll(".ttl-top").forEach(x=>x.classList.remove("ttl-top")); try{ render(); }catch(e){} },480);
   };
+  // ホームの「タイトル画面に戻る」から、もう一度タイトルを出す
+  window.showTitle=()=>{ document.querySelectorAll(".sheet-bg,.reveal").forEach(x=>x.remove()); T.hidden=false; T.classList.add("out"); document.body.classList.add("ttl-open"); lay();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>T.classList.remove("out"))); try{ titleRanks(); }catch(e){} };
   // まだ登録していない人には、最初に言語をえらんでもらう
   let langSet=false; try{ langSet=!!localStorage.getItem("toto-lang-set"); }catch(e){}
   const fresh=typeof isFreshSave==="function" && isFreshSave(S) && !S.owner;
