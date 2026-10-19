@@ -5758,7 +5758,7 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
   "近くに虹の宝箱がない…":"No rainbow chest nearby...","達成レベル":"Level reached","魔法の欠片を使い切った":"The magic shard is used up",
   "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","波動魔法の欠片":"Wave Magic Shard","氷魔法の欠片":"Ice Magic Shard","伝説の鍵":"Legendary Key",
   "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward",
-  "脱出してクリアする":"Escape & clear","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
+  "脱出してクリアする":"Escape & clear","{n}を補充した！（のこり{m}個）":"Reloaded {n}! ({m} left)","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
   "回復するやつを使った！ 体力が回復した":"Used the Heal-a-thing! HP restored","宝箱のコイン":"chest coins","🪙 {n}コインを見つけた！（脱出・クリアするともらえる）":"🪙 Found {n} coins! (You get them when you escape or clear)",
   "ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・3時間ごとにリセット）":"Ranks are for your personal best (others' ranks are hidden · resets every 3 hours)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
   "👑 Lv10のボスが現れた！":"👑 The Lv10 BOSS appeared!","Lv9の魔物をすべてたおした！ ボスがやってくる…！":"All Lv9 monsters defeated! The boss is coming...!",
@@ -5960,7 +5960,11 @@ function advMagicTarget(){
 }
 function advFire(it){ const sh=ADV.SHARD[it.k];
   const y=A.y+0.07; A.bolts.push({ x:A.x+A.dir*0.12, x0:A.x, y, dmg:advShardDmg(it.k), img:sh.bolt, freeze:sh.freeze||0, dir:A.dir, tg:advMagicTarget(), life:3 });
-  it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0) A.inv.splice(i,1); A.eq=-1; advMsg(advT2("魔法の欠片を使い切った")); }
+  it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0) A.inv.splice(i,1);
+    // 同じ種類の欠片をまだ持っていれば、自動で装備しなおす（補充）
+    const nx=A.inv.findIndex(x=>x.k===it.k);
+    if(nx>=0){ A.eq=nx; advMsg(advT2("{n}を補充した！（のこり{m}個）").replace("{n}",advT2(sh.name)).replace("{m}",A.inv.filter(x=>x.k===it.k).length)); }
+    else { A.eq=-1; advMsg(advT2("魔法の欠片を使い切った")); } }
   else A.eq=A.inv.indexOf(it);
   advEquipView(); advBagRefresh();
 }
