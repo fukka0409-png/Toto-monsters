@@ -543,8 +543,65 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .sd-row .lv{font-family:var(--f-pix);font-size:13px;color:var(--staff)}
 .sd-row .ava,.sd-row .ava-empty{width:34px;height:34px}
 .sd-new{background:#ff5f8f;color:#fff;border-radius:999px;font-size:10px;padding:1px 7px;font-weight:900}
+
+/* ===== タイトル画面（ゲームを開いたら最初に出る） ===== */
+.ttl{position:fixed;inset:0;z-index:100;overflow:hidden;background:#3a9be8;transition:opacity .45s ease;--s:.5;user-select:none;-webkit-user-select:none}
+.ttl.out{opacity:0;pointer-events:none}
+.ttl-blur{position:absolute;inset:-40px;background:url(title/bg.jpg) center/cover;filter:blur(18px) brightness(.85)}
+.ttl-stage{position:absolute;left:0;top:0;width:1046px;height:1504px;transform-origin:0 0;overflow:hidden}
+.ttl-bg{position:absolute;inset:0;width:100%;height:100%}
+.ttl-clouds{position:absolute;inset:0;pointer-events:none}
+.ttl-clouds img{position:absolute;left:0;width:var(--w);height:auto;image-rendering:pixelated;animation:ttlDrift var(--d) linear infinite;animation-delay:var(--o);will-change:transform}
+@keyframes ttlDrift{from{transform:translateX(-420px)}to{transform:translateX(1100px)}}
+.ttl-banner{position:absolute;left:78px;top:238px;width:900px;height:350px;animation:ttlFloat 6s ease-in-out infinite}
+@keyframes ttlFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.ttl-start{position:absolute;left:315px;top:691px;width:425px;height:194px;padding:0;border:0;background:none;cursor:pointer;animation:ttlPulse 2.4s ease-in-out infinite}
+.ttl-start img{position:absolute;inset:0;width:100%;height:100%}
+.ttl-start:active{transform:scale(.96)}
+@keyframes ttlPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.ttl span{display:none}
+html[lang=en] .ttl span{display:block}
+.ttl-start span{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font:900 40px/1 var(--f-body);color:#3a1a08;letter-spacing:.01em;white-space:nowrap}
+html[lang=en] .ttl-start span{display:flex}
+.ttl-corner{position:absolute;top:0;padding:0;border:0;background:none;cursor:pointer}
+.ttl-corner img{display:block;width:100%;height:100%}
+.ttl-corner:active{transform:scale(.95)}
+.ttl-set span{position:absolute;left:0;right:0;bottom:12%;text-align:center;font:900 calc(var(--s)*24px)/1 var(--f-body);color:#222}
+.ttl-upd span{position:absolute;inset:0;align-items:center;justify-content:center;font:900 calc(var(--s)*30px)/1 var(--f-body);color:#3a2306}
+html[lang=en] .ttl-upd span{display:flex}
+.ttl-lang{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:4px;background:#0008;border:2px solid #fff6;border-radius:999px;padding:4px}
+.ttl-lang button{border:0;border-radius:999px;padding:7px 16px;font:800 14px/1 var(--f-body);background:none;color:#fff;cursor:pointer}
+.ttl-lang button[aria-pressed="true"]{background:#f2c94c;color:#3a2306}
+.ttl-pick{position:absolute;inset:0;z-index:5;background:#000a;display:flex;align-items:center;justify-content:center;padding:16px}
+.ttl-pick .swear{max-width:340px}
+.ttl-pick .btn{font-size:18px;padding:14px}
+body.ttl-open .ttl-top{z-index:130!important}
+@media (prefers-reduced-motion:reduce){.ttl-clouds img{animation-duration:400s}.ttl-banner,.ttl-start{animation:none}}
 </style>
-</head><body>
+</head><body class="ttl-open">
+<div class="ttl" id="title" aria-label="トトと魔物たち">
+  <div class="ttl-blur"></div>
+  <div class="ttl-stage" id="ttlStage">
+    <img class="ttl-bg" src="title/bg.jpg" alt="" draggable="false">
+    <div class="ttl-clouds hi" aria-hidden="true">
+      <img src="title/c1.png" alt="" style="top:120px;--w:240px;--d:95s;--o:-20s">
+      <img src="title/c3.png" alt="" style="top:560px;--w:320px;--d:120s;--o:-75s">
+      <img src="title/c2.png" alt="" style="top:200px;--w:176px;--d:80s;--o:-50s;opacity:.92">
+      <img src="title/c4.png" alt="" style="top:640px;--w:128px;--d:70s;--o:-8s;opacity:.9">
+      <img src="title/c1.png" alt="" style="top:15px;--w:200px;--d:110s;--o:-60s;opacity:.85">
+    </div>
+    <img class="ttl-banner" src="title/banner.png" alt="トトと魔物たち" draggable="false">
+    <button class="ttl-start" id="ttlStart" type="button"><img src="title/btn.png" alt="" draggable="false"><span>ガチャ・育成</span></button>
+    <div class="ttl-clouds lo" aria-hidden="true">
+      <img src="title/c3.png" alt="" style="top:1040px;--w:360px;--d:140s;--o:-30s;opacity:.95">
+      <img src="title/c1.png" alt="" style="top:1180px;--w:280px;--d:115s;--o:-90s;opacity:.95">
+      <img src="title/c2.png" alt="" style="top:960px;--w:200px;--d:100s;--o:-55s;opacity:.9">
+    </div>
+  </div>
+  <button class="ttl-corner ttl-set" id="ttlSet" type="button" aria-label="設定"><img src="title/set.png" alt="" draggable="false"><span>設定</span></button>
+  <button class="ttl-corner ttl-upd" id="ttlUpd" type="button"><img src="title/upd.png" alt="" draggable="false"><span>最新アップデート情報</span></button>
+  <div class="ttl-lang" translate="no"><button type="button" data-tl="ja">日本語</button><button type="button" data-tl="en">English</button></div>
+</div>
 
 <div class="app">
   <header class="top">
@@ -1813,6 +1870,11 @@ const I18N_EN = {
 "メッセージのやりとりができなくなります。親密度は残ります。": "You won't be able to message each other. Your affinity stays.",
 "解除する": "Unfriend",
 "フレンド解除": "Unfriend",
+"設定": "Settings",
+"🔊 サウンド設定（BGM・効果音）": "🔊 Sound settings (music & effects)",
+"🌐 言語": "🌐 Language",
+"ガチャ・育成": "Summon & Train",
+"最新アップデート情報": "Latest Updates",
 "🏆 ランキング": "🏆 Ranking",
 "🏆 ランキングとシーズン": "🏆 Ranking & Seasons",
 "すべて見る": "See all",
@@ -5249,5 +5311,56 @@ function showNewMonsters(){
   bg.querySelector("#nmX").onclick=()=>bg.remove();
   bg.querySelector("#nmGo").onclick=()=>{ bg.remove(); tab="gacha"; render(); };
 }
+
+/* ===== タイトル画面 ===== */
+(function(){
+  const T=document.getElementById("title"); if(!T) return;
+  const W=1046, H=1504, st=document.getElementById("ttlStage");
+  const set=document.getElementById("ttlSet"), upd=document.getElementById("ttlUpd");
+  const lay=()=>{ const vw=innerWidth, vh=innerHeight; const s=vh/H;   // 高さに合わせる（スマホは左右が少し切れ、PCは左右にぼかした背景）
+    const sw=W*s, ox=(vw-sw)/2; st.style.transform=`translate(${ox}px,0) scale(${s})`;
+    // 画面がせまいときは、タイトルの巻物を見えている幅に合わせて小さくする
+    const vis=Math.min(W, vw/s), bw=Math.min(900, vis*0.96), bh=bw*350/900, bn=T.querySelector(".ttl-banner");
+    bn.style.width=bw+"px"; bn.style.height=bh+"px"; bn.style.left=(W-bw)/2+"px"; bn.style.top=(413-bh/2)+"px";
+    T.style.setProperty("--s",s);
+    const fl=Math.max(0,ox), fr=Math.min(vw,ox+sw), m=Math.max(10,30*s);
+    set.style.width=138*s+"px"; set.style.height=169*s+"px"; set.style.left=(fl+m)+"px"; set.style.top=Math.max(10,31*s)+"px";
+    upd.style.width=319*s+"px"; upd.style.height=97*s+"px"; upd.style.left=(fr-m-319*s)+"px"; upd.style.top=Math.max(10,47*s)+"px";
+    if(fr-fl<(138+319)*s+3*m){ const k=(fr-fl-3*m)/((138+319)*s); set.style.width=138*s*k+"px"; set.style.height=169*s*k+"px"; upd.style.width=319*s*k+"px"; upd.style.height=97*s*k+"px"; upd.style.left=(fr-m-319*s*k)+"px"; }
+  };
+  lay(); addEventListener("resize",lay);
+  if(LANG==="en"){ T.querySelector(".ttl-start img").src="title/btn_en.png"; upd.querySelector("img").src="title/upd_en.png"; set.querySelector("img").src="title/set_en.png"; }
+  T.querySelectorAll("[data-tl]").forEach(b=>{ b.setAttribute("aria-pressed",String(b.dataset.tl===LANG)); b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.tl!==LANG) setLang(b.dataset.tl); }; });
+  // タイトルの上に出す画面（設定・アップデート情報）は、タイトルより前に表示する
+  const onTop=fn=>{ const before=new Set(document.body.children); fn(); [...document.body.children].filter(x=>!before.has(x)).forEach(x=>x.classList.add("ttl-top")); };
+  set.onclick=()=>onTop(()=>{
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="tsT"><div class="swear-face">⚙️</div><p id="tsT">設定</p>
+      <button class="btn gold" type="button" id="tsSnd">🔊 サウンド設定（BGM・効果音）</button>
+      <div class="snd-row"><b>🌐 言語</b><div class="seg" style="flex:1;margin:0" translate="no">${[["ja","日本語"],["en","English"]].map(([k,l])=>`<button type="button" data-tsl="${k}" aria-pressed="${k===LANG}">${l}</button>`).join("")}</div></div>
+      <button class="btn ghost" type="button" id="tsX">閉じる</button></div>`;
+    document.body.appendChild(bg);
+    bg.querySelector("#tsX").onclick=()=>bg.remove(); bg.onclick=e=>{ if(e.target===bg) bg.remove(); };
+    bg.querySelector("#tsSnd").onclick=()=>{ bg.remove(); onTop(openSound); };
+    bg.querySelectorAll("[data-tsl]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.tsl!==LANG) setLang(b.dataset.tsl); });
+  });
+  upd.onclick=()=>onTop(()=>openRules());
+  document.getElementById("ttlStart").onclick=()=>{
+    try{ SFX.reveal("S"); }catch(e){}
+    T.classList.add("out"); document.body.classList.remove("ttl-open");
+    setTimeout(()=>{ T.remove(); document.querySelectorAll(".ttl-top").forEach(x=>x.classList.remove("ttl-top")); try{ render(); }catch(e){} },480);
+  };
+  // まだ登録していない人には、最初に言語をえらんでもらう
+  let langSet=false; try{ langSet=!!localStorage.getItem("toto-lang-set"); }catch(e){}
+  const fresh=typeof isFreshSave==="function" && isFreshSave(S) && !S.owner;
+  if(!langSet && !fresh){ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} langSet=true; }
+  if(!langSet){
+    const pk=document.createElement("div"); pk.className="ttl-pick";
+    pk.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="tpT" translate="no"><div class="swear-face">🌐</div><p id="tpT">言語をえらんでください<br><small style="font-weight:700">Choose your language</small></p>
+      <button class="btn gold" type="button" data-pl="ja">日本語</button><button class="btn gold" type="button" data-pl="en">English</button></div>`;
+    T.appendChild(pk);
+    pk.querySelectorAll("[data-pl]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.pl!==LANG) setLang(b.dataset.pl); else pk.remove(); });
+  }
+})();
 </script>
 </body></html>
