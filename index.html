@@ -591,6 +591,9 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
 .ttl-rk>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .ttl-rk>div+div{border-left:5px solid #3a2306}
 .ttl .ttl-rk small{display:block;font:800 19px/1 var(--f-body);color:#f6e6c4;white-space:nowrap}
+.ttl-rt{position:absolute;left:288px;top:1238px;width:480px;height:58px;display:flex;align-items:center;justify-content:center;gap:12px;background:#2a1a0ae0;border:5px solid #3a2306;border-radius:999px;color:#fff8e8;box-shadow:0 5px 0 #0004}
+.ttl .ttl-rt span{display:block;font:800 22px/1 var(--f-body)}
+.ttl .ttl-rt b{font:900 32px/1 var(--f-pix,monospace);color:#ffd75e;letter-spacing:.04em}
 .ttl .ttl-rk b{font:900 44px/1 var(--f-body);color:#fff8e8;text-shadow:0 3px 0 #3a2306}
 .adv{position:fixed;inset:0;z-index:140;background:#1d140b;display:flex;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}
 .adv-box{position:relative;width:100%;max-width:calc(100dvh*.9);height:100%;overflow:hidden}
@@ -726,6 +729,7 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
     </div>
     <button class="ttl-adv" id="ttlAdv" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>トトの冒険</span></button>
     <div class="ttl-rk" id="ttlRk"><div><small>生き延びたランキング</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベルランキング</small><b id="ttlR2" translate="no">―</b></div></div>
+    <div class="ttl-rt" id="ttlRt" translate="no"></div>
   </div>
   <button class="ttl-corner ttl-set" id="ttlSet" type="button" aria-label="設定"><img src="title/set.png" alt="" draggable="false"><span>設定</span></button>
   <button class="ttl-corner ttl-upd" id="ttlUpd" type="button"><img src="title/upd.png" alt="" draggable="false"><span>最新アップデート情報</span></button>
@@ -4019,12 +4023,13 @@ const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const compPct=()=>Math.round(DEX_MONS.filter(m=>S.got[m.id]).length/DEX_MONS.length*1000)/10;
 const myName=()=>S.name||"名無しの召喚士";
 function profilePayload(){
+  try{ if(typeof advSync==="function") advSync(); }catch(e){}
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
     comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0 };
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advTk:(S.advP||0)*1e9+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0) };
 }
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
@@ -5613,16 +5618,22 @@ const ADV = {
     {hp:1050,atk:120, spd:.70, max:1}],
   // トトのLvが上がるのに必要な「与えたダメージの合計」
   XP: [0,0,40,150,300,450,1100,2000,3400,5500,8300,11800,16000],
-  SHARD: { g:{ name:"魔法の欠片（金）", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"魔法の欠片（青）", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:5 } },
+  HEAL: 30, PERIOD_MS: 15*60000,
+  SHARD: { g:{ name:"波動魔法の欠片", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"氷魔法の欠片", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:5 } },
 };
 const ADV_FRAMES = { tm:{n:5,cx:.22,h:.86}, tj:{n:5,cx:.24,h:.76}, tk:{n:5,cx:.24,h:.78}, sd:{n:6,cx:.66,h:.69,b:.09} };
 const ADV_IMG = {};
 const advImg = n => { if(!ADV_IMG[n]){ const im=new Image(); im.src="adv/"+n+".png"; ADV_IMG[n]=im; } return ADV_IMG[n]; };
-function advPreload(){ ["toto_s","toto_f","sl_s","sl_f","grave","sh_g","sh_b","bolt_g","bolt_b","ch1","ch1o","ch2","ch2o","ch3","ch3o"].forEach(advImg);
+function advPreload(){ ["toto_s","toto_f","sl_s","sl_f","grave","sh_g","sh_b","potion","bolt_g","bolt_b","ch1","ch1o","ch2","ch2o","ch3","ch3o"].forEach(advImg);
   Object.entries(ADV_FRAMES).forEach(([k,v])=>{ for(let i=0;i<v.n;i++) advImg(k+i); }); ["c1","c2","c3","c4"].forEach(c=>{ if(!ADV_IMG["cl_"+c]){ const im=new Image(); im.src="title/"+c+".png"; ADV_IMG["cl_"+c]=im; } }); }
 const advFmt = ms => { ms=Math.max(0,Math.floor(ms)); const m=Math.floor(ms/60000), s=Math.floor(ms/1000)%60, c=Math.floor(ms/10)%100; return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}:${String(c).padStart(2,"0")}`; };
-const advItemName = it => it.k==="key" ? "伝説の鍵" : ADV.SHARD[it.k].name;
-const advItemImg = it => it.k==="key" ? null : advImg(ADV.SHARD[it.k].img).src;
+const advItemName = it => it.k==="key" ? "伝説の鍵" : it.k==="heal" ? "回復するやつ" : ADV.SHARD[it.k].name;
+const advItemImg = it => it.k==="key" ? null : it.k==="heal" ? advImg("potion").src : advImg(ADV.SHARD[it.k].img).src;
+const advIsShard = it => !!(it && ADV.SHARD[it.k]);
+const advItemIcon = it => it.k==="key" ? `<span class="ab-key">🗝</span>` : `<img src="${advItemImg(it)}" alt="">`;
+// ランキングは15分ごとにリセット（0分・15分・30分・45分）。記録は「どの15分か」といっしょに保存する
+const advPer = () => Math.floor(gnow()/ADV.PERIOD_MS);
+function advSync(){ const p=advPer(); if(S.advP!==p){ S.advP=p; S.advBestT=0; S.advBestL=0; } return p; }
 let A=null, advRaf=0;
 const advNeed = L => L<ADV.XP.length ? ADV.XP[L] : ADV.XP[ADV.XP.length-1]+5000*(L-ADV.XP.length+1);
 const advLvOf = xp => { let L=1; while(xp>=advNeed(L+1)) L++; return L; };
@@ -5643,14 +5654,16 @@ function openAdventureIntro(){
     ["❗","A monster shows ❗ 0.5s before it attacks. The red band on the ground is where it hits — jump or step away!"],
     ["🦅","Tap Jump again in the air to flap your wings (up to 3 jumps)."],
     ["⭐","Toto levels up from the damage dealt. Higher Lv = more power and HP."],
-    ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones!"],
+    ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones! Use a Heal-a-thing to restore 30 HP."],
+    ["🏆","Rankings (time survived / best Lv) reset every 15 minutes."],
     ["🏃","After 1 minute you can escape and clear. Beating the boss gives 10× the reward!"],
     ["🪦","If you die: no reward, and your memo is erased. (You can revive with a heart stone.)"]]:[
     ["⚔️","敵はLv1〜Lv9まで、各Lvを10体ずつたおすと次のLvへ。最後にLv10のボスが登場！ たおせばステージクリア！"],
     ["❗","敵は攻撃する0.5秒前に頭上に「❗」を出す。地面の赤い帯が攻撃の当たる範囲。ジャンプかはなれてよけよう！"],
     ["🦅","空中でもう一度ジャンプを押すと、翼でパタパタ（3段ジャンプまで）"],
     ["⭐","トトのLvは、敵に与えたダメージで上がる。Lvが上がると攻撃力と体力がアップ"],
-    ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！"],
+    ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！「回復するやつ」を使うと体力が30回復"],
+    ["🏆","ランキング（生き延びた時間・最高レベル）は15分ごとにリセット"],
     ["🏃","1分をこえたら「脱出してクリアする」ができる。ボスをたおしてクリアすると報酬10倍！"],
     ["🪦","死亡すると報酬はなし、メモも消えてしまう…（ハート石で復活はできる）"]];
   bg.innerHTML=`<div class="swear adv-intro" role="dialog" aria-modal="true" aria-labelledby="aiT"><p id="aiT">🗺️ ${L?"Toto's Adventure":"トトの冒険"}</p>
@@ -5704,9 +5717,11 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
   "虹の宝箱は「伝説の鍵」を使わないと開かない…":"The rainbow chest only opens with a Legendary Key...","虹の宝箱を開けられる":"Opens a rainbow chest",
   "融合する":"Fuse","融合成功！ 新しい魔法の欠片ができた！":"Fusion success! A new magic shard was made!","装備する":"Equip","記録":"Record",
   "近くに虹の宝箱がない…":"No rainbow chest nearby...","達成レベル":"Level reached","魔法の欠片を使い切った":"The magic shard is used up",
-  "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","魔法の欠片（金）":"Magic Shard (Gold)","魔法の欠片（青）":"Magic Shard (Blue)","伝説の鍵":"Legendary Key",
+  "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","波動魔法の欠片":"Wave Magic Shard","氷魔法の欠片":"Ice Magic Shard","伝説の鍵":"Legendary Key",
   "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward",
-  "脱出してクリアする":"Escape & clear","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
+  "脱出してクリアする":"Escape & clear","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
+  "回復するやつを使った！ 体力が回復した":"Used the Heal-a-thing! HP restored","宝箱のコイン":"chest coins","🪙 {n}コインを見つけた！（脱出・クリアするともらえる）":"🪙 Found {n} coins! (You get them when you escape or clear)",
+  "ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・15分ごとにリセット）":"Ranks are for your personal best (others' ranks are hidden · resets every 15 min)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
   "👑 Lv10のボスが現れた！":"👑 The Lv10 BOSS appeared!","Lv9の魔物をすべてたおした！ ボスがやってくる…！":"All Lv9 monsters defeated! The boss is coming...!",
   "Lv{n}の魔物が現れはじめた！":"Lv{n} monsters are appearing!","このままタイトルに戻ると、報酬はなし。メモも消えてしまう…":"If you return to the title now: no reward, and your memo is erased...",
   "脱出してクリアしますか？（ボスをたおすと報酬は10倍）":"Escape and clear now? (Beating the boss gives 10× the reward)","ステージクリア！":"Stage clear!","脱出成功！":"Escaped!",
@@ -5907,18 +5922,21 @@ function advHitChest(c){
 function advOpenChest(c){
   c.open=true; c.openT=0; try{ SFX.sparkle(); }catch(e){}
   const got=[];
-  if(c.type===1){ if(Math.random()<0.5) got.push({k:"g"}); }
-  else if(c.type===2){ if(Math.random()<0.2) got.push({k:"key"}); if(Math.random()<0.5) got.push({k:"g"}); }
-  else { got.push({k:"b"},{k:"b"},{k:"g"},{k:"g"},{k:"g"}); }
-  if(!got.length){ advPop(c.x,0.3,advT2("からっぽ…"),"#ccc"); return; }
-  got.forEach((g,i)=>{ const it={k:g.k, u:g.k==="key"?1:ADV.SHARD[g.k].uses};
+  // 回復するやつ：どの宝箱からも出る（魔法の欠片の半分より低い確率）。コインは冒険の報酬といっしょにもらえる（死亡すると消える）
+  let coin=0;
+  if(c.type===1){ if(Math.random()<0.5) got.push({k:"g"}); if(Math.random()<0.2) got.push({k:"heal"}); }
+  else if(c.type===2){ if(Math.random()<0.2) got.push({k:"key"}); if(Math.random()<0.5) got.push({k:"g"}); if(Math.random()<0.2) got.push({k:"heal"}); if(Math.random()<0.2) coin=1000; }
+  else { got.push({k:"b"},{k:"b"},{k:"g"},{k:"g"},{k:"g"}); if(Math.random()<0.4) got.push({k:"heal"}); if(Math.random()<0.4) coin=5000; }
+  if(coin){ A.coins=(A.coins||0)+coin; advPop(c.x,0.22,"+"+coin.toLocaleString()+advT2("コイン"),"#ffd75e"); advMsg(advT2("🪙 {n}コインを見つけた！（脱出・クリアするともらえる）").replace("{n}",coin.toLocaleString())); try{ SFX.coin(); }catch(e){} }
+  if(!got.length&&!coin){ advPop(c.x,0.3,advT2("からっぽ…"),"#ccc"); return; }
+  got.forEach((g,i)=>{ const it={k:g.k, u:ADV.SHARD[g.k]?ADV.SHARD[g.k].uses:1};
     if(A.inv.length>=ADV.INV_MAX){ advMsg(advT2("リュックがいっぱいで入らなかった…")); return; }
     A.inv.push(it); setTimeout(()=>A&&advPop(c.x,0.3+i*0.08,"+"+advT2(advItemName(it)),"#ffe14a"),i*250); });
   advBagRefresh();
 }
 
 /* ---------- 死亡・復活 ---------- */
-function advRecord(t,lv){ let rec=false;
+function advRecord(t,lv){ let rec=false; advSync();
   if(t>(S.advBestT||0)){ S.advBestT=t; rec=true; } if(lv>(S.advBestL||0)){ S.advBestL=lv; rec=true; }
   save(); queueProfile(true); return rec; }
 function advDie(){
@@ -5935,7 +5953,7 @@ async function advDeathScreen(t,lv,rec){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません）")}</p>
+    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・15分ごとにリセット）")}</p>
     <button class="ad-btn" id="adRev" type="button" ${hearts?"":"disabled"}><img src="${typeof HEART_IMG!=="undefined"?HEART_IMG:""}" alt="">${advT2("ハート石を1個消費してこのまま復活する")}<small>${advT2("のこり")} ${hearts.toLocaleString()}${advT2("個")}</small></button>
     <div class="ad-coin lost">${advT2("このままタイトルに戻ると、報酬はなし。メモも消えてしまう…")}</div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
@@ -5958,12 +5976,12 @@ async function advFinish(kind){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません）")}</p>
+    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・15分ごとにリセット）")}</p>
     <div class="ad-coin" id="adCoin"></div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
   document.getElementById("adv").appendChild(el);
   const cEl=el.querySelector("#adCoin");
-  const showRw=r=>{ cEl.innerHTML=`🪙 ${advT2("報酬")} <b>${r.coins.toLocaleString()}</b> ${advT2("コイン")}<small>(${advT2("時間")} ${r.tc} ＋ Lv ${r.lc})${r.mul>1?` ×${r.mul}（${advT2("ランキング1位更新！")}）`:""}${r.boss?` ×${ADV.CLEAR_MUL}（${advT2("ボス討伐")}）`:""}</small>`; };
+  const showRw=r=>{ cEl.innerHTML=`🪙 ${advT2("報酬")} <b>${r.coins.toLocaleString()}</b> ${advT2("コイン")}<small>(${advT2("時間")} ${r.tc} ＋ Lv ${r.lc})${r.mul>1?` ×${r.mul}（${advT2("ランキング1位更新！")}）`:""}${r.boss?` ×${ADV.CLEAR_MUL}（${advT2("ボス討伐")}）`:""}${r.loot?` ＋ ${advT2("宝箱のコイン")} ${r.loot.toLocaleString()}`:""}</small>`; };
   let rw=advReward(t,lv,null,boss); showRw(rw);
   el.querySelector("#adBack").onclick=()=>{ const r=rw; advClose(); advGiveCoins(r); };
   advTop1(t,lv).then(top=>{ rw=advReward(t,lv,top,boss); if(el.isConnected) showRw(rw); });
@@ -5972,17 +5990,17 @@ async function advFinish(kind){
 }
 // 冒険の報酬（脱出クリア）：生き延びた1分ごとに1コイン＋その時のLvの数。ランキング1位を更新したら10倍、両方なら20倍
 // ボスをたおしてステージクリアしたら、さらに10倍
-function advReward(t,lv,top,boss){ const tc=Math.floor(t/60000), lc=lv; const mul=((top&&top.t)?10:0)+((top&&top.l)?10:0)||1; return { tc, lc, mul, boss:!!boss, coins:(tc+lc)*mul*(boss?ADV.CLEAR_MUL:1) }; }
-async function advTop1(t,lv){ const out={t:false,l:false}; if(!DB||!MYID) return out;
+function advReward(t,lv,top,boss){ const tc=Math.floor(t/60000), lc=lv; const mul=((top&&top.t)?10:0)+((top&&top.l)?10:0)||1; const loot=(A&&A.coins)||0; return { tc, lc, mul, boss:!!boss, loot, coins:(tc+lc)*mul*(boss?ADV.CLEAR_MUL:1)+loot }; }
+async function advTop1(t,lv){ const out={t:false,l:false}; if(!DB||!MYID) return out; const P=advSync();
   const cnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.limit(1).get())).size; }catch(e){ return null; } };
   const col=DB.collection("profiles");
-  if(t>0 && t>=(S.advBestT||0)){ const c=await cnt(col.where("advT",">",t)); out.t=c===0; }   // この冒険の記録より上がだれもいない＝1位を更新
-  if(lv>0 && lv>=(S.advBestL||0)){ const c=await cnt(col.where("advL",">",lv)); out.l=c===0; }
+  if(t>0 && t>=(S.advBestT||0)){ const c=await cnt(col.where("advTk",">",P*1e9+t).where("advTk","<",(P+1)*1e9)); out.t=c===0; }   // この冒険の記録より上がだれもいない＝1位を更新
+  if(lv>0 && lv>=(S.advBestL||0)){ const c=await cnt(col.where("advLk",">",P*1e6+lv).where("advLk","<",(P+1)*1e6)); out.l=c===0; }
   return out; }
 function advGiveCoins(r){ if(!r||!r.coins) return; S.coins=(S.coins||0)+r.coins; save(); try{ SFX.coin(); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center ttl-top"; bg.style.zIndex=130;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🪙</div><p>${advT2("冒険の報酬")}</p>
-    <div class="note" style="margin:0;text-align:center"><b style="font-size:22px">+${r.coins.toLocaleString()}</b> ${advT2("コイン")}<br><small>(${advT2("時間")} ${r.tc} ＋ Lv ${r.lc})${r.mul>1?` ×${r.mul}`:""}${r.boss?` ×${ADV.CLEAR_MUL}`:""}</small></div>
+    <div class="note" style="margin:0;text-align:center"><b style="font-size:22px">+${r.coins.toLocaleString()}</b> ${advT2("コイン")}<br><small>(${advT2("時間")} ${r.tc} ＋ Lv ${r.lc})${r.mul>1?` ×${r.mul}`:""}${r.boss?` ×${ADV.CLEAR_MUL}`:""}${r.loot?` ＋ ${r.loot.toLocaleString()}`:""}</small></div>
     <button class="btn gold" type="button">OK</button></div>`;
   bg.setAttribute("translate","no"); document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); try{ render(); }catch(e){} }
 // 自分の自己ベストの順位だけを数える（ほかの人の順位や記録は表示しない）
@@ -5990,8 +6008,9 @@ async function advRanks(){
   const out={t:null,l:null}; if(!DB||!MYID) return out;
   const cnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
   const col=DB.collection("profiles");
-  if(S.advBestT){ const c=await cnt(col.where("advT",">",S.advBestT)); if(c!=null) out.t=c+1; }
-  if(S.advBestL){ const c=await cnt(col.where("advL",">",S.advBestL)); if(c!=null) out.l=c+1; }
+  const P=advSync();   // 今の15分の中での順位
+  if(S.advBestT){ const c=await cnt(col.where("advTk",">",P*1e9+S.advBestT).where("advTk","<",(P+1)*1e9)); if(c!=null) out.t=c+1; }
+  if(S.advBestL){ const c=await cnt(col.where("advLk",">",P*1e6+S.advBestL).where("advLk","<",(P+1)*1e6)); if(c!=null) out.l=c+1; }
   return out;
 }
 
@@ -6007,8 +6026,8 @@ function advBagRefresh(){
   const el=document.querySelector(".adv-sheet.bag"); if(!el||!A) return;
   A.fuse=A.fuse.map(i=>i<A.inv.length?i:-1);
   const slot=i=>{ const it=A.inv[i]; if(!it) return `<div class="ab-cell empty"></div>`;
-    return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""}" type="button" data-ai="${i}">${it.k==="key"?`<span class="ab-key">🗝</span>`:`<img src="${advItemImg(it)}" alt="">`}${it.k!=="key"?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}</button>`; };
-  const fz=j=>{ const i=A.fuse[j], it=i>=0?A.inv[i]:null; return `<button class="ab-fz" type="button" data-fz="${j}">${it?(it.k==="key"?"🗝":`<img src="${advItemImg(it)}" alt="">`):"＋"}</button>`; };
+    return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""}" type="button" data-ai="${i}">${advItemIcon(it)}${advIsShard(it)?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}</button>`; };
+  const fz=j=>{ const i=A.fuse[j], it=i>=0?A.inv[i]:null; return `<button class="ab-fz" type="button" data-fz="${j}">${it?advItemIcon(it):"＋"}</button>`; };
   const a=A.fuse[0]>=0?A.inv[A.fuse[0]]:null, b=A.fuse[1]>=0?A.inv[A.fuse[1]]:null;
   const known=(S.advRecipes||[]).includes("g+g"), willB=a&&b&&a.k==="g"&&b.k==="g";
   const sel=A.sel>=0?A.inv[A.sel]:null;
@@ -6017,9 +6036,9 @@ function advBagRefresh(){
       <button class="ab-memo" type="button" id="abMemo">📜<br>${advT2("メモ")}</button></div>
       <button class="ab-fbtn" type="button" id="abFuse" ${a&&b?"":"disabled"}>${advT2("融合する")}</button></div>
     <div class="ab-bottom"><div class="ab-grid">${Array.from({length:ADV.INV_MAX},(_,i)=>slot(i)).join("")}</div>
-      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):`${advT2("攻撃力")} ${advShardDmg(sel.k)}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("5秒こおらせる")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
-        <button class="ab-act use" type="button" id="abUse" ${sel&&sel.k==="key"?"":"disabled"}>${advT2("使う")}</button>
-        <button class="ab-act eq" type="button" id="abEq" ${sel&&sel.k!=="key"?"":"disabled"}>${A.sel>=0&&A.eq===A.sel?advT2("外す"):advT2("装備する")}</button>
+      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):sel.k==="heal"?advT2("使うと体力が30回復する"):`${advT2("攻撃力")} ${advShardDmg(sel.k)}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("5秒こおらせる")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
+        <button class="ab-act use" type="button" id="abUse" ${sel&&!advIsShard(sel)?"":"disabled"}>${advT2("使う")}</button>
+        <button class="ab-act eq" type="button" id="abEq" ${advIsShard(sel)?"":"disabled"}>${A.sel>=0&&A.eq===A.sel?advT2("外す"):advT2("装備する")}</button>
         <button class="ab-act drop" type="button" id="abDrop" ${sel?"":"disabled"}>${advT2("捨てる")}</button>
         <button class="ab-quit" type="button" id="abQuit">${advT2("冒険をあきらめる")}</button></div></div>`;
   el.querySelector("#abX").onclick=()=>advBagClose();
@@ -6032,8 +6051,12 @@ function advBagRefresh(){
       S.advRecipes=[...new Set([...(S.advRecipes||[]),"g+g"])]; save(); A.fuse=[-1,-1]; A.sel=-1; advMsg(advT2("融合成功！ 新しい魔法の欠片ができた！")); try{ SFX.reveal("S"); }catch(e){} }
     else { advMsg(advT2("何も起きなかった…")); A.fuse=[-1,-1]; }
     advEquipView(); advBagRefresh(); };
-  el.querySelector("#abEq").onclick=()=>{ if(A.sel<0) return; A.eq = A.eq===A.sel ? -1 : A.sel; advEquipView(); advBagRefresh(); };
-  el.querySelector("#abUse").onclick=()=>{ const it=A.inv[A.sel]; if(!it||it.k!=="key") return;
+  el.querySelector("#abEq").onclick=()=>{ if(A.sel<0||!advIsShard(A.inv[A.sel])) return; A.eq = A.eq===A.sel ? -1 : A.sel; advEquipView(); advBagRefresh(); };
+  el.querySelector("#abUse").onclick=()=>{ const it=A.inv[A.sel]; if(!it) return;
+    if(it.k==="heal"){ const mx=advMaxHp(); if(A.hp>=mx) return advMsg(advT2("体力はもう満タン！"));
+      const add=Math.min(ADV.HEAL,mx-A.hp); A.hp+=add; const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv.splice(A.sel,1); A.eq=eqIt?A.inv.indexOf(eqIt):-1; A.sel=-1;
+      advPop(A.x,0.3,"+"+advNum(add),"#7cf07c"); advMsg(advT2("回復するやつを使った！ 体力が回復した")); try{ SFX.level(); }catch(e){} advEquipView(); advBagRefresh(); return; }
+    if(it.k!=="key") return;
     const near=A.chests.find(c=>c.type===3&&!c.open&&Math.abs(c.x-A.x)<1.6);
     if(!near) return advMsg(advT2("近くに虹の宝箱がない…"));
     const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv.splice(A.sel,1); A.eq=eqIt?A.inv.indexOf(eqIt):-1; A.sel=-1; advOpenChest(near); advEquipView(); advBagRefresh(); };
@@ -6060,7 +6083,7 @@ function advHud(){
   if(!A) return; const $$=id=>document.getElementById(id);
   const lv=advLv(), mx=advMaxHp(); if(A.hp>mx) A.hp=mx;
   $$("ahLv").textContent=lv; $$("ahHp").style.width=Math.max(0,A.hp/mx*100)+"%"; $$("ahHpN").textContent=`${advNum(A.hp)}/${mx}`;
-  $$("ahT").textContent=advFmt(A.t); $$("ahBest").textContent=`${advFmt(S.advBestT||0)}/Lv.${S.advBestL||1}`;
+  $$("ahT").textContent=advFmt(A.t); advSync(); $$("ahBest").textContent=`${advFmt(S.advBestT||0)}/Lv.${S.advBestL||1}`;
   $$("ahCnt").textContent=(S.advCount||0)+(LANG==="en"?"":"回");
   const pg=$$("advProg"); if(pg){ const lv=A.stageLv; const txt = A.bossDown ? advT2("ボス討伐！") : lv>=10 ? "👑 "+advT2("ボス Lv10") : advT2("敵Lv{n} あと{m}体").replace("{n}",lv).replace("{m}",ADV.PER_LV-A.killed);
     if(pg.textContent!==txt) pg.textContent=txt; pg.classList.toggle("boss",lv>=10); }
@@ -6124,7 +6147,7 @@ function advDraw(){
 /* ---------- タイトル画面のランキング表示 ---------- */
 async function titleRanks(){
   const a=document.getElementById("ttlR1"), b=document.getElementById("ttlR2"); if(!a||!b) return;
-  if(!S.advBestT){ a.textContent="―"; b.textContent="―"; return; }
+  advSync(); if(!S.advBestT){ a.textContent="―"; b.textContent="―"; return; }
   const r=await advRanks(); a.textContent=advRk(r.t); b.textContent=advRk(r.l);
 }
 
@@ -6152,6 +6175,13 @@ async function titleRanks(){
   upd.onclick=()=>onTop(()=>openRules());
   document.getElementById("ttlAdv").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); };
   setTimeout(()=>{ try{ titleRanks(); }catch(e){} },2500);
+  // ランキングがリセットされるまでのタイマー（15分ごと）
+  let rtPer=null; const rtEl=document.getElementById("ttlRt");
+  const rtTick=()=>{ if(T.hidden) return; const now=gnow(), per=Math.floor(now/ADV.PERIOD_MS), left=(per+1)*ADV.PERIOD_MS-now;
+    const mm=String(Math.floor(left/60000)).padStart(2,"0"), ss=String(Math.floor(left/1000)%60).padStart(2,"0");
+    rtEl.innerHTML=`<span>⏱ ${LANG==="en"?"Ranking resets in":"ランキングリセットまで"}</span><b>${mm}:${ss}</b>`;
+    if(rtPer!==null && per!==rtPer){ try{ titleRanks(); }catch(e){} } rtPer=per; };
+  rtTick(); setInterval(rtTick,1000);
   document.getElementById("ttlStart").onclick=()=>{
     try{ SFX.reveal("S"); }catch(e){}
     T.classList.add("out"); document.body.classList.remove("ttl-open");
