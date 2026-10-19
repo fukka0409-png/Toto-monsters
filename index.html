@@ -5597,7 +5597,7 @@ function showNewMonsters(){
    ・攻撃する0.5秒前に、敵の頭上に「❗」と、攻撃が当たる範囲（地面の赤い帯）が出る
    ・魔法は、向いている方向でいちばん近い的（敵か宝箱）に飛んでいく。装備なしより遠くまで届く
    ・リュックを開いている間は、タイマーも魔物も止まる
-   ・魔物をたおすと20%で「波動魔法の欠片」を落とす
+   ・魔物をたおすと 波動魔法の欠片20%・回復するやつ40%・氷魔法の欠片10% で落とす
    ・魔物は基本、右からやってくる。トトより左へ通りすぎた魔物は、はなれるほど速く近づいてくる
    ・30秒動かないと、ボスなみに強い魔物がおそってくる（たおしてもクリアにはならない）
    ・宝箱：新しい場所に進むと45%で出現（ふつう80%／赤い宝石19%／虹0.01%）
@@ -5623,7 +5623,7 @@ const ADV = {
     {hp:1050,atk:120, spd:.70, max:1}],
   // トトのLvが上がるのに必要な「与えたダメージの合計」
   XP: [0,0,40,150,300,450,1100,2000,3400,5500,8300,11800,16000],
-  HEAL: 30, PERIOD_MS: 15*60000,
+  HEAL: 30, PERIOD_MS: 60*60000,
   SHARD: { g:{ name:"波動魔法の欠片", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"氷魔法の欠片", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:5 } },
 };
 const ADV_FRAMES = { tm:{n:5,cx:.22,h:.86}, tj:{n:5,cx:.24,h:.76}, tk:{n:5,cx:.24,h:.78}, sd:{n:6,cx:.66,h:.69,b:.09} };
@@ -5636,7 +5636,7 @@ const advItemName = it => it.k==="key" ? "伝説の鍵" : it.k==="heal" ? "回�
 const advItemImg = it => it.k==="key" ? null : it.k==="heal" ? advImg("potion").src : advImg(ADV.SHARD[it.k].img).src;
 const advIsShard = it => !!(it && ADV.SHARD[it.k]);
 const advItemIcon = it => it.k==="key" ? `<span class="ab-key">🗝</span>` : `<img src="${advItemImg(it)}" alt="">`;
-// ランキングは15分ごとにリセット（0分・15分・30分・45分）。記録は「どの15分か」といっしょに保存する
+// ランキングは1時間ごとにリセット（毎時0分）。記録は「どの1時間か」といっしょに保存する
 const advPer = () => Math.floor(gnow()/ADV.PERIOD_MS);
 function advSync(){ const p=advPer(); if(S.advP!==p){ S.advP=p; S.advBestT=0; S.advBestL=0; } return p; }
 let A=null, advRaf=0;
@@ -5660,7 +5660,7 @@ function openAdventureIntro(){
     ["🦅","Tap Jump again in the air to flap your wings (up to 3 jumps)."],
     ["⭐","Toto levels up from the damage dealt. Higher Lv = more power and HP."],
     ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones! Use a Heal-a-thing to restore 30 HP."],
-    ["🏆","Rankings (time survived / best Lv) reset every 15 minutes."],
+    ["🏆","Rankings (time survived / best Lv) reset every hour."],
     ["🏃","After 1 minute you can escape and clear. Beating the boss gives 10× the reward!"],
     ["🪦","If you die: no reward, and your memo is erased. (You can revive with a heart stone.)"]]:[
     ["⚔️","敵はLv1〜Lv9まで、各Lvを10体ずつたおすと次のLvへ。最後にLv10のボスが登場！ たおせばステージクリア！"],
@@ -5668,7 +5668,7 @@ function openAdventureIntro(){
     ["🦅","空中でもう一度ジャンプを押すと、翼でパタパタ（3段ジャンプまで）"],
     ["⭐","トトのLvは、敵に与えたダメージで上がる。Lvが上がると攻撃力と体力がアップ"],
     ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！「回復するやつ」を使うと体力が30回復"],
-    ["🏆","ランキング（生き延びた時間・最高レベル）は15分ごとにリセット"],
+    ["🏆","ランキング（生き延びた時間・最高レベル）は1時間ごとにリセット"],
     ["🏃","1分をこえたら「脱出してクリアする」ができる。ボスをたおしてクリアすると報酬10倍！"],
     ["🪦","死亡すると報酬はなし、メモも消えてしまう…（ハート石で復活はできる）"]];
   bg.innerHTML=`<div class="swear adv-intro" role="dialog" aria-modal="true" aria-labelledby="aiT"><p id="aiT">🗺️ ${L?"Toto's Adventure":"トトの冒険"}</p>
@@ -5726,7 +5726,7 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
   "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward",
   "脱出してクリアする":"Escape & clear","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
   "回復するやつを使った！ 体力が回復した":"Used the Heal-a-thing! HP restored","宝箱のコイン":"chest coins","🪙 {n}コインを見つけた！（脱出・クリアするともらえる）":"🪙 Found {n} coins! (You get them when you escape or clear)",
-  "ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・15分ごとにリセット）":"Ranks are for your personal best (others' ranks are hidden · resets every 15 min)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
+  "ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）":"Ranks are for your personal best (others' ranks are hidden · resets every hour)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
   "👑 Lv10のボスが現れた！":"👑 The Lv10 BOSS appeared!","Lv9の魔物をすべてたおした！ ボスがやってくる…！":"All Lv9 monsters defeated! The boss is coming...!",
   "Lv{n}の魔物が現れはじめた！":"Lv{n} monsters are appearing!","このままタイトルに戻ると、報酬はなし。メモも消えてしまう…":"If you return to the title now: no reward, and your memo is erased...",
   "脱出してクリアしますか？（ボスをたおすと報酬は10倍）":"Escape and clear now? (Beating the boss gives 10× the reward)","ステージクリア！":"Stage clear!","脱出成功！":"Escaped!",
@@ -5888,8 +5888,11 @@ const advNum = n => n>=100?Math.round(n).toLocaleString():(Math.round(n*10)/10).
 function advDamageEnemy(e,d){
   const real=Math.max(0,Math.min(d,e.hp)); e.hp-=d; e.hurt=0.15; advGainXp(real); advPop(e.x,0.22+(e.boss?0.15:0),advNum(d),"#ffe14a"); try{ SFX.tap(); }catch(x){}
   if(e.hp<=0 && !e.dead){ e.dead=true; e.zone=null; try{ SFX.coin(); }catch(x){}
-    // 20%で「波動魔法の欠片」を落とす
-    if(Math.random()<0.2){ if(A.inv.length<ADV.INV_MAX){ A.inv.push({k:"g",u:ADV.SHARD.g.uses}); advPop(e.x,0.34,"+"+advT2(ADV.SHARD.g.name),"#ffe14a"); advBagRefresh(); } else advMsg(advT2("リュックがいっぱいで入らなかった…")); }
+    // ドロップ（それぞれ別に判定）：波動魔法の欠片20%・回復するやつ40%・氷魔法の欠片10%
+    [["g",0.2],["heal",0.4],["b",0.1]].filter(([,r])=>Math.random()<r).forEach(([k],i)=>{ const it={k,u:ADV.SHARD[k]?ADV.SHARD[k].uses:1};
+      if(A.inv.length>=ADV.INV_MAX) return advMsg(advT2("リュックがいっぱいで入らなかった…"));
+      A.inv.push(it); setTimeout(()=>A&&advPop(e.x,0.34+i*0.08,"+"+advT2(advItemName(it)),k==="heal"?"#7cf07c":"#ffe14a"),i*220); });
+    advBagRefresh();
     if(!e.extra){ A.killed++;
       if(e.lv>=10){ A.bossDown=true; setTimeout(()=>A&&!A.dead&&advFinish("boss"),900); }
       else if(A.killed>=ADV.PER_LV){ A.stageLv++; A.killed=0; A.spawned=0; A.nextSpawn=1.5; advMsg(A.stageLv>=10?advT2("Lv9の魔物をすべてたおした！ ボスがやってくる…！"):advT2("Lv{n}の魔物が現れはじめた！").replace("{n}",A.stageLv)); } } }
@@ -5962,7 +5965,7 @@ async function advDeathScreen(t,lv,rec){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・15分ごとにリセット）")}</p>
+    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）")}</p>
     <button class="ad-btn" id="adRev" type="button" ${hearts?"":"disabled"}><img src="${typeof HEART_IMG!=="undefined"?HEART_IMG:""}" alt="">${advT2("ハート石を1個消費してこのまま復活する")}<small>${advT2("のこり")} ${hearts.toLocaleString()}${advT2("個")}</small></button>
     <div class="ad-coin lost">${advT2("このままタイトルに戻ると、報酬はなし。メモも消えてしまう…")}</div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
@@ -5985,7 +5988,7 @@ async function advFinish(kind){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("生き延びた時間")}</small><b>${advFmt(t)}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・15分ごとにリセット）")}</p>
+    <p class="ad-sub">${advT2("ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）")}</p>
     <div class="ad-coin" id="adCoin"></div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
   document.getElementById("adv").appendChild(el);
@@ -6017,7 +6020,7 @@ async function advRanks(){
   const out={t:null,l:null}; if(!DB||!MYID) return out;
   const cnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
   const col=DB.collection("profiles");
-  const P=advSync();   // 今の15分の中での順位
+  const P=advSync();   // 今の1時間の中での順位
   if(S.advBestT){ const c=await cnt(col.where("advTk",">",P*1e9+S.advBestT).where("advTk","<",(P+1)*1e9)); if(c!=null) out.t=c+1; }
   if(S.advBestL){ const c=await cnt(col.where("advLk",">",P*1e6+S.advBestL).where("advLk","<",(P+1)*1e6)); if(c!=null) out.l=c+1; }
   return out;
@@ -6184,7 +6187,7 @@ async function titleRanks(){
   upd.onclick=()=>onTop(()=>openRules());
   document.getElementById("ttlAdv").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); };
   setTimeout(()=>{ try{ titleRanks(); }catch(e){} },2500);
-  // ランキングがリセットされるまでのタイマー（15分ごと）
+  // ランキングがリセットされるまでのタイマー（1時間ごと）
   let rtPer=null; const rtEl=document.getElementById("ttlRt");
   const rtTick=()=>{ if(T.hidden) return; const now=gnow(), per=Math.floor(now/ADV.PERIOD_MS), left=(per+1)*ADV.PERIOD_MS-now;
     const mm=String(Math.floor(left/60000)).padStart(2,"0"), ss=String(Math.floor(left/1000)%60).padStart(2,"0");
