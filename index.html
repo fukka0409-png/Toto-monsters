@@ -4086,8 +4086,14 @@ async function loadInvestList(){
   if(tab==="home"&&homeMode==="invest") render();
 }
 // そのシーズンに一度でも3位以内に入ったら、4位以下に落ちてもそのシーズンは投資できない
-const top3Locked = () => S.top3ss===seasonNow() || (!!myRank && myRank<=3);
-function markTop3(){ if(myRank && myRank<=3 && S.top3ss!==seasonNow()){ S.top3ss=seasonNow(); save(); if(tab==="home"&&homeMode==="invest") render(); } }
+// 2026-10-19 の特別ルール（今回だけ・10/19 22:00に終わるシーズン）：この更新より前に3位以内に入って投資できなくなっていた人も、
+// いま4位以下なら投資できる。更新のあとでまた3位以内に入ったら、いつも通りそのシーズンは投資できなくなる
+const TOP3_AMNESTY_SS = 2;
+function top3Amnesty(){ if(seasonNow()!==TOP3_AMNESTY_SS || S.top3amn) return; S.top3amn=1; if(S.top3ss===TOP3_AMNESTY_SS) S.top3ok=S.top3ss; save(); }
+const top3Pardoned = () => { top3Amnesty(); return S.top3ok!=null && S.top3ok===S.top3ss; };
+const top3Locked = () => (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRank && myRank<=3);
+function markTop3(){ if(!myRank || myRank>3) return;
+  if(S.top3ss!==seasonNow() || top3Pardoned()){ S.top3ss=seasonNow(); S.top3ok=null; save(); if(tab==="home"&&homeMode==="invest") render(); } }
 function checkInvestVoid(){
   markTop3();
   const L=activeInvs(); if(!L.length||!myRank||myRank>3) return;
@@ -4172,7 +4178,7 @@ function renderInvest(){
   const mine=myInvs(), full=mine.length>=INV_MAX; let body;
   const stat=mine.length?`<div class="inv-time"><small>今シーズンの残り時間</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div><h3 class="inv-h" style="margin:4px 0 8px">あなたの投資（${mine.length}/${INV_MAX}人）</h3>${mine.map(investStatusHtml).join('<div style="height:14px"></div>')}`:"";
   if(!DB) body=loginBox("投資するには、ログインが必要です。");
-  else if(full||mine.some(x=>x.void)) body=stat+(full?`<p class="sub" style="margin-top:12px">今シーズンはもう${INV_MAX}人に投資しました。</p>`:"");
+  else if(full) body=stat+(full?`<p class="sub" style="margin-top:12px">今シーズンはもう${INV_MAX}人に投資しました。</p>`:"");
   else if(invErr) body=`<div class="empty">読み込めませんでした。少し時間をおいて開き直してください。</div>`;
   else if(!INV_LIST) body=`<div class="empty">読み込み中…</div>`;
   else if(top3Locked()) body=stat+`<div class="empty">🏆 今シーズンに3位以内に入ったので、今シーズンはもう投資できません<br><small>4位以下になっても同じです。22:00に新しいシーズンが始まったら、また投資できます</small></div>`;
