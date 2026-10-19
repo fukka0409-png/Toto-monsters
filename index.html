@@ -2785,7 +2785,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); await checkTicks(); await checkGifts(db); await checkFriends(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -5006,6 +5006,42 @@ async function checkUsagiGift(){
         document.body.appendChild(g); SFX.reveal("Z"); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
       show(); }
     else save();
+  }catch(e){}
+}
+// 補償（1回だけ）：2026-10-19 22:00に終わったランク戦（2）で、終了後に受けた攻撃が前回の順位に入ってしまうバグがあった
+//  ・🦄さん（本来の1位）：1位の賞品（10000コイン＋覚醒の石20個）と、もらえていなければ「メイドトランプうさぎ」
+//  ・yoko★さん（🦄さんに投資）：投資額の7倍をわたし、まちがって受け取った1位の賞品（10000コイン＋覚醒の石20個）を回収
+const COMP_SS=2;
+async function checkComp1019(){
+  if(S.comp1019||!DB||!MYID||(S.season||0)<=COMP_SS) return;
+  const nm=normName(myName()), isU=nm===normName("🦄"), isY=nm===normName("yoko★");
+  if(!isU&&!isY){ S.comp1019=1; save(); return; }
+  const pz=RANK_PRIZE[1], L=LANG==="en"; let lines=[], gotMaid=false;
+  try{
+    if(isU){
+      S.coins+=pz.c; addItem("stone",pz.st); S.firsts=(S.firsts||0)+1; S.best=1;
+      lines.push(L?`🏆 1st place prize: +${pz.c.toLocaleString()} coins & ${pz.st} Awakening Stones`:`🏆 1位の賞品：+${pz.c.toLocaleString()}コイン＋覚醒の石${pz.st}個`);
+      if(!S.units.some(z=>z.m===MAID_ID)){ const m=mon(MAID_ID); S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:false}); gotMaid=true;
+        lines.push(L?`🎁 Limited monster “${m.name}”`:`🎁 限定ランク「${m.name}」`); }
+      S.maidChk=1;
+    } else {
+      const ids=[MYID+"_"+COMP_SS, MYID+"_"+COMP_SS+"_2"]; let amt=0;
+      for(const id of ids){ try{ const d=await withTO(DB.doc("invests/"+id).get()); const x=d.exists?d.data():null;
+        if(x && (x.at||0)>=INV_RESET_AT && normName(x.defName)===normName("🦄")) amt+=x.amt||0; }catch(e){ return; } }   // 読めなかったら、次に開いたときにもう一度
+      const give=amt*INV_MUL[1];
+      S.coins=Math.max(0, S.coins+give-pz.c); addItem("stone",-pz.st); if(S.firsts>0) S.firsts--;
+      if(give) lines.push(L?`💰 Your investment in 🦄 (1st place): +${give.toLocaleString()} coins (7×)`:`💰 投資先の🦄さんが本来1位：+${give.toLocaleString()}コイン（投資額の7倍）`);
+      lines.push(L?`↩️ The 1st place prize you received by mistake was taken back: −${pz.c.toLocaleString()} coins & −${pz.st} Awakening Stones`:`↩️ まちがって受け取った1位の賞品を回収：−${pz.c.toLocaleString()}コイン・覚醒の石−${pz.st}個`);
+    }
+    S.comp1019=1; save(); queueProfile(true); render();
+    const show=()=>{ if(document.querySelector(".reveal")) return setTimeout(show,1500);
+      const g=document.createElement("div"); g.className="reveal"; g.setAttribute("translate","no");
+      g.innerHTML=`<div class="burst"></div><h3>${L?"🙇 Correction for the 10/19 Ranked Match":"🙇 10/19のランク戦の結果の修正"}</h3>
+        ${gotMaid?`<img src="${cardURL(MAID_ID,0)}" alt="" style="width:min(50vw,200px);height:auto">`:""}
+        <p class="note" style="text-align:center;max-width:330px">${L?"Due to a bug, attacks received after the match ended were counted in the final ranking. We've corrected your result:":"ランク戦の終了後に受けた攻撃が、前回の順位に入ってしまう不具合がありました。正しい結果に修正しました。"}<br><br>${lines.join("<br>")}</p>
+        <button class="btn gold" type="button">OK</button>`;
+      document.body.appendChild(g); SFX.reveal("S"); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
+    show();
   }catch(e){}
 }
 // 特別配布：2026-10-19 22:00に終わったランク戦（2）の1〜3位に 限定ランク「メイドトランプうさぎ」（1回だけ）
