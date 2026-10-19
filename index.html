@@ -3476,7 +3476,10 @@ function renderGacha(){
 function sortedUnits(){
   let u=[...S.units];
   if(boxFilter!=="all") u=u.filter(x=>mon(x.m).rank===boxFilter);
-  return u.sort((a,b)=> ((b.k?1:0)-(a.k?1:0)) || (b.s-a.s) || (RANKS.indexOf(mon(b.m).rank)-RANKS.indexOf(mon(a.m).rank)) || (b.l-a.l) || (a.u-b.u));
+  const rk=x=>RANKS.indexOf(mon(x.m).rank);
+  // 鍵付きは先頭（今までどおり）。鍵なしは ランクの高い順 → 同じ魔物どうしが隣り合うようにまとめる → 枠・Lvの高い順
+  return u.sort((a,b)=> ((b.k?1:0)-(a.k?1:0)) || (a.k&&b.k ? ((b.s-a.s) || (rk(b)-rk(a)) || (b.l-a.l) || (a.u-b.u))
+    : ((rk(b)-rk(a)) || (a.m-b.m) || (b.s-a.s) || (b.l-a.l) || (a.u-b.u))));
 }
 function unitCard(x,extra=""){ const m=mon(x.m); return `<button class="card ${extra}" type="button" data-u="${x.u}" aria-label="${m.name} Lv${x.l}">${m.next&&evoReady(x)?'<span class="evo-b">進化可</span>':""}
   <img src="${cardURL(x.m,x.s)}" alt=""><span class="rk rk-${m.rank}">${m.rank}</span>${x.k?'<span class="lock" aria-label="保護中">🔒</span>':''}${S.guard===x.u?'<span class="guard-b" aria-label="配置中">配置中</span>':''}${isDown(x)?'<span class="down-b" aria-label="現在配置不可">現在配置不可</span>':''}<span class="lv">Lv${x.l}</span></button>`; }
