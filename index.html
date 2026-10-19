@@ -5594,6 +5594,7 @@ function showNewMonsters(){
    ・攻撃する0.5秒前に、敵の頭上に「❗」と、攻撃が当たる範囲（地面の赤い帯）が出る
    ・魔法は、向いている方向でいちばん近い的（敵か宝箱）に飛んでいく。装備なしより遠くまで届く
    ・リュックを開いている間は、タイマーも魔物も止まる
+   ・魔物をたおすと20%で「波動魔法の欠片」を落とす
    ・魔物は基本、右からやってくる。トトより左へ通りすぎた魔物は、はなれるほど速く近づいてくる
    ・30秒動かないと、ボスなみに強い魔物がおそってくる（たおしてもクリアにはならない）
    ・宝箱：新しい場所に進むと45%で出現（ふつう80%／赤い宝石19%／虹0.01%）
@@ -5884,6 +5885,8 @@ const advNum = n => n>=100?Math.round(n).toLocaleString():(Math.round(n*10)/10).
 function advDamageEnemy(e,d){
   const real=Math.max(0,Math.min(d,e.hp)); e.hp-=d; e.hurt=0.15; advGainXp(real); advPop(e.x,0.22+(e.boss?0.15:0),advNum(d),"#ffe14a"); try{ SFX.tap(); }catch(x){}
   if(e.hp<=0 && !e.dead){ e.dead=true; e.zone=null; try{ SFX.coin(); }catch(x){}
+    // 20%で「波動魔法の欠片」を落とす
+    if(Math.random()<0.2){ if(A.inv.length<ADV.INV_MAX){ A.inv.push({k:"g",u:ADV.SHARD.g.uses}); advPop(e.x,0.34,"+"+advT2(ADV.SHARD.g.name),"#ffe14a"); advBagRefresh(); } else advMsg(advT2("リュックがいっぱいで入らなかった…")); }
     if(!e.extra){ A.killed++;
       if(e.lv>=10){ A.bossDown=true; setTimeout(()=>A&&!A.dead&&advFinish("boss"),900); }
       else if(A.killed>=ADV.PER_LV){ A.stageLv++; A.killed=0; A.spawned=0; A.nextSpawn=1.5; advMsg(A.stageLv>=10?advT2("Lv9の魔物をすべてたおした！ ボスがやってくる…！"):advT2("Lv{n}の魔物が現れはじめた！").replace("{n}",A.stageLv)); } } }
