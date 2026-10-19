@@ -678,6 +678,8 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
 .ab-cell.empty{cursor:default}
 .ab-cell img{max-width:76%;max-height:76%;image-rendering:pixelated}
 .ab-cell.sel{outline:3px solid #ffe14a;outline-offset:-2px}
+.ab-cell.infz{opacity:.28;background:#3a3632}
+.ab-cell.infz::after{content:"⬆";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 20px/1 sans-serif;color:#ffe14a;text-shadow:0 1px 0 #000}
 .ab-cell small{position:absolute;right:2px;bottom:1px;font:900 10px/1 var(--f-pix,monospace);color:#fff;text-shadow:0 1px 0 #000}
 .ab-cell em{position:absolute;left:2px;top:1px;font:900 10px/1 var(--f-pix,monospace);font-style:normal;background:#ffe14a;color:#2a1a0a;border-radius:2px;padding:1px 2px}
 .ab-key{font-size:22px}
@@ -5920,7 +5922,7 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
   "近くに虹の宝箱がない…":"No rainbow chest nearby...","達成レベル":"Level reached","魔法の欠片を使い切った":"The magic shard is used up",
   "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","波動魔法の欠片":"Wave Magic Shard","氷魔法の欠片":"Ice Magic Shard","伝説の鍵":"Legendary Key",
   "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward",
-  "脱出してクリアする":"Escape & clear","{n}を補充した！（のこり{m}個）":"Reloaded {n}! ({m} left)","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
+  "脱出してクリアする":"Escape & clear","融合の枠がいっぱいです":"The fusion slots are full","下の魔法の欠片をタップすると、ここに入ります":"Tap a magic shard below to put it here","{n}を補充した！（のこり{m}個）":"Reloaded {n}! ({m} left)","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
   "回復するやつを使った！ 体力が回復した":"Used the Heal-a-thing! HP restored","宝箱のコイン":"chest coins","🪙 {n}コインを見つけた！（脱出・クリアするともらえる）":"🪙 Found {n} coins! (You get them when you escape or clear)",
   "ランキングは、この30分で最後に出した記録の順位です（ほかの冒険者の順位は見えません・30分ごとにリセット）":"Ranks use your latest record in these 30 minutes (others' ranks are hidden · resets every 30 minutes)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
   "👑 Lv10のボスが現れた！":"👑 The Lv10 BOSS appeared!","Lv9の魔物をすべてたおした！ ボスがやってくる…！":"All Lv9 monsters defeated! The boss is coming...!",
@@ -6254,7 +6256,7 @@ function advBagRefresh(){
   const el=document.querySelector(".adv-sheet.bag"); if(!el||!A) return;
   A.fuse=A.fuse.map(i=>i<A.inv.length?i:-1);
   const slot=i=>{ const it=A.inv[i]; if(!it) return `<div class="ab-cell empty"></div>`;
-    return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""}" type="button" data-ai="${i}">${advItemIcon(it)}${advIsShard(it)?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}</button>`; };
+    return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""} ${A.fuse.includes(i)?"infz":""}" type="button" data-ai="${i}">${advItemIcon(it)}${advIsShard(it)?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}</button>`; };
   const fz=j=>{ const i=A.fuse[j], it=i>=0?A.inv[i]:null; return `<button class="ab-fz" type="button" data-fz="${j}">${it?advItemIcon(it):"＋"}</button>`; };
   const a=A.fuse[0]>=0?A.inv[A.fuse[0]]:null, b=A.fuse[1]>=0?A.inv[A.fuse[1]]:null;
   const known=(S.advRecipes||[]).includes("g+g"), willB=a&&b&&a.k==="g"&&b.k==="g";
@@ -6270,9 +6272,15 @@ function advBagRefresh(){
         <button class="ab-act drop" type="button" id="abDrop" ${sel?"":"disabled"}>${advT2("捨てる")}</button>
         <button class="ab-quit" type="button" id="abQuit">${advT2("冒険をあきらめる")}</button></div></div>`;
   el.querySelector("#abX").onclick=()=>advBagClose();
-  el.querySelectorAll("[data-ai]").forEach(b=>b.onclick=()=>{ A.sel=+b.dataset.ai===A.sel?-1:+b.dataset.ai; advBagRefresh(); });
+  // 魔法の欠片をタップ → 融合の枠へ移動（もう一度タップ、または融合の枠をタップすると下に戻る）。ほかのアイテムはえらぶだけ
+  el.querySelectorAll("[data-ai]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.ai, it=A.inv[i];
+    if(advIsShard(it)){ const k=A.fuse.indexOf(i);
+      if(k>=0){ A.fuse[k]=-1; A.sel=-1; }
+      else { const e=A.fuse.indexOf(-1); if(e>=0) A.fuse[e]=i; else advMsg(advT2("融合の枠がいっぱいです")); A.sel=i; } }
+    else A.sel=i===A.sel?-1:i;
+    advBagRefresh(); });
   el.querySelectorAll("[data-fz]").forEach(b=>b.onclick=()=>{ const j=+b.dataset.fz;
-    if(A.fuse[j]>=0){ A.fuse[j]=-1; } else if(A.sel>=0 && A.fuse[1-j]!==A.sel){ A.fuse[j]=A.sel; A.sel=-1; } else advMsg(advT2("先に下のマスからアイテムをえらんでね"));
+    if(A.fuse[j]>=0){ if(A.sel===A.fuse[j]) A.sel=-1; A.fuse[j]=-1; } else advMsg(advT2("下の魔法の欠片をタップすると、ここに入ります"));
     advBagRefresh(); });
   el.querySelector("#abFuse").onclick=()=>{ const [i,j]=A.fuse; const x=A.inv[i], y=A.inv[j]; if(!x||!y) return;
     if(x.k==="g"&&y.k==="g"){ const keep=A.inv.filter((_,k)=>k!==i&&k!==j); const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv=keep; A.inv.push({k:"b",u:ADV.SHARD.b.uses}); A.eq=eqIt?A.inv.indexOf(eqIt):-1;
