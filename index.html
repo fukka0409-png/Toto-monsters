@@ -5594,6 +5594,7 @@ function showNewMonsters(){
    ・攻撃する0.5秒前に、敵の頭上に「❗」と、攻撃が当たる範囲（地面の赤い帯）が出る
    ・魔法は、向いている方向でいちばん近い的（敵か宝箱）に飛んでいく。装備なしより遠くまで届く
    ・リュックを開いている間は、タイマーも魔物も止まる
+   ・魔物は基本、右からやってくる。トトより左へ通りすぎた魔物は、はなれるほど速く近づいてくる
    ・30秒動かないと、ボスなみに強い魔物がおそってくる（たおしてもクリアにはならない）
    ・宝箱：新しい場所に進むと45%で出現（ふつう80%／赤い宝石19%／虹0.01%）
    ・タイマーが30秒をこえたら冒険回数+1（1回の冒険で1回だけ） */
@@ -5851,7 +5852,7 @@ function advPop(x,y,txt,col){ A.pops.push({x,y,txt,col:col||"#fff",t:0}); }
 
 /* ---------- 敵 ---------- */
 function advSpawn(lv,kind){
-  const viewW=A.W/A.P, side=Math.random()<0.5?-1:1;
+  const viewW=A.W/A.P, side=1;   // 魔物は基本、右からやってくる
   const x = side<0 ? A.cam-0.3 : A.cam+viewW+0.3, d=ADV.SL[lv], big=lv>=10;
   A.enemies.push({ x, lv, hp:d.hp, max:d.hp, atk:d.atk, spd:d.spd, warn:0, zone:null,
     w:big?0.32:0.17, dir:-side, cd:0.8, st:null, frozen:0, dead:false, deadT:0, boss:big, extra:kind==="idle", hurt:0 });
@@ -5872,7 +5873,9 @@ function advEnemy(e,dt){
   e.dir=dx>0?1:-1;
   // 前にいる仲間とは重ならないように、少し間をあけて並ぶ
   const blocked=A.enemies.some(o=>o!==e&&!o.dead&&(o.x-e.x)*e.dir>0&&Math.abs(o.x-e.x)<(o.w+e.w)*0.42);
-  if(dist>e.w*0.5+0.1){ if(!blocked) e.x+=e.dir*e.spd*dt; }
+  // トトより左へ通りすぎた魔物は、はなれるほどスピードを上げて戻ってくる
+  const back = e.x<A.x ? Math.min(5, 1+2.5*Math.max(0,dist-0.15)) : 1;
+  if(dist>e.w*0.5+0.1){ if(!blocked||back>1) e.x+=e.dir*e.spd*back*dt; }
   else if(e.cd<=0){ e.warn=ADV.WARN; const reach=e.w*0.5+0.14+(e.boss?0.13:0.09);   // 当たる範囲＝体の前側〜とびかかる先
     e.zone = e.dir>0 ? {a:e.x-e.w*0.3, b:e.x+reach} : {a:e.x-reach, b:e.x+e.w*0.3}; }
 }
