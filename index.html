@@ -617,7 +617,15 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
 .ah-cnt b{display:block;font:900 20px/1.1 var(--f-pix,monospace)}
 .adv-msg{position:absolute;left:50%;top:22%;transform:translate(-50%,-10px);background:#000c;color:#fff;font:800 14px/1.4 var(--f-body);padding:8px 14px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;max-width:88%;text-align:center}
 .adv-msg.on{opacity:1;transform:translate(-50%,0)}
-.adv-pause{position:absolute;left:50%;top:calc(max(8px,env(safe-area-inset-top,0px)) + 100px);transform:translateX(-50%);z-index:4;background:#2a1a0a;color:#fff8e8;font:900 13px/1 var(--f-body);padding:6px 14px;border-radius:999px;display:none}
+.adv-stock{position:absolute;left:8px;top:calc(max(8px,env(safe-area-inset-top,0px)) + 100px);z-index:3}
+.adv-stock>small{display:block;font:900 10px/1 var(--f-body);color:#fff;text-shadow:0 1px 2px #000a;margin:0 0 3px 2px}
+.as-row{display:flex;gap:4px;background:#2a2622;border:3px solid #1a1714;border-radius:6px;padding:4px;box-shadow:0 3px 0 #0005}
+.as-cell{position:relative;width:min(11vw,52px);aspect-ratio:1;border:2px solid #1a1714;border-radius:4px;background:#4a4540;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation}
+.as-cell img{max-width:76%;max-height:76%;image-rendering:pixelated;pointer-events:none}
+.as-cell small{position:absolute;right:2px;bottom:1px;font:900 10px/1 var(--f-pix,monospace);color:#fff;text-shadow:0 1px 0 #000;pointer-events:none}
+.as-cell.on:active{transform:scale(.93)}
+.ab-cell em.stk{left:auto;right:2px;top:1px;background:#7fd0ff}
+.adv-pause{position:absolute;left:50%;top:calc(max(8px,env(safe-area-inset-top,0px)) + 170px);transform:translateX(-50%);z-index:4;background:#2a1a0a;color:#fff8e8;font:900 13px/1 var(--f-body);padding:6px 14px;border-radius:999px;display:none}
 .adv-pause.on{display:block}
 .ap-auto{position:absolute;left:8px;top:calc(max(8px,env(safe-area-inset-top,0px)) + 62px);z-index:3;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border:3px solid #2a1a0a;border-radius:999px;background:#fff8e8;box-shadow:0 3px 0 #0006;cursor:pointer;font:900 12px/1 var(--f-body);color:#2a1a0a}
 .ap-auto i{font-style:normal;font:900 11px/1 var(--f-pix,monospace);background:#9a8f80;color:#fff;border-radius:999px;padding:4px 7px}
@@ -5891,6 +5899,7 @@ function openAdventure(){
     <div class="adv-msg" id="advMsg"></div>
     <div class="adv-pause" id="advPause">⏸ ${advT("一時停止中")}</div>
     <button class="ap-auto" id="apAuto" type="button" aria-pressed="false"></button>
+    <div class="adv-stock" id="advStock"><small>${advT("装備のストック")}</small><div class="as-row">${[0,1,2,3].map(i=>`<button class="as-cell" type="button" data-stk="${i}"></button>`).join("")}</div></div>
     <div class="adv-prog" id="advProg"></div>
     <button class="adv-esc" id="advEsc" type="button" hidden>🏃 ${advT("脱出してクリアする")}</button>
     <div class="adv-pad">
@@ -5922,7 +5931,7 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
   "近くに虹の宝箱がない…":"No rainbow chest nearby...","達成レベル":"Level reached","魔法の欠片を使い切った":"The magic shard is used up",
   "魔法の欠片を融合して新たな魔法を追求しよう！":"Fuse magic shards to discover new magic!","波動魔法の欠片":"Wave Magic Shard","氷魔法の欠片":"Ice Magic Shard","伝説の鍵":"Legendary Key",
   "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward",
-  "脱出してクリアする":"Escape & clear","融合の枠がいっぱいです":"The fusion slots are full","下の魔法の欠片をタップすると、ここに入ります":"Tap a magic shard below to put it here","{n}を補充した！（のこり{m}個）":"Reloaded {n}! ({m} left)","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
+  "脱出してクリアする":"Escape & clear","装備のストック":"Equip stock","すでにストックしてあります":"Already in stock","装備のストックがいっぱいです":"Equip stock is full","{n}に持ちかえた！":"Switched to {n}!","融合の枠がいっぱいです":"The fusion slots are full","下の魔法の欠片をタップすると、ここに入ります":"Tap a magic shard below to put it here","{n}を補充した！（のこり{m}個）":"Reloaded {n}! ({m} left)","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
   "回復するやつを使った！ 体力が回復した":"Used the Heal-a-thing! HP restored","宝箱のコイン":"chest coins","🪙 {n}コインを見つけた！（脱出・クリアするともらえる）":"🪙 Found {n} coins! (You get them when you escape or clear)",
   "ランキングは、この30分で最後に出した記録の順位です（ほかの冒険者の順位は見えません・30分ごとにリセット）":"Ranks use your latest record in these 30 minutes (others' ranks are hidden · resets every 30 minutes)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
   "👑 Lv10のボスが現れた！":"👑 The Lv10 BOSS appeared!","Lv9の魔物をすべてたおした！ ボスがやってくる…！":"All Lv9 monsters defeated! The boss is coming...!",
@@ -5935,7 +5944,7 @@ const advRk = n => n ? (LANG==="en" ? "#"+n.toLocaleString() : n.toLocaleString(
 function advStart(){
   A={ t:0, xp:0, stageLv:1, spawned:0, killed:0, bossDown:false, over:false, hp:ADV.HP0, x:0, y:0, vy:0, vx:0, dir:1, jumps:0, onGround:true, atk:null, inv:[], eq:-1, enemies:[], chests:[], bolts:[], fx:[], pops:[],
       inv0:0, hurtT:0, dead:false, deadT:0, counted:false, nextSpawn:1.2, idleT:0, idleSpawned:false, lastX:0, chunksL:0, chunksR:0, moveIn:0,
-      keys:{}, bestShown:false, revives:0, fuse:[-1,-1], sel:-1, cam:0, walkT:0, flapT:0 };
+      keys:{}, bestShown:false, revives:0, stock:[null,null,null,null], fuse:[-1,-1], sel:-1, cam:0, walkT:0, flapT:0 };
   advHud(); advEquipView();
 }
 function advResize(){
@@ -5968,7 +5977,9 @@ function advBindInput(el){
   el.querySelector("#apBag").onclick=()=>advBag();
   const au=el.querySelector("#apAuto"); const auView=()=>{ au.setAttribute("aria-pressed",String(advAuto)); au.innerHTML=`<b>${advT("オート移動")}</b><i>${advAuto?"ON":"OFF"}</i>`; };
   au.onclick=()=>{ advAuto=!advAuto; try{ localStorage.setItem("toto-adv-auto",advAuto?"1":"0"); }catch(e){} auView(); try{ SFX.tap(); }catch(e){} }; auView();
-  el.querySelector("#apEquip").onclick=()=>advBag();
+  // 左下の装備を1回タップ → 装備のストックへ。ストックをタップ → その魔法にすぐ持ちかえる（装備中のものはそのマスへ）
+  el.querySelector("#apEquip").onclick=()=>advToStock();
+  el.querySelectorAll("[data-stk]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); advFromStock(+b.dataset.stk); }));
   el.addEventListener("touchmove",e=>{ if(!e.target.closest(".adv-sheet")) e.preventDefault(); },{passive:false});
 }
 document.addEventListener("keydown",e=>{ if(!A||A.dead||e.target.closest&&e.target.closest("textarea,input")) return;
@@ -5976,7 +5987,8 @@ document.addEventListener("keydown",e=>{ if(!A||A.dead||e.target.closest&&e.targ
   if(k===" "||k==="w"||k==="arrowup"){ e.preventDefault(); if(!e.repeat) advJump(); }
   if(k==="j"||k==="k"||k==="enter"){ e.preventDefault(); if(!e.repeat) advAttack(); }
   if(k==="b"||k==="i"){ advBag(); }
-  if(k==="o"&&!e.repeat){ document.getElementById("apAuto")?.click(); } });
+  if(k==="o"&&!e.repeat){ document.getElementById("apAuto")?.click(); }
+  if(["1","2","3","4"].includes(k)&&!e.repeat) advFromStock(+k-1); });
 document.addEventListener("keyup",e=>{ if(A) A.keys[e.key.toLowerCase()]=false; });
 
 function advJump(){ if(!A||A.dead||advPaused()) return;
@@ -6126,7 +6138,7 @@ function advFire(it){ const sh=ADV.SHARD[it.k];
   const y=A.y+0.07; A.bolts.push({ x:A.x+A.dir*0.12, x0:A.x, y, dmg:advShardDmg(it.k), img:sh.bolt, freeze:sh.freeze||0, dir:A.dir, tg:advMagicTarget(), life:3 });
   it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0){ A.inv.splice(i,1); A.fuse=[-1,-1]; }
     // 同じ種類の欠片をまだ持っていれば、自動で装備しなおす（補充）
-    const nx=A.inv.findIndex(x=>x.k===it.k);
+    const nx=A.inv.findIndex(x=>x.k===it.k&&!(A.stock||[]).includes(x));
     if(nx>=0){ A.eq=nx; advMsg(advT2("{n}を補充した！（のこり{m}個）").replace("{n}",advT2(sh.name)).replace("{m}",A.inv.filter(x=>x.k===it.k).length)); }
     else { A.eq=-1; advMsg(advT2("魔法の欠片を使い切った")); } }
   else A.eq=A.inv.indexOf(it);
@@ -6256,7 +6268,7 @@ function advBagRefresh(){
   const el=document.querySelector(".adv-sheet.bag"); if(!el||!A) return;
   A.fuse=A.fuse.map(i=>i<A.inv.length?i:-1);
   const slot=i=>{ const it=A.inv[i]; if(!it||A.fuse.includes(i)) return `<div class="ab-cell empty"></div>`;   // 融合の枠に移した欠片は、下のマスから消える
-    return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""} ${A.fuse.includes(i)?"infz":""}" type="button" data-ai="${i}">${advItemIcon(it)}${advIsShard(it)?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}</button>`; };
+    return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""} ${A.fuse.includes(i)?"infz":""}" type="button" data-ai="${i}">${advItemIcon(it)}${advIsShard(it)?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}${(A.stock||[]).includes(it)?`<em class="stk">S</em>`:""}</button>`; };
   const fz=j=>{ const i=A.fuse[j], it=i>=0?A.inv[i]:null; return `<button class="ab-fz" type="button" data-fz="${j}">${it?advItemIcon(it):"＋"}</button>`; };
   const a=A.fuse[0]>=0?A.inv[A.fuse[0]]:null, b=A.fuse[1]>=0?A.inv[A.fuse[1]]:null;
   const known=(S.advRecipes||[]).includes("g+g"), willB=a&&b&&a.k==="g"&&b.k==="g";
@@ -6287,7 +6299,9 @@ function advBagRefresh(){
       S.advRecipes=[...new Set([...(S.advRecipes||[]),"g+g"])]; save(); A.fuse=[-1,-1]; A.sel=-1; advMsg(advT2("融合成功！ 新しい魔法の欠片ができた！")); try{ SFX.reveal("S"); }catch(e){} }
     else { advMsg(advT2("何も起きなかった…")); A.fuse=[-1,-1]; }
     advEquipView(); advBagRefresh(); };
-  el.querySelector("#abEq").onclick=()=>{ if(A.sel<0||!advIsShard(A.inv[A.sel])) return; A.eq = A.eq===A.sel ? -1 : A.sel; advEquipView(); advBagRefresh(); };
+  el.querySelector("#abEq").onclick=()=>{ if(A.sel<0||!advIsShard(A.inv[A.sel])) return; const it=A.inv[A.sel];
+    if(A.eq!==A.sel && (A.stock||[]).some(x=>x&&x.k===it.k)) return advMsg(advT2("すでにストックしてあります"));   // 同じ種類がストックにあると左下には装備できない
+    A.eq = A.eq===A.sel ? -1 : A.sel; advEquipView(); advBagRefresh(); };
   el.querySelector("#abUse").onclick=()=>{ const it=A.inv[A.sel]; if(!it) return;
     if(it.k==="heal"){ const mx=advMaxHp(); if(A.hp>=mx) return advMsg(advT2("体力はもう満タン！"));
       const add=Math.min(ADV.HEAL,mx-A.hp); A.hp+=add; const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv.splice(A.sel,1); A.eq=eqIt?A.inv.indexOf(eqIt):-1; A.sel=-1; A.fuse=[-1,-1];
@@ -6314,7 +6328,20 @@ function advMemo(){
   el.querySelector("#amX").onclick=()=>{ S.advMemo=ta.value; save(); ta.blur(); el.remove(); setTimeout(advFixView,60); setTimeout(advFixView,400); };
 }
 function advEquipView(){ const s=document.getElementById("apEqSlot"); if(!s||!A) return; const it=A.eq>=0?A.inv[A.eq]:null;
-  s.innerHTML=it?`<img src="${advItemImg(it)}" alt=""><small>${it.u}</small>`:""; }
+  s.innerHTML=it?`<img src="${advItemImg(it)}" alt=""><small>${it.u}</small>`:"";
+  // 装備のストック：リュックから消えたもの（使い切り・捨てた・融合した）は外す
+  A.stock=(A.stock||[null,null,null,null]).map(x=>x&&A.inv.includes(x)&&x!==it?x:null);
+  document.querySelectorAll("#advStock [data-stk]").forEach(c=>{ const x=A.stock[+c.dataset.stk]; c.innerHTML=x?`<img src="${advItemImg(x)}" alt=""><small>${x.u}</small>`:""; c.classList.toggle("on",!!x); }); }
+// 装備中の欠片を、装備のストックへ（同じ種類はストックに1つまで：使い切っても同じ種類は自動で補充されるため）
+function advToStock(){ if(!A||A.dead||A.over) return; const it=A.eq>=0?A.inv[A.eq]:null;
+  if(!it) return advBag();   // 何も装備していなければリュックを開く
+  if(A.stock.some(x=>x&&x.k===it.k)) return advMsg(advT2("すでにストックしてあります"));
+  const e=A.stock.indexOf(null); if(e<0) return advMsg(advT2("装備のストックがいっぱいです"));
+  A.stock[e]=it; A.eq=-1; try{ SFX.tap(); }catch(x){} advEquipView(); advBagRefresh(); }
+// ストックの欠片にすぐ持ちかえる（装備していたものは、そのストックのマスへ）
+function advFromStock(i){ if(!A||A.dead||A.over) return; const x=A.stock[i]; if(!x) return;
+  const cur=A.eq>=0?A.inv[A.eq]:null; A.stock[i]=cur||null; A.eq=A.inv.indexOf(x); try{ SFX.tap(); }catch(e){}
+  advMsg(advT2("{n}に持ちかえた！").replace("{n}",advT2(ADV.SHARD[x.k].name))); advEquipView(); advBagRefresh(); }
 function advHud(){
   if(!A) return; const $$=id=>document.getElementById(id);
   const lv=advLv(), mx=advMaxHp(); if(A.hp>mx) A.hp=mx;
