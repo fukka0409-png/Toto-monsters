@@ -1903,6 +1903,7 @@ const I18N_EN = {
 "💰 「冒険者に投資する」とは？": "💰 What is \"Invest in an Adventurer\"?",
 "デイリーミッション（各1日2回まで）：Cランクの魔物を500体集める／新しい魔物と出会う／冒険者に投資する": "Daily missions (up to 2 times each per day): collect 500 C-rank monsters / meet a new monster / invest in an adventurer",
 "📋 デイリーミッション": "📋 Daily Missions",
+"毎日22:00（ランク戦の切り替わり）にリセット": "Resets daily at 22:00 (when the ranked match switches)",
 "（それぞれ1日{0}回まで）": "(up to {0} times each per day)",
 "Cランクモンスターをガチャで500体集める！": "Collect 500 C-rank monsters from the gacha!",
 "ガチャで新たな魔物と出会う！": "Meet a new monster in the gacha!",
@@ -1914,7 +1915,7 @@ const I18N_EN = {
 "投資中：{0}さん": "Investing in: {0}",
 "まだ今回のランク戦は投資していません": "You haven't invested this season yet",
 "冒険者に投資するとは": "About investing",
-"今日はもう{0}回クリアしました（明日またどうぞ）": "Cleared {0} times today (come back tomorrow)",
+"今回はもう{0}回クリアしました（22:00のリセット後にまたどうぞ）": "Cleared {0} times (come back after the 22:00 reset)",
 "未達成": "Not yet cleared",
 "投資しに行く": "Go invest",
 "ホームの黄色いボタンから、ほかの冒険者にコインを投資できます。": "You can invest coins in other adventurers from the yellow button on Home.",
@@ -2653,7 +2654,8 @@ function autoGuard(){
 function hourlyDecay(){
   fixGuard();
   if(S.guard) return;
-  const n=Math.floor((gnow()-S.decayAt)/EMPTY_STEP_MS);
+  const now=Math.min(gnow(), typeof settleLim==="function"?settleLim():Infinity);   // 精算前は前のランク戦の終了時刻まで
+  const n=Math.floor((now-S.decayAt)/EMPTY_STEP_MS);
   if(n>0){
     S.emptyLog=(S.emptyLog||[]).filter(t=>t>gnow()-2*DAY_MS_);
     let drop=0;
@@ -3942,7 +3944,8 @@ const DMS = [
   { k:"inv", title:"他の冒険者に投資してみる！",               coins:1000, max:1 },
 ];
 const DM_C_GOAL = 500;
-function dmFix(){ S.dm=S.dm||{}; if(S.dm.day!==today()){ S.dm.day=today(); S.dm.done={}; } S.dm.done=S.dm.done||{}; }
+// デイリーミッションは、ランク戦の切り替わり（毎日22:00）でリセット
+function dmFix(){ S.dm=S.dm||{}; const k="ss"+seasonNow(); if(S.dm.day!==k){ S.dm.day=k; S.dm.done={}; } S.dm.done=S.dm.done||{}; }
 const dmCount = m => { dmFix(); return S.dm.done[m.k]||0; };
 function dmMet(m){ dmFix();
   if(m.k==="c") return (S.dm.c||0)>=DM_C_GOAL;
@@ -3959,7 +3962,7 @@ function claimDM(k){ const m=DMS.find(x=>x.k===k); if(!m||!dmReady(m)) return;
 function renderDaily(target){
   dmFix();
   const owned=DEX_MONS.filter(m=>S.got[m.id]).length;
-  target.innerHTML=`<h3 class="inv-h">📋 デイリーミッション </h3>
+  target.innerHTML=`<h3 class="inv-h">📋 デイリーミッション </h3><p class="sub" style="margin:-4px 0 8px">毎日22:00（ランク戦の切り替わり）にリセット</p>
   ${DMS.map(m=>{ const n=dmCount(m), mx=dmMax(m), full=n>=mx, ok=dmMet(m);
     let extra="";
     if(m.k==="c"){ const v=Math.min(DM_C_GOAL,S.dm.c||0); extra=`<div class="dm-gauge" role="progressbar" aria-valuemin="0" aria-valuemax="${DM_C_GOAL}" aria-valuenow="${v}"><i style="width:${v/DM_C_GOAL*100}%"></i></div><p class="dm-meta">${v} / ${DM_C_GOAL}体</p>`; }
@@ -3967,7 +3970,7 @@ function renderDaily(target){
     if(m.k==="inv") extra=`<p class="dm-meta">${activeInvs().length?`投資中：${activeInvs().map(iv=>esc(iv.name||"")+"さん").join("・")}`:"まだ今回のランク戦は投資していません"}</p>`;
     return `<div class="dm ${!full&&ok?"ready":""} ${full?"done":""}">${m.k==="inv"?`<button class="dm-info" type="button" data-invhelp="1" aria-label="冒険者に投資するとは">？</button>`:""}
       <h3>${m.title}</h3><p class="dm-sub">今日 ${n}/${mx}回 ・ 報酬 <span class="amt">${m.coins.toLocaleString()}コイン</span></p>${extra}
-      ${full?`<div class="dm-state">今日はもう${mx}回クリアしました（明日またどうぞ）</div>`:ok?`<button class="btn gold" type="button" data-dm="${m.k}">受け取る</button>`
+      ${full?`<div class="dm-state">今回はもう${mx}回クリアしました（22:00のリセット後にまたどうぞ）</div>`:ok?`<button class="btn gold" type="button" data-dm="${m.k}">受け取る</button>`
         :m.k==="inv"?`<button class="btn" type="button" data-goinv="1">投資しに行く</button>`:`<div class="dm-state">未達成</div>`}</div>`; }).join("")}`;
   target.querySelectorAll("[data-dm]").forEach(b=>b.onclick=()=>claimDM(b.dataset.dm));
   target.querySelectorAll("[data-goinv]").forEach(b=>b.onclick=()=>{ tab="home"; homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); });
@@ -4981,6 +4984,7 @@ async function checkSeason(){
       <button class="btn gold" type="button">OK</button>`;
     document.body.appendChild(bg); (coins||stones)?SFX.reveal("S"):SFX.coin();
     bg.querySelector(".btn").onclick=()=>{ bg.remove(); render(); };
+    setTimeout(()=>{ try{ hourlyDecay(); checkBattles(); checkItems(); }catch(e){} },2500);   // 終了後に受けた分は、新しいランク戦に反映
   }catch(e){}
   seasonBusy=false;
 }
@@ -5024,13 +5028,16 @@ async function checkMaidGift(){
     else save();
   }catch(e){}
 }
+// 前のランク戦をまだ精算していない間は、そのランク戦の終了時刻より後のバトル・アイテム・放置の減少を反映しない
+//（終了後に受けた攻撃で、前のランク戦の最終順位が下がってしまうのを防ぐ。精算のあとで新しいランク戦の分として反映する）
+const settleLim = () => (S.season!=null && S.season<seasonNow()) ? seasonEnd(S.season) : Infinity;
 let battleBusy=false;
 async function checkBattles(){
   if(battleBusy||!DB||!MYID) return; battleBusy=true;
   try{
     const q=await DB.collection("battles").where("def","==",MYID).get();
-    const bots=genBotEvents(); botItemQueue.push(...bots.filter(e=>e.kind==="item"));
-    const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastBattle||0)).concat(bots.filter(e=>e.kind==="battle")).sort((a,b)=>a.at-b.at);
+    const lim=settleLim(), bots=isFinite(lim)?[]:genBotEvents(); botItemQueue.push(...bots.filter(e=>e.kind==="item"));
+    const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastBattle||0)&&b.at<=lim).concat(bots.filter(e=>e.kind==="battle")).sort((a,b)=>a.at-b.at);
     if(list.length){
       const msgs=[]; let lostLv=0, coinDiff=0;
       for(const b of list){
@@ -5437,7 +5444,7 @@ async function checkItems(){
   if(itemBusy) return; if(!DB||!MYID){ shExpireNow(); return; } itemBusy=true;
   try{
     const q=await DB.collection("items").where("def","==",MYID).get();
-    const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastItem||0)).concat(botItemQueue.splice(0)).sort((a,b)=>a.at-b.at);
+    const lim=settleLim(); const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastItem||0)&&(b.at||0)<=lim).concat(isFinite(lim)?[]:botItemQueue.splice(0)).sort((a,b)=>a.at-b.at);
     if(list.length){
       const msgs=[], gifts=[]; let lostLv=0, lostCoin=0, gCoins=0, gTickets=0;
       const artGot={}, res=[];
