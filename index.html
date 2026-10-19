@@ -5604,7 +5604,7 @@ function showNewMonsters(){
    ・魔法は、向いている方向でいちばん近い的（敵か宝箱）に飛んでいく。装備なしより遠くまで届く
    ・リュックを開いている間は、タイマーも魔物も止まる
    ・魔物をたおすと 波動魔法の欠片20%・回復するやつ5%・氷魔法の欠片10% で落とす
-   ・画面から見えなくなって2秒たった魔物は、トトの進む方向の少し先の上空から降ってくる
+   ・画面から見えなくなって2秒たった魔物は、トトの進む方向の少し先の上空から降ってくる（着地の範囲にいると1.5倍のダメージ・範囲は少し広め）
    ・魔物は基本、右からやってくる。トトより左へ通りすぎた魔物は、はなれるほど速く近づいてくる
    ・30秒動かないと、ボスなみに強い魔物がおそってくる（たおしてもクリアにはならない）
    ・宝箱：新しい場所に進むと45%で出現（ふつう80%／赤い宝石19%／虹0.01%）
@@ -5898,7 +5898,11 @@ function advEnemy(e,dt){
   if(e.dead){ e.deadT+=dt; return; }
   e.hurt=Math.max(0,e.hurt-dt);
   // 空から降ってきている間は、着地するまで何もしない
-  if(e.y>0){ e.vy-=3.4*dt; e.y+=e.vy*dt; if(e.y<=0){ e.y=0; e.vy=0; e.cd=Math.max(e.cd,0.5); advPop(e.x,0.05,advT2("ドスン"),"#fff"); } return; }
+  // 着地したときにトトが落下範囲（ふつうの攻撃より少し広い・地面に赤い帯）にいたら、1.5倍のダメージ
+  if(e.y>0){ e.vy-=3.4*dt; e.y+=e.vy*dt; const r=e.w*0.5+0.16; e.zone={a:e.x-r,b:e.x+r};
+    if(e.y<=0){ e.y=0; e.vy=0; e.cd=Math.max(e.cd,0.5); advPop(e.x,0.05,advT2("ドスン"),"#fff");
+      const z=e.zone; e.zone=null; if(!A.dead && A.x+0.05>z.a && A.x-0.05<z.b && A.y<0.2) advHurt(e.atk*1.5); }
+    return; }
   // 画面から見えなくなって2秒たつと、トトの進む方向の少し先の上空から急に降ってくる
   const vw=A.W/A.P, seen=e.x>A.cam-e.w*0.5 && e.x<A.cam+vw+e.w*0.5;
   if(seen) e.off=0; else if((e.off+=dt)>=2){ e.off=0; e.st=null; e.warn=0; e.zone=null; e.frozen=0;
