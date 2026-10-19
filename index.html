@@ -1055,6 +1055,8 @@ const I18N_EN = {
 "：相手の所持コインの10%をうばう": ": Steal 10% of the opponent's coins",
 "：相手の配置魔物のレベルを30下げる": ": Lower the opponent's placed monster's level by 30",
 "：相手の冒険者レベルを5下げる": ": Lower the opponent's Adventurer Level by 5",
+"：相手の冒険者レベルを2下げる": ": Lower the opponent's Adventurer Level by 2",
+"相手の冒険者レベルを2下げる": "Lower the opponent's Adventurer Level by 2",
 "この3つは、ランキングで相手をタップすると使えます。何回でも使えます。": "These 3 are used by tapping an opponent in the Ranking. Use them as often as you like.",
 "：どのレベルの魔物にも合成でき、1個につき1レベル上がります。Lv100の上限も突破できる！": ": Can be fused into a monster of any level; each one raises it 1 level. Can even break the Lv100 cap!",
 "🔰 冒険者レベル10未満の人には、アイテムも使えません。": "🔰 Items can't be used on players below Adventurer Level 10.",
@@ -1835,7 +1837,7 @@ const I18N_EN = {
 "0:00〜0:15は集計タイム": "0:00–0:15 is tally time",
 "（攻撃・アイテム禁止）。全員の最新の状態で正式な順位を決めて、": " (no battles or items). Final ranks are decided with everyone's latest state, with ",
 "0:15に結果発表＆報酬": "results & rewards at 0:15",
-"🏁 集計中（0:00〜0:03）は、攻撃もアイテムも使えません": "🏁 During the tally (0:00–0:03), battles and items are disabled",
+"🏁 ランク戦の集計中は、攻撃もアイテムも使えません（少し待ってね）": "🏁 Battles and items are disabled while the ranked match is being tallied (please wait a moment)",
 "前のランク戦の順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！": "Final ranks for the last season are being tallied with everyone's latest state. Results & rewards at 0:03!",
 "0:00〜0:03は集計タイム": "0:00–0:03 is tally time",
 "0:03に結果発表＆報酬": "results & rewards at 0:03",
@@ -2475,7 +2477,8 @@ const seasonOf = t => Math.floor((Math.floor((t+JST+SEASON_SHIFT)/DAY_MS) - SEAS
 function shPurge(ss){ shFix(); const n=S.shieldList.length; S.shieldList=S.shieldList.filter(x=>x.ss>=ss); const gone=n-S.shieldList.length;
   if(gone){ if(S.shieldEq && !S.shieldList.some(x=>x.id===S.shieldEq)) S.shieldEq=null; shAutoEquip(); } return gone; }
 let shItemsDone=false;
-function shExpireNow(){ const gone=shPurge(seasonNow()); if(gone){ save(); toast(`ランク戦が終わったので、盾が${gone}個消えました`); try{ render(); }catch(e){} } }
+function shExpireNow(){ const gone=shPurge(Math.min(seasonNow(), S.season??seasonNow()));   // 精算前は前のランク戦の盾を残す
+  if(gone){ save(); toast(`ランク戦が終わったので、盾が${gone}個消えました`); try{ render(); }catch(e){} } }
 setInterval(()=>{ if(!itemBusy && (shItemsDone || !DB || !MYID)) shExpireNow(); },30000);
 const shEquipped = () => { shFix(); return S.shieldList.find(x=>x.id===S.shieldEq)||null; };
 function shAutoEquip(){ shFix(); if(shEquipped()) return null;
@@ -2592,7 +2595,7 @@ function gainPExp(n){
   while(S.pexp>=pNeed(S.plv)){ S.pexp-=pNeed(S.plv); S.plv++; up++; bumpMaxLv(); }
   if(up) setTimeout(()=>toast(`冒険者レベルが ${S.plv} に上がった！`),900);
 }
-const dayNum = d => Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))/86400000);
+const dayNum = d => Math.floor((d.getTime()+9*3600000)/86400000);   // 日付はいつも日本時間で数える（端末のタイムゾーンを変えても同じ）
 let decayNote = 0;
 function applyLoginDecay(){
   fixPlayer();
@@ -2825,7 +2828,7 @@ function openNews(force){
       <h4 style="margin-top:18px">🎰 アイテムガチャ</h4>
       <h4>🎰 アイテムガチャ</h4>
       <p>ガチャタブの「アイテムガチャ」で、1回1000コイン。4種類のアイテムが出ます。</p>
-      <p>🧲 <b>コインマグネット</b>：相手の所持コインの10%をうばう<br>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベルを30下げる<br>💣 <b>爆弾</b>：相手の冒険者レベルを5下げる</p>
+      <p>🧲 <b>コインマグネット</b>：相手の所持コインの10%をうばう<br>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベルを30下げる<br>💣 <b>爆弾</b>：相手の冒険者レベルを${BOMB_LV}下げる</p>
       <p>この3つは、ランキングで相手をタップすると使えます。何回でも使えます。</p>
       <p>💎 <b>覚醒の石</b>：どのレベルの魔物にも合成でき、1個につき1レベル上がります。Lv100の上限も突破できる！</p>
       <p>🔰 冒険者レベル10未満の人には、アイテムも使えません。</p>
@@ -2917,6 +2920,7 @@ function openLogin(mode){
 }
 async function logout(){
   if(!FBA) return;
+  try{ if(remoteTimer){ clearTimeout(remoteTimer); remoteTimer=null; await pushRemote(); } }catch(e){}   // 保存待ちの分を先に保存
   try{ await FBA.signOut(); }catch(e){}
   try{ localStorage.removeItem(KEY); localStorage.removeItem("toto-login-skip"); }catch(e){}
   location.reload();
@@ -3351,7 +3355,7 @@ renderSnd();
 /* ---------- UI ---------- */
 const $ = s=>document.querySelector(s);
 let tab="home", homeMode="scene", gachaMode="mon", dexMode="mon", boxFilter="all", boxMode="units";
-const today=()=>{const d=new Date(gnow());return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
+const today=()=>{const d=new Date(gnow()+9*3600000);return d.getUTCFullYear()+"-"+(d.getUTCMonth()+1)+"-"+d.getUTCDate()};   // 日本時間の日付
 function toast(t){ document.querySelectorAll(".toast").forEach(x=>x.remove()); const el=document.createElement("div"); el.className="toast"; el.textContent=t; el.setAttribute("role","status"); document.body.appendChild(el); setTimeout(()=>el.remove(),2200); }
 const dailyReady=()=>S.lastDaily!==today();
 const hourlyLeft=()=>Math.max(0,(S.lastHourly||0)+HOURLY_MS-gnow());
@@ -3517,7 +3521,7 @@ function renderBox(){
   $("#sellToggle").onclick=()=>{ sellMode=!sellMode; lockMode=false; sellSel.clear(); render(); };
   $("#lockToggle").onclick=()=>{ lockMode=!lockMode; sellMode=false; sellSel.clear(); render(); };
   if(sellMode){
-    $("#sellAllC").onclick=()=>{ S.units.forEach(x=>{ if(!x.k && ["C","B"].includes(mon(x.m).rank)) sellSel.add(x.u); }); render(); };
+    $("#sellAllC").onclick=()=>{ S.units.forEach(x=>{ if(!x.k && x.u!==S.guard && ["C","B"].includes(mon(x.m).rank)) sellSel.add(x.u); }); render(); };
     $("#sellClear").onclick=()=>{ sellSel.clear(); render(); };
     $("#sellGo").onclick=()=>confirmSell([...sellSel],()=>{ sellSel.clear(); render(); });
   }
@@ -3539,10 +3543,10 @@ function doSell(uids){
   const list=S.units.filter(z=>uids.includes(z.u)&&!z.k&&z.u!==S.guard); if(!list.length) return 0;
   const total=list.reduce((t,u)=>t+sellPrice(u),0);
   S.units=S.units.filter(z=>!list.includes(z));
-  if(S.dress && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
+  if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
   const lv=sellLv(list); if(lv){ S.plv+=lv; bumpMaxLv(); }
   const nL=list.filter(u=>mon(u.m).rank==="L").length, up=nL*LIMITED_SELL_LV; let raised=0;
-  if(up){ S.units.forEach(z=>{ const c=capOf(z); if(evoLocked(z)){ if(z.l>=c) return; z.l=Math.min(c,z.l+up); } else z.l+=up; if(z.l>=Math.min(c,MAX_LV)) z.e=0; raised++; }); queueProfile(true); }   // Lv100を超えた分も、覚醒の石と同じようにそのまま上がる
+  if(up){ S.units.forEach(z=>{ const c=capOf(z); if(evoLocked(z)){ if(z.l>=c) return; z.l=Math.min(c,z.l+up); } else { const b0=z.l; z.l+=up; z.a=(z.a||0)+Math.max(0,z.l-Math.max(b0,MAX_LV)); } if(z.l>=Math.min(c,MAX_LV)) z.e=0; raised++; }); queueProfile(true); }   // Lv100を超えた分も、覚醒の石と同じようにそのまま上がる
   S.coins+=total; save(); SFX.coin(); toast(`${list.length}体を売却 +${total.toLocaleString()}コイン`+(lv?` ・ 冒険者Lv+${lv}（Lv${S.plv}）`:"")+(up?` ・ 手持ちの魔物${raised}体のLv+${up}`:"")); if(lv) setTimeout(()=>{ try{ SFX.level(); }catch(e){} },350); return total;
 }
 function confirmSell(uids,onDone){
@@ -3667,7 +3671,7 @@ function doEvolve(uid,pid,bg){
   const x=S.units.find(z=>z.u===uid), y=S.units.find(z=>z.u===pid); if(!x||!y||!evoReady(x)||y.m!==x.m||y.l<capOf(y)||y.k||y.u===S.guard) return toast("進化できませんでした");
   const m=mon(x.m), nx=mon(m.next), cap=capOf(x);
   S.units=S.units.filter(z=>z.u!==pid);
-  x.m=nx.id; x.l=Math.max(cap+1,x.l); x.e=0;   // 覚醒の石で上げたレベルは進化しても残る
+  const l0=x.l; x.m=nx.id; x.l=Math.max(cap+1,x.l); x.e=0; x.a=(x.a||0)+Math.max(0,x.l-Math.max(l0,MAX_LV));   // Lv100をこえた分は記録（読み込み直しで下がらないように）   // 覚醒の石で上げたレベルは進化しても残る
   const isNew=!S.got[nx.id]; S.got[nx.id]=(S.got[nx.id]||0)+1; if(isNew){ S.coins+=NEW_COIN; gainPExp(PXP.newMon); }
   if(S.dress && S.dress.m===m.id && !S.units.some(z=>z.m===m.id)) S.dress.m=nx.id;
   S.evoSeen=(S.evoSeen||[]).filter(k=>!k.startsWith(m.id+":"));
@@ -3736,7 +3740,7 @@ function exchangeShield(uids){
     <button class="btn gold" id="shGo" type="button">交換する</button><button class="btn ghost" id="shNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#shNo").onclick=()=>bg.remove();
-  bg.querySelector("#shGo").onclick=()=>{ const set=new Set(uids); S.units=S.units.filter(z=>!set.has(z.u)); if(S.dress && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
+  bg.querySelector("#shGo").onclick=()=>{ const set=new Set(uids); S.units=S.units.filter(z=>!set.has(z.u)); if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
     shFix(); S.shieldList.push({id:S.shNext++, t, dur:sh.dur, k:false, ss:seasonNow()}); const auto=shAutoEquip(); save(); bg.remove(); closeSheet(); render(); SFX.reveal("S");
     toast(auto?`${sh.name}を手に入れて、装備しました！`:`${sh.name}を手に入れた！（BOXの「盾」で確認できます）`); };
 }
@@ -3823,7 +3827,7 @@ function openFuse(uid){
     const total=[...sel].reduce((s,u)=>s+matExp(base,S.units.find(z=>z.u===u)),0);
     const cost=fuseCost(base); if(!sel.size || S.coins<cost) return toast("コインが足りません"); S.coins-=cost;
     S.units=S.units.filter(z=>!sel.has(z.u));
-    if(S.dress && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=base.m;
+    if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=base.m;
     S.stats.fuses++; gainPExp(PXP.fuse);
     const ev=addExp(base,total); const got=ev.coins+FUSE_COIN; ev.levels?SFX.level():SFX.coin(); S.coins+=got; save(); render(); openUnit(uid);
     toast((ev.evo?`枠が${STAGES[base.s].name}に進化！`:ev.levels?`レベル${ev.levels}アップ！`:`経験値 +${total.toLocaleString()}`)+` +${got}コイン`);
@@ -4042,7 +4046,7 @@ function profilePayload(){
   try{ if(typeof advSync==="function") advSync(); }catch(e){}
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
-    comment:(myRank&&myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
+    comment:(myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
     owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advTk:(S.advP||0)*1e9+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
@@ -4052,7 +4056,7 @@ function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
   profTimer=setTimeout(async()=>{
     profTimer=null;
-    const p=profilePayload(); const key=JSON.stringify(p); if(key===lastPub) return;
+    const p=profilePayload(); const key=JSON.stringify({...p,pub:0}); if(key===lastPub) return;   // 時刻以外が同じなら書き込まない
     try{ await DB.doc("profiles/"+MYID).set(p); lastPub=key; }catch(e){}
   }, now?300:20000);
 }
@@ -4375,11 +4379,11 @@ const TOP3_AMNESTY_SS = 2;
 function top3Amnesty(){ if(seasonNow()!==TOP3_AMNESTY_SS || S.top3amn) return; S.top3amn=1; if(S.top3ss===TOP3_AMNESTY_SS) S.top3ok=S.top3ss; save(); }
 const top3Pardoned = () => { top3Amnesty(); return S.top3ok!=null && S.top3ok===S.top3ss; };
 const top3Locked = () => (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRank && myRank<=3);
-function markTop3(){ if(!myRank || myRank>3) return;
+function markTop3(){ if(!myRank || myRank>3 || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
   if(S.top3ss!==seasonNow() || top3Pardoned()){ S.top3ss=seasonNow(); S.top3ok=null; save(); if(tab==="home"&&homeMode==="invest") render(); } }
 function checkInvestVoid(){
   markTop3();
-  const L=activeInvs(); if(!L.length||!myRank||myRank>3) return;
+  const L=activeInvs(); if(!L.length||!myRank||myRank>3||seasonBusy||(S.season??0)<seasonNow()) return;
   let lose=0; L.forEach(iv=>{ const l=iv.paid?iv.amt:Math.min(iv.amt,S.coins); if(!iv.paid) S.coins-=l; iv.void=1; iv.lost=l; lose+=l;
     try{ DB&&DB.doc("invests/"+invDocId(iv)).update({void:true}).catch(()=>{}); }catch(e){} });
   save(); renderCoins();
@@ -4694,7 +4698,7 @@ async function searchOutside(){
 const todayN=()=>dayNum(new Date(gnow()));
 function fightButton(r){
   if(!DB) return "";
-  if(inFreeze()) return `<div class="note" style="margin:0">${FREEZE_TXT}</div>`;
+  if(noAct()) return `<div class="note" style="margin:0">${FREEZE_TXT}</div>`;
   if(!r.gm) return "";
   if((r.lv||1)<SAFE_LV) return `<div class="note" style="margin:0">🔰 Lv${SAFE_LV}になるまでは守られています（攻撃できません）</div>`;
   if(!guardUnit()) return `<div class="note" style="margin:0;color:var(--berry)">戦うには、自分の魔物を配置してください</div>`;
@@ -4713,7 +4717,7 @@ async function busyRun(btn,label,fn){
 // 通信が止まったままにならないよう時間切れにする
 function withTO(p,ms=10000){ return Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error("timeout")),ms))]); }
 function confirmFight(r){
-  if(inFreeze()) return toast(FREEZE_TXT);
+  if(noAct()) return toast(FREEZE_TXT);
   const g=guardUnit(); if(!g) return;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="fT"><p id="fT">${esc(r.name||"名無しの召喚士")}さんと戦いますか？</p>
@@ -4726,7 +4730,7 @@ function confirmFight(r){
 }
 async function doFight(r){
   const g=guardUnit(); if(!g||!DB) return;
-  if(inFreeze()){ toast(FREEZE_TXT); closeSheet(); return false; }
+  if(noAct()){ toast(FREEZE_TXT); closeSheet(); return false; }
   let d; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get()); d=snap.exists?snap.data():null; }catch(e){ toast("通信できませんでした。電波のよい所でもう一度ためしてください"); return false; }
   if(!d||!d.gm||!mon(d.gm)) return toast("相手は魔物を配置していません");
   d=effProfile(r.id,d);   // ランキングと同じ「最新の状態」のレベルで判定する（未受け取りのボーナス・留守中のバトルをふくむ）
@@ -4819,7 +4823,9 @@ const FREEZE_MS = 0;
 const freezeMsFor = start => FREEZE_MS;
 const freezeLeft = () => { const st=seasonEnd(seasonNow()-1); return Math.max(0, st + freezeMsFor(st) - gnow()); };
 const inFreeze = () => freezeLeft() > 0;
-const FREEZE_TXT = "🏁 集計中（0:00〜0:03）は、攻撃もアイテムも使えません";
+const FREEZE_TXT = "🏁 ランク戦の集計中は、攻撃もアイテムも使えません（少し待ってね）";
+// 前のランク戦の精算が終わるまでは、攻撃・アイテムを使えない（終了後の攻撃が前の順位に入らないように）
+const noAct = () => inFreeze() || (!!DB && !!MYID && S.season!=null && S.season<seasonNow());
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
 const RANK_PRIZE = [ null, {c:10000,st:20}, {c:7777,st:10}, {c:5000,st:5} ];   // 1〜3位
 const RANK_PRIZE_10 = {c:2000, st:2};                                          // 4〜10位
@@ -4876,7 +4882,7 @@ async function checkTicks(silent){
     const list=q.docs.map(x=>x.data()).sort((a,b)=>a.n-b.n);
     if(list.length){
       let n10=0, n30=0, lv=0, coins=0;
-      for(const t of list){
+      for(const t of list){ if(t.n<=(S.tickSeen??-1)) continue;   // ほかの端末ですでに受け取った分は数えない
         if(t.ss>(S.season??0)) break;   // 新しいランク戦の分は、ランク戦の切り替え（精算）のあとで受け取る
         if((t.t10||[]).includes(MYID)){ n10++; coins+=TOP10_COIN; if(t.ss===S.season){ S.plv+=1; bumpMaxLv(); lv++; } }
         else if((t.t30||[]).includes(MYID)){ n30++; coins+=TOP30_COIN; }
@@ -4944,6 +4950,8 @@ async function checkSeason(){
   // 精算の前に、クラウドの記録を読み直す。ほかの端末やタブでもう精算ずみなら、そちらを使って終わる
   //（バックグラウンドに置いたままの古い画面が、あとから同じランク戦をもう一度精算してしまうのを防ぐ）
   try{ if(remoteDoc&&remoteReady) await pullRemote(true,true); }catch(e){}
+  // 終了時刻までに受けたバトル・アイテム・上位キープボーナスを、精算の前にすべて反映する
+  try{ await checkBattles(); await checkItems(); await checkTicks(true); }catch(e){}
   const cur=seasonNow(); if(S.season==null) S.season=0;
   if(S.season>=cur || (S.season===cur-1 && inFreeze())){ seasonBusy=false; return; }
   const S0=S;
@@ -5391,7 +5399,7 @@ document.addEventListener("click",e=>{
 
 function itemBox(r){
   if(!DB) return "";
-  if(inFreeze() && r.id!==MYID) return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="note" style="margin:0">${FREEZE_TXT}</div></div>`;
+  if(noAct() && r.id!==MYID) return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="note" style="margin:0">${FREEZE_TXT}</div></div>`;
   if(r.id===MYID) return inv("gift")?`<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="item-use"><button type="button" class="iu gift" data-selfgift="1"><img src="${itemOf("gift").img}" alt=""><b>神からの贈り物を自分に使う</b><small>×${inv("gift")}</small></button></div></div>`:"";
   const safe=(r.lv||1)<SAFE_LV;
   const giftBtn=SENDABLE.filter(k=>inv(k)).map(k=>`<button type="button" class="iu gift" data-item="${k}" data-to="${esc(r.id)}"><img src="${itemOf(k).img}" alt=""><b>${itemOf(k).name}を贈る</b><small>×${inv(k).toLocaleString()}</small></button>`).join("")
@@ -5406,7 +5414,7 @@ function itemBox(r){
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-item]"); if(b&&!b.disabled){ const r=findRank(b.dataset.to); if(r) confirmItem(r,b.dataset.item); } });
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-artgift]"); if(!b) return; const r=findRank(b.dataset.to), x=ARTS.find(z=>z.k===b.dataset.artgift); if(!r||!x) return;
-  if(inFreeze()) return toast(FREEZE_TXT);
+  if(noAct()) return toast(FREEZE_TXT);
   const who=esc(r.name||"名無しの召喚士");
   qtyDialog({img:x.img, title:`${who}さんに${esc(x.name)}を贈る`, max:S.arts[x.k]||0, ok:"贈る！",
     desc:n=>`${who}さんに「${esc(x.name)}」が${n}枚届きます。あなたの持っている数は${n}枚へります。<br>相手には次にアプリを開いたときに届きます。`}, n=>sendArt(r,x,n)); });
@@ -5418,7 +5426,7 @@ async function sendArt(r,x,n){
 }
 function confirmItem(r,k,direct){
   if(k==="bomb" && !direct) return bombChoice(r);
-  if(inFreeze()) return toast(FREEZE_TXT);
+  if(noAct()) return toast(FREEZE_TXT);
   const i=itemOf(k), who=esc(r.name||"名無しの召喚士");
   if(SENDABLE.includes(k)) return qtyDialog({img:i.img, title:`${who}さんに${i.name}を贈る`, max:inv(k), ok:"贈る！",
     desc:n=>(k==="gift"?`${who}さんに <b>${(GIFT_COIN*n).toLocaleString()}コイン</b> がプレゼントされます。`:`${who}さんに <b>ガチャチケット${n}枚</b> が届きます。`)+"<br>相手には次にアプリを開いたときに届きます。"}, n=>useItem(r,k,n));
@@ -5433,7 +5441,7 @@ function confirmItem(r,k,direct){
 }
 async function useItem(r,k,qty=1){
   if(!DB||!MYID||inv(k)<qty) return false;
-  if(inFreeze()){ toast(FREEZE_TXT); return false; }
+  if(noAct()){ toast(FREEZE_TXT); return false; }
   let d; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get()); d=snap.exists?snap.data():null; }catch(e){ toast("通信できませんでした。電波のよい所でもう一度ためしてください"); return false; }
   if(!d) { toast("相手が見つかりませんでした"); return false; }
   d=effProfile(r.id,d);
@@ -5759,13 +5767,16 @@ const advItemIcon = it => it.k==="key" ? `<span class="ab-key">🗝</span>` : `<
 // 記録は「どの区切りか」の番号といっしょに保存する
 const advPer = () => ADV.PERIOD_BASE + Math.floor((gnow()-ADV.PERIOD_ORIGIN)/ADV.PERIOD_MS);
 const advPerEnd = p => ADV.PERIOD_ORIGIN + (p-ADV.PERIOD_BASE+1)*ADV.PERIOD_MS;
-function advSync(){ const p=advPer(); if(S.advP!==p){ if(S.advP!=null&&(S.advBestT||S.advBestL)) S.advPrev={p:S.advP,end:S.advPEnd||(S.advP+1)*(S.advPMs||3600000),t:S.advBestT||0,l:S.advBestL||0}; S.advP=p; S.advPEnd=advPerEnd(p); S.advBestT=0; S.advBestL=0; S.advHiT=0; S.advHiL=0; } return p; }
+function advSync(){ const p=advPer(); if(S.advP!==p){ if(S.advP!=null&&(S.advBestT||S.advBestL)) S.advPrev={p:S.advP,end:S.advPEnd||(S.advP>=ADV.PERIOD_BASE?advPerEnd(S.advP):(S.advP+1)*(S.advPMs||3600000)),t:S.advBestT||0,l:S.advBestL||0}; S.advP=p; S.advPEnd=advPerEnd(p); S.advBestT=0; S.advBestL=0; S.advHiT=0; S.advHiL=0; } return p; }
 const ADV_PRIZE=[5000,3000,1000];   // 30分ごとのランキング報酬（1位・2位・3位）。生き延びた時間・最高レベルのそれぞれで
 const advCnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
 // 前の30分のランキングが終わっていたら、自分の順位をしらべて報酬をわたす（1回だけ）
 let advSettling=false;
 async function advSettle(){
-  if(advSettling||!DB||!MYID) return; advSync(); const pv=S.advPrev; if(!pv||(pv.end||(pv.p+1)*(pv.ms||3600000))>gnow()||S.advPaid===pv.p) return;   // その区切りが終わってから
+  if(advSettling||!DB||!MYID) return; advSync(); const pv=S.advPrev; const pvEnd=pv&&(pv.end||(pv.p>=ADV.PERIOD_BASE?advPerEnd(pv.p):(pv.p+1)*(pv.ms||3600000)));
+  if(!pv||pvEnd>gnow()||S.advPaid===pv.p) return;   // その区切りが終わってから
+  // 終わってから次の区切りが終わるまでに開いた人だけ（それより遅いと、ほかの人の記録が消えて順位が正しく出ないため）
+  if(gnow()>pvEnd+ADV.PERIOD_MS){ S.advPaid=pv.p; save(); return; }
   advSettling=true;
   try{
     const col=DB.collection("profiles"), P=pv.p;
@@ -5859,7 +5870,7 @@ const advT = t => (LANG==="en" && ADV_EN[t]) || t;
 const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
   "5秒こおらせる":"freezes for 5s","⚠️ 動かずにいたら、Lv100の魔物がやってきた…！":"⚠️ You stood still too long... a Lv100 monster appeared!","からっぽ…":"Empty...",
   "のこり":"Left:","アイテムをえらんでね":"Pick an item","タイトル画面に戻る":"Back to title","ハート石の力で復活した！":"Revived by the power of a heart stone!",
-  "ハート石を1個消費してこのまま復活する":"Use 1 heart stone to revive here","メモ":"Memo","メモは冒険が終わっても、ずっと残ります":"Your memo stays forever, even after an adventure ends",
+  "ハート石を1個消費してこのまま復活する":"Use 1 heart stone to revive here","メモ":"Memo","メモは冒険が終わっても残ります（死亡するとすべて消えます）":"Your memo stays after an adventure ends (but is erased if you die)",
   "ランキング":"Rank","ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません）":"Ranks are for your personal best (other adventurers' ranks are hidden)",
   "リュックがいっぱいで入らなかった…":"Your bag is full...","何も起きなかった…":"Nothing happened...","使う":"Use","個":"","回":"",
   "先に下のマスからアイテムをえらんでね":"Pick an item from the slots below first","冒険をやめてタイトル画面に戻りますか？（記録は保存されます）":"Quit the adventure and return to the title? (Your record is saved)",
@@ -6071,7 +6082,7 @@ function advMagicTarget(){
 }
 function advFire(it){ const sh=ADV.SHARD[it.k];
   const y=A.y+0.07; A.bolts.push({ x:A.x+A.dir*0.12, x0:A.x, y, dmg:advShardDmg(it.k), img:sh.bolt, freeze:sh.freeze||0, dir:A.dir, tg:advMagicTarget(), life:3 });
-  it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0) A.inv.splice(i,1);
+  it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0){ A.inv.splice(i,1); A.fuse=[-1,-1]; }
     // 同じ種類の欠片をまだ持っていれば、自動で装備しなおす（補充）
     const nx=A.inv.findIndex(x=>x.k===it.k);
     if(nx>=0){ A.eq=nx; advMsg(advT2("{n}を補充した！（のこり{m}個）").replace("{n}",advT2(sh.name)).replace("{m}",A.inv.filter(x=>x.k===it.k).length)); }
@@ -6134,7 +6145,7 @@ async function advDeathScreen(t,lv,rec){
   document.getElementById("adv").appendChild(el);
   el.querySelector("#adBack").onclick=()=>{ S.advMemo=""; save(); advClose(); };   // 死亡：報酬なし・メモが消える
   el.querySelector("#adRev").onclick=()=>{ if(!(S.heart>0)) return; S.heart--; save(); el.remove();
-    A.dead=false; A.hp=advMaxHp(); A.inv0=3; A.revives++; A.enemies.forEach(e=>{ if(Math.abs(e.x-A.x)<1.2) e.x+=(e.x>=A.x?1:-1)*1.5; e.st=null; e.warn=0; e.zone=null; }); A.idleT=0; A.last=performance.now(); advMsg(advT2("ハート石の力で復活した！")); try{ SFX.reveal("S"); }catch(e){} };
+    A.dead=false; if(A.bossDown) setTimeout(()=>A&&!A.dead&&advFinish("boss"),800); A.hp=advMaxHp(); A.inv0=3; A.revives++; A.enemies.forEach(e=>{ if(Math.abs(e.x-A.x)<1.2) e.x+=(e.x>=A.x?1:-1)*1.5; e.st=null; e.warn=0; e.zone=null; }); A.idleT=0; A.last=performance.now(); advMsg(advT2("ハート石の力で復活した！")); try{ SFX.reveal("S"); }catch(e){} };
   const r=await advRanks(); const a=el.querySelector("#adR1"), b=el.querySelector("#adR2");
   if(a) a.textContent=advRk(r.t); if(b) b.textContent=advRk(r.l); const nx=el.querySelector(".ad-next"); if(nx) nx.innerHTML=advNextTxt(r).map(x=>`<div>${x}</div>`).join("");
 }
@@ -6156,8 +6167,9 @@ async function advFinish(kind){
   document.getElementById("adv").appendChild(el);
   const cEl=el.querySelector("#adCoin");
   const showRw=r=>{ cEl.innerHTML=`🪙 ${advT2("報酬")} <b>${r.coins.toLocaleString()}</b> ${advT2("コイン")}<small>(${advT2("時間")} ${r.tc} ＋ Lv ${r.lc})${r.mul>1?` ×${r.mul}（${advT2("ランキング1位更新！")}）`:""}${r.boss?` ×${ADV.CLEAR_MUL}（${advT2("ボス討伐")}）`:""}${r.loot?` ＋ ${advT2("宝箱のコイン")} ${r.loot.toLocaleString()}`:""}</small>`; };
-  let rw=advReward(t,lv,null,boss); showRw(rw);
-  el.querySelector("#adBack").onclick=()=>{ const r=rw; advClose(); advGiveCoins(r); };
+  const rw=advReward(t,lv,null,boss); showRw(rw);
+  advGiveCoins(rw);   // 報酬はクリアした時点でわたす（アプリを閉じても消えない）。お知らせはタイトルに戻ったときに見える
+  el.querySelector("#adBack").onclick=()=>advClose();
   const r=await advRanks(); const a=el.querySelector("#adR1"), b=el.querySelector("#adR2");
   if(a) a.textContent=advRk(r.t); if(b) b.textContent=advRk(r.l); const nx=el.querySelector(".ad-next"); if(nx) nx.innerHTML=advNextTxt(r).map(x=>`<div>${x}</div>`).join("");
 }
@@ -6230,12 +6242,12 @@ function advBagRefresh(){
   el.querySelector("#abEq").onclick=()=>{ if(A.sel<0||!advIsShard(A.inv[A.sel])) return; A.eq = A.eq===A.sel ? -1 : A.sel; advEquipView(); advBagRefresh(); };
   el.querySelector("#abUse").onclick=()=>{ const it=A.inv[A.sel]; if(!it) return;
     if(it.k==="heal"){ const mx=advMaxHp(); if(A.hp>=mx) return advMsg(advT2("体力はもう満タン！"));
-      const add=Math.min(ADV.HEAL,mx-A.hp); A.hp+=add; const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv.splice(A.sel,1); A.eq=eqIt?A.inv.indexOf(eqIt):-1; A.sel=-1;
+      const add=Math.min(ADV.HEAL,mx-A.hp); A.hp+=add; const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv.splice(A.sel,1); A.eq=eqIt?A.inv.indexOf(eqIt):-1; A.sel=-1; A.fuse=[-1,-1];
       advPop(A.x,0.3,"+"+advNum(add),"#7cf07c"); advMsg(advT2("回復するやつを使った！ 体力が回復した")); try{ SFX.level(); }catch(e){} advEquipView(); advBagRefresh(); return; }
     if(it.k!=="key") return;
     const near=A.chests.find(c=>c.type===3&&!c.open&&Math.abs(c.x-A.x)<1.6);
     if(!near) return advMsg(advT2("近くに虹の宝箱がない…"));
-    const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv.splice(A.sel,1); A.eq=eqIt?A.inv.indexOf(eqIt):-1; A.sel=-1; advOpenChest(near); advEquipView(); advBagRefresh(); };
+    const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv.splice(A.sel,1); A.eq=eqIt?A.inv.indexOf(eqIt):-1; A.sel=-1; A.fuse=[-1,-1]; advOpenChest(near); advEquipView(); advBagRefresh(); };
   el.querySelector("#abDrop").onclick=()=>{ if(A.sel<0) return; const eqIt=A.eq>=0?A.inv[A.eq]:null; const dropped=A.inv.splice(A.sel,1)[0];
     A.eq=eqIt&&eqIt!==dropped?A.inv.indexOf(eqIt):-1; A.fuse=[-1,-1]; A.sel=-1; advEquipView(); advBagRefresh(); };
   el.querySelector("#abMemo").onclick=()=>advMemo();
@@ -6246,7 +6258,7 @@ function advMemo(){
   if(S.advMemo==null||S.advMemo===""&&!S.advMemoUsed){ S.advMemo=LANG==="en"?"Don't forget the traits of magic shards and how to fuse them....!":ADV_MEMO_FIRST; save(); }
   const el=document.createElement("div"); el.className="adv-sheet memo";
   el.innerHTML=`<div class="am-paper"><div class="am-h">📜 ${advT2("メモ")}<button class="ab-x" type="button" id="amX">✕</button></div>
-    <textarea id="amT" maxlength="2000" spellcheck="false"></textarea><small>${advT2("メモは冒険が終わっても、ずっと残ります")}</small></div>`;
+    <textarea id="amT" maxlength="2000" spellcheck="false"></textarea><small>${advT2("メモは冒険が終わっても残ります（死亡するとすべて消えます）")}</small></div>`;
   document.getElementById("adv").appendChild(el);
   const ta=el.querySelector("#amT"); ta.value=S.advMemo;
   ta.oninput=()=>{ S.advMemoUsed=1; S.advMemo=ta.value; clearTimeout(ta._t); ta._t=setTimeout(save,600); };
