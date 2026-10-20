@@ -6079,11 +6079,11 @@ const DEF = {
   ITEMS: { wall:1000, speed:100, fan:5000, sorry:200 },
   WALL_MS: 60*60*1000, SPEED_MS: 30*1000, FAN_MS: 60*1000,
   // 世界の大きさ（横7マス）
-  W: 7, SPAWN_X: 7.4, SP0: 1.0, SP1: 0.9, PCOIN: 0.3,
+  W: 7, SPAWN_X: 7.15, SP0: 1.25, SP1: 1.0, PCOIN: 0.3,
   CH: {
-    toto:    { kind:"main", name:"トト",       img:"def/toto.png",    atk:3, int:3.0, tip:[0.88,0.47], w:1.5, bolt:"#ff7ad9" },
-    slime_b: { kind:"sub",  name:"スライム",   img:"def/slime_b.png", atk:1, int:2.6, tip:[0.93,0.12], w:1.2, bolt:"#ffb347" },
-    slime_g: { kind:"sub",  name:"緑スライム", img:"def/slime_g.png", atk:2, int:3.2, tip:[0.93,0.14], w:1.2, bolt:"#ffb347" },
+    toto:    { kind:"main", name:"トト",       img:"def/toto.png",    atk:3, int:2.0, tip:[0.88,0.47], w:1.5, bolt:"#ff7ad9" },
+    slime_b: { kind:"sub",  name:"スライム",   img:"def/slime_b.png", atk:1, int:1.6, tip:[0.93,0.12], w:1.2, bolt:"#ffb347" },
+    slime_g: { kind:"sub",  name:"緑スライム", img:"def/slime_g.png", atk:2, int:2.0, tip:[0.93,0.14], w:1.2, bolt:"#ffb347" },
   },
   BASES: { base_m: { name:"にこにこ岩の土台", img:"def/base_m.png", hp:40 } },
   SUB_BASE: { img:"def/base_s.png", hp:15 },
@@ -6097,7 +6097,7 @@ const defInt  = (c,L) => DEF.CH[c].int/(1+0.06*(L-1));
 // 挑発：敵の攻撃力・体力・移動速度が約2倍ずつ（そのかわり、たおしたときのコインも2倍ずつ）／謝罪：少しずつ弱く・出現もゆっくり
 const defMul  = R => Math.pow(1.9,R.prov)*Math.pow(0.9,R.sorry);
 const defWaveN = R => 1+5*R.tempt;
-const defDelay = R => 11*Math.pow(1.12,R.sorry);
+const defDelay = R => 1.0*Math.pow(1.12,R.sorry);
 // 建物の並び（x：左はし・幅・高さ）
 function defLayout(sel){
   const L=[{k:"main", x:0.1, w:1.05, h:1.35}];
