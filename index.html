@@ -6329,7 +6329,7 @@ function defHud(){ const R=defData().run; if(!R) return; const $$=id=>document.g
 }
 /* 描画（opt.shot：プロフィール用の写真＝土台とキャラを大きめに） */
 function defDraw(g,W,H,R,opt){
-  const front=defFront(R), viewW=opt.shot?front+2.4:DEF.W, u=W/viewW, GY=opt.shot?H*0.84:Math.min(H*0.86,H-u*0.5);
+  const front=defFront(R), viewW=opt.shot?Math.max(5.8,front+3.8):DEF.W, ox=opt.shot?0.45:0, u=W/viewW, GY=opt.shot?H*0.8:Math.min(H*0.86,H-u*0.5);   // 写真は少し引いて、全体が入るように
   const t=performance.now()/1000;
   g.save(); g.imageSmoothingEnabled=false;
   if(DV.shake>0&&!opt.shot) g.translate((Math.random()-.5)*8*DV.dpr,(Math.random()-.5)*6*DV.dpr);
@@ -6344,7 +6344,7 @@ function defDraw(g,W,H,R,opt){
   g.fillStyle="#7a4f2a"; g.fillRect(0,GY,W,H-GY); g.fillStyle="#6a4222"; const px=Math.max(4,u*0.09);
   for(let x=0;x<W;x+=px*4) for(let y=GY+px*3;y<H;y+=px*3) if(((x/px+y/px)|0)%3===0) g.fillRect(x,y,px,px);
   g.fillStyle="#5ec53a"; g.fillRect(0,GY-px*0.5,W,px*2.2); g.fillStyle="#3f9a25"; for(let x=0;x<W;x+=px*2) g.fillRect(x,GY-px*1.2,px,px*1.2);
-  const X=x=>x*u, Y=y=>GY-y*u, lay=defLayout(R.sel), sp=defShooters(R);
+  const X=x=>(x+ox)*u, Y=y=>GY-y*u, lay=defLayout(R.sel), sp=defShooters(R);
   // 扇風機
   if(R.fanT>0){ const fx=X(front+0.12), fy=Y(0.55), r=u*0.32; g.fillStyle="#555"; g.fillRect(fx-u*0.03,fy,u*0.06,GY-fy);
     g.save(); g.translate(fx,fy); g.rotate(t*25); g.fillStyle="#9fd6ff"; for(let k=0;k<3;k++){ g.rotate(Math.PI*2/3); g.beginPath(); g.ellipse(r*0.5,0,r*0.5,r*0.18,0,0,7); g.fill(); } g.restore();
@@ -6352,10 +6352,10 @@ function defDraw(g,W,H,R,opt){
     g.strokeStyle="#ffffffaa"; g.lineWidth=2*DV.dpr; for(let k=0;k<4;k++){ const yy=fy-u*0.3+k*u*0.2, xx=fx+u*0.4+((t*3+k*0.37)%1)*u*1.2; g.beginPath(); g.moveTo(xx,yy); g.lineTo(xx+u*0.3,yy); g.stroke(); } }
   // 土台とキャラ
   lay.forEach((b,i)=>{ const bi=defImg(i?DEF.SUB_BASE.img:DEF.BASES[R.sel.base].img);
-    if(bi.complete){ const w=X(b.w), h=w*bi.naturalHeight/bi.naturalWidth*(i?1:1); g.drawImage(bi,X(b.x),GY-h+u*0.04,w,h); b.hpx=h; }
+    if(bi.complete){ const w=(b.w*u), h=w*bi.naturalHeight/bi.naturalWidth*(i?1:1); g.drawImage(bi,X(b.x),GY-h+u*0.04,w,h); b.hpx=h; }
     const c=sp[i]; if(!c) return; const ch=DEF.CH[c], ci=defImg(ch.img); if(!ci.complete) return;
-    const cw=X(ch.w), chh=cw*ci.naturalHeight/ci.naturalWidth, cast=DV.cast[i]>0&&!opt.shot?DV.cast[i]/0.3:0, bob=Math.sin(t*3+i)*u*0.025;
-    const baseTop=GY-(b.hpx||X(b.h))+u*0.06, cx=X(b.x+b.w/2);
+    const cw=(ch.w*u), chh=cw*ci.naturalHeight/ci.naturalWidth, cast=DV.cast[i]>0&&!opt.shot?DV.cast[i]/0.3:0, bob=Math.sin(t*3+i)*u*0.025;
+    const baseTop=GY-(b.hpx||(b.h*u))+u*0.06, cx=X(b.x+b.w/2);
     g.save(); g.translate(cx,baseTop+bob);
     const sq=1+Math.sin(cast*Math.PI)*0.14; g.rotate(-Math.sin(cast*Math.PI)*0.12); g.scale(1/Math.sqrt(sq),sq);
     g.drawImage(ci,-cw/2,-chh,cw,chh); g.restore();
