@@ -6021,7 +6021,7 @@ const ADV_EN = { "体力":"HP","生き延びた時間":"Time survived","最高�
 const advRk = n => n ? (LANG==="en" ? "#"+n.toLocaleString() : n.toLocaleString()+"位") : "―";
 
 function advStart(){
-  A={ t:0, xp:0, stageLv:1, spawned:0, killed:0, bossDown:false, over:false, hp:ADV.HP0, x:0, y:0, vy:0, vx:0, dir:1, jumps:0, onGround:true, atk:null, inv:[], eq:-1, enemies:[], chests:[], bolts:[], fx:[], pops:[],
+  A={ t:0, xp:0, stageLv:1, spawned:0, killed:0, bossDown:false, over:false, hp:ADV.HP0, x:0, y:0, vy:0, vx:0, dir:1, jumps:0, onGround:true, atk:null, inv:[], eq:-1, enemies:[], graves:[], chests:[], bolts:[], fx:[], pops:[],
       inv0:0, hurtT:0, dead:false, deadT:0, counted:false, nextSpawn:1.2, idleT:0, idleSpawned:false, lastX:0, chunksL:0, chunksR:0, moveIn:0,
       keys:{}, bestShown:false, revives:0, stock:[null,null,null,null], fuse:[-1,-1], sel:-1, cam:0, walkT:0, flapT:0 };
   advHud(); advEquipView();
@@ -6134,6 +6134,7 @@ function advStep(dt){
   A.enemies.forEach(e=>advEnemy(e,dt));
   A.enemies=A.enemies.filter(e=>!(e.dead&&e.deadT>0.6) && Math.abs(e.x-A.x)<14);
   A.chests.forEach(c=>{ if(c.open) c.openT+=dt; });
+  if(A.graves){ A.graves.forEach(gv=>gv.t+=dt); A.graves=A.graves.filter(gv=>Math.abs(gv.x-A.x)<20).slice(-40); }
   A.chests=A.chests.filter(c=>!(c.open&&c.openT>4) && Math.abs(c.x-A.x)<20);
   A.pops.forEach(p=>{ p.t+=dt; }); A.pops=A.pops.filter(p=>p.t<1.1);
   if(A.hp<=0) advDie();
@@ -6187,6 +6188,7 @@ const advNum = n => n>=100?Math.round(n).toLocaleString():(Math.round(n*10)/10).
 function advDamageEnemy(e,d){
   const real=Math.max(0,Math.min(d,e.hp)); e.hp-=d; e.hurt=0.15; advGainXp(real); advPop(e.x,0.22+(e.boss?0.15:0),advNum(d),"#ffe14a"); try{ SFX.tap(); }catch(x){}
   if(e.hp<=0 && !e.dead){ e.dead=true; e.zone=null; try{ SFX.coin(); }catch(x){}
+    (A.graves=A.graves||[]).push({x:e.x, t:0, boss:!!e.boss});   // たおした場所にお墓
     // ドロップ（それぞれ別に判定）：波動魔法の欠片20%・回復するやつ5%・氷魔法の欠片10%
     [["g",0.2],["heal",0.05],["b",0.1]].filter(([,r])=>Math.random()<r).forEach(([k],i)=>{ const it={k,u:ADV.SHARD[k]?ADV.SHARD[k].uses:1};
       if(A.inv.length>=ADV.INV_MAX) return advMsg(advT2("リュックがいっぱいで入らなかった…"));
@@ -6446,6 +6448,9 @@ function advDraw(){
   g.fillStyle="#9a6a3c"; g.fillRect(0,GY,W,H-GY);
   g.fillStyle="#8a5c32"; const off=((A.cam*SH)%40+40)%40; for(let x=-off;x<W;x+=40) for(let y=GY+26;y<H;y+=34) g.fillRect(x+((y/34)%2)*18,y,8*A.dpr,8*A.dpr);
   g.fillStyle="#5ec53a"; g.fillRect(0,GY-2,W,14*A.dpr); g.fillStyle="#3f9a25"; for(let x=-((A.cam*SH)%16); x<W; x+=16){ g.fillRect(x,GY-6*A.dpr,6*A.dpr,8*A.dpr); g.fillRect(x+8,GY+12*A.dpr,6*A.dpr,6*A.dpr); }
+  // たおした敵のお墓（敵が消えるのに合わせてふわっと出る）
+  (A.graves||[]).forEach(gv=>{ const im=advImg("grave"); if(!im.complete) return; const h=SH*(gv.boss?0.2:0.1), w=h*im.width/im.height, k=Math.min(1,gv.t/0.5);
+    g.globalAlpha=k; g.drawImage(im,sx(gv.x)-w/2,GY-h*(0.6+0.4*k)+SH*0.01,w,h*(0.6+0.4*k)); g.globalAlpha=1; });
   // 宝箱
   A.chests.forEach(c=>{ const im=advImg("ch"+c.type+(c.open?"o":"")); if(!im.complete) return; const h=SH*(c.type===3?0.17:0.13), w=h*im.width/im.height;
     g.globalAlpha=c.open?Math.max(0,1-(c.openT-2.5)/1.5):1; g.drawImage(im,sx(c.x)-w/2,GY-h+SH*0.01,w,h); g.globalAlpha=1; });
