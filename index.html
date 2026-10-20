@@ -586,7 +586,7 @@ html[lang=en] .ttl-upd span{display:flex}
 .ttl-pick .btn{font-size:18px;padding:14px}
 body.ttl-open .ttl-top{z-index:130!important}
 /* ===== 防衛作戦（放置ゲーム） ===== */
-.ttl-def{position:absolute;left:345px;top:893px;width:366px;height:130px;padding:0;border:0;background:none;cursor:pointer}
+.ttl-def{position:absolute;left:358px;top:890px;width:340px;height:112px;padding:0;border:0;background:none;cursor:pointer}
 .ttl-def img{position:absolute;inset:0;width:100%;height:100%}
 html .ttl .ttl-def span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:900 46px/1 var(--f-body);color:#3a1a08;white-space:nowrap}
 html .ttl .ttl-def span small{font:900 20px/1 var(--f-body);color:#7a3d10;display:block}
@@ -716,21 +716,22 @@ html[lang=en] .ds-scroll{white-space:normal}
 .def-rec img{display:block;width:100%;border-radius:10px;border:3px solid #e2b13c;box-shadow:0 4px 0 #0006}
 .def-rec small{display:block;margin-top:4px;font-size:11px;opacity:.7}
 /* ===== トトの冒険（2Dアクション） ===== */
-.ttl-adv{position:absolute;left:345px;top:1030px;width:366px;height:130px;padding:0;border:0;background:none;cursor:pointer}
+.ttl-adv{position:absolute;left:358px;top:1008px;width:340px;height:112px;padding:0;border:0;background:none;cursor:pointer}
 .ttl-adv img{position:absolute;inset:0;width:100%;height:100%}
 html .ttl .ttl-adv span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 46px/1 var(--f-body);color:#3a1a08;white-space:nowrap}
-html[lang=en] .ttl .ttl-adv span{font-size:38px}
+html[lang=en] .ttl .ttl-adv span{font-size:32px}
 .ttl-adv:active{transform:scale(.96)}
-.ttl-rk{position:absolute;left:288px;top:1170px;width:480px;height:100px;display:grid;grid-template-columns:1fr 1fr;background:#8a5a2b;border:6px solid #3a2306;border-radius:18px;box-shadow:inset 0 -8px 0 #6b4220,0 6px 0 #0004;overflow:hidden}
+.ttl-rk{position:absolute;left:288px;top:1150px;width:480px;height:90px;padding-top:12px;box-sizing:border-box;overflow:visible!important;display:grid;grid-template-columns:1fr 1fr;background:#8a5a2b;border:6px solid #3a2306;border-radius:18px;box-shadow:inset 0 -8px 0 #6b4220,0 6px 0 #0004;overflow:hidden}
 .ttl-rk>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .ttl-rk>div+div{border-left:5px solid #3a2306}
 .ttl .ttl-rk small{display:block;font:800 19px/1 var(--f-body);color:#f6e6c4;white-space:nowrap}
-.ttl-nx{position:absolute;left:213px;top:1278px;width:630px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
-.ttl .ttl-nx div{background:#fff8e8ee;border:4px solid #3a2306;border-radius:999px;padding:4px 18px;font:900 21px/1.15 var(--f-body);color:#3a2306;white-space:nowrap}
-.ttl-rt{position:absolute;left:288px;top:1338px;width:480px;height:52px;display:flex;align-items:center;justify-content:center;gap:12px;background:#2a1a0ae0;border:5px solid #3a2306;border-radius:999px;color:#fff8e8;box-shadow:0 5px 0 #0004}
+.ttl-nx{position:absolute;left:213px;top:1244px;width:630px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+.ttl .ttl-nx div{background:#fff8e8ee;border:4px solid #3a2306;border-radius:999px;padding:3px 16px;font:900 19px/1.15 var(--f-body);color:#3a2306;white-space:nowrap}
+.ttl-rt{position:absolute;left:288px;top:1322px;width:480px;height:52px;display:flex;align-items:center;justify-content:center;gap:12px;background:#2a1a0ae0;border:5px solid #3a2306;border-radius:999px;color:#fff8e8;box-shadow:0 5px 0 #0004}
 .ttl .ttl-rt span{display:block;font:800 22px/1 var(--f-body)}
 .ttl .ttl-rt b{font:900 32px/1 var(--f-pix,monospace);color:#ffd75e;letter-spacing:.04em}
-.ttl .ttl-rk b{font:900 44px/1 var(--f-body);color:#fff8e8;text-shadow:0 3px 0 #3a2306}
+.ttl-rkh{position:absolute;left:50%;top:-30px;transform:translateX(-50%);font:900 20px/1 var(--f-body);font-style:normal;color:#3a2306;background:#ffd75e;border:4px solid #3a2306;border-radius:999px;padding:5px 16px;white-space:nowrap;z-index:1}
+.ttl .ttl-rk b{font:900 38px/1 var(--f-body);color:#fff8e8;text-shadow:0 3px 0 #3a2306}
 .adv{position:fixed;inset:0;z-index:140;background:#1d140b;display:flex;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}
 .adv-box{position:relative;width:100%;max-width:calc(100dvh*.9);height:100%;overflow:hidden}
 .adv canvas{position:absolute;inset:0;display:block;image-rendering:pixelated}
@@ -880,7 +881,7 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
     </div>
     <button class="ttl-def" id="ttlDef" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>防衛作戦<small id="ttlDefSt"></small></span></button>
     <button class="ttl-adv" id="ttlAdv" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>トトの冒険</span></button>
-    <div class="ttl-rk" id="ttlRk"><div><small>倒した数ランキング</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベルランキング</small><b id="ttlR2" translate="no">―</b></div></div>
+    <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
     <div class="ttl-nx" id="ttlNx" translate="no"></div>
     <div class="ttl-rt" id="ttlRt" translate="no"></div>
   </div>
@@ -2241,6 +2242,9 @@ const I18N_EN = {
 "ガチャ・育成": "Summon & Train",
 "トトの冒険": "Toto's Adventure",
 "生き延びたランキング": "Survival rank",
+"🏆 トトの冒険ランキング": "🏆 Toto's Adventure Ranking",
+"倒した数": "Defeated",
+"最高レベル": "Best Lv",
 "倒した数ランキング": "Defeated rank",
 "最高レベルランキング": "Best Lv rank",
 "最新アップデート情報": "Latest Updates",
@@ -5996,7 +6000,7 @@ function showNewMonsters(){
    ・魔物は基本、右からやってくる。トトより左へ通りすぎた魔物は、はなれるほど速く近づいてくる
    ・30秒動かないと、ボスなみに強い魔物がおそってくる（たおしてもクリアにはならない）
    ・宝箱：新しい場所に進むと45%で出現（ふつう80%／赤い宝石19%／虹0.01%）
-   ・ランキングは30分ごとにリセット（ゲーム内オリジナルのタイマー）。終わったときの順位で 1位5000・2位3000・3位1000コイン（生き延びた時間・最高レベルのそれぞれで）
+   ・ランキングは1時間ごとにリセット（ゲーム内オリジナルのタイマー）。終わったときの順位で 1位5000・2位3000・3位1000コイン（生き延びた時間・最高レベルのそれぞれで）
    ・タイマーが30秒をこえたら冒険回数+1（1回の冒険で1回だけ） */
 const ADV_MEMO_FIRST = "魔法の欠片の特徴と融合方法を忘れないように....！";
 const ADV = {
@@ -6020,7 +6024,9 @@ const ADV = {
     {hp:1050,atk:120, spd:0.145, max:1}],
   // トトのLvが上がるのに必要な「与えたダメージの合計」
   XP: [0,0,40,150,300,450,1100,2000,3400,5500,8300,11800,16000],
-  HEAL: 30, PERIOD_MS: 30*60000, PERIOD_ORIGIN: Date.parse("2026-10-19T18:17:00+09:00"), PERIOD_BASE: 1e6,
+  HEAL: 30, PERIOD_MS: 60*60000, PERIOD_ORIGIN: Date.parse("2026-10-19T18:17:00+09:00"), PERIOD_BASE: 1e6,
+  // 2026-10-20 22:17からランキングは1時間ごと（番号を2000000からにして、前の30分ごとの記録とまざらないように）
+  P2_ORIGIN: Date.parse("2026-10-20T22:17:00+09:00"), P2_BASE: 2e6, OLD_MS: 30*60000,
   SHARD: { g:{ name:"波動魔法の欠片", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"氷魔法の欠片", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:2 } },
 };
 const ADV_FRAMES = { tm:{n:5,cx:.22,h:.86}, tj:{n:5,cx:.24,h:.76}, tk:{n:5,cx:.24,h:.78}, sd:{n:6,cx:.66,h:.69,b:.09} };
@@ -6035,8 +6041,8 @@ const advIsShard = it => !!(it && ADV.SHARD[it.k]);
 const advItemIcon = it => it.k==="key" ? `<span class="ab-key">🗝</span>` : `<img src="${advItemImg(it)}" alt="">`;
 // ランキングは30分ごとにリセット。時計の時刻（0時・3時…）ではなく、ゲーム内オリジナルのタイマーで区切る
 // 記録は「どの区切りか」の番号といっしょに保存する
-const advPer = () => ADV.PERIOD_BASE + Math.floor((gnow()-ADV.PERIOD_ORIGIN)/ADV.PERIOD_MS);
-const advPerEnd = p => ADV.PERIOD_ORIGIN + (p-ADV.PERIOD_BASE+1)*ADV.PERIOD_MS;
+const advPer = () => { const n=gnow(); return n>=ADV.P2_ORIGIN ? ADV.P2_BASE + Math.floor((n-ADV.P2_ORIGIN)/ADV.PERIOD_MS) : ADV.PERIOD_BASE + Math.floor((n-ADV.PERIOD_ORIGIN)/ADV.OLD_MS); };
+const advPerEnd = p => p>=ADV.P2_BASE ? ADV.P2_ORIGIN + (p-ADV.P2_BASE+1)*ADV.PERIOD_MS : ADV.PERIOD_ORIGIN + (p-ADV.PERIOD_BASE+1)*ADV.OLD_MS;
 function advSync(){
   // 2026-10-20：ランキングを「生き延びた時間」→「倒した数」に変更。前の時間の記録はリセット（終わった区切りの報酬は前のしくみで精算）
   if(S.advKV!==1){ S.advKV=1; S.advBestT=0; S.advHiT=0; if(S.advPrev&&S.advPrev.t) S.advPrev.legacyT=1; }
@@ -6447,7 +6453,7 @@ function openAdventureIntro(){
     ["🦅","Tap Jump again in the air to flap your wings (up to 3 jumps)."],
     ["⭐","Toto levels up from the damage dealt. Higher Lv = more power and HP."],
     ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones! Use a Heal-a-thing to restore 30 HP."],
-    ["🏆","Rankings (monsters defeated / best Lv) reset every 30 minutes. Your rank uses your LATEST record in those 30 minutes (a lower record lowers your rank). When the 30 minutes end, #1 gets 5,000, #2 3,000 and #3 1,000 coins (in each ranking)."],
+    ["🏆","Rankings (monsters defeated / best Lv) reset every hour. Your rank uses your LATEST record in that hour (a lower record lowers your rank). When the hour ends, #1 gets 5,000, #2 3,000 and #3 1,000 coins (in each ranking)."],
     ["🏃","After 1 minute you can escape and clear. Survive all 12 minutes for 10× the reward!"],
     ["🪦","If you die: no reward, and your memo is erased. (You can revive with a heart stone.)"]]:[
     ["⚔️","制限時間は12分！ 1分ごとに敵のLvが上がる（Lv1→Lv10）。Lv1〜9は4体ずつ、Lv10のボスは1体ずつ出てきて、倒してもそのLvの間はどんどん補充される！"],
@@ -6455,7 +6461,7 @@ function openAdventureIntro(){
     ["🦅","空中でもう一度ジャンプを押すと、翼でパタパタ（3段ジャンプまで）"],
     ["⭐","トトのLvは、敵に与えたダメージで上がる。Lvが上がると攻撃力と体力がアップ"],
     ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！「回復するやつ」を使うと体力が30回復"],
-    ["🏆","ランキング（倒した数・最高レベル）は30分ごとにリセット。順位は、その30分で最後に出した記録で決まる（前より下がればその分順位も下がる）。終わったときに1位5000・2位3000・3位1000コイン（それぞれのランキングで）"],
+    ["🏆","ランキング（倒した数・最高レベル）は1時間ごとにリセット。順位は、その1時間で最後に出した記録で決まる（前より下がればその分順位も下がる）。終わったときに1位5000・2位3000・3位1000コイン（それぞれのランキングで）"],
     ["🏃","1分をこえたら「脱出してクリアする」ができる。12分生き延びてクリアすると報酬10倍！"],
     ["🪦","死亡すると報酬はなし、メモも消えてしまう…（ハート石で復活はできる）"]];
   bg.innerHTML=`<div class="swear adv-intro" role="dialog" aria-modal="true" aria-labelledby="aiT"><p id="aiT">🗺️ ${L?"Toto's Adventure":"トトの冒険"}</p>
@@ -6516,7 +6522,7 @@ const ADV_EN = { "魔物を誘惑する":"Lure monsters","💕 Lv{n}の魔物が
   "一時停止中":"Paused","オート移動":"Auto walk","タイトルに戻ると":"Back to title for","コイン":"coins","時間":"Time","ランキング1位更新！":"new #1 record!","冒険の報酬":"Adventure reward",
   "脱出してクリアする":"Escape & clear","装備のストック":"Equip stock","すでにストックしてあります":"Already in stock","装備のストックがいっぱいです":"Equip stock is full","{n}に持ちかえた！":"Switched to {n}!","融合の枠がいっぱいです":"The fusion slots are full","下の魔法の欠片をタップすると、ここに入ります":"Tap a magic shard below to put it here","{n}を補充した！（のこり{m}個）":"Reloaded {n}! ({m} left)","ドスン":"Thud!","回復するやつ":"Heal-a-thing","使うと体力が30回復する":"Restores 30 HP when used","体力はもう満タン！":"HP is already full!",
   "回復するやつを使った！ 体力が回復した":"Used the Heal-a-thing! HP restored","宝箱のコイン":"chest coins","🪙 {n}コインを見つけた！（脱出・クリアするともらえる）":"🪙 Found {n} coins! (You get them when you escape or clear)",
-  "ランキングは、この30分で最後に出した記録の順位です（ほかの冒険者の順位は見えません・30分ごとにリセット）":"Ranks use your latest record in these 30 minutes (others' ranks are hidden · resets every 30 minutes)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
+  "ランキングは、この1時間で最後に出した記録の順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）":"Ranks use your latest record in this hour (others' ranks are hidden · resets every hour)","⚠️ 動かずにいたら、ボスなみに強い魔物がやってきた…！":"⚠️ You stood still too long... a boss-class monster appeared!",
   "👑 Lv10のボスが現れた！":"👑 The Lv10 BOSS appeared!","Lv9の魔物をすべてたおした！ ボスがやってくる…！":"All Lv9 monsters defeated! The boss is coming...!",
   "Lv{n}の魔物が現れはじめた！":"Lv{n} monsters are appearing!","このままタイトルに戻ると、報酬はなし。メモも消えてしまう…":"If you return to the title now: no reward, and your memo is erased...",
   "脱出してクリアしますか？（ボスをたおすと報酬は10倍）":"Escape and clear now? (Beating the boss gives 10× the reward)","ステージクリア！":"Stage clear!","脱出成功！":"Escaped!",
@@ -6782,7 +6788,7 @@ async function advDeathScreen(t,lv,rec){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("倒した数")}</small><b>${t.toLocaleString()}${advT2("体")}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、この30分で最後に出した記録の順位です（ほかの冒険者の順位は見えません・30分ごとにリセット）")}</p><div class="ad-next"></div>
+    <p class="ad-sub">${advT2("ランキングは、この1時間で最後に出した記録の順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）")}</p><div class="ad-next"></div>
     <button class="ad-btn" id="adRev" type="button" ${hearts?"":"disabled"}><img src="${typeof HEART_IMG!=="undefined"?HEART_IMG:""}" alt="">${advT2("ハート石を1個消費してこのまま復活する")}<small>${advT2("のこり")} ${hearts.toLocaleString()}${advT2("個")}</small></button>
     <div class="ad-coin lost">${advT2("このままタイトルに戻ると、報酬はなし。メモも消えてしまう…")}</div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
@@ -6805,7 +6811,7 @@ async function advFinish(kind){
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("倒した数")}</small><b>${t.toLocaleString()}${advT2("体")}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
-    <p class="ad-sub">${advT2("ランキングは、この30分で最後に出した記録の順位です（ほかの冒険者の順位は見えません・30分ごとにリセット）")}</p><div class="ad-next"></div>
+    <p class="ad-sub">${advT2("ランキングは、この1時間で最後に出した記録の順位です（ほかの冒険者の順位は見えません・1時間ごとにリセット）")}</p><div class="ad-next"></div>
     <div class="ad-coin" id="adCoin"></div>
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
   document.getElementById("adv").appendChild(el);
@@ -7038,7 +7044,7 @@ async function titleRanks(){
   setInterval(()=>{ const el=document.getElementById("ttlDefSt"); if(!el||T.hidden) return; const R=S.def&&S.def.run;
     el.textContent=R?(gnow()>=R.end?(LANG==="en"?"Finished! Tap to see":"終了！ 結果を見る"):(LANG==="en"?"Defending ":"防衛中 ")+defFmtT(R.end-gnow())):""; },1000);
   setTimeout(()=>{ try{ titleRanks(); }catch(e){} },2500);
-  // ランキングがリセットされるまでのタイマー（30分ごと）
+  // ランキングがリセットされるまでのタイマー（1時間ごと）
   let rtPer=null; const rtEl=document.getElementById("ttlRt");
   const rtTick=()=>{ if(T.hidden) return; const now=gnow(), per=advPer(), left=advPerEnd(per)-now;
     const hh=Math.floor(left/3600000), mm=String(Math.floor(left/60000)%60).padStart(2,"0"), ss=String(Math.floor(left/1000)%60).padStart(2,"0");
