@@ -1701,6 +1701,7 @@ const I18N_EN = {
 "最近3時間のレベル：": "Level over the last 3 hours: ",
 "👥 参加者": "👥 Players",
 "人{0}": "{0}",
+"冒険者レベルの上位100人を表示しています。今は順位のつかない時間なので、だれでもひとことコメントを残せます！": "Showing the top 100 by Adventurer Level. Right now there are no ranks, so everyone can leave a short message!",
 "冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。": "Showing the top 100 by Adventurer Level. The top 50 can leave a short message.",
 "更新": "Refresh",
 "✅ 景品の受け取り条件クリア（終了前6時間以内にログイン済み）": "✅ Prize requirement met (logged in within the last 6 hours)",
@@ -2964,7 +2965,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -4229,7 +4230,7 @@ function profilePayload(){
   try{ if(typeof advSync==="function") advSync(); }catch(e){}
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
-    comment:(myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", day:S.lastLogin||0,
+    comment:(rankless()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"",   // 順位のつかない1時間は、だれでもひとことコメントOK day:S.lastLogin||0,
     owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
@@ -4802,7 +4803,7 @@ function renderMe(segHtml){
     ${decayNote?`<div class="note" style="color:var(--berry)">ログインしなかった日があったので、レベルが ${decayNote} 下がりました</div>`:""}
     ${myStatsHtml()}
     <div class="cmt"><div class="pick-label">ひとことコメント <span>ランキング50位以内で表示</span></div>
-      ${myRank&&myRank<=50?`<form id="cmtForm" class="cmt-row"><input id="cmtIn" maxlength="40" placeholder="ランキングにのせるひとこと" aria-label="ひとことコメント"><button class="btn" type="submit">保存</button></form>`
+      ${rankless()||(myRank&&myRank<=50)?`<form id="cmtForm" class="cmt-row"><input id="cmtIn" maxlength="40" placeholder="ランキングにのせるひとこと" aria-label="ひとことコメント"><button class="btn" type="submit">保存</button></form>`
         :`<div class="note" style="margin:0">ランキング50位以内に入ると、ひとことコメントを書けます。</div>`}</div>
     <div class="row"><button class="btn ghost" id="toDress" type="button">プロフィールアイコンを作る</button></div>
     ${DB?`<div class="row"><button class="btn ghost" id="logoutBtn" type="button">ログアウト</button></div>`:loginBox("ログインすると、ランキングに参加できて、別の端末でも続きから遊べます。")}
@@ -4860,7 +4861,7 @@ function renderRanking(segHtml){
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>
         ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${INV_CNT[r.id]}人ついています</div>`:""}
-        ${i<50&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div>`:""}</div>
+        ${(rankless()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
@@ -4872,7 +4873,7 @@ function renderRanking(segHtml){
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">毎日22:00（日本時間）に集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
-    <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。</p>
+    <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${rankless()?"冒険者レベルの上位100人を表示しています。今は順位のつかない時間なので、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>
     ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
   $("#reRank").onclick=async()=>{ RANK=null; render(); await loadRanking(true); if(!rankErr) toast("全員の最新の状態に更新しました"); };
@@ -5159,6 +5160,22 @@ function effRank(score, ok, others){   // others: [{score, ok}]
 setTimeout(markActive,0); setInterval(markActive,60*1000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") markActive(); });
 let seasonBusy=false;
+// ランク戦が終わって精算もすんだあと、順位のつかない1時間のうちに1回だけお知らせ
+function checkSeasonEndMsg(){
+  try{ if(!rankless() || (S.season??0)<seasonNow() || seasonBusy) return; const n=seasonNow()-1; if(n<0 || S.ssEndMsg===n) return;
+    if(document.querySelector(".ss-end-msg")) return;
+    S.ssEndMsg=n; save(); const L=LANG==="en";
+    const bg=document.createElement("div"); bg.className="sheet-bg center ss-end-msg"+(document.querySelector("#title:not([hidden])")?" ttl-top":""); bg.style.zIndex=137; bg.setAttribute("translate","no");
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏁</div>
+      <p>${L?`Ranked Match #${n} has ended!`:`第${n}回ランク戦が終了しました！`}</p>
+      <div class="note" style="margin:0;text-align:center;line-height:1.7">${L?"Thanks for playing, adventurers!<br>During this hour with no ranks, leave a short message and share your thoughts with the other adventurers!! ✨":"冒険者の皆さんお疲れ様でした！<br>是非順位のでないこの1時間の間はひとことコメントを残して感想を他の冒険者と共有しよう！！✨"}</div>
+      <button class="btn gold" type="button" id="ssCm">${L?"Write a message":"ひとことコメントを書く"}</button><button class="btn ghost" type="button" id="ssX">OK</button></div>`;
+    document.body.appendChild(bg);
+    bg.querySelector("#ssX").onclick=()=>bg.remove();
+    bg.querySelector("#ssCm").onclick=()=>{ bg.remove(); try{ if(document.querySelector("#title:not([hidden])")) document.getElementById("ttlStart").click(); tab="rank"; profMode="rank"; render(); setTimeout(()=>{ const c=document.getElementById("cmtIn"); if(c){ c.scrollIntoView({block:"center"}); c.focus(); } },550); }catch(e){} };
+  }catch(e){}
+}
+setInterval(checkSeasonEndMsg,20000);
 async function checkSeason(){
   if(seasonBusy||!DB||!MYID) return;
   if((S.season??0)>=seasonNow()) return;
