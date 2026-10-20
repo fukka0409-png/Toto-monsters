@@ -2810,7 +2810,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); checkApology(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); checkApology(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -5057,7 +5057,14 @@ async function checkSeason(){
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
   { id:"fix-2026-10-20-ranktick", coins:1000 },   // 上位キープボーナスが止まっていた・「あなたは◯位」のずれ
+  { id:"fix-2026-10-20-top3lock", coins:1000 },   // ランク戦の切り替え直後に、前のレベルのまま「3位以内」と判定されて投資できなくなっていた
 ];
+// 補正（1回だけ）：yoko★さんの「今回のランク戦で3位以内に入った」はバグによるもの（切り替え直後に前のレベルのまま判定された）なので取り消す
+function fixTop3Yoko(){
+  if(S.fixT3y) return; S.fixT3y=1;
+  if(normName(myName())===normName("yoko★") && S.top3ss===3){ S.top3ss=null; S.top3ok=null; try{ render(); }catch(e){} }
+  save();
+}
 function checkApology(){
   S.apol=S.apol||[];
   if(isFreshSave(S)){ APOLOGIES.forEach(a=>{ if(!S.apol.includes(a.id)) S.apol.push(a.id); }); return; }
