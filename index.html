@@ -4123,6 +4123,8 @@ async function loadRanking(force){
 }
 // ランキング表示用に、ランク戦や空枠の状態を反映する
 function normRank(r,now=gnow()){
+      // コンプ率は、持っている魔物の数（owned）と今の図鑑の数から計算しなおす（新しい魔物が増えても全員の%が今の基準になる）
+      if(r.id===MYID) r.comp=compPct(); else if(r.owned!=null) r.comp=Math.round(Math.min(r.owned,DEX_MONS.length)/DEX_MONS.length*1000)/10;
       if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
       else if((r.ss??0)<seasonNow()){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新しいランク戦を開いていない人はリセット後の状態で表示
       else if(!r.gm && r.ge && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-emptyDropFor(now-r.pub)); r.exp=0; r.tr=r.tr==="up"||r.tr==="mix"?"mix":"down"; } }
