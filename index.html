@@ -2810,7 +2810,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -5056,6 +5056,7 @@ async function checkSeason(){
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
+  { id:"fix-2026-10-20-invvoid", coins:1000 },
   { id:"fix-2026-10-20-ranktick", coins:1000 },   // 上位キープボーナスが止まっていた・「あなたは◯位」のずれ
   { id:"fix-2026-10-20-top3lock", coins:1000 },
   { id:"fix-2026-10-20-top3lock-all", coins:1000 },   // 同じバグで、ほかの冒険者も「3位以内」と誤判定されていた   // ランク戦の切り替え直後に、前のレベルのまま「3位以内」と判定されて投資できなくなっていた
@@ -5067,6 +5068,19 @@ function fixTop3All(){
   if(S.fixT3all) return; S.fixT3all=1;
   if(S.top3ss===3){ S.top3ss=null; S.top3ok=null; try{ render(); }catch(e){} }
   save();
+}
+// 補正（1回だけ）：ちゅんさんの投資は、誤った「3位以内」判定で無効になっていたので、投資している状態に戻す
+async function fixInvChun(){
+  if(S.fixInvC||!DB||!MYID) return;
+  if(normName(myName())!==normName("ちゅん")){ S.fixInvC=1; save(); return; }
+  const L=invFix().filter(iv=>iv.ss===3 && iv.void);
+  for(const iv of L){
+    if(!iv.paid && iv.lost) S.coins+=iv.lost;   // 無効にしたときに引かれたコインは返す（元の状態に戻す）
+    iv.void=0; delete iv.lost;
+    try{ await withTO(DB.doc("invests/"+invDocId(iv)).update({void:false})); }catch(e){ try{ await withTO(DB.doc("invests/"+invDocId(iv)).set({void:false},{merge:true})); }catch(e2){} }
+  }
+  S.fixInvC=1; save(); try{ render(); }catch(e){}
+  if(L.length) setTimeout(()=>{ try{ toast(LANG==="en"?"Your investment has been restored":"投資を元の状態に戻しました（ご迷惑をおかけしました🙏）"); }catch(e){} },1500);
 }
 function fixTop3Yoko(){
   if(S.fixT3y) return; S.fixT3y=1;
