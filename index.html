@@ -6123,11 +6123,14 @@ function defStep(R,dt,rnd=Math.random,fx=null){
   if(R.fanT>0) R.fanT-=dt; if(R.spdT>0) R.spdT-=dt;
   // 敵の出現：画面の敵がいなくなったら、少しして次の群れ（誘惑すると1回の数が増える）
   const alive=R.en.filter(e=>e.hp>0);
-  if(R.left>0){ R.spawnCd-=dt; if(R.spawnCd<=0){ R.left--; R.spawnCd=DEF.SP0+rnd()*DEF.SP1; const m=defMul(R);
+  // 誘惑した瞬間：残っている敵がいてもかまわず、増えた分がどんどん出てくる
+  const spawn1=()=>{ const m=defMul(R);
       const hp=Math.round((DEF.EN.hp0+rnd()*(DEF.EN.hp1-DEF.EN.hp0+1-1e-9)|0)*m*10)/10;
       R.en.push({id:R.eid++, x:DEF.SPAWN_X+rnd()*0.4, hp, max:hp, atk:DEF.EN.atk*Math.pow(1.9,R.prov)*Math.pow(0.9,R.sorry),
-        spd:DEF.EN.spd*Math.min(8,m)*(0.9+rnd()*0.2), cd:DEF.EN.aint*rnd(), coin:DEF.EN.coin*(1+DEF.PCOIN*R.prov), ph:rnd()*6, hit:0, at:0, dead:0}); } }
-  else if(!alive.length){ R.nextWave-=dt; if(R.nextWave<=0){ R.left=defWaveN(R); R.spawnCd=0; R.nextWave=defDelay(R)*(0.85+rnd()*0.3); } }
+        spd:DEF.EN.spd*Math.min(8,m)*(0.9+rnd()*0.2), cd:DEF.EN.aint*rnd(), coin:DEF.EN.coin*(1+DEF.PCOIN*R.prov), ph:rnd()*6, hit:0, at:0, dead:0}); };
+  if(R.burst>0){ R.burstCd=(R.burstCd||0)-dt; if(R.burstCd<=0){ R.burst--; R.burstCd=0.25+rnd()*0.35; spawn1(); } }
+  if(R.left>0){ R.spawnCd-=dt; if(R.spawnCd<=0){ R.left--; R.spawnCd=DEF.SP0+rnd()*DEF.SP1; spawn1(); } }
+  else if(!alive.length && !(R.burst>0)){ R.nextWave-=dt; if(R.nextWave<=0){ R.left=defWaveN(R); R.spawnCd=0; R.nextWave=defDelay(R)*(0.85+rnd()*0.3); } }
   // 敵の移動・攻撃
   const stopX = R.wall ? defWallX(R)+0.28 : defFront(R)+0.05;
   for(const e of R.en){
@@ -6170,7 +6173,7 @@ function defUpgrade(R,i){ const c=defShooters(R)[i]; if(!c||R.over) return false
 function defBuy(R,k){ if(R.over) return false; const cost=k==="provoke"?DEF.PROVOKE:k==="tempt"?DEF.TEMPT:DEF.ITEMS[k]; if(R.coins<cost) return false;
   if(k==="wall" && R.wall) return false;
   R.coins-=cost; R.spent+=cost;
-  if(k==="provoke") R.prov++; else if(k==="tempt") R.tempt++;
+  if(k==="provoke") R.prov++; else if(k==="tempt"){ R.tempt++; R.burst=(R.burst||0)+5; R.burstCd=0; }
   else if(k==="wall") R.wall={hp:Math.round(R.hpMax/2), max:Math.round(R.hpMax/2), until:R.t+DEF.WALL_MS/1000};
   else if(k==="speed") R.spdT=DEF.SPEED_MS/1000; else if(k==="fan") R.fanT=DEF.FAN_MS/1000;
   else if(k==="sorry"){ R.sorry++; }
@@ -6287,7 +6290,7 @@ function openDefBattle(){ const D=defData(), R=D.run, box=defShell("dbat");
     const im=card.querySelector(".dc-img"); im.innerHTML=`<img src="${i?DEF.SUB_BASE.img:DEF.BASES[R.sel.base].img}" alt="" style="width:${i?78:62}%;bottom:0"><img src="${DEF.CH[c].img}" alt="" style="width:${i?70:84}%;bottom:${i?44:52}%">`;
     card.querySelector(".dc-up").onclick=()=>{ if(defUpgrade(R,i)){ try{ SFX.tap(); }catch(e){} DV.cast[i]=0.35; defHud(); save(); } else defMsg(defT("コインが足りません")); }; });
   box.querySelector("#dfProv").onclick=()=>{ if(defBuy(R,"provoke")){ try{ SFX.tap(); }catch(e){} defMsg(LANG==="en"?"😤 Enemies are getting stronger! (more coins per enemy)":"😤 敵が強くなった！（たおしたときのコインも増える）"); defHud(); save(); } else defMsg(defT("コインが足りません")); };
-  box.querySelector("#dfTempt").onclick=()=>{ if(defBuy(R,"tempt")){ try{ SFX.tap(); }catch(e){} defMsg((LANG==="en"?"💕 Next waves: ":"💕 次から1回に")+defWaveN(R)+(LANG==="en"?" enemies":"体やってくる！")); defHud(); save(); } else defMsg(defT("コインが足りません")); };
+  box.querySelector("#dfTempt").onclick=()=>{ if(defBuy(R,"tempt")){ try{ SFX.tap(); }catch(e){} defMsg(LANG==="en"?`💕 5 more slimes are coming right now! (waves: ${defWaveN(R)} each)`:`💕 スライムが5体おしよせてきた！（次から1回に${defWaveN(R)}体）`); defHud(); save(); } else defMsg(defT("コインが足りません")); };
   box.querySelector("#dfItem").onclick=()=>defItems();
   box.querySelector("#dfBack").onclick=()=>{ save(); defClose(); };
   box.querySelector("#dfShot").onclick=()=>defRecord();
