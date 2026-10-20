@@ -5074,6 +5074,7 @@ async function checkSeason(){
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
+  { id:"fix-2026-10-20-giftsend", coins:1000 },   // 神からの贈り物が「通信できませんでした」で贈れないことがあった
   { id:"fix-2026-10-20-invvoid", coins:1000 },
   { id:"fix-2026-10-20-ranktick", coins:1000 },   // 上位キープボーナスが止まっていた・「あなたは◯位」のずれ
   { id:"fix-2026-10-20-top3lock", coins:1000 },
@@ -5569,9 +5570,10 @@ function confirmItem(r,k,direct){
 async function useItem(r,k,qty=1){
   if(!DB||!MYID||inv(k)<qty) return false;
   if(noAct()){ toast(FREEZE_TXT); return false; }
-  let d; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get()); d=snap.exists?snap.data():null; }catch(e){ toast("通信できませんでした。電波のよい所でもう一度ためしてください"); return false; }
-  if(!d) { toast("相手が見つかりませんでした"); return false; }
-  d=effProfile(r.id,d);
+  // 相手の最新プロフィールを読む。読めなかったときも、贈り物（神からの贈り物・チケット）は相手の情報がいらないので、手元のランキングの情報で贈れるようにする
+  let d, ferr=null; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get(),8000); d=snap.exists?snap.data():null; }catch(e){ ferr=e; }
+  if(ferr){ if(SENDABLE.includes(k) && r && r.id) d={...r}; else { toast("通信できませんでした。電波のよい所でもう一度ためしてください"+(ferr.code?`（${ferr.code}）`:"")); return false; } }
+  else { if(!d) { toast("相手が見つかりませんでした"); return false; } d=effProfile(r.id,d); }
   if(!SENDABLE.includes(k) && (d.lv||1)<SAFE_LV) { toast(`相手はLv${SAFE_LV}未満なので、まだアイテムを使えません`); return false; }
   if(k==="fire"&&(!d.gm||!mon(d.gm))) { toast("相手は魔物を配置していません"); return false; }
   if(k==="bomb"&&S.plv<BOMB_MIN_LV) { toast(`爆弾は冒険者Lv${BOMB_MIN_LV}から使えます`); return false; }
