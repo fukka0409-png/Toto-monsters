@@ -6186,7 +6186,7 @@ const defT = t => (LANG==="en" && DEF_EN[t]) || t;
 const DEF_EN = { "防衛作戦":"Defense","防衛を任せる魔物をタップ":"Tap the monsters to guard your base","所持コイン":"Coins","メイン":"Main","サブ":"Sub","土台":"Base",
   "10000コインでガチャを回す":"Spin the gacha for 10,000 coins","コインで購入":"Buy with coins","防衛開始":"Start defense","耐久力":"Durability","獲得したコイン":"Coins earned","残り時間":"Time left",
   "強化":"Upgrade","敵を挑発する":"Provoke enemies","敵を誘惑する":"Lure enemies","アイテム":"Items","コイン":"coins","戦いを放置してタイトル画面に戻る":"Leave the battle running & go to title",
-  "📸 防衛風景を記録":"📸 Record this defense","プロフィールに「防衛の記録」として貼ったよ！":"Posted to your profile as a \"Defense record\"!","防衛の記録":"Defense record",
+  "📸 防衛風景を記録":"📸 Record this defense","プロフィールに「防衛の記録」として貼ったよ！":"Posted to your profile as a \"Defense record\"!","プロフィールの「防衛の記録」を新しい写真に交換したよ！":"Your profile's \"Defense record\" photo was replaced with the new one!","防衛の記録":"Defense record",
   "壁を建てる":"Build a wall","攻撃速度2倍":"2× attack speed","扇風機":"Fan","魔物に謝罪":"Apologize to the monsters","獲得したコインを消費してアイテムを購入できます！":"Spend coins earned here on items!",
   "閉じる":"Close","防衛成功！":"Defense successful!","防衛失敗…":"Defense failed...","うけとる":"Collect","もう一度挑戦する":"Try again","タイトルに戻る":"Back to title",
   "もどる":"Back","持っていない":"Not owned","持っているので100コインに交換！":"Already owned — traded for 100 coins!","NEW！":"NEW!","購入する":"Buy","コインが足りません":"Not enough coins",
@@ -6415,9 +6415,10 @@ function defRecord(){ const R=defData().run; if(!R) return;
   const g=cv.getContext("2d"); g.font="900 18px sans-serif"; g.textAlign="right"; g.fillStyle="#fff"; g.strokeStyle="#000"; g.lineWidth=4;
   const d=new Date(gnow()), s=`🛡 ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; g.strokeText(s,590,28); g.fillText(s,590,28);
   let img; try{ img=cv.toDataURL("image/jpeg",0.72); }catch(e){ return defMsg("…"); }
+  const had=!!(S.defShot&&S.defShot.img);   // 写真は1枚だけ：撮るたびに前の写真と交換
   S.defShot={img, at:gnow()}; save();
   if(DB&&MYID) DB.collection("defshots").doc(MYID).set({img, at:gnow(), name:myName().slice(0,12)}).catch(()=>{});
-  try{ SFX.reveal("S"); }catch(e){} DV.flash=0.5; defMsg("📸 "+defT("プロフィールに「防衛の記録」として貼ったよ！"));
+  try{ SFX.reveal("S"); }catch(e){} DV.flash=0.5; defMsg("📸 "+defT(had?"プロフィールの「防衛の記録」を新しい写真に交換したよ！":"プロフィールに「防衛の記録」として貼ったよ！"));
 }
 // プロフィールの「防衛の記録」
 async function defRecInto(el,r){ if(!el) return; let rec=null;
