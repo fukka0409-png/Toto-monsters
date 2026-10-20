@@ -6121,12 +6121,13 @@ const ADV = {
   HEAL: 30, PERIOD_MS: 60*60000, PERIOD_ORIGIN: Date.parse("2026-10-19T18:17:00+09:00"), PERIOD_BASE: 1e6,
   // 2026-10-20 22:17からランキングは1時間ごと（番号を2000000からにして、前の30分ごとの記録とまざらないように）
   P2_ORIGIN: Date.parse("2026-10-20T22:17:00+09:00"), P2_BASE: 2e6, OLD_MS: 30*60000,
-  SHARD: { g:{ name:"波動魔法の欠片", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"氷魔法の欠片", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:2 } },
+  SHARD: { g:{ name:"波動魔法の欠片", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"氷魔法の欠片", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:2 },
+    w:{ name:"風魔法の欠片", img:"sh_w", dmg:39, uses:10, bolt:"bolt_w", anim:"tf", wind:1 } },   // 風：氷の1.3倍・範囲（竜巻）。波動＋氷の融合で10回分
 };
-const ADV_FRAMES = { tm:{n:5,cx:.22,h:.86}, tj:{n:5,cx:.24,h:.76}, tk:{n:5,cx:.24,h:.78}, sd:{n:6,cx:.66,h:.69,b:.09} };
+const ADV_FRAMES = { tf:{n:5,cx:.255,h:.69}, tm:{n:5,cx:.22,h:.86}, tj:{n:5,cx:.24,h:.76}, tk:{n:5,cx:.24,h:.78}, sd:{n:6,cx:.66,h:.69,b:.09} };
 const ADV_IMG = {};
 const advImg = n => { if(!ADV_IMG[n]){ const im=new Image(); im.src="adv/"+n+".png"; ADV_IMG[n]=im; } return ADV_IMG[n]; };
-function advPreload(){ ["toto_s","toto_f","sl_s","sl_f","grave","sh_g","sh_b","potion","bolt_g","bolt_b","ch1","ch1o","ch2","ch2o","ch3","ch3o"].forEach(advImg);
+function advPreload(){ ["sh_w","bolt_w","tw0","tw1","tw2","tw3","wk0","wk1","wk2","wk3","wk4","wk5","toto_s","toto_f","sl_s","sl_f","grave","sh_g","sh_b","potion","bolt_g","bolt_b","ch1","ch1o","ch2","ch2o","ch3","ch3o"].forEach(advImg);
   Object.entries(ADV_FRAMES).forEach(([k,v])=>{ for(let i=0;i<v.n;i++) advImg(k+i); }); ["c1","c2","c3","c4"].forEach(c=>{ if(!ADV_IMG["cl_"+c]){ const im=new Image(); im.src="title/"+c+".png"; ADV_IMG["cl_"+c]=im; } }); }
 const advFmt = ms => { ms=Math.max(0,Math.floor(ms)); const m=Math.floor(ms/60000), s=Math.floor(ms/1000)%60, c=Math.floor(ms/10)%100; return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}:${String(c).padStart(2,"0")}`; };
 const advItemName = it => it.k==="key" ? "伝説の鍵" : it.k==="heal" ? "回復するやつ" : ADV.SHARD[it.k].name;
@@ -6174,7 +6175,7 @@ const advLvOf = xp => { let L=1; while(xp>=advNeed(L+1)) L++; return L; };
 const advLv = () => advLvOf(A.xp);
 const advMaxHp = () => ADV.HP0 + ADV.HP_PER_LV*(advLv()-1);
 const advMeleeDmg = () => ADV.ATK0 + ADV.ATK_PER_LV*(advLv()-1);
-const advShardDmg = k => ADV.SHARD[k].dmg + ADV.MAG_PER_LV*(advLv()-1);
+const advShardDmg = k => k==="w" ? Math.round(1.3*advShardDmg("b")) : ADV.SHARD[k].dmg + ADV.MAG_PER_LV*(advLv()-1);   // 風は氷の1.3倍
 const advPaused = () => !!document.querySelector("#adv .adv-sheet");   // リュック（とメモ）を開いている間は止まる
 let advAuto=false; try{ advAuto=localStorage.getItem("toto-adv-auto")==="1"; }catch(e){}
 
@@ -6601,7 +6602,7 @@ function openAdventure(){
   cancelAnimationFrame(advRaf); A.last=performance.now(); advRaf=requestAnimationFrame(advLoop);
 }
 const advT = t => (LANG==="en" && ADV_EN[t]) || t;
-const ADV_EN = { "魔物を誘惑する":"Lure monsters","💕 Lv{n}の魔物が4体おびき寄せられた！":"💕 4 Lv{n} monsters were lured in!","残り時間":"Time left","倒した数":"Defeated","体":" ","12分生き延びた！ ステージクリア！":"Survived 12 minutes! Stage clear!","12分クリア":"12-min clear","脱出してクリアしますか？（12分生き延びると報酬は10倍）":"Escape and clear now? (Surviving 12 minutes gives 10× the reward)","👑 Lv10のボスが現れはじめた！":"👑 Lv10 BOSSES are appearing!","敵Lv{n}・次のLvまで{m}秒":"Enemy Lv{n} · next Lv in {m}s","体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
+const ADV_EN = { "風魔法の欠片":"Wind Magic Shard","範囲攻撃：竜巻で巻き上げて運ぶ（つかまっている間ダメージ）":"Area attack: a tornado lifts and carries enemies away (damage while caught)","魔物を誘惑する":"Lure monsters","💕 Lv{n}の魔物が4体おびき寄せられた！":"💕 4 Lv{n} monsters were lured in!","残り時間":"Time left","倒した数":"Defeated","体":" ","12分生き延びた！ ステージクリア！":"Survived 12 minutes! Stage clear!","12分クリア":"12-min clear","脱出してクリアしますか？（12分生き延びると報酬は10倍）":"Escape and clear now? (Surviving 12 minutes gives 10× the reward)","👑 Lv10のボスが現れはじめた！":"👑 Lv10 BOSSES are appearing!","敵Lv{n}・次のLvまで{m}秒":"Enemy Lv{n} · next Lv in {m}s","体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
   "2秒こおらせる（同じ魔物は半分ずつ短く）":"freezes for 2s (half as long each time on the same monster)","⚠️ 動かずにいたら、Lv100の魔物がやってきた…！":"⚠️ You stood still too long... a Lv100 monster appeared!","からっぽ…":"Empty...",
   "のこり":"Left:","アイテムをえらんでね":"Pick an item","タイトル画面に戻る":"Back to title","ハート石の力で復活した！":"Revived by the power of a heart stone!",
   "ハート石を1個消費してこのまま復活する":"Use 1 heart stone to revive here","メモ":"Memo","メモは冒険が終わっても残ります（死亡するとすべて消えます）":"Your memo stays after an adventure ends (but is erased if you die)",
@@ -6625,7 +6626,7 @@ const ADV_EN = { "魔物を誘惑する":"Lure monsters","💕 Lv{n}の魔物が
 const advRk = n => n ? (LANG==="en" ? "#"+n.toLocaleString() : n.toLocaleString()+"位") : "―";
 
 function advStart(){
-  A={ t:0, xp:0, stageLv:1, spawned:0, killed:0, kills:0, bossDown:false, over:false, hp:ADV.HP0, x:0, y:0, vy:0, vx:0, dir:1, jumps:0, onGround:true, atk:null, inv:[], eq:-1, enemies:[], graves:[], chests:[], bolts:[], fx:[], pops:[],
+  A={ t:0, xp:0, stageLv:1, spawned:0, killed:0, kills:0, bossDown:false, over:false, hp:ADV.HP0, x:0, y:0, vy:0, vx:0, dir:1, jumps:0, onGround:true, atk:null, inv:[], eq:-1, enemies:[], graves:[], winds:[], chests:[], bolts:[], fx:[], pops:[],
       inv0:0, hurtT:0, dead:false, deadT:0, counted:false, nextSpawn:1.2, idleT:0, idleSpawned:false, lastX:0, chunksL:0, chunksR:0, moveIn:0,
       keys:{}, bestShown:false, revives:0, stock:[null,null,null,null], fuse:[-1,-1], sel:-1, cam:0, walkT:0, flapT:0 };
   advHud(); advEquipView();
@@ -6678,9 +6679,11 @@ function advJump(){ if(!A||A.dead||advPaused()) return;
   if(A.onGround){ A.vy=1.25; A.onGround=false; A.jumps=1; try{ SFX.tap(); }catch(e){} }
   else if(A.jumps<3){ A.vy=1.12; A.jumps++; A.flapT=0.35; try{ voice&&ac()&&voice(ac(),{f:660,f2:990,dur:.09,vol:.06}); }catch(e){} }   // 翼をパタパタさせて2段・3段ジャンプ
 }
+// 融合のレシピ：波動＋波動＝氷／波動＋氷＝風（10回分）
+const advFuseRes=(p,q)=>{ const k=[p,q].sort().join("+"); return k==="g+g"?{k:"b",key:"g+g"}:k==="b+g"?{k:"w",key:"g+b"}:null; };
 function advAttack(){ if(!A||A.dead||A.atk||advPaused()) return;
   const it=A.eq>=0?A.inv[A.eq]:null;
-  if(it && ADV.SHARD[it.k]){ const sh=ADV.SHARD[it.k]; A.atk={kind:sh.anim, t:0, dur:0.42, fired:false, it}; }
+  if(it && ADV.SHARD[it.k]){ const sh=ADV.SHARD[it.k]; A.atk={kind:sh.anim, t:0, dur:sh.wind?0.62:0.42, fired:false, it}; }
   else A.atk={kind:"tm", t:0, dur:0.38, hit:false};
 }
 
@@ -6727,7 +6730,7 @@ function advStep(dt){
   // 攻撃
   if(A.atk){ const a=A.atk; a.t+=dt;
     if(a.kind==="tm" && !a.hit && a.t>=0.16){ a.hit=true; advMelee(); }
-    if(a.kind!=="tm" && !a.fired && a.t>=0.3){ a.fired=true; advFire(a.it); }
+    if(a.kind!=="tm" && !a.fired && a.t>=(a.kind==="tf"?0.5:0.3)){ a.fired=true; advFire(a.it); }
     if(a.t>=a.dur) A.atk=null; }
   // 弾
   // 魔法：ねらった的（敵か宝箱）に向かって飛んでいく
@@ -6737,6 +6740,7 @@ function advStep(dt){
       else { b.x+=dx/d*st; b.y+=dy/d*st; } }
     else { b.tg=null; b.x+=b.dir*2.4*dt; if(Math.abs(b.x-b.x0)>ADV.MAGIC_RANGE) b.life=0; } });
   A.bolts=A.bolts.filter(b=>b.life>0);
+  advWinds(dt);
   // 敵
   A.enemies.forEach(e=>advEnemy(e,dt));
   A.enemies=A.enemies.filter(e=>!(e.dead&&e.deadT>0.6) && Math.abs(e.x-A.x)<14);
@@ -6751,6 +6755,25 @@ const advT2 = t => advT(t);
 function advMsg(t){ const m=document.getElementById("advMsg"); if(!m) return; m.textContent=t; m.classList.add("on"); clearTimeout(m._t); m._t=setTimeout(()=>m.classList.remove("on"),2600); }
 function advPop(x,y,txt,col){ A.pops.push({x,y,txt,col:col||"#fff",t:0}); }
 
+/* ---------- 風魔法：竜巻 ----------
+   風の玉が少し飛んで地面で竜巻になり、だんだん大きくなりながら前へ進む。
+   触れた敵は竜巻に吸いつき、ぐるぐる上昇しながら運ばれて、そのあいだダメージを受け続ける。画面の外に出たら竜巻は消える */
+function advWinds(dt){
+  const vw=A.W/A.P;
+  A.winds.forEach(w=>{ w.t+=dt;
+    if(w.gt<0){ w.x+=w.dir*1.6*dt; const hit=A.enemies.some(e=>!e.dead&&!e.caught&&(e.x-w.x)*w.dir<e.w*0.5&&(e.x-w.x)*w.dir>-0.05); if(w.t>=0.1||hit){ w.gt=0; w.y=0; } return; }   // 風の玉：敵に当たるか少し進んだら竜巻に   // 風の玉
+    w.gt+=dt; const g=Math.min(1,w.gt/0.9); w.g=g;
+    w.x+=w.dir*(0.1+0.22*g)*dt;
+    const hw=0.035+0.09*g, top=0.1+0.45*g;
+    A.enemies.forEach(e=>{ if(e.dead||e.caught||e.extraNoWind) return;
+      if(Math.abs(e.x-w.x)<hw+e.w*0.4 && (e.y||0)<top){ e.caught=w; e.cph=Math.random()*6.28; e.st=null; e.warn=0; e.zone=null; e.frozen=0; advDamageEnemy(e,w.dmg); } });
+    w.tick+=dt; if(w.tick>=0.25){ w.tick-=0.25; A.enemies.forEach(e=>{ if(e.caught===w && !e.dead) advDamageEnemy(e,w.dmg*0.2); }); }   // つかまっている間：1秒に攻撃力の80%
+    A.enemies.forEach(e=>{ if(e.caught!==w || e.dead) return; e.cph+=dt*7; const r=hw*0.85;
+      e.x=w.x+Math.sin(e.cph)*r; e.y=Math.min(top*0.85,(e.y||0)+dt*0.3); e.dir=Math.cos(e.cph)>0?1:-1; });
+    if(w.x<A.cam-0.15 || w.x>A.cam+vw+0.15) w.done=true; });
+  A.winds.forEach(w=>{ if(!w.done) return; A.enemies.forEach(e=>{ if(e.caught===w){ e.caught=null; e.vy=0; if(!(e.y>0)) e.y=0.01; } }); });
+  A.winds=A.winds.filter(w=>!w.done);
+}
 /* ---------- 敵 ---------- */
 // 魔物を誘惑する：コインなしで何回でも。押した時点のLvの魔物が、画面に追加で4体出てくる
 function advLure(){ if(!A||A.dead||A.over||advPaused()) return; const lv=A.stageLv;
@@ -6765,6 +6788,7 @@ function advSpawn(lv,kind){
 const advEH = e => e.boss?0.26:0.12;   // 敵の背の高さ
 function advEnemy(e,dt){
   if(e.dead){ e.deadT+=dt; return; }
+  if(e.caught){ e.hurt=Math.max(0,e.hurt-dt); return; }   // 竜巻につかまっている間は動けない
   e.hurt=Math.max(0,e.hurt-dt);
   // 空から降ってきている間は、着地するまで何もしない
   // 着地したときにトトが落下範囲（ふつうの攻撃より少し広い・地面に赤い帯）にいたら、1.5倍のダメージ
@@ -6825,7 +6849,9 @@ function advMagicTarget(){
   return best;
 }
 function advFire(it){ const sh=ADV.SHARD[it.k];
-  const y=A.y+0.07; A.bolts.push({ x:A.x+A.dir*0.12, x0:A.x, y, dmg:advShardDmg(it.k), img:sh.bolt, freeze:sh.freeze||0, dir:A.dir, tg:advMagicTarget(), life:3 });
+  const y=A.y+0.07;
+  if(sh.wind) A.winds.push({ x:A.x+A.dir*0.14, y, dir:A.dir, t:0, gt:-1, dmg:advShardDmg(it.k), tick:0 });   // 風：風の玉 → 地面で竜巻になって進む
+  else A.bolts.push({ x:A.x+A.dir*0.12, x0:A.x, y, dmg:advShardDmg(it.k), img:sh.bolt, freeze:sh.freeze||0, dir:A.dir, tg:advMagicTarget(), life:3 });
   it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0){ A.inv.splice(i,1); A.fuse=[-1,-1]; }
     // 同じ種類の欠片をまだ持っていれば、自動で装備しなおす（補充）
     const nx=A.inv.findIndex(x=>x.k===it.k&&!(A.stock||[]).includes(x));
@@ -6961,14 +6987,14 @@ function advBagRefresh(){
     return `<button class="ab-cell ${A.sel===i?"sel":""} ${A.eq===i?"eq":""} ${A.fuse.includes(i)?"infz":""}" type="button" data-ai="${i}">${advItemIcon(it)}${advIsShard(it)?`<small>${it.u}</small>`:""}${A.eq===i?`<em>E</em>`:""}${(A.stock||[]).includes(it)?`<em class="stk">S</em>`:""}</button>`; };
   const fz=j=>{ const i=A.fuse[j], it=i>=0?A.inv[i]:null; return `<button class="ab-fz" type="button" data-fz="${j}">${it?advItemIcon(it):"＋"}</button>`; };
   const a=A.fuse[0]>=0?A.inv[A.fuse[0]]:null, b=A.fuse[1]>=0?A.inv[A.fuse[1]]:null;
-  const known=(S.advRecipes||[]).includes("g+g"), willB=a&&b&&a.k==="g"&&b.k==="g";
+  const fres=(a&&b)?advFuseRes(a.k,b.k):null, known=fres&&(S.advRecipes||[]).includes(fres.key), willB=!!fres;
   const sel=A.sel>=0?A.inv[A.sel]:null;
   el.innerHTML=`<div class="ab-top"><p>${advT2("魔法の欠片を融合して新たな魔法を追求しよう！")}</p><button class="ab-x" type="button" id="abX">✕</button>
-      <div class="ab-fuse">${fz(0)}<b>＋</b>${fz(1)}<b>➡</b><div class="ab-res">${willB&&known?`<img src="${advImg("sh_b").src}" alt="">`:"？"}</div>
+      <div class="ab-fuse">${fz(0)}<b>＋</b>${fz(1)}<b>➡</b><div class="ab-res">${willB&&known?`<img src="${advImg(ADV.SHARD[fres.k].img).src}" alt="">`:"？"}</div>
       <button class="ab-memo" type="button" id="abMemo">📜<br>${advT2("メモ")}</button></div>
       <button class="ab-fbtn" type="button" id="abFuse" ${a&&b?"":"disabled"}>${advT2("融合する")}</button></div>
     <div class="ab-bottom"><div class="ab-grid">${Array.from({length:ADV.INV_MAX},(_,i)=>slot(i)).join("")}</div>
-      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):sel.k==="heal"?advT2("使うと体力が30回復する"):`${advT2("攻撃力")} ${advShardDmg(sel.k)}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("2秒こおらせる（同じ魔物は半分ずつ短く）")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
+      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):sel.k==="heal"?advT2("使うと体力が30回復する"):`${advT2("攻撃力")} ${advShardDmg(sel.k)}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("2秒こおらせる（同じ魔物は半分ずつ短く）")}`:""}${ADV.SHARD[sel.k].wind?` ・ ${advT2("範囲攻撃：竜巻で巻き上げて運ぶ（つかまっている間ダメージ）")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
         <button class="ab-act use" type="button" id="abUse" ${sel&&!advIsShard(sel)?"":"disabled"}>${advT2("使う")}</button>
         <button class="ab-act eq" type="button" id="abEq" ${advIsShard(sel)?"":"disabled"}>${A.sel>=0&&A.eq===A.sel?advT2("外す"):advT2("装備する")}</button>
         <button class="ab-act drop" type="button" id="abDrop" ${sel?"":"disabled"}>${advT2("捨てる")}</button>
@@ -6985,8 +7011,9 @@ function advBagRefresh(){
     if(A.fuse[j]>=0){ if(A.sel===A.fuse[j]) A.sel=-1; A.fuse[j]=-1; } else advMsg(advT2("下の魔法の欠片をタップすると、ここに入ります"));
     advBagRefresh(); });
   el.querySelector("#abFuse").onclick=()=>{ const [i,j]=A.fuse; const x=A.inv[i], y=A.inv[j]; if(!x||!y) return;
-    if(x.k==="g"&&y.k==="g"){ const keep=A.inv.filter((_,k)=>k!==i&&k!==j); const eqIt=A.eq>=0?A.inv[A.eq]:null; A.inv=keep; A.inv.push({k:"b",u:ADV.SHARD.b.uses}); A.eq=eqIt?A.inv.indexOf(eqIt):-1;
-      S.advRecipes=[...new Set([...(S.advRecipes||[]),"g+g"])]; save(); A.fuse=[-1,-1]; A.sel=-1; advMsg(advT2("融合成功！ 新しい魔法の欠片ができた！")); try{ SFX.reveal("S"); }catch(e){} }
+    const fr=advFuseRes(x.k,y.k);
+    if(fr){ const keep=A.inv.filter((_,k)=>k!==i&&k!==j); const eqIt=A.eq>=0&&A.eq!==i&&A.eq!==j?A.inv[A.eq]:null; A.inv=keep; A.inv.push({k:fr.k,u:ADV.SHARD[fr.k].uses}); A.eq=eqIt?A.inv.indexOf(eqIt):-1;
+      S.advRecipes=[...new Set([...(S.advRecipes||[]),fr.key])]; save(); A.fuse=[-1,-1]; A.sel=-1; advMsg(advT2("融合成功！ 新しい魔法の欠片ができた！")); try{ SFX.reveal("S"); }catch(e){} }
     else { advMsg(advT2("何も起きなかった…")); A.fuse=[-1,-1]; }
     advEquipView(); advBagRefresh(); };
   el.querySelector("#abEq").onclick=()=>{ if(A.sel<0||!advIsShard(A.inv[A.sel])) return; const it=A.inv[A.sel];
@@ -7066,6 +7093,13 @@ function advDraw(){
   // 敵の攻撃が当たる範囲（❗が出てから攻撃が終わるまで、地面を赤く）
   A.enemies.forEach(e=>{ if(e.dead||!e.zone) return; const a=sx(e.zone.a), b=sx(e.zone.b), on=e.warn>0?0.25+0.2*Math.abs(Math.sin(performance.now()/60)):0.5;
     g.fillStyle=`rgba(255,40,40,${on})`; g.fillRect(a,GY-SH*0.02,b-a,SH*0.05); g.strokeStyle="rgba(255,60,60,.9)"; g.lineWidth=2*A.dpr; g.strokeRect(a,GY-SH*0.02,b-a,SH*0.05); });
+  // 風魔法（風の玉・竜巻）
+  A.winds.forEach(w=>{ const t=performance.now()/1000;
+    if(w.gt<0){ const im=advImg("bolt_w"); if(!im.complete) return; const h=SH*0.09, ww=h*im.width/im.height; g.save(); g.translate(sx(w.x),gy(w.y)); if(w.dir<0) g.scale(-1,1); g.drawImage(im,-ww/2,-h/2,ww,h); g.restore(); return; }
+    const gg=w.g||0, k=gg<1?Math.min(3,Math.floor(gg*4)):(Math.floor(t*9)%2?3:2), im=advImg("tw"+k); if(!im.complete) return;
+    const H=SH*(0.1+0.34*gg)*(1+Math.sin(t*13)*0.04), W2=H*im.width/im.height*(1+Math.sin(t*17)*0.08);
+    g.save(); g.translate(sx(w.x)+Math.sin(t*11)*SH*0.012,GY+SH*0.01); g.transform(1,0,Math.sin(t*7)*0.12,1,0,0); if(Math.floor(t*6)%2) g.scale(-1,1);
+    g.globalAlpha=0.92; g.drawImage(im,-W2/2,-H,W2,H); g.restore(); });
   // 敵
   A.enemies.forEach(e=>{ const bh=SH*(e.boss?0.26:0.12), GY=GY0-(e.y||0)*SH;
     if((e.y||0)>0){ g.fillStyle="rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(sx(e.x),GY0,bh*0.5*Math.max(.3,1-e.y),bh*0.12,0,0,7); g.fill(); }   // 落ちてくる場所の影
@@ -7091,7 +7125,8 @@ function advDraw(){
     g.save(); if(blink) g.globalAlpha=.45;
     if(A.atk){ const f=ADV_FRAMES[A.atk.kind], k=Math.min(f.n-1,Math.floor(A.atk.t/A.atk.dur*f.n)), im=advImg(A.atk.kind+k);
       const h=TH/f.h, w=h*im.width/im.height; g.translate(tx,ty); if(A.dir<0) g.scale(-1,1); g.drawImage(im,-f.cx*w,-h,w,h); }
-    else { const im=advImg("toto_s"), h=TH, w=h*im.width/im.height, bob=A.onGround&&A.vx?Math.abs(Math.sin(A.walkT))*SH*0.012:0;
+    else { const walking=A.onGround&&A.vx, wk=advImg("wk"+(Math.floor(A.walkT*1.3)%6)), useWk=walking&&wk.complete&&wk.naturalWidth;   // 歩くときは6コマの歩きアニメ
+      const im=useWk?wk:advImg("toto_s"), h=useWk?TH*1.08:TH, w=h*im.width/im.height, bob=0;
       g.translate(tx,ty-bob); if(A.dir<0) g.scale(-1,1); if(A.hurtT>0) g.filter="brightness(1.8) sepia(1) hue-rotate(-40deg)";
       const flap=A.flapT>0?1+Math.sin(A.flapT*60)*0.08:1; g.scale(flap,1/flap); g.drawImage(im,-w/2,-h,w,h); }
     g.restore(); g.filter="none";
