@@ -1298,6 +1298,7 @@ const I18N_EN = {
 "装飾ガチャ": "Decoration Gacha",
 "ホームの背景・床・装飾 全{0}種（持っているものが出たら💎覚醒の石1個に）": "{0} Home backgrounds, floors & decorations (duplicates become 💎 1 Awakening Stone)",
 "提供割合・集めた数": "Drop rates & collection",
+"集めた数": "Collection",
 "集めた数：{0}/{1}。そのランクのものがまだないときは、近いランクのものが出ます。": "Collected: {0}/{1}. If a rank has nothing left, you'll get one from a nearby rank.",
 "今日の1000コインを受け取る": "Claim today's 1,000 coins",
 "{0}（特別）": "{0} (Special)",
@@ -2614,7 +2615,7 @@ const START_MONSTER = 1; // 最初から全員が持っている魔物
 
 /* ---------- ルール ---------- */
 const RANKS = ["C","B","A","S","Z","L"];   // L＝限定ランク（Zより上・配布限定）
-const RATES = { Z:0.067, S:2, A:10, B:28, C:59.933 };     // %
+const RATES = { Z:0.05, S:1.5, A:10, B:28, C:60.45 };   // 2026-10-20 S・Zを少し下げた     // %
 const COST = 100, DAILY = 1000, MAX_STAGE = 9;
 const HOURLY = 100, HOURLY_MS = 15*60*1000;   // 15分おきのボーナス
 const FUSE_COIN = 10;
@@ -3341,10 +3342,13 @@ function rollMonster(ticket){
   for(const m of SPECIAL){ if((x-=m.rate)<0) return m; }
   return pickFrom(NORMAL, rollRank(ticket?RATES_TICKET:RATES));
 }
+const COLLAB_W = 0.5;
 function pickFrom(list, rank){
   const order=[rank]; const i=RANKS.indexOf(rank);
   for(let d=1;d<5;d++){ if(RANKS[i-d]) order.push(RANKS[i-d]); if(RANKS[i+d]) order.push(RANKS[i+d]); }
-  for(const r of order){ const p=list.filter(x=>x.rank===r); if(p.length) return p[Math.floor(Math.random()*p.length)]; }
+  for(const r of order){ const p=list.filter(x=>x.rank===r); if(!p.length) continue;
+    // コラボの魔物（by あり）は、同じランクのほかの魔物の半分の出やすさ
+    const w=x=>x.by?COLLAB_W:1, tot=p.reduce((a,x)=>a+w(x),0); let k=Math.random()*tot; for(const x of p){ if((k-=w(x))<0) return x; } return p[p.length-1]; }
 }
 function pullMonsters(n, ticket){
   if(ticket){ if(!inv("ticket")) return toast("ガチャチケットがありません"); addItem("ticket",-1); n=TICKET_PACKS; }
@@ -3631,9 +3635,7 @@ function renderGacha(){
     <div class="g-head"><canvas id="cvMon" width="200" height="200" aria-hidden="true"></canvas>
       <div><div class="g-tag">MONSTER</div><div class="g-title">魔物ガチャ</div><div class="g-sub">全${DEX_MONS.length}種の魔物から召喚</div></div></div>
     ${packBtns("mon")}
-    <details class="rates"><summary>提供割合</summary><p class="note" style="margin:0 0 6px">🎫 ガチャチケットで引くと、<b>Sランク・Zランクの確率が${TICKET_BOOST}倍</b>！（かっこ内がチケットのときの確率）</p>${rankRates(NORMAL,true)}
-      ${SPECIAL.map(m=>`<div class="rate-row"><span><span class="rk rk-${m.rank}">${m.rank}</span> ${m.name}（特別）</span><span>${m.rate}%</span></div>`).join("")}
-      ${ranksHave.size<5?`<p class="note">まだ魔物がいないランクが出たときは、近いランクの魔物が出ます。</p>`:""}</details>
+    <!-- 提供割合は冒険者には見せない -->
   </section>
   <section class="g-banner item"><button class="g-detail" type="button" id="itemDetail">📋 詳細確認</button>
     <div class="g-head"><div class="g-items">${GACHA_ITEMS.map(i=>`<img src="${i.img}" alt="">`).join("")}</div>
@@ -3642,7 +3644,6 @@ function renderGacha(){
       <button class="pull" data-pull="item" data-n="1" type="button" ${S.coins<ITEM_COST?"disabled":""}>1回まわす<small>${ITEM_COST.toLocaleString()}コイン</small></button>
       <button class="pull ten" data-pull="item" data-n="10" type="button" ${S.coins<ITEM_COST*10?"disabled":""}>10連まわす<small>${(ITEM_COST*10).toLocaleString()}コイン</small></button>
       ${tkBtn("tk-item",`チケットで${TICKET_ITEMS}回まわす`)}</div>
-    <details class="rates"><summary>提供割合</summary>${GACHA_ITEMS.map(i=>`<div class="rate-row"><span>${i.name}</span><span>${i.rate}%</span></div>`).join("")}</details>
   </section>
   <section class="g-banner deco">
     <div class="g-head"><canvas id="cvDeco" width="200" height="200" aria-hidden="true"></canvas>
@@ -3651,7 +3652,7 @@ function renderGacha(){
       <button class="pull" data-pull="deco" data-n="1" type="button" ${S.coins<COST?"disabled":""}>1パック<small>${COST}コイン</small></button>
       <button class="pull ten" data-pull="deco" data-n="10" type="button" ${S.coins<COST*10?"disabled":""}>10連パック<small>${COST*10}コイン</small></button>
       ${tkBtn("tk-deco","チケットで10連パック")}</div>
-    <details class="rates"><summary>提供割合・集めた数</summary>${["Z","S","A","B","C"].map(r=>`<div class="rate-row"><span><span class="rk rk-${r}">${r}</span> 背景${DECO_POOL.filter(x=>x.rank===r&&x.type==="bg").length}・床${DECO_POOL.filter(x=>x.rank===r&&x.type==="gd").length}${DECO_POOL.some(x=>x.rank===r&&x.type==="dc")?"・装飾"+DECO_POOL.filter(x=>x.rank===r&&x.type==="dc").length:""}</span><span>${RATES[r]}%</span></div>`).join("")}
+    <details class="rates"><summary>集めた数</summary>${["Z","S","A","B","C"].map(r=>`<div class="rate-row"><span><span class="rk rk-${r}">${r}</span> 背景${DECO_POOL.filter(x=>x.rank===r&&x.type==="bg").length}・床${DECO_POOL.filter(x=>x.rank===r&&x.type==="gd").length}${DECO_POOL.some(x=>x.rank===r&&x.type==="dc")?"・装飾"+DECO_POOL.filter(x=>x.rank===r&&x.type==="dc").length:""}</span></div>`).join("")}
       <p class="note">集めた数：${DECO_POOL.filter(x=>homeOwn()[x.type][x.k]).length}/${DECO_POOL.length}。そのランクのものがまだないときは、近いランクのものが出ます。</p></details>
   </section>
 `;
@@ -3762,7 +3763,7 @@ function openRules(){
   const secs=[
     ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>毎日22:00の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
     ["💰","コインの集め方",`<ul><li>毎日ボーナス：<b>${n(DAILY)}コイン</b>（1日1回）</li><li>15分ボーナス：<b>${HOURLY}コイン</b>（15分ごと）</li><li>${U("デイリーミッション：Cランクの魔物を500体集める（1日2回）／新しい魔物と出会う（1日2回）／冒険者に投資する（1日1回）","r")}</li><li>はじめて手に入れた魔物：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
-    ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span>。出る確率は C ${RATES.C}%／B ${RATES.B}%／A ${RATES.A}%／S ${RATES.S}%／Z ${RATES.Z}%</li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b>（${GACHA_ITEMS.map(i=>i.name+" "+i.rate+"%").join("／")}）</li></ul>`],
+    ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span></li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b></li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けた魔物は<b>2時間「現在配置不可」</b>","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（24時間で最大10レベルまで）","j")}。</li><li>${U("バトルで負けると枠が空になる（自動では補充されない）。別の魔物を配置し直そう","f")}</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+1")}</b></li><li>💀 負け：魔物のレベルが<b>${U("半分")}</b>＆<b>${U("2時間配置不可","m")}</b>、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b></li><li>🤝 引き分け：おたがい魔物のレベル半分、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
