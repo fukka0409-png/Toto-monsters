@@ -3042,7 +3042,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -4293,7 +4293,7 @@ async function sha256(t){ const b=await crypto.subtle.digest("SHA-256",new TextE
 
 /* ---------- プロフィール・ランキング ---------- */
 let RANK_TOTAL=0;
-let SIGNED=false, VIEWONLY=false, DB=null, MYID=null, profMode="rank", profTimer=null, lastPub="", RANK=null, myRank=null, rankErr=false;
+let SIGNED=false, VIEWONLY=false, DB=null, MYID=null, profMode="rank", profTimer=null, lastPub="", RANK=null, myRank=null, myRankAt=0, rankErr=false;
 
 const loginBox=msg=>`<div class="login-box"><p>${msg}</p>
   <button class="btn gold login-btn" type="button" data-login="1">ログイン / はじめて登録</button>
@@ -4307,7 +4307,7 @@ function profilePayload(){
   try{ if(typeof advSync==="function") advSync(); }catch(e){}
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
-    comment:(rankless()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"",   // 順位のつかない1時間は、だれでもひとことコメントOK day:S.lastLogin||0,
+    comment:(rankless()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
@@ -4332,6 +4332,7 @@ async function loadRanking(force){
     if(rankless()) myRank=null;   // ランク戦が始まって1時間は順位なし
     else if(i>=0) myRank=i+1;     // 一覧（上位100人）に入っていれば、一覧と同じ順位
     else { const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
+    myRankAt=gnow();   // いつ計算した順位か（前のランク戦や順位なしの時間の古い順位で判定しないように）
     try{ const col=DB.collection("profiles");   // ランキングの参加人数（まとめて数えるだけなので通信は少ない）
       RANK_TOTAL = col.count ? (await col.count().get()).data().count : Math.max(RANK_TOTAL, q.size); }catch(e){ RANK_TOTAL=Math.max(RANK_TOTAL, q.size); }
     rankErr=false;
@@ -4642,12 +4643,14 @@ async function loadInvestList(){
 const TOP3_AMNESTY_SS = 2;
 function top3Amnesty(){ if(seasonNow()!==TOP3_AMNESTY_SS || S.top3amn) return; S.top3amn=1; if(S.top3ss===TOP3_AMNESTY_SS) S.top3ok=S.top3ss; save(); }
 const top3Pardoned = () => { top3Amnesty(); return S.top3ok!=null && S.top3ok===S.top3ss; };
-const top3Locked = () => (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRank && myRank<=3);
-function markTop3(){ if(!myRank || myRank>3 || rankless() || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
+const top3Locked = () => (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRank && myRank<=3 && rankFresh() && !rankless());   // 古い順位（前のランク戦）では判定しない
+// 順位が「今のランク戦で順位がつきはじめたあと」に計算されたものか（アプリを開いたままランク戦をまたぐと、前の順位が残っていることがある）
+const rankFresh = () => { try{ return myRankAt >= seasonEnd(seasonNow()-1) + RANKLESS_MS; }catch(e){ return false; } };
+function markTop3(){ if(!myRank || myRank>3 || !rankFresh() || rankless() || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
   if(S.top3ss!==seasonNow() || top3Pardoned()){ S.top3ss=seasonNow(); S.top3ok=null; save(); if(tab==="home"&&homeMode==="invest") render(); } }
 function checkInvestVoid(){
   markTop3();
-  const L=activeInvs(); if(!L.length||!myRank||myRank>3||rankless()||seasonBusy||(S.season??0)<seasonNow()) return;
+  const L=activeInvs(); if(!L.length||!myRank||myRank>3||!rankFresh()||rankless()||seasonBusy||(S.season??0)<seasonNow()) return;
   let lose=0; L.forEach(iv=>{ const l=iv.paid?iv.amt:Math.min(iv.amt,S.coins); if(!iv.paid) S.coins-=l; iv.void=1; iv.lost=l; lose+=l;
     try{ DB&&DB.doc("invests/"+invDocId(iv)).update({void:true}).catch(()=>{}); }catch(e){} });
   save(); renderCoins();
@@ -5310,6 +5313,7 @@ async function checkSeason(){
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
+  { id:"fix-2026-10-21-top3stale", coins:1000 },   // 前のランク戦の古い順位で「3位以内」と判定されていた／プロフィールの一部が保存されていなかった
   { id:"fix-2026-10-20-giftsend", coins:1000 },   // 神からの贈り物が「通信できませんでした」で贈れないことがあった
   { id:"fix-2026-10-20-invvoid", coins:1000 },
   { id:"fix-2026-10-20-ranktick", coins:1000 },   // 上位キープボーナスが止まっていた・「あなたは◯位」のずれ
@@ -5325,6 +5329,18 @@ function fixTop3All(){
   save();
 }
 // 補正（1回だけ）：ちゅんさんの投資は、誤った「3位以内」判定で無効になっていたので、投資している状態に戻す
+// 補正（1回だけ）：yoko★さんが3位以内に入っていないのに「3位以内に入ったので投資できません」になっていた（古い順位で判定していたバグ）
+async function fixTop3Yoko4(){
+  if(S.fixT3y4||!DB||!MYID) return;
+  if(normName(myName())!==normName("yoko★")){ S.fixT3y4=1; save(); return; }
+  let s4; try{ s4=seasonNow(); }catch(e){ return; }
+  if(s4!==4){ S.fixT3y4=1; save(); return; }
+  if(S.top3ss===4){ S.top3ss=null; S.top3ok=null; }
+  const L=invFix().filter(iv=>iv.ss===4 && iv.void);
+  for(const iv of L){ if(!iv.paid && iv.lost) S.coins+=iv.lost; iv.void=0; delete iv.lost;
+    try{ await withTO(DB.doc("invests/"+invDocId(iv)).update({void:false})); }catch(e){ try{ await withTO(DB.doc("invests/"+invDocId(iv)).set({void:false},{merge:true})); }catch(e2){} } }
+  S.fixT3y4=1; save(); try{ render(); }catch(e){}
+}
 async function fixInvChun(){
   if(S.fixInvC||!DB||!MYID) return;
   if(normName(myName())!==normName("ちゅん")){ S.fixInvC=1; save(); return; }
@@ -6099,7 +6115,7 @@ function showNewMonsters(){
 const ADV_MEMO_FIRST = "魔法の欠片の特徴と融合方法を忘れないように....！";
 const ADV = {
   COUNT_SEC: 30, IDLE_SEC: 30, INV_MAX: 20, ESCAPE_SEC: 60, PER_LV: 10, CLEAR_MUL: 10,
-  LIMIT_MS: 12*60000, LV_MS: 60000, ON_FIELD: 4, ON_FIELD_BOSS: 1, FREEZE0: 2,   // 2026-10-20：12分の時間制限・1分ごとに敵Lvアップ・倒した数ランキング
+  LIMIT_MS: 12*60000, LV_MS: 60000, ON_FIELD: 4, ON_FIELD_BOSS: 1, FREEZE0: 3,   // 2026-10-20：12分の時間制限・1分ごとに敵Lvアップ・倒した数ランキング
   HP0: 10, HP_PER_LV: 12, HEAL_PER_LV: 6, ATK0: 2, ATK_PER_LV: 5, MAG_PER_LV: 10,
   MELEE_REACH: 0.2, MAGIC_RANGE: 1.5,
   WARN: 0.1, ZOOM: 0.56,   // 少し引いたカメラ（ステージが広く見える）
@@ -6121,7 +6137,7 @@ const ADV = {
   HEAL: 30, PERIOD_MS: 60*60000, PERIOD_ORIGIN: Date.parse("2026-10-19T18:17:00+09:00"), PERIOD_BASE: 1e6,
   // 2026-10-20 22:17からランキングは1時間ごと（番号を2000000からにして、前の30分ごとの記録とまざらないように）
   P2_ORIGIN: Date.parse("2026-10-20T22:17:00+09:00"), P2_BASE: 2e6, OLD_MS: 30*60000,
-  SHARD: { g:{ name:"波動魔法の欠片", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"氷魔法の欠片", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:2 },
+  SHARD: { g:{ name:"波動魔法の欠片", img:"sh_g", dmg:10, uses:10, bolt:"bolt_g", anim:"tj" }, b:{ name:"氷魔法の欠片", img:"sh_b", dmg:30, uses:5, bolt:"bolt_b", anim:"tk", freeze:3 },
     w:{ name:"風魔法の欠片", img:"sh_w", dmg:39, uses:10, bolt:"bolt_w", anim:"tf", wind:1 } },   // 風：氷の1.3倍・範囲（竜巻）。波動＋氷の融合で10回分
 };
 const ADV_FRAMES = { tf:{n:5,cx:.255,h:.69}, tm:{n:5,cx:.22,h:.86}, tj:{n:5,cx:.24,h:.76}, tk:{n:5,cx:.24,h:.78}, sd:{n:6,cx:.66,h:.69,b:.09} };
@@ -6603,7 +6619,7 @@ function openAdventure(){
 }
 const advT = t => (LANG==="en" && ADV_EN[t]) || t;
 const ADV_EN = { "風魔法の欠片":"Wind Magic Shard","範囲攻撃：竜巻で巻き上げて運ぶ（つかまっている間ダメージ）":"Area attack: a tornado lifts and carries enemies away (damage while caught)","魔物を誘惑する":"Lure monsters","💕 Lv{n}の魔物が4体おびき寄せられた！":"💕 4 Lv{n} monsters were lured in!","残り時間":"Time left","倒した数":"Defeated","体":" ","12分生き延びた！ ステージクリア！":"Survived 12 minutes! Stage clear!","12分クリア":"12-min clear","脱出してクリアしますか？（12分生き延びると報酬は10倍）":"Escape and clear now? (Surviving 12 minutes gives 10× the reward)","👑 Lv10のボスが現れはじめた！":"👑 Lv10 BOSSES are appearing!","敵Lv{n}・次のLvまで{m}秒":"Enemy Lv{n} · next Lv in {m}s","体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
-  "2秒こおらせる（同じ魔物は半分ずつ短く）":"freezes for 2s (half as long each time on the same monster)","⚠️ 動かずにいたら、Lv100の魔物がやってきた…！":"⚠️ You stood still too long... a Lv100 monster appeared!","からっぽ…":"Empty...",
+  "3秒こおらせる（同じ魔物は半分ずつ短く）":"freezes for 3s (half as long each time on the same monster)","⚠️ 動かずにいたら、Lv100の魔物がやってきた…！":"⚠️ You stood still too long... a Lv100 monster appeared!","からっぽ…":"Empty...",
   "のこり":"Left:","アイテムをえらんでね":"Pick an item","タイトル画面に戻る":"Back to title","ハート石の力で復活した！":"Revived by the power of a heart stone!",
   "ハート石を1個消費してこのまま復活する":"Use 1 heart stone to revive here","メモ":"Memo","メモは冒険が終わっても残ります（死亡するとすべて消えます）":"Your memo stays after an adventure ends (but is erased if you die)",
   "ランキング":"Rank","ランキングは、あなたの自己ベストの順位です（ほかの冒険者の順位は見えません）":"Ranks are for your personal best (other adventurers' ranks are hidden)",
@@ -6762,7 +6778,7 @@ function advWinds(dt){
   const vw=A.W/A.P;
   A.winds.forEach(w=>{ w.t+=dt;
     if(w.gt<0){ w.x+=w.dir*1.6*dt; const hit=A.enemies.some(e=>!e.dead&&!e.caught&&(e.x-w.x)*w.dir<e.w*0.5&&(e.x-w.x)*w.dir>-0.05); if(w.t>=0.1||hit){ w.gt=0; w.y=0; } return; }   // 風の玉：敵に当たるか少し進んだら竜巻に   // 風の玉
-    w.gt+=dt; const g=Math.min(1,w.gt/0.9); w.g=g;
+    w.gt+=dt; const g=Math.min(1,w.gt/0.5); w.g=g;
     w.x+=w.dir*(0.1+0.22*g)*dt;
     const hw=0.035+0.09*g, top=0.1+0.45*g;
     A.enemies.forEach(e=>{ if(e.dead||e.caught||e.extraNoWind) return;
@@ -6770,7 +6786,7 @@ function advWinds(dt){
     w.tick+=dt; if(w.tick>=0.25){ w.tick-=0.25; A.enemies.forEach(e=>{ if(e.caught===w && !e.dead) advDamageEnemy(e,w.dmg*0.2); }); }   // つかまっている間：1秒に攻撃力の80%
     A.enemies.forEach(e=>{ if(e.caught!==w || e.dead) return; e.cph+=dt*7; const r=hw*0.85;
       e.x=w.x+Math.sin(e.cph)*r; e.y=Math.min(top*0.85,(e.y||0)+dt*0.3); e.dir=Math.cos(e.cph)>0?1:-1; });
-    if(w.x<A.cam-0.15 || w.x>A.cam+vw+0.15) w.done=true; });
+    if(w.t>=1.5 || w.x<A.cam-0.15 || w.x>A.cam+vw+0.15) w.done=true; });   // 竜巻は1.5秒で消える（画面の外に出たらその時点で）
   A.winds.forEach(w=>{ if(!w.done) return; A.enemies.forEach(e=>{ if(e.caught===w){ e.caught=null; e.vy=0; if(!(e.y>0)) e.y=0.01; } }); });
   A.winds=A.winds.filter(w=>!w.done);
 }
@@ -6994,7 +7010,7 @@ function advBagRefresh(){
       <button class="ab-memo" type="button" id="abMemo">📜<br>${advT2("メモ")}</button></div>
       <button class="ab-fbtn" type="button" id="abFuse" ${a&&b?"":"disabled"}>${advT2("融合する")}</button></div>
     <div class="ab-bottom"><div class="ab-grid">${Array.from({length:ADV.INV_MAX},(_,i)=>slot(i)).join("")}</div>
-      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):sel.k==="heal"?advT2("使うと体力が30回復する"):`${advT2("攻撃力")} ${advShardDmg(sel.k)}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("2秒こおらせる（同じ魔物は半分ずつ短く）")}`:""}${ADV.SHARD[sel.k].wind?` ・ ${advT2("範囲攻撃：竜巻で巻き上げて運ぶ（つかまっている間ダメージ）")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
+      <div class="ab-side"><div class="ab-info">${sel?`<b>${advT2(advItemName(sel))}</b><small>${sel.k==="key"?advT2("虹の宝箱を開けられる"):sel.k==="heal"?advT2("使うと体力が30回復する"):`${advT2("攻撃力")} ${advShardDmg(sel.k)}${ADV.SHARD[sel.k].freeze?` ・ ${advT2("3秒こおらせる（同じ魔物は半分ずつ短く）")}`:""}${ADV.SHARD[sel.k].wind?` ・ ${advT2("範囲攻撃：竜巻で巻き上げて運ぶ（つかまっている間ダメージ）")}`:""} ・ ${advT2("のこり")} ${sel.u}${advT2("回")}`}</small>`:`<small>${advT2("アイテムをえらんでね")}</small>`}</div>
         <button class="ab-act use" type="button" id="abUse" ${sel&&!advIsShard(sel)?"":"disabled"}>${advT2("使う")}</button>
         <button class="ab-act eq" type="button" id="abEq" ${advIsShard(sel)?"":"disabled"}>${A.sel>=0&&A.eq===A.sel?advT2("外す"):advT2("装備する")}</button>
         <button class="ab-act drop" type="button" id="abDrop" ${sel?"":"disabled"}>${advT2("捨てる")}</button>
