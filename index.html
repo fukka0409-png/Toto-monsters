@@ -586,6 +586,7 @@ html[lang=en] .ttl-upd span{display:flex}
 .ttl-pick .btn{font-size:18px;padding:14px}
 body.ttl-open .ttl-top{z-index:130!important}
 /* ===== 防衛作戦（放置ゲーム） ===== */
+.gp-tbl{display:grid;gap:3px;margin:0 0 10px;font-size:13px}.gp-tbl div{display:flex;justify-content:space-between;padding:4px 10px;border-radius:8px;background:#ffffff10}.gp-tbl b{color:var(--staff)}
 .ttl-def{position:absolute;left:358px;top:890px;width:340px;height:112px;padding:0;border:0;background:none;cursor:pointer}
 .ttl-def img{position:absolute;inset:0;width:100%;height:100%}
 html .ttl .ttl-def span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:900 46px/1 var(--f-body);color:#3a1a08;white-space:nowrap}
@@ -934,6 +935,13 @@ html[lang=en] .ttl .ttl-adv span{font-size:32px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"魔物の配置は自由です。ただし枠が空のあいだは、30分ごとに冒険者レベルが1ずつ下がります。配置していると15分ごとにコインがもらえます（冒険者Lv10から）。": "Placing a monster is optional. But while your slot is empty, your Adventurer Level drops by 1 every 30 minutes. While a monster is placed, you get coins every 15 minutes (from Adventurer Lv10).",
+"（チェックポイント関係なし）": " (checkpoints don't apply)",
+"🪙 配置していると": "🪙 While a monster is placed, you get ",
+"15分ごとにコイン": "coins every 15 minutes",
+"（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv{0}未満はもらえない": " (by the monster's Lv: 1–10: 1000 / 11–30: 700 / 31–70: 500 / 71–100: 300 / 101–500: 50 / 501–999: 10 / 1000+: none). 🔰 Not for Adventurer Lv under {0}",
+"枠が空で30分ごと−1": "Empty slot: −1 every 30 min",
+"30分ごとに冒険者レベルが1下がります": "your Adventurer Level drops by 1 every 30 minutes",
 "💀 負けた魔物はレベルが": "💀 A monster that loses has its level ",
 "区切りまで下がる": "drop to the previous milestone",
 "（1桁は−1、22→20、216→200など）。配置はそのままで、すぐ使えます。": " (1 digit: −1, 22→20, 216→200, etc.). It stays placed and can be used right away.",
@@ -2825,8 +2833,8 @@ function fixGuard(){ fixDownTime();
   S.attacks=S.attacks||{}; S.lastBattle=S.lastBattle||0;
 }
 const guardUnit=()=>S.guard?S.units.find(z=>z.u===S.guard)||null:null;
-function setGuard(u){ S.guard=u; S.decayAt=0; save(); }
-function clearGuard(){ S.guard=null; S.decayAt=gnow(); }
+function setGuard(u){ try{ guardPay(); }catch(e){} S.guard=u; S.decayAt=0; S.gpT=gnow(); save(); }
+function clearGuard(){ try{ guardPay(); }catch(e){} S.guard=null; S.decayAt=gnow(); S.gpT=null; }
 const WIN_BASE = 500, DOWN_MS = 2*HOUR_MS;   // 勝利報酬：500コイン＋相手の冒険者Lv分のコイン、冒険者Lv+1 ／ 負けた魔物は2時間休み
 const isDown = x => false;   // 2026-10-21：負けた魔物の配置制限はなし（すぐ配置できる）
 // 2026-10-17：配置不可を24時間→2時間に短縮。いま配置不可の魔物も、負けてから2時間たっていれば解除
@@ -2836,7 +2844,8 @@ function fixDownTime(){ if(S.downFix) return; (S.units||[]).forEach(x=>{ if(x.do
 function lvDrop(L){ L=Math.max(1,Math.floor(L||1)); if(L<=1) return 1; const n=L-1, u=Math.pow(10,String(n).length-1); return Math.max(1,Math.floor(n/u)*u); }
 function defeatUnit(u){
   const x=S.units.find(z=>z.u===u); if(!x) return {x:null};
-  x.l=lvDrop(x.l); x.e=0; delete x.down;   // 配置はそのまま（すぐ使える）
+  x.l=lvDrop(x.l); x.e=0; delete x.down;
+  if(S.guard===u){ clearGuard(); S.lostNote=1; }   // 負けた魔物はBOXに戻る（すぐ配置し直せる）→ お知らせ②
   return {x, repl:null};
 }
 function winReward(oppLv){ const c=WIN_BASE+Math.max(0,Math.floor(oppLv||0)); S.coins+=c; S.plv+=WIN_LV; bumpMaxLv(); return c; }
@@ -2851,12 +2860,48 @@ function addRecord(kind){ S.stats.win=S.stats.win||0; S.stats.lose=S.stats.lose|
 const winRate=(w,l,d)=>{ const t=(w||0)+(l||0)+(d||0); return t?Math.round((w||0)/t*1000)/10+"%":"―"; };
 function dropPlayerLv(n,useCp=true){ const b=S.plv, f=useCp?cpFloor():1; S.plv=Math.max(1,Math.min(b,Math.max(f,S.plv-n))); if(S.plv<b) S.pexp=0; return b-S.plv; }   // バトル：チェックポイントより下には下がらない
 // （今は使っていない）配置できる魔物の中からランダムで自動配置する関数。配置は任意なので呼んでいない
-const EMPTY_STEP_MS = 30*60*1000, EMPTY_MAX_DAY = 10;   // 枠が空のあいだ30分ごとに1レベル下がる（24時間で最大10レベル）
-const EMPTY_TXT = "30分ごとに冒険者レベルが1下がります（24時間で最大10レベル）";
+const EMPTY_STEP_MS = 30*60*1000, EMPTY_MAX_DAY = 48;   // 2026-10-21：枠が空のあいだ30分ごとに1レベル下がる（1日の上限なし・チェックポイント関係なし）
+const EMPTY_TXT = "30分ごとに冒険者レベルが1下がります";
 // ほかの人の表示用：空のまま ms 経ったときに下がるレベルの合計
-const emptyDropFor = ms => { const ticks=Math.floor(ms/EMPTY_STEP_MS), days=Math.floor(ms/DAY_MS_);
-  return Math.min(ticks, days*EMPTY_MAX_DAY + Math.min(EMPTY_MAX_DAY, ticks-days*48)); };
+const emptyDropFor = ms => Math.floor(ms/EMPTY_STEP_MS);   // 1日の上限なし
 const DAY_MS_ = 24*60*60*1000;
+/* ---------- 配置ボーナス：枠に魔物を配置していると15分ごとにコイン（🔰はなし） ---------- */
+const GUARD_PAY_MS = 15*60000;
+const guardRate = L => L<=10?1000 : L<=30?700 : L<=70?500 : L<=100?300 : L<=500?50 : L<=999?10 : 0;
+const GUARD_TABLE = [["1〜10",1000],["11〜30",700],["31〜70",500],["71〜100",300],["101〜500",50],["501〜999",10],["1000〜",0]];
+function guardPay(){
+  const g=guardUnit(); if(!g || (S.plv||1)<SAFE_LV){ S.gpT=null; return 0; }
+  const now=gnow(); if(!S.gpT){ S.gpT=now; return 0; }
+  const n=Math.floor((now-S.gpT)/GUARD_PAY_MS); if(n<=0) return 0;
+  S.gpT+=n*GUARD_PAY_MS; const c=n*guardRate(g.l); if(!c){ save(); return 0; }
+  S.coins+=c; save(); try{ renderCoins(); }catch(e){}
+  setTimeout(()=>{ try{ toast((LANG==="en"?"🛡 Placement bonus +":"🛡 配置ボーナス +")+c.toLocaleString()+(LANG==="en"?" coins":"コイン")+(n>1?`（15${LANG==="en"?"min":"分"}×${n}）`:"")); }catch(e){} },800);
+  return c; }
+setInterval(()=>{ try{ guardPay(); }catch(e){} },30000);
+// お知らせ：①枠が空（ログインのたび）②負けてBOXに戻った ③🔰には配置ボーナスへの道案内（ログインのたび）
+function guardTableHtml(){ return `<div class="gp-tbl">${GUARD_TABLE.map(([r,c])=>`<div><span>Lv${r}</span><b>${c?c.toLocaleString()+(LANG==="en"?" coins":"コイン"):(LANG==="en"?"none":"なし")}</b></div>`).join("")}</div>`; }
+function guardNote(kind){
+  const L=LANG==="en", bg=document.createElement("div"); bg.className="sheet-bg center gp-note"+(document.querySelector("#title:not([hidden])")?" ttl-top":""); bg.style.zIndex=136;
+  const head = kind==="lost" ? (L?"Your placed monster lost a battle and was sent back to the BOX. Place one again!":"枠に配置した魔物が、勝負に負けてBOXに戻されたので、また配置し直しましょう！")
+    : kind==="new" ? (L?`🔰 Raise your Adventurer Level to ${SAFE_LV} and place a monster to earn coins every 15 minutes!`:`🔰 冒険者レベルを${SAFE_LV}まで上げて魔物を配置すれば、15分ごとにコインがもらえるようになります！`)
+    : (L?"Your slot is empty! Just place a monster to earn coins!":"枠が空です！魔物を枠に配置するだけでコインがゲットできます！");
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">${kind==="lost"?"💀":kind==="new"?"🔰":"🛡"}</div><p>${head}</p>
+    <div class="note" style="margin:0 0 6px;text-align:center">${L?"Coins every 15 minutes by the placed monster's level":"配置した魔物のレベルごとに、15分ごとにもらえるコイン"}</div>${guardTableHtml()}
+    ${kind==="new"?"":`<button class="btn gold" type="button" id="gpGo">${L?"Place a monster":"魔物を配置する"}</button>`}<button class="btn ghost" type="button" id="gpX">${L?"Close":"閉じる"}</button></div>`;
+  bg.setAttribute("translate","no"); document.body.appendChild(bg);
+  bg.querySelector("#gpX").onclick=()=>bg.remove();
+  const go=bg.querySelector("#gpGo"); if(go) go.onclick=()=>{ bg.remove(); try{ if(document.querySelector("#title:not([hidden])")) document.getElementById("ttlStart").click(); tab="box"; boxMode="units"; render(); setTimeout(()=>toast(L?"Tap a monster → Place on Profile":"魔物をタップ →「プロフィールに配置する」"),600); }catch(e){} };
+}
+let gpLoginDone=false;
+function guardNudge(){
+  if(document.querySelector(".sheet-bg.center,.reveal,.rules-stage,#adv,#dfo,.adv-intro")) return;   // ほかのお知らせが出ている間は待つ
+  if(S.lostNote){ S.lostNote=0; save(); guardNote("lost"); return; }
+  if(gpLoginDone) return;
+  if(!SIGNED||!MYID) return;
+  gpLoginDone=true;
+  if((S.plv||1)<SAFE_LV) guardNote("new"); else if(!guardUnit()) guardNote("empty");
+}
+setInterval(()=>{ try{ guardNudge(); }catch(e){} },3000);
 function autoGuard(){
   if(guardUnit()) return null;
   const pool=S.units.filter(z=>!isDown(z)); if(!pool.length) return null;
@@ -3057,7 +3102,7 @@ function openNews(force){
       <p>・配置していた魔物のレベルが区切りまで下がる（1桁は−1、2桁は10の区切り、3桁は100の区切り…）。配置はそのまま<br>・冒険者レベルが2下がります（一度届いた10刻みのチェックポイントより下には、そのランク戦の間は下がりません）</p>
       <p>攻めた側でも守った側でも、負けたら同じです。</p>
       <h4>⏰ 配置しないと…</h4>
-      <p>魔物の配置は自由です。ただし枠が空のあいだは、30分ごとに冒険者レベルが1ずつ下がります（24時間で最大10レベル）。</p>
+      <p>魔物の配置は自由です。ただし枠が空のあいだは、30分ごとに冒険者レベルが1ずつ下がります。配置していると15分ごとにコインがもらえます（冒険者Lv10から）。</p>
       <p class="news-end">強い魔物で守るか、それとも攻めるか…あなた次第！</p>
     </div>
     <button class="btn gold" id="nwOk" type="button">とじる</button>
@@ -3805,13 +3850,13 @@ function openRules(){
     ["💰","コインの集め方",`<ul><li>毎日ボーナス：<b>${n(DAILY)}コイン</b>（1日1回）</li><li>15分ボーナス：<b>${HOURLY}コイン</b>（15分ごと）</li><li>${U("デイリーミッション：Cランクの魔物を500体集める（1日2回）／新しい魔物と出会う（1日2回）／冒険者に投資する（1日1回）","r")}</li><li>はじめて手に入れた魔物：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
     ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span></li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b></li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
-    ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（24時間で最大10レベルまで）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li></ul>`],
+    ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+"+WIN_LV)}</b></li><li>💀 負け：魔物のレベルが<b>${U("区切りまで下がる")}</b>（1桁は−1／22→20／216→200）、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b>。${U("一度届いた10刻みのチェックポイント（10・20・30…）より下には、そのランク戦の間は下がらない")}</li><li>🤝 引き分け：おたがい魔物のレベルが区切りまで下がる、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}（チェックポイントより下には下がらない）</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（22:00のランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>${SELL.L.toLocaleString()}コイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
     ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("毎日<b>22:00（日本時間）</b>に終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前＝12:00まで</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>10%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
-    ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+"+WIN_LV)}</li><li>${U(`📖 魔物のコンプ率が<b>100%</b>（限定ランクをのぞく全種）になると、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが${COMP_EXP_MUL}倍</b>`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}（バトル・爆弾ではチェックポイントより下に下がらない）／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（24時間で最大10）","j")}</li></ul>`],
+    ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+"+WIN_LV)}</li><li>${U(`📖 魔物のコンプ率が<b>100%</b>（限定ランクをのぞく全種）になると、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが${COMP_EXP_MUL}倍</b>`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}（バトル・爆弾ではチェックポイントより下に下がらない）／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（チェックポイント関係なし）","j")}</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li>${U("<li>💰 Sランクの魔物を売却すると、コインに加えて<b>冒険者Lv+1</b>、Zランクは<b>冒険者Lv+5</b>上がる（A・B・Cランクはコインのみ）。</li>","x")}<li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
   const el=document.createElement("div"); el.className="rules-stage"+(fresh?" fresh":""); el.setAttribute("role","dialog"); el.setAttribute("aria-label","最新ルール");
