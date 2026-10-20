@@ -2810,7 +2810,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); checkApology(); setTimeout(showInvestIntro, 900);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -5063,6 +5063,12 @@ const APOLOGIES = [
 function fixTop3Yoko(){
   if(S.fixT3y) return; S.fixT3y=1;
   if(normName(myName())===normName("yoko★") && S.top3ss===3){ S.top3ss=null; S.top3ok=null; try{ render(); }catch(e){} }
+  save();
+}
+// 補正（1回だけ）：yoko★さんの最高順位を4位にする（運営の指定。前の「3位」補正のあとに動く）
+function fixBest4Yoko(){
+  if(S.fixB4y) return; S.fixB4y=1;
+  if(normName(myName())===normName("yoko★")){ S.best=4; S.firsts=0; S.comp1019b=1; S.comp1019e=1; queueProfile(true); try{ render(); }catch(e){} }
   save();
 }
 function checkApology(){
