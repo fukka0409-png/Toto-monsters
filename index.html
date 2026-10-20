@@ -777,6 +777,8 @@ html[lang=en] .ttl .ttl-adv span{font-size:38px}
 .adv-prog.boss{background:#8a1020dd;border-color:#ffd75e;color:#ffe16a}
 .adv-esc{position:absolute;right:8px;top:calc(max(8px,env(safe-area-inset-top,0px)) + 96px);z-index:3;padding:7px 12px;border:3px solid #1f3a12;border-radius:999px;background:linear-gradient(#7fd05a,#3f8a25);color:#fff;font:900 12.5px/1 var(--f-body);text-shadow:0 1px 0 #1f3a12;box-shadow:0 3px 0 #0006;cursor:pointer}
 .adv-esc[hidden]{display:none}
+.adv-lure{position:absolute;right:8px;top:calc(max(8px,env(safe-area-inset-top,0px)) + 140px);z-index:3;padding:8px 12px;border:3px solid #6a1040;border-radius:999px;background:linear-gradient(#ff9bd0,#e0458f);color:#fff;font:900 13px/1 var(--f-body);text-shadow:0 1px 0 #0006;box-shadow:0 3px 0 #0006;cursor:pointer}
+.adv-lure:active{transform:translateY(2px)}
 .adv-esc:active{transform:translateY(2px)}
 .adv-sheet.bagbg{inset:0;background:#0006;z-index:4}
 .adv-sheet.bag{z-index:5}
@@ -6002,7 +6004,7 @@ const ADV = {
   LIMIT_MS: 12*60000, LV_MS: 60000, ON_FIELD: 4, ON_FIELD_BOSS: 1, FREEZE0: 2,   // 2026-10-20：12分の時間制限・1分ごとに敵Lvアップ・倒した数ランキング
   HP0: 10, HP_PER_LV: 12, HEAL_PER_LV: 6, ATK0: 2, ATK_PER_LV: 5, MAG_PER_LV: 10,
   MELEE_REACH: 0.2, MAGIC_RANGE: 1.5,
-  WARN: 0.1, ZOOM: 0.68,
+  WARN: 0.1, ZOOM: 0.56,   // 少し引いたカメラ（ステージが広く見える）
   CHEST_CHANCE: 0.45, CHUNK: 2.6,
   // 敵のLvごとの強さ（体力・攻撃力・速さ・同時に出てくる数）。Lv10はボス（Lv9のおよそ3倍）
   SL: [null,
@@ -6481,6 +6483,7 @@ function openAdventure(){
       <div class="ap-equip" id="apEquip"><small>${advT("装備")}</small><div class="ap-eqslot" id="apEqSlot"></div></div></div>
     <div class="adv-prog" id="advProg"></div>
     <button class="adv-esc" id="advEsc" type="button" hidden>🏃 ${advT("脱出してクリアする")}</button>
+    <button class="adv-lure" id="advLure" type="button">💕 ${advT("魔物を誘惑する")}</button>
     <div class="adv-pad">
       <button class="ap-btn ap-jump" id="apJump" type="button">${advT("ジャンプ")}</button>
       <div class="ap-stick" id="apStick"><div class="ap-knob" id="apKnob"></div></div>
@@ -6491,13 +6494,14 @@ function openAdventure(){
   </div>`;
   document.body.appendChild(el);
   el.querySelector("#advEsc").onclick=()=>advEscapeAsk();
+  el.querySelector("#advLure").onclick=e=>{ e.stopPropagation(); advLure(); };
   advStart();
   advBindInput(el);
   advResize(); addEventListener("resize",advResize); window.visualViewport?.addEventListener("resize",advFixView);
   cancelAnimationFrame(advRaf); A.last=performance.now(); advRaf=requestAnimationFrame(advLoop);
 }
 const advT = t => (LANG==="en" && ADV_EN[t]) || t;
-const ADV_EN = { "残り時間":"Time left","倒した数":"Defeated","体":" ","12分生き延びた！ ステージクリア！":"Survived 12 minutes! Stage clear!","12分クリア":"12-min clear","脱出してクリアしますか？（12分生き延びると報酬は10倍）":"Escape and clear now? (Surviving 12 minutes gives 10× the reward)","👑 Lv10のボスが現れはじめた！":"👑 Lv10 BOSSES are appearing!","敵Lv{n}・次のLvまで{m}秒":"Enemy Lv{n} · next Lv in {m}s","体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
+const ADV_EN = { "魔物を誘惑する":"Lure monsters","💕 Lv{n}の魔物が4体おびき寄せられた！":"💕 4 Lv{n} monsters were lured in!","残り時間":"Time left","倒した数":"Defeated","体":" ","12分生き延びた！ ステージクリア！":"Survived 12 minutes! Stage clear!","12分クリア":"12-min clear","脱出してクリアしますか？（12分生き延びると報酬は10倍）":"Escape and clear now? (Surviving 12 minutes gives 10× the reward)","👑 Lv10のボスが現れはじめた！":"👑 Lv10 BOSSES are appearing!","敵Lv{n}・次のLvまで{m}秒":"Enemy Lv{n} · next Lv in {m}s","体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
   "2秒こおらせる（同じ魔物は半分ずつ短く）":"freezes for 2s (half as long each time on the same monster)","⚠️ 動かずにいたら、Lv100の魔物がやってきた…！":"⚠️ You stood still too long... a Lv100 monster appeared!","からっぽ…":"Empty...",
   "のこり":"Left:","アイテムをえらんでね":"Pick an item","タイトル画面に戻る":"Back to title","ハート石の力で復活した！":"Revived by the power of a heart stone!",
   "ハート石を1個消費してこのまま復活する":"Use 1 heart stone to revive here","メモ":"Memo","メモは冒険が終わっても残ります（死亡するとすべて消えます）":"Your memo stays after an adventure ends (but is erased if you die)",
@@ -6615,7 +6619,7 @@ function advStep(dt){
   if(lvNow!==A.stageLv){ A.stageLv=lvNow; A.nextSpawn=0.6; advMsg(lvNow>=10?advT2("👑 Lv10のボスが現れはじめた！"):advT2("Lv{n}の魔物が現れはじめた！").replace("{n}",lvNow)); }
   const lv=A.stageLv, keep=lv>=10?ADV.ON_FIELD_BOSS:ADV.ON_FIELD;
   A.nextSpawn-=dt;
-  if(A.nextSpawn<=0){ const alive=A.enemies.filter(e=>!e.dead&&!e.extra&&e.lv===lv).length;
+  if(A.nextSpawn<=0){ const alive=A.enemies.filter(e=>!e.dead&&!e.extra&&!e.lure&&e.lv===lv).length;
     if(alive<keep){ advSpawn(lv); A.spawned++; }
     A.nextSpawn=0.35+Math.random()*0.5; }
   // 12分たったら終わり（生き延びたらステージクリア）
@@ -6648,11 +6652,15 @@ function advMsg(t){ const m=document.getElementById("advMsg"); if(!m) return; m.
 function advPop(x,y,txt,col){ A.pops.push({x,y,txt,col:col||"#fff",t:0}); }
 
 /* ---------- 敵 ---------- */
+// 魔物を誘惑する：コインなしで何回でも。押した時点のLvの魔物が、画面に追加で4体出てくる
+function advLure(){ if(!A||A.dead||A.over||advPaused()) return; const lv=A.stageLv;
+  for(let i=0;i<4;i++){ advSpawn(lv,"lure"); const e=A.enemies[A.enemies.length-1]; e.x+=i*(e.w*0.9); }
+  try{ SFX.tap(); }catch(e){} advMsg(advT2("💕 Lv{n}の魔物が4体おびき寄せられた！").replace("{n}",lv)); }
 function advSpawn(lv,kind){
   const viewW=A.W/A.P, side=1;   // 魔物は基本、右からやってくる
   const d=ADV.SL[lv], big=lv>=10, hw=(big?0.32:0.17)*0.5+0.02, x = side<0 ? A.cam-hw : A.cam+viewW+hw;   // 画面のすぐ外から
   A.enemies.push({ x, lv, hp:d.hp, max:d.hp, atk:d.atk, spd:d.spd, warn:0, zone:null,
-    w:big?0.32:0.17, dir:-side, cd:0.8, y:0, vy:0, off:0, st:null, frozen:0, dead:false, deadT:0, boss:big, extra:kind==="idle", hurt:0 });
+    w:big?0.32:0.17, dir:-side, cd:0.8, y:0, vy:0, off:0, st:null, frozen:0, dead:false, deadT:0, boss:big, extra:kind==="idle", lure:kind==="lure", hurt:0 });
 }
 const advEH = e => e.boss?0.26:0.12;   // 敵の背の高さ
 function advEnemy(e,dt){
