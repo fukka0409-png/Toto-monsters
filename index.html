@@ -3079,7 +3079,12 @@ function myTrend(){
   return up&&dn?"mix":up?"up":dn?"down":"";
 }
 const TREND_ICON = { up:'<span class="tr up" title="上昇中">▲</span>', down:'<span class="tr down" title="下降中">▼</span>', mix:'<span class="tr mix" title="上がったり下がったり">▶</span>' };
+// 所持コインの上限：1億コイン（こえた分はもらえない）
+const COIN_MAX = 100000000;
+let coinCapToastAt=0;
+function capCoins(){ if(S.coins>COIN_MAX){ S.coins=COIN_MAX; if(Date.now()-coinCapToastAt>60000){ coinCapToastAt=Date.now(); setTimeout(()=>{ try{ toast(LANG==="en"?"💰 You've reached the coin limit (100,000,000). Extra coins can't be kept.":"💰 所持コインの上限（1億コイン）に達しました。こえた分は受け取れません"); }catch(e){} },300); } } }
 function save(){
+  capCoins();
   trackLv();
   S.updated = gnow(); queueProfile();
   try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
@@ -3793,6 +3798,7 @@ function updateUnitWarn(){
 }
 document.addEventListener("click",e=>{ if(e.target.closest("#unitWarnX")){ warnOpen=false; document.getElementById("unitWarn").hidden=true; } });
 function renderCoins(){
+  capCoins();
   updateUnitWarn();
   $("#coins").textContent=S.coins.toLocaleString();
   const ready = false;   // 毎日・15分ボーナスは終了
