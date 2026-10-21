@@ -595,6 +595,7 @@ html[lang=en] .ttl-upd span{display:flex}
 .ttl-pick .btn{font-size:18px;padding:14px}
 body.ttl-open .ttl-top{z-index:130!important}
 /* ===== 防衛作戦（放置ゲーム） ===== */
+.ubw-spell{margin:10px auto 6px;max-width:330px;padding:10px 12px;border-radius:12px;background:#ffffff12;border:2px dashed #ffd75e88;font-size:13px;line-height:1.7;text-align:center}.ubw-spell code{display:inline-block;margin:2px 0;padding:2px 10px;border-radius:8px;background:#000a;color:#ffd75e;font:900 15px/1.4 var(--f-body)}
 .gp-tbl{display:grid;gap:3px;margin:0 0 10px;font-size:13px}.gp-tbl div{display:flex;justify-content:space-between;padding:4px 10px;border-radius:8px;background:#ffffff10}.gp-tbl b{color:var(--staff)}
 .ttl-def{position:absolute;left:358px;top:890px;width:340px;height:112px;padding:0;border:0;background:none;cursor:pointer}
 .ttl-def img{position:absolute;inset:0;width:100%;height:100%}
@@ -3784,12 +3785,28 @@ function bigUnitWarn(){ const n=S.units.length;
   S.ubw=gnow(); save();
   const L=LANG==="en", el=document.createElement("div"); el.className="reveal ubw"; el.setAttribute("translate","no");
   el.innerHTML=`<div style="font-size:64px;line-height:1">⚠️</div><h3 style="color:#ffd75e">${L?`You have ${n.toLocaleString()} monsters!`:`魔物が${n.toLocaleString()}体になりました！`}</h3>
-    <p class="note" style="text-align:center;max-width:330px;font-size:15px;line-height:1.7">${L?"If you go over <b>1,000 monsters</b>, the game will get heavy and may stop working.<br>Sell or fuse monsters to keep the number down.":"<b>1000体をこえると、ゲームが重くなって</b>動かなくなることがあります。<br>売却や合成で、数を減らしてね。"}</p>
+    <p class="note" style="text-align:center;max-width:330px;font-size:15px;line-height:1.7">${L?"If you go over <b>1,000 monsters</b>, the game will get heavy and may stop working.<br>Sell or fuse monsters to keep the number down.":"<b>1000体をこえると、ゲームが重くなって</b>動かなくなることがあります。<br>売却や合成で、数を減らしてね。"}</p>${byeSpellHtml(L)}
     <button class="btn gold" type="button" id="ubwBox">${L?"Go to BOX":"BOXで整理する"}</button><button class="btn ghost" type="button" id="ubwX">${L?"Close":"閉じる"}</button>`;
   document.body.appendChild(el);
   el.querySelector("#ubwX").onclick=()=>el.remove();
   el.querySelector("#ubwBox").onclick=()=>{ el.remove(); tab="box"; boxMode="units"; render(); };
 }
+// 呪文でまとめて売却する方法（お知らせに表示）
+const byeSpellHtml = L => L
+  ? `<div class="ubw-spell"><b>✨ Sell many at once with a spell</b><br>Go to <b>Presents / Missions → Spells</b> and enter<br><code>Cランクさようなら</code><br>to sell all C-rank monsters at once (works for B / A / S / Z too, e.g. <code>Bランクさようなら</code>). Locked and placed monsters are kept.</div>`
+  : `<div class="ubw-spell"><b>✨ 呪文でまとめて売却できます</b><br>「プレゼント／ミッション」の<b>呪文</b>に<br><code>Cランクさようなら</code><br>ととなえると、Cランクの魔物をまとめて売却できます（<code>Bランクさようなら</code>のように、B・A・S・Zでも使えます）。鍵をかけた魔物と配置中の魔物は残ります。</div>`;
+// 魔物が800体以上の冒険者には、ゲームを開くたびにタイトル画面で注意する
+let ttlUnitWarnDone=false;
+function titleUnitWarn(){
+  if(ttlUnitWarnDone) return; const T=document.querySelector("#title:not([hidden])"); if(!T) return;
+  const n=(S.units||[]).length; if(n<UNIT_BIG_WARN) return; ttlUnitWarnDone=true;
+  const L=LANG==="en", bg=document.createElement("div"); bg.className="sheet-bg center ttl-top ubw-ttl"; bg.style.zIndex=138; bg.setAttribute("translate","no");
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚠️</div><p>${L?`You have ${n.toLocaleString()} monsters in your BOX!`:`BOXに魔物が${n.toLocaleString()}体います！`}</p>
+    <div class="note" style="margin:0;text-align:center;line-height:1.7">${L?"Over <b>1,000 monsters</b>, the game gets heavy and may stop working. Please sell or fuse to reduce the number.":"<b>1000体をこえると、ゲームが重くなって</b>動かなくなることがあります。売却や合成で、数を減らしてね。"}</div>
+    ${byeSpellHtml(L)}<button class="btn gold" type="button" id="uwOk">OK</button></div>`;
+  document.body.appendChild(bg); bg.querySelector("#uwOk").onclick=()=>bg.remove(); bg.onclick=e=>{ if(e.target===bg) bg.remove(); };
+}
+setTimeout(()=>{ try{ titleUnitWarn(); }catch(e){} },2500); setTimeout(()=>{ try{ titleUnitWarn(); }catch(e){} },7000);
 function updateUnitWarn(){
   try{ bigUnitWarn(); }catch(e){}
   const w=document.getElementById("unitWarn"); if(!w) return;
