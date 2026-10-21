@@ -950,22 +950,6 @@ html[lang=en] .ttl .ttl-adv span{font-size:32px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
-"⏱ 上位キープボーナスタイマー": "⏱ Top Rank Bonus timer",
-"⏳ ランク戦タイマー": "⏳ Ranked-match timer",
-"投資受付タイマー": "Investment timer",
-"🕐 順位なしタイマー": "🕐 No-rank timer",
-"ランキングタイマー": "Ranking timer",
-"投資受付タイマーが終了すると受付終了": "investing closes when the investment timer ends",
-"・投資受付タイマーが終了すると、そのランク戦の受付は終了。新しいランク戦が始まると再開": "• When the investment timer ends, investing closes for that ranked match. It reopens when a new ranked match starts",
-"投資受付タイマーが終了したので、今回のランク戦の受付は終了しました": "The investment timer has ended, so investing is closed for this ranked match",
-"ランク戦タイマー（終了すると新しいランク戦）": "Ranked-match timer (a new match starts when it ends)",
-"・投資受付タイマーが終了すると、受付は終了します": "• When the investment timer ends, investing closes",
-"このタイマーが終了すると順位がつきます。それまでは順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます": "Ranks appear when this timer ends. Until then there are no ranks (and no top-rank bonus). Meanwhile, anyone can invest in adventurers",
-"タイマーが終了するとランク戦が終わり、結果が更新されます。ランキングは、ログインしていない人の分も最新の状態に更新されます{0}": "When the timer ends, the ranked match ends and results are updated. The ranking is kept up to date with everyone's latest state, including players who aren't logged in{0}",
-"タイマーが終了すると集計されます。次にアプリを開いたときに受け取れます。": "Tallied when the timer ends. Claim them the next time you open the app.",
-"ランク戦タイマーが終了するとランキングが集計されて、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。": "When the ranked-match timer ends, the ranking is tallied and you get prizes based on your rank! Check the timer on the Ranking page.",
-"ランク戦タイマーが終了すると更新されます": "Updates when the ranked-match timer ends",
-"が終了すると、ランク戦が終わって結果が更新される": " ends → the ranked match ends and results are updated",
 "ランク戦タイマーが0になるとランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。": "When the ranked-match timer hits 0, the ranking is tallied and you get prizes based on your rank! Check the time left on the Ranking page.",
 "ランク戦の切り替わり（ランク戦タイマーが0になったとき）にリセット": "Resets when the ranked match switches (when the ranked-match timer hits 0)",
 "ランク戦タイマーが0になると終了。ランキングは、ログインしていない人の分も最新の状態に更新されます{0}": "Ends when the ranked-match timer hits 0. The ranking is kept up to date with everyone's latest state, including players who aren't logged in{0}",
@@ -3125,7 +3109,7 @@ function openNews(force){
       <p>🏁 冒険者レベルは負けると−2。でも10刻みのチェックポイント（10・20・30…）に一度届いたら、そのランク戦の間はそれより下がりません。</p>
       <p>⚔️ 相手の配置魔物が変われば、同じ相手とまた戦えます。</p>
       <h4 style="margin-top:18px">🏆 毎日のランク戦</h4>
-      <p>ランク戦タイマーが終了するとランキングが集計されて、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
+      <p>ランク戦タイマーが0になるとランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
       <p>🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個</p>
       <p>⚔️ 勝率でも景品！（5戦以上）<br>勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個</p>
       <p>集計のあと、冒険者レベルと勝率はリセット。プロフィールには今までの最高順位が残ります。</p>
@@ -3737,7 +3721,7 @@ function renderSide(){
       ${FR.reqIn.length?`<p class="note" style="margin:0 0 6px">📨 フレンド申請が${FR.reqIn.length}件届いています</p>`:""}
       ${L.length?`<ol class="sd-list">${L.map(f=>{ const p=FR.prof[f.id]||{}; return `<li class="sd-row" data-sdf="${esc(f.id)}"><span class="no">💞</span>${avatarImg(p.icon,34)}<span class="nm">${uname(p.name)}</span><span class="lv" translate="no">${frUnread(f)?'<span class="sd-new">💬</span>':intimacy(f.id)}</span></li>`; }).join("")}</ol>`:`<p class="note" style="margin:0">${FR.loaded?"まだフレンドがいません":"読み込み中…"}</p>`}</section>`;
   }
-  const t=`<section class="sd-box"><div class="sd-h"><b>⏳ ランク戦タイマー</b></div><div style="font-family:var(--f-pix);font-size:26px;font-weight:900;text-align:center" id="sdCd" translate="no">${fmtDays(seasonEnd(seasonNow())-gnow())}</div></section>`;
+  const t=`<section class="sd-box"><div class="sd-h"><b>⏳ ランク戦終了まで</b></div><div style="font-family:var(--f-pix);font-size:26px;font-weight:900;text-align:center" id="sdCd" translate="no">${fmtDays(seasonEnd(seasonNow())-gnow())}</div></section>`;
   el.innerHTML=t+rk+fr;
   el.querySelectorAll("[data-sdr]").forEach(li=>li.onclick=()=>{ const r=findRank(li.dataset.sdr); if(r) openOtherProfile(r,+li.dataset.sdn); });
   el.querySelectorAll("[data-sdf]").forEach(li=>li.onclick=()=>openChat(li.dataset.sdf));
@@ -3902,8 +3886,8 @@ function openRules(){
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+"+WIN_LV)}</b></li><li>💀 負け：魔物のレベルが<b>${U("区切りまで下がる")}</b>（1桁は−1／22→20／216→200）、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b>。${U("一度届いた10刻みのチェックポイント（10・20・30…）より下には、そのランク戦の間は下がらない")}</li><li>🤝 引き分け：おたがい魔物のレベルが区切りまで下がる、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}（チェックポイントより下には下がらない）</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（ランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>${SELL.L.toLocaleString()}コイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
-    ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("<b>ランク戦タイマー</b>が終了すると、ランク戦が終わって結果が更新される","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
-    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>投資受付タイマーが終了すると受付終了</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>10%</b>をもらえる。</li></ul>`,"w")],
+    ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("<b>ランク戦タイマー</b>が0になると終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
+    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前まで</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>10%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+"+WIN_LV)}</li><li>${U(`📖 魔物のコンプ率が<b>100%</b>（限定ランクをのぞく全種）になると、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが${COMP_EXP_MUL}倍</b>`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}（バトル・爆弾ではチェックポイントより下に下がらない）／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（チェックポイント関係なし）","j")}</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li>${U("<li>💰 Sランクの魔物を売却すると、コインに加えて<b>冒険者Lv+1</b>、Zランクは<b>冒険者Lv+5</b>上がる（A・B・Cランクはコインのみ）。</li>","x")}<li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
@@ -4276,7 +4260,7 @@ function claimDM(k){ const m=DMS.find(x=>x.k===k); if(!m||!dmReady(m)) return;
 function renderDaily(target){
   dmFix();
   const owned=DEX_MONS.filter(m=>S.got[m.id]).length;
-  target.innerHTML=`<h3 class="inv-h">📋 デイリーミッション </h3><p class="sub" style="margin:-4px 0 8px">ランク戦タイマーが終了すると更新されます</p>
+  target.innerHTML=`<h3 class="inv-h">📋 デイリーミッション </h3><p class="sub" style="margin:-4px 0 8px">ランク戦の切り替わり（ランク戦タイマーが0になったとき）にリセット</p>
   ${DMS.map(m=>{ const n=dmCount(m), mx=dmMax(m), full=n>=mx, ok=dmMet(m);
     let extra="";
     if(m.k==="c"){ const v=Math.min(DM_C_GOAL,S.dm.c||0); extra=`<div class="dm-gauge" role="progressbar" aria-valuemin="0" aria-valuemax="${DM_C_GOAL}" aria-valuenow="${v}"><i style="width:${v/DM_C_GOAL*100}%"></i></div><p class="dm-meta">${v} / ${DM_C_GOAL}体</p>`; }
@@ -4792,7 +4776,7 @@ function openInvestHelp(intro){
     <div class="news-body">
       <p>${intro?"ホームの黄色いボタンから、ほかの冒険者にコインを投資できるようになりました！":"ホームの黄色いボタンから、ほかの冒険者にコインを投資できます。"}</p>
       <p>🥇 投資先がランク戦1位 → <b>投資額の7倍</b>もらえる<br>🥈 2位 → <b>5倍</b> ／ 🥉 3位 → <b>2倍</b><br>💸 4位以下 → <b>投資額の10倍を失う</b>（0コインまで）</p>
-      <p>・投資は1回のランク戦で2人まで。投資した時点でコインが減ります<br>・投資受付タイマーが終了すると、そのランク戦の受付は終了。新しいランク戦が始まると再開<br>・自分が3位以内に入ると投資は無効（没収）<br>・一度3位以内に入ったら、4位以下になってもそのランク戦は投資できない<br>・投資された人は投資額の10%をもらえる</p>
+      <p>・投資は1回のランク戦で2人まで。投資した時点でコインが減ります<br>・投資できるのはランク戦が始まってから、終了の10時間前まで<br>・自分が3位以内に入ると投資は無効（没収）<br>・一度3位以内に入ったら、4位以下になってもそのランク戦は投資できない<br>・投資された人は投資額の10%をもらえる</p>
       <p>強い冒険者を見きわめて、一発逆転をねらおう！</p></div>
     <button class="btn gold" type="button" id="ivGoInv">投資してみる</button><button class="btn ghost" type="button" id="ivIntroX">とじる</button></div>`;
   document.body.appendChild(bg);
@@ -4809,8 +4793,8 @@ function renderInvest(){
   else if(invErr) body=`<div class="empty">読み込めませんでした。少し時間をおいて開き直してください。</div>`;
   else if(!INV_LIST) body=`<div class="empty">読み込み中…</div>`;
   else if(top3Locked()) body=stat+`<div class="empty">🏆 今回のランク戦に3位以内に入ったので、今回のランク戦はもう投資できません<br><small>4位以下になっても同じです。新しいランク戦が始まったら、また投資できます</small></div>`;
-  else if(!invOpen()) body=stat+(mine.length?`<p class="sub" style="margin-top:12px">投資受付タイマーが終了したので、今回のランク戦の受付は終了しました</p>`:`<div class="inv-time"><small>投資受付タイマーが終了したので、今回のランク戦の受付は終了しました</small><small>ランク戦タイマー（終了すると新しいランク戦）</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div><div class="empty">新しいランク戦が始まったら、また投資できます</div>`);
-  else body=stat+(mine.length?`<h3 class="inv-h" style="margin:18px 0 8px">もう1人に投資する（あと${INV_MAX-mine.length}人）</h3>`:"")+`<div class="inv-time" style="margin:0 0 10px"><small>投資受付タイマー</small><b id="invOpenCd" style="font-size:30px">${fmtDays(seasonEnd(seasonNow())-INV_CLOSE_MS-gnow())}</b></div>
+  else if(!invOpen()) body=stat+(mine.length?`<p class="sub" style="margin-top:12px">今回のランク戦の投資受付は終了しました（終了の10時間前まで）</p>`:`<div class="inv-time"><small>今回のランク戦の投資受付は終了しました（終了の10時間前まで）</small><small>次のランク戦まで</small><b id="invCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div><div class="empty">新しいランク戦が始まったら、また投資できます</div>`);
+  else body=stat+(mine.length?`<h3 class="inv-h" style="margin:18px 0 8px">もう1人に投資する（あと${INV_MAX-mine.length}人）</h3>`:"")+`<div class="inv-time" style="margin:0 0 10px"><small>投資の受付終了まで</small><b id="invOpenCd" style="font-size:30px">${fmtDays(seasonEnd(seasonNow())-INV_CLOSE_MS-gnow())}</b></div>
     <p class="pick-label" style="margin:0 0 4px">名前から探す</p>
     <div class="rk-search"><span aria-hidden="true">🔍</span><input id="ivQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(invQ)}"></div>
     <p class="sub" style="margin:0 0 6px">並び順はランク戦ごとにランダムに変わります。投資したい冒険者をタップしてね。</p>
@@ -4820,7 +4804,7 @@ function renderInvest(){
       🥇1位 <b class="up">投資額の7倍もらえる</b> ／ 🥈2位 <b class="up">5倍</b> ／ 🥉3位 <b class="up">2倍</b><br>
       4位以下 <b class="down">投資額の10倍を失う</b>（投資した分もふくめて・0コインまで）<br>
       ・投資は1回のランク戦で2人まで（同じ人には1回だけ）。投資した時点でコインが減ります<br>
-      ・投資受付タイマーが終了すると、受付は終了します<br>
+      ・投資できるのはランク戦終了の10時間前まで<br>
       ・あなたが3位以内に入ったら、その時点で投資は無効（投資額は没収）<br>
       ・一度3位以内に入ったら、4位以下になってもそのランク戦は投資できない<br>
       ・投資された冒険者は、投資されたときに、すぐに投資額の10%をもらえる</div>${body}`;
@@ -4870,7 +4854,7 @@ async function doInvest(r,a){
   const mine=myInvs();
   if(mine.length>=INV_MAX){ toast(`今回のランク戦はもう${INV_MAX}人に投資しています`); return false; }
   if(mine.some(x=>x.def===r.id)){ toast("この冒険者にはもう投資しています"); return false; }
-  if(!invOpen()){ toast("投資受付タイマーが終了したので、今回のランク戦の受付は終了しました"); return false; }
+  if(!invOpen()){ toast("今回のランク戦の投資受付は終了しました（終了の10時間前まで）"); return false; }
   if(r.id===MYID){ toast("自分には投資できません"); return false; }
   if(top3Locked()){ toast("今回のランク戦に3位以内に入ったので、今回のランク戦はもう投資できません"); return false; }
   const ss=seasonNow(), base=MYID+"_"+ss, doc=mine.some(x=>invDocId(x)===base)?base+"_2":base;   // 空いている方の枠を使う
@@ -4995,11 +4979,11 @@ function renderRanking(segHtml){
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
     ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のランク戦の順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
-    ${rankless()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🕐 順位なしタイマー</small><b id="rlCd">${fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow())}</b></div><div class="note" style="display:block;margin:2px 0 0">このタイマーが終了すると順位がつきます。それまでは順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます</div></div>`:""}
-    <div class="season-box"><div><small>ランク戦タイマー</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
-      <div class="note" style="display:block;margin:2px 0 0">タイマーが終了するとランク戦が終わり、結果が更新されます。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
-      ${rankless()?`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスは、順位がつきはじめてから</div>`:`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスタイマー <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>`}
-      <details><summary>景品</summary><div class="note" style="margin:6px 0 0">タイマーが終了すると集計されます。次にアプリを開いたときに受け取れます。<br>
+    ${rankless()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🕐 順位がつくまで</small><b id="rlCd">${fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow())}</b></div><div class="note" style="display:block;margin:2px 0 0">ランク戦が始まってから1時間は順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます</div></div>`:""}
+    <div class="season-box"><div><small>ランク戦終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
+      <div class="note" style="display:block;margin:2px 0 0">ランク戦タイマーが0になると終了。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
+      ${rankless()?`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスは、順位がつきはじめてから</div>`:`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>`}
+      <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${rankless()?"冒険者レベルの上位100人を表示しています。今は順位のつかない時間なので、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
@@ -7273,7 +7257,7 @@ async function titleRanks(){
   let rtPer=null; const rtEl=document.getElementById("ttlRt");
   const rtTick=()=>{ if(T.hidden) return; const now=gnow(), per=advPer(), left=advPerEnd(per)-now;
     const hh=Math.floor(left/3600000), mm=String(Math.floor(left/60000)%60).padStart(2,"0"), ss=String(Math.floor(left/1000)%60).padStart(2,"0");
-    rtEl.innerHTML=`<span>⏱ ${LANG==="en"?"Ranking timer":"ランキングタイマー"}</span><b>${hh?hh+":":""}${mm}:${ss}</b>`;
+    rtEl.innerHTML=`<span>⏱ ${LANG==="en"?"Ranking resets in":"ランキングリセットまで"}</span><b>${hh?hh+":":""}${mm}:${ss}</b>`;
     if(rtPer!==null && per!==rtPer){ try{ titleRanks(); }catch(e){} } rtPer=per; };
   setInterval(()=>{ try{ advSettle(); }catch(e){} },60000);
   rtTick(); setInterval(rtTick,1000);
