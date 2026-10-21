@@ -3765,7 +3765,24 @@ const HOUR_BONUS = 1000, HOUR_BONUS_MS = 60*60*1000;   // 1時間ボーナス
 const hour1Left=()=>Math.max(0,(S.lastHour1||0)+HOUR_BONUS_MS-gnow());
 const UNIT_WARN = 1000;   // 手持ちがこの数を超えたら注意を出す（一度出したら次は24時間後）
 const WARN_KEY="toto-unit-warn-at"; let warnOpen=false;
+// 魔物が800体に達したら、画面いっぱいのお知らせ（800体をこえた瞬間と、800体以上のままなら1日1回）
+const UNIT_BIG_WARN = 800;
+function bigUnitWarn(){ const n=S.units.length;
+  if(n<UNIT_BIG_WARN-20){ S.ubw=0; return; }
+  if(n<UNIT_BIG_WARN || document.querySelector(".ubw")) return;
+  if(S.ubw && gnow()-S.ubw<24*HOUR_MS) return;
+  if(document.querySelector("#title:not([hidden]),#adv,#dfo")) return;
+  S.ubw=gnow(); save();
+  const L=LANG==="en", el=document.createElement("div"); el.className="reveal ubw"; el.setAttribute("translate","no");
+  el.innerHTML=`<div style="font-size:64px;line-height:1">⚠️</div><h3 style="color:#ffd75e">${L?`You have ${n.toLocaleString()} monsters!`:`魔物が${n.toLocaleString()}体になりました！`}</h3>
+    <p class="note" style="text-align:center;max-width:330px;font-size:15px;line-height:1.7">${L?"If you go over <b>1,000 monsters</b>, the game will get heavy and may stop working.<br>Sell or fuse monsters to keep the number down.":"<b>1000体をこえると、ゲームが重くなって</b>動かなくなることがあります。<br>売却や合成で、数を減らしてね。"}</p>
+    <button class="btn gold" type="button" id="ubwBox">${L?"Go to BOX":"BOXで整理する"}</button><button class="btn ghost" type="button" id="ubwX">${L?"Close":"閉じる"}</button>`;
+  document.body.appendChild(el);
+  el.querySelector("#ubwX").onclick=()=>el.remove();
+  el.querySelector("#ubwBox").onclick=()=>{ el.remove(); tab="box"; boxMode="units"; render(); };
+}
 function updateUnitWarn(){
+  try{ bigUnitWarn(); }catch(e){}
   const w=document.getElementById("unitWarn"); if(!w) return;
   if(S.units.length <= UNIT_WARN){ warnOpen=false; w.hidden=true; return; }
   if(!warnOpen){
