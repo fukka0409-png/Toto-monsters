@@ -229,6 +229,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .code-box input{flex:1;min-width:0;background:var(--night);border:2px solid var(--line);border-radius:12px;color:var(--mist);font:inherit;font-size:16px;padding:10px 12px}
 .code-box input:focus{outline:none;border-color:var(--moss)}
 .code-msg{font-size:13px;margin-top:8px;min-height:1.4em}
+.pdex{margin:12px 0 4px}.pdex summary{font:900 14px/1.3 var(--f-body);cursor:pointer;padding:6px 0}.pdex-g{margin-top:6px}.pdex-c{font:900 12px/1 var(--f-body);color:var(--staff);margin-top:2px}.dex .cell[data-dexm]{cursor:pointer}
 .qr-box{margin-top:12px}.qr-btns{display:grid;gap:8px;margin-top:10px}
 .qr-cam{position:fixed;inset:0;z-index:150;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .qr-cam video{width:100%;height:100%;object-fit:cover}
@@ -957,6 +958,23 @@ html[lang=en] .ttl .ttl-adv span{font-size:32px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"あなたが過去に獲得した数": "Times you've obtained it",
+"全冒険者の獲得数": "Obtained by all adventurers",
+"今の売却価格（1体）": "Current sell price (each)",
+"たくさんの冒険者が獲得している魔物ほど、売却したときのコインは少なくなります（最低1コイン）。ランキング参加者 {0}人の図鑑から計算しています。": "The more adventurers have obtained a monster, the fewer coins it sells for (minimum 1). Calculated from the collections of {0} ranking players.",
+"たくさんの冒険者が獲得している魔物ほど、売却したときのコインは少なくなります（最低1コイン）。": "The more adventurers have obtained a monster, the fewer coins it sells for (minimum 1).",
+"💰 {0}コインで獲得数を1減らす": "💰 Reduce your count by 1 for {0} coins",
+"獲得数が減ると、全冒険者の合計も減るので、この魔物の売却価格が上がります。": "Lowering your count lowers the total for everyone, so this monster's sell price goes up.",
+"{0}の獲得数を1減らしました（{1}→{2}体）": "Reduced your {0} count by 1 ({1}→{2})",
+"まだ出会っていない魔物です": "You haven't met this monster yet",
+"最新の売却価格を確認しています…": "Checking the latest sell prices…",
+"📖 図鑑（{0}/{1}種）": "📖 Collection ({0}/{1})",
+"📖 図鑑": "📖 Collection",
+"この冒険者の図鑑は、次にアプリを開いたときに共有されます": "This adventurer's collection will be shared the next time they open the app",
+"まだ魔物がいません": "No monsters yet",
+"売却した魔物は戻りません。図鑑の記録は残ります。売却価格は、全冒険者の図鑑の獲得数で決まります（多く獲得されている魔物ほど安い）。": "Sold monsters don't come back. Your collection record stays. Sell prices depend on how many times all adventurers have obtained each monster (the more common, the cheaper).",
+"希少さに応じたコイン": "coins based on rarity",
+"💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）": "💱 Sell prices depend on how many times all adventurers have obtained each monster. The more common, the cheaper (min 1 coin); a monster only you have is worth \"players × 1000 coins\". Tap a monster in the Collection to see counts and the current price (100,000 coins to reduce your count by 1)",
 "QRコードを読み取ると、プレゼントがもらえます。1つのQRコードにつき1回だけです。": "Scan a QR code to get a present. Each QR code can be used once.",
 "🎁 QRコードのプレゼント": "🎁 QR code present",
 "QRコードでプレゼント獲得": "Get presents by QR code",
@@ -3865,7 +3883,26 @@ function renderBox(){
 }
 
 let sellMode=false, lockMode=false; const sellSel=new Set();
-const sellPrice=u=>mon(u.m).sell ?? SELL[mon(u.m).rank];
+/* ---------- 売却価格は図鑑の「獲得数の希少さ」で決まる（2026-10-21） ----------
+   全冒険者の過去の獲得数の合計を T、ランキングの参加人数を N とすると、1体の価格 = N×1000÷T（最低1コイン）
+   （自分1人だけが1体なら N×1000。1人が2体でも、2人が1体ずつでも同じ価値） */
+const DEX_STALE_MS = 3*60000, DEX_FIX_COST = 100000;
+let DEXP=null;   // 読み込み中のPromise
+function dexStats(){ return S.dexStats||null; }
+function dexTotal(id){ const st=dexStats(); if(!st) return null; const others=(st.tot&&st.tot[id])||0; return others+((S.got&&S.got[id])||0); }
+function dexPrice(id){ const st=dexStats(); if(!st||!st.n) return null; const T=Math.max(1,dexTotal(id)); return Math.max(1,Math.floor(st.n*1000/T)); }
+const sellPrice=u=>{ const p=dexPrice(u.m); return p!=null ? p : (mon(u.m).sell ?? SELL[mon(u.m).rank]); };
+// 全冒険者の図鑑（獲得数）を集計する。自分の分は手元の記録を使うので、ほかの人の合計だけを持っておく
+async function loadDexStats(force){
+  if(!DB) return dexStats(); const st=dexStats(); if(!force && st && gnow()-st.at<DEX_STALE_MS) return st;
+  if(DEXP) return DEXP;
+  DEXP=(async()=>{ try{ const q=await withTO(DB.collection("profiles").limit(3000).get(),15000); const tot={}; let n=0;
+      q.docs.forEach(d=>{ n++; if(d.id===MYID) return; const gc=d.data().gc; if(gc&&typeof gc==="object") for(const k in gc){ const v=Math.max(0,Math.floor(+gc[k]||0)); if(v) tot[k]=(tot[k]||0)+Math.min(v,1e6); } });
+      S.dexStats={at:gnow(), n:Math.max(1,n), tot}; save(); }catch(e){ if(S.dexStats) S.dexStats.at=gnow()-DEX_STALE_MS+30000; } finally{ DEXP=null; }
+    return dexStats(); })();
+  return DEXP;
+}
+const gotCounts = () => { const o={}; for(const k in (S.got||{})){ const v=Math.floor(+S.got[k]||0); if(v>0) o[k]=v; } return o; };
 // 2026-10-18 22:00 のランク戦から：S・Zランクを売却すると冒険者レベルも上がる
 const SELL_LV={S:1,Z:5}, SELL_LV_FROM=Date.parse("2026-10-18T22:00:00+09:00");
 const sellLv=list=>gnow()<SELL_LV_FROM?0:list.reduce((t,u)=>t+(SELL_LV[mon(u.m).rank]||0),0);
@@ -3879,7 +3916,8 @@ function doSell(uids){
   if(up){ S.units.forEach(z=>{ const c=capOf(z); if(evoLocked(z)){ if(z.l>=c) return; z.l=Math.min(c,z.l+up); } else { const b0=z.l; z.l+=up; z.a=(z.a||0)+Math.max(0,z.l-Math.max(b0,MAX_LV)); } if(z.l>=Math.min(c,MAX_LV)) z.e=0; raised++; }); queueProfile(true); }   // Lv100を超えた分も、覚醒の石と同じようにそのまま上がる
   S.coins+=total; save(); SFX.coin(); toast(`${list.length}体を売却 +${total.toLocaleString()}コイン`+(lv?` ・ 冒険者Lv+${lv}（Lv${S.plv}）`:"")+(up?` ・ 手持ちの魔物${raised}体のLv+${up}`:"")); if(lv) setTimeout(()=>{ try{ SFX.level(); }catch(e){} },350); return total;
 }
-function confirmSell(uids,onDone){
+function confirmSell(uids,onDone,fresh){
+  if(!fresh && DB){ const st=dexStats(); if(!st || gnow()-st.at>=DEX_STALE_MS){ toast("最新の売却価格を確認しています…"); loadDexStats(true).then(()=>confirmSell(uids,onDone,true)); return; } }
   const list=S.units.filter(z=>uids.includes(z.u)&&!z.k&&z.u!==S.guard); if(!list.length) return toast("配置中・保護中の魔物は売却できません");
   const total=list.reduce((t,u)=>t+sellPrice(u),0);
   const rare=list.filter(u=>["S","Z","L"].includes(mon(u.m).rank));
@@ -3888,7 +3926,7 @@ function confirmSell(uids,onDone){
     <p id="sellT">${list.length===1?mon(list[0].m).name+" (Lv"+list[0].l+")":list.length+"体"}を売却しますか？</p>
     <div class="m-text" style="color:var(--staff);font-family:var(--f-pix);font-size:20px">+${total.toLocaleString()}コイン</div>${sellLv(list)?`<div class="m-text" style="color:#5fd36a;font-weight:900;font-size:17px">冒険者Lv +${sellLv(list)}</div>`:""}${list.some(u=>mon(u.m).rank==="L")?`<div class="m-text" style="color:#ffd75e;font-weight:900;font-size:16px">✨ 手持ちの魔物すべてのLv +${list.filter(u=>mon(u.m).rank==="L").length*LIMITED_SELL_LV}（Lv${MAX_LV}を超えてもそのまま上がる）</div>`:""}
     ${rare.length?`<div class="note" style="color:var(--berry);margin:0">${rare.map(u=>(mon(u.m).rank==="L"?"限定":mon(u.m).rank)+"ランク「"+mon(u.m).name+"」").join("・")} が含まれています</div>`:""}
-    <div class="note" style="margin:0">売却した魔物は戻りません。図鑑の記録は残ります。</div>
+    <div class="note" style="margin:0">売却した魔物は戻りません。図鑑の記録は残ります。売却価格は、全冒険者の図鑑の獲得数で決まります（多く獲得されている魔物ほど安い）。</div>
     <button class="btn gold" id="sellOk" type="button">売却する</button><button class="btn ghost" id="sellNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   const close=()=>bg.remove();
@@ -3916,12 +3954,12 @@ function openRules(){
   const n=v=>Number(v).toLocaleString();
   const secs=[
     ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>ランク戦終了時の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
-    ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：ミッションの「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>${U("デイリーミッション：Cランクの魔物を500体集める（1日2回）／新しい魔物と出会う（1日2回）／冒険者に投資する（1日1回）","r")}</li><li>はじめて手に入れた魔物：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
+    ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：ミッションの「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）</li><li>${U("デイリーミッション：Cランクの魔物を500体集める（1日2回）／新しい魔物と出会う（1日2回）／冒険者に投資する（1日1回）","r")}</li><li>はじめて手に入れた魔物：<b>+${NEW_COIN}コイン</b></li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
     ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span></li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b></li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+"+WIN_LV)}</b></li><li>💀 負け：魔物のレベルが<b>${U("区切りまで下がる")}</b>（1桁は−1／22→20／216→200）、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b>。${U("一度届いた10刻みのチェックポイント（10・20・30…）より下には、そのランク戦の間は下がらない")}</li><li>🤝 引き分け：おたがい魔物のレベルが区切りまで下がる、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
-    ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}（チェックポイントより下には下がらない）</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（ランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>${SELL.L.toLocaleString()}コイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
+    ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}（チェックポイントより下には下がらない）</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（ランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>希少さに応じたコイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
     ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("<b>ランク戦タイマー</b>が0になると終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前まで</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>10%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
@@ -4171,7 +4209,7 @@ function renderDex(){
   const all = isMon? DEX_MONS.length : FRAMES.length; const pct=Math.round(have/all*1000)/10;
   let body="";
   if(isMon){
-    const cell=m=>{const h=S.got[m.id];return `<div class="cell ${h?"has":"unk"}">
+    const cell=m=>{const h=S.got[m.id];return `<div class="cell ${h?"has":"unk"}" data-dexm="${m.id}" role="button" tabindex="0">
       <img src="${h?cardURL(m.id,0,160):silhouette(m.id)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${h?m.name:"？？？"}</div>${h?byLine(m):""}</div>`};
     // 限定ランクは図鑑には公開しない。手に入れた冒険者の図鑑にだけ、別の欄で載っていく
     const lim=MONSTERS.filter(m=>m.rank==="L"&&S.got[m.id]);
@@ -4184,8 +4222,31 @@ function renderDex(){
   $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}
     <div class="progress"><div class="bar"><b style="width:${pct}%"></b></div><span class="pct">${have}/${all}</span></div>
     ${have===all?`<p class="sub" style="color:var(--staff)">★ コンプリート！ 冒険者EXPが${COMP_EXP_MUL}倍になっています</p>`:`<p class="sub" style="margin:0 0 8px">コンプ率100%で、冒険者EXPが${COMP_EXP_MUL}倍になる！</p>`}${body}`;
+  if(isMon) document.querySelectorAll("[data-dexm]").forEach(c=>c.onclick=()=>openDexMon(+c.dataset.dexm));
   bindSeg(k=>{boxMode=k;render();$("#stage").scrollTop=0});
 }
+// 図鑑の魔物をタップ：過去に獲得した数・全冒険者の獲得数・今の売却価格。10万コインで自分の獲得数を1減らせる
+function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
+  if(!h) return toast("まだ出会っていない魔物です");
+  const draw=()=>{ const c=S.got[id]||0, T=dexTotal(id), st=dexStats(), p=dexPrice(id);
+    const bg=sheet(`<div class="sheet-h"><h3>${esc(m.name)}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <div class="detail"><img src="${cardURL(id,0,320)}" alt="${esc(m.name)}"><div>
+      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank}</span></div>${byLine(m,"by by-unit")}
+      <div class="stat"><span>あなたが過去に獲得した数</span><b>${c.toLocaleString()}体</b></div>
+      <div class="stat"><span>全冒険者の獲得数</span><b>${T!=null?T.toLocaleString()+"体":"…"}</b></div>
+      <div class="stat"><span>今の売却価格（1体）</span><b style="color:var(--staff)">${p!=null?p.toLocaleString()+"コイン":"…"}</b></div>
+      <p class="note" style="margin:6px 0 0">たくさんの冒険者が獲得している魔物ほど、売却したときのコインは少なくなります（最低1コイン）。${st?`ランキング参加者 ${st.n.toLocaleString()}人の図鑑から計算しています。`:""}</p></div></div>
+    <div class="row"><button class="btn gold" id="dxFix" type="button" ${c>1&&S.coins>=DEX_FIX_COST?"":"disabled"}>💰 ${DEX_FIX_COST.toLocaleString()}コインで獲得数を1減らす</button></div>
+    <p class="note" style="margin:0 0 8px">${c<=1?"獲得数は1より少なくできません（図鑑の記録は残ります）":"獲得数が減ると、全冒険者の合計も減るので、この魔物の売却価格が上がります。"}</p>`);
+    bg.querySelector("#dxFix").onclick=()=>{ const cc=S.got[id]||0; if(cc<=1) return; if(S.coins<DEX_FIX_COST) return toast("コインが足りません");
+      S.coins-=DEX_FIX_COST; S.got[id]=cc-1; save(); queueProfile(true); try{ SFX.coin(); }catch(e){} renderCoins(); toast(`${m.name}の獲得数を1減らしました（${cc}→${cc-1}体）`); closeSheet(); draw(); }; };
+  draw(); if(DB && (!dexStats()||gnow()-dexStats().at>=DEX_STALE_MS)) loadDexStats(true).then(()=>{ if(document.querySelector(".sheet-bg #dxFix")){ closeSheet(); draw(); } });
+}
+// ほかの冒険者の図鑑（プロフィールで共有）
+function profDexHtml(r){ const gc=r.id===MYID?gotCounts():(r.gc&&typeof r.gc==="object"?r.gc:null);
+  if(!gc) return `<details class="pdex"><summary>📖 図鑑</summary><p class="note">この冒険者の図鑑は、次にアプリを開いたときに共有されます</p></details>`;
+  const list=MONSTERS.filter(m=>(gc[m.id]||0)>0 && (m.rank!=="L"||true)), have=DEX_MONS.filter(m=>gc[m.id]>0).length;
+  return `<details class="pdex"><summary>📖 図鑑（${have}/${DEX_MONS.length}種）</summary><div class="dex pdex-g">${list.map(m=>`<div class="cell has"><img src="${cardURL(m.id,0,120)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${esc(m.name)}</div><div class="pdex-c">×${(+gc[m.id]).toLocaleString()}</div></div>`).join("")||`<p class="note">まだ魔物がいません</p>`}</div></details>`; }
 const silCache={};
 function silhouette(mid){ if(silCache[mid]) return silCache[mid]; const cv=document.createElement("canvas"); cv.width=cv.height=160; const c=cv.getContext("2d");
   if(IMG[mid]){ c.drawImage(IMG[mid],10,10,140,140); c.globalCompositeOperation="source-in"; c.fillStyle="#0e1613"; c.fillRect(0,0,160,160); } return silCache[mid]=cv.toDataURL(); }
@@ -4427,7 +4488,7 @@ function profilePayload(){
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
     comment:(rankless()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
-    owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
+    gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
@@ -4455,7 +4516,7 @@ async function loadRanking(force){
     try{ const col=DB.collection("profiles");   // ランキングの参加人数（まとめて数えるだけなので通信は少ない）
       RANK_TOTAL = col.count ? (await col.count().get()).data().count : Math.max(RANK_TOTAL, q.size); }catch(e){ RANK_TOTAL=Math.max(RANK_TOTAL, q.size); }
     rankErr=false;
-    resetOldInvest(); await loadInvestCounts(); checkInvestVoid(); snapTick(); checkTicks(true);
+    loadDexStats(); resetOldInvest(); await loadInvestCounts(); checkInvestVoid(); snapTick(); checkTicks(true);
   }catch(e){ rankErr=true; }
   if(tab==="rank"||tab==="home") render(); else try{ renderSide(); }catch(e){}
 }
@@ -6107,6 +6168,7 @@ function openOtherProfile(r,rank){
     ${r.id===MYID?itemBox(r):""}
     ${(rank==null||rank<=50)&&r.comment?`<div class="rk-cmt" translate="no" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
     ${radarHtml(r)}
+    ${profDexHtml(r)}
     <div class="def-rec" id="defRec"></div>
     <div class="stats">
       <div><i class="st-ic" aria-hidden="true">🏆</i><small>勝利数</small><b>${n(r.w)}</b></div>
