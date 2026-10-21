@@ -229,6 +229,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .code-box input{flex:1;min-width:0;background:var(--night);border:2px solid var(--line);border-radius:12px;color:var(--mist);font:inherit;font-size:16px;padding:10px 12px}
 .code-box input:focus{outline:none;border-color:var(--moss)}
 .code-msg{font-size:13px;margin-top:8px;min-height:1.4em}
+.rk-ivp{font-size:11.5px;font-weight:800;color:#7fd0ff;margin-top:1px}.rk-ivp b{color:#ffe14a}
 .pdex{margin:12px 0 4px}.pdex summary{font:900 14px/1.3 var(--f-body);cursor:pointer;padding:6px 0}.pdex-g{margin-top:6px}.pdex-c{font:900 12px/1 var(--f-body);color:var(--staff);margin-top:2px}.dex .cell[data-dexm]{cursor:pointer}
 .qr-box{margin-top:12px}.qr-btns{display:grid;gap:8px;margin-top:10px}
 .qr-cam{position:fixed;inset:0;z-index:150;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -958,6 +959,7 @@ html[lang=en] .ttl .ttl-adv span{font-size:32px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"📈 投資の素質": "📈 Investing skill",
 "{0}コインの{1}%を受け取りました！！（+{2}コイン）": "Received {1}% of {0} coins!! (+{2} coins)",
 "🤝 投資家{0}人から、投資額の40%（+{1}コイン）": "🤝 40% of investments from {0} investor(s) (+{1} coins)",
 "・投資された冒険者は、投資されたときに、すぐに投資額の40%をもらえる": "• Adventurers who receive an investment immediately get 40% of it",
@@ -3140,7 +3142,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -4508,7 +4510,7 @@ function profilePayload(){
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
     comment:(rankless()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
-    gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
+    ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
@@ -4884,12 +4886,35 @@ async function checkInvestIncoming(ss){
   }catch(e){}
   invInBusy=false;
 }
+/* ---------- 投資の素質：投資したランク戦のうち、投資の損益が黒字だったランク戦の割合（ランク戦ごとに記録） ----------
+   だれに投資したか・だれから投資されたかは出さない。プロフィールには回数（ivn）と黒字の回数（ivw）だけを載せる */
+function ivRecord(ss, black){ S.ivSeen=S.ivSeen||{}; if(S.ivSeen[ss]!=null) return; S.ivSeen[ss]=black?1:0; S.ivn=(S.ivn||0)+1; S.ivw=(S.ivw||0)+(black?1:0); save(); try{ queueProfile(true); }catch(e){} }
+const ivPct = r => r && r.ivn>0 ? Math.round((r.ivw||0)/r.ivn*100) : null;
+// これまでのランク戦の投資を、1回だけさかのぼって集計する（投資のデータと、各ランク戦の正式な順位から）
+async function ivBackfill(){
+  if(S.ivBF||!DB||!MYID) return;
+  try{
+    const r=await withTO(DB.collection("invests").where("att","==",MYID).get(),12000);
+    const by={}; r.docs.forEach(d=>{ const x=d.data(); if(!x||(x.at||0)<INV_RESET_AT||x.ss==null||x.ss>=seasonNow()) return; (by[x.ss]=by[x.ss]||[]).push(x); });
+    const sss=Object.keys(by).map(Number).filter(ss=>!(S.ivSeen&&S.ivSeen[ss]!=null));
+    if(sss.length){ const q=await withTO(DB.collection("profiles").limit(3000).get(),15000);
+      for(const ss of sss){ await loadSeasonEvents(ss); let net=0;
+        const all=q.docs.map(x=>{ const isMe=x.id===MYID, v=x.data(); return {id:x.id, score:isMe&&S.sv&&S.sv[ss]!=null?S.sv[ss]:finalScore(x.id,v,ss), ok:true}; }).filter(o=>o.score!=null);
+        for(const x of by[ss]){ if(x.void){ net-=x.amt||0; continue; }
+          const t=all.find(o=>o.id===x.def); const tr=t?effRank(t.score,true,all.filter(o=>o!==t)):null, mul=INV_MUL[tr];
+          net += mul ? (x.amt||0)*(mul-1) : -(x.amt||0)*INV_LOSE; }
+        ivRecord(ss, net>0); } }
+    S.ivBF=1; save();
+  }catch(e){}
+}
 async function settleInvest(old, rank, q, mine, coinsSoFar){
   const out={delta:0, lines:[]};
   resetOldInvest();
-  for(const iv of invFix().filter(x=>x.ss===old)){ if(iv.void) continue;
+  let ivNet=null;   // 投資の素質：このランク戦の投資の損益（黒字か赤字か）
+  for(const iv of invFix().filter(x=>x.ss===old)){ if(iv.void){ ivNet=(ivNet||0)-iv.amt; continue; }
+    if(ivNet==null) ivNet=0;
     const nm=esc(iv.name||"相手");
-    if(rank && rank<=3){ const lose=iv.paid?0:Math.min(iv.amt, S.coins+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${(iv.paid?iv.amt:lose).toLocaleString()}コイン没収）`); }
+    if(rank && rank<=3){ ivNet-=iv.amt; const lose=iv.paid?0:Math.min(iv.amt, S.coins+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${(iv.paid?iv.amt:lose).toLocaleString()}コイン没収）`); }
     else if(q){
       const d=q.docs.find(x=>x.id===iv.def), ts=d?finalScore(d.id,d.data(),old):null;
       let tr=null; if(ts!=null){
@@ -4897,10 +4922,11 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
         others.push({score:mine, ok:prizeOk(old)});
         tr=effRank(ts, profOk(d.data(),old), others); }
       const mul=INV_MUL[tr];
-      if(mul){ out.delta+=iv.amt*mul; out.lines.push(`💰 投資先の${nm}さんが${tr}位！ +${(iv.amt*mul).toLocaleString()}コイン`); }
-      else { const more=Math.min(iv.amt*(INV_LOSE-(iv.paid?1:0)), S.coins+coinsSoFar+out.delta); out.delta-=more; out.lines.push(`💸 投資先の${nm}さんは${tr?tr+"位":"順位なし"}…（−${((iv.paid?iv.amt:0)+more).toLocaleString()}コイン）`); }
+      if(mul){ ivNet+=iv.amt*(mul-1); out.delta+=iv.amt*mul; out.lines.push(`💰 投資先の${nm}さんが${tr}位！ +${(iv.amt*mul).toLocaleString()}コイン`); }
+      else { ivNet-=iv.amt*INV_LOSE; const more=Math.min(iv.amt*(INV_LOSE-(iv.paid?1:0)), S.coins+coinsSoFar+out.delta); out.delta-=more; out.lines.push(`💸 投資先の${nm}さんは${tr?tr+"位":"順位なし"}…（−${((iv.paid?iv.amt:0)+more).toLocaleString()}コイン）`); }
     }
   }
+  if(ivNet!=null) ivRecord(old, ivNet>0);
   S.invs=invFix().filter(x=>x.ss>old);
   // 投資された分の40%は、投資されたときにすぐ受け取る（checkInvestIncoming）。精算では受け取らない
   try{ await checkInvestIncoming(old); }catch(e){}   // まだ受け取っていない前のランク戦の分だけ、ここで受け取る
@@ -5140,7 +5166,7 @@ function renderRanking(segHtml){
   else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3&&!rankless()?"top"+(i+1):""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
       <span class="rk-no">${rkNo(i+1)}</span>${avatarImg(r.icon,56)}
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
-        <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>
+        <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
         ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${INV_CNT[r.id]}人ついています</div>`:""}
         ${(rankless()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
