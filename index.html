@@ -959,6 +959,9 @@ html[lang=en] .ttl .ttl-adv span{font-size:32px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"：BOXでSランクの魔物3体と交換（アイテム攻撃を5回防ぐ）。": ": trade 3 S-rank monsters in BOX (blocks 5 item attacks). ",
+"の魔物を3体えらぶ → 盾（5回防ぐ）／": " monsters → Shield (blocks 5) / ",
+"🏁 ランク戦が始まってから1時間は、アイテムを使えません（少し待ってね）": "🏁 Items can't be used for the first hour of a ranked match (please wait a bit)",
 "🎁 {0}位の限定キャラ：": "🎁 Limited character for #{0}: ",
 "（BOXに届きました）": " (sent to your BOX)",
 "自分には投資できない。": "You can't invest in yourself.",
@@ -2800,9 +2803,9 @@ const BOMB_MIN_LV = 15;                         // 爆弾を使えるのは冒�
 const USE_COST = { fire:500, bomb:3000, shbomb:2000 };
 const SHBOMB_NEED = 10, SHBOMB_BREAK = 3;   // 爆弾10個 → 対盾爆弾1個。使われた人の盾を3つこわす       // アイテムを使うときに必要なコイン
 /* ---------- 盾 ----------
-   Sランクの魔物3体 → 盾（アイテム攻撃を2回防ぐ）／ Zランクの魔物1体 → スーパー盾（5回防ぐ）
+   Sランクの魔物3体 → 盾（アイテム攻撃を5回防ぐ）／ Zランクの魔物1体 → スーパー盾（5回防ぐ）
    装備・所持数・耐久力は自分にしか見えない（サーバーにも送らない） */
-const SHIELDS = { n:{ name:"盾", dur:2, rank:"S", need:3, ic:"🛡" }, s:{ name:"スーパー盾", dur:5, rank:"Z", need:1, ic:"🛡✨" } };   // 盾＝Sランク3体で耐久2／スーパー盾＝Zランク1体で耐久5
+const SHIELDS = { n:{ name:"盾", dur:5, rank:"S", need:3, ic:"🛡" }, s:{ name:"スーパー盾", dur:5, rank:"Z", need:1, ic:"🛡✨" } };   // 盾＝Sランク3体で耐久2／スーパー盾＝Zランク1体で耐久5
 const LOOT_FROM = Date.parse("2026-10-18T13:03:00+09:00");   // これ以降のマグネットは、うばったコインを相手が開いたときに届ける
 // 盾は1つずつ持つ（S.shieldList）。装備中の盾がこわれたら、鍵のかかっていない盾を自動で装備する（盾→スーパー盾の順）
 function shFix(){
@@ -2811,6 +2814,7 @@ function shFix(){
   if(S.shields){ for(const t of ["n","s"]) for(let i=0;i<(S.shields[t]||0);i++) S.shieldList.push({id:S.shNext++, t, dur:SHIELDS[t].dur, k:false}); delete S.shields; }
   if(S.shield){ if(S.shield.dur>0){ const it={id:S.shNext++, t:S.shield.t, dur:S.shield.dur, k:false}; S.shieldList.push(it); S.shieldEq=it.id; } delete S.shield; }
   S.shieldList=S.shieldList.filter(x=>x.dur>0);
+  if(!S.shDur5){ S.shDur5=1; S.shieldList.forEach(x=>{ if(x.t==='n') x.dur=Math.min(5,(x.dur||0)+3); }); }   // 2026-10-21：盾の耐久2→5（今持っている盾も+3）
   S.shieldList.forEach(x=>{ const mx=(SHIELDS[x.t]||SHIELDS.n).dur; if(x.dur>mx) x.dur=mx; });   // 耐久の上限を下げたので、今ある盾もそろえる
   S.shieldList.forEach(x=>{ if(x.ss==null) x.ss=SH_LEGACY_SS; });   // 期限の決まりより前に作った盾は、2026-10-18 22:00 に終わるランク戦のもの
   if(S.shieldEq && !S.shieldList.some(x=>x.id===S.shieldEq)) S.shieldEq=null;
@@ -4018,7 +4022,7 @@ function openRules(){
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+"+WIN_LV)}</b></li><li>💀 負け：魔物のレベルが<b>${U("区切りまで下がる")}</b>（1桁は−1／22→20／216→200）、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b>。${U("一度届いた10刻みのチェックポイント（10・20・30…）より下には、そのランク戦の間は下がらない")}</li><li>🤝 引き分け：おたがい魔物のレベルが区切りまで下がる、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
-    ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}（チェックポイントより下には下がらない）</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（ランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>希少さに応じたコイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
+    ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}（チェックポイントより下には下がらない）</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を5回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（ランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>希少さに応じたコイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
     ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("<b>ランク戦タイマー</b>が0になると終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前まで</b>）。自分には投資できない。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位 1.5倍</b>／<b>5位以下 10倍を失う</b>（0コインまで）。</li><li>👑 自分がランク戦終了時に<b>3位以内</b>なら、投資先が<b>4位以内</b>で順位に関係なく<b>2倍</b>。3位以内の冒険者も投資できる。</li><li>投資した時点でコインが減る。5位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>${invPct()}%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
@@ -4211,7 +4215,7 @@ function renderShieldBox(){
         <div class="sh-btns">${on?"":`<button class="chip" type="button" data-sheq="${x.id}">装備</button>`}<button class="chip" type="button" data-shlock="${x.id}">${x.k?"🔓 鍵を外す":"🔒 鍵"}</button></div></div>`; }).join("")}</div>
       <p class="note">🔒 鍵をかけた盾は、自動の入れかえには使われません（自分で「装備」を押せば使えます）。</p>`
     :`<div class="empty">まだ盾を持っていません</div>`}
-    <p class="note">作り方：「🛠 盾を作る」で<b>Sランク</b>の魔物を3体えらぶ → 盾（2回防ぐ）／<b>Zランク</b>の魔物1体 → スーパー盾（5回防ぐ）</p>`;
+    <p class="note">作り方：「🛠 盾を作る」で<b>Sランク</b>の魔物を3体えらぶ → 盾（5回防ぐ）／<b>Zランク</b>の魔物1体 → スーパー盾（5回防ぐ）</p>`;
   bindSeg(k=>{boxMode=k;render();$("#stage").scrollTop=0});
   $("#shMake").onclick=openShieldMake;
   document.querySelectorAll("[data-sheq]").forEach(b=>b.onclick=()=>{ S.shieldEq=+b.dataset.sheq; save(); SFX.coin(); toast(`${SHIELDS[S.shieldList.find(x=>x.id===S.shieldEq).t].name}を装備した！`); render(); });
@@ -5399,6 +5403,9 @@ const freezeLeft = () => { const st=seasonEnd(seasonNow()-1); return Math.max(0,
 const inFreeze = () => freezeLeft() > 0;
 const FREEZE_TXT = "🏁 ランク戦の集計中は、攻撃もアイテムも使えません（少し待ってね）";
 // 前のランク戦の精算が終わるまでは、攻撃・アイテムを使えない（終了後の攻撃が前の順位に入らないように）
+// ランク戦が終わって（次のランク戦が始まって）1時間は、ランキングでアイテムを使えない
+const ITEM_REST_TXT = "🏁 ランク戦が始まってから1時間は、アイテムを使えません（少し待ってね）";
+const itemRest = () => gnow() < seasonEnd(seasonNow()-1) + HOUR_MS;
 const noAct = () => inFreeze() || (!!DB && !!MYID && S.season!=null && S.season<seasonNow());
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
 const RANK_PRIZE = [ null, {c:10000,st:20}, {c:7777,st:10}, {c:5000,st:5} ];   // 1〜3位
@@ -6141,6 +6148,7 @@ async function sendArt(r,x,n){
 function confirmItem(r,k,direct){
   if(k==="bomb" && !direct) return bombChoice(r);
   if(noAct()) return toast(FREEZE_TXT);
+  if(itemRest()) return toast(ITEM_REST_TXT);
   const i=itemOf(k), who=esc(r.name||"名無しの召喚士");
   if(SENDABLE.includes(k)) return qtyDialog({img:i.img, title:`${who}さんに${i.name}を贈る`, max:inv(k), ok:"贈る！",
     desc:n=>(k==="gift"?`${who}さんに <b>${(GIFT_COIN*n).toLocaleString()}コイン</b> がプレゼントされます。`:`${who}さんに <b>ガチャチケット${n}枚</b> が届きます。`)+"<br>相手には次にアプリを開いたときに届きます。"}, n=>useItem(r,k,n));
@@ -6156,6 +6164,7 @@ function confirmItem(r,k,direct){
 async function useItem(r,k,qty=1){
   if(!DB||!MYID||inv(k)<qty) return false;
   if(noAct()){ toast(FREEZE_TXT); return false; }
+  if(itemRest()){ toast(ITEM_REST_TXT); return false; }
   // 相手の最新プロフィールを読む。読めなかったときも、贈り物（神からの贈り物・チケット）は相手の情報がいらないので、手元のランキングの情報で贈れるようにする
   let d, ferr=null; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get(),8000); d=snap.exists?snap.data():null; }catch(e){ ferr=e; }
   if(ferr){ if(SENDABLE.includes(k) && r && r.id) d={...r}; else { toast("通信できませんでした。電波のよい所でもう一度ためしてください"+(ferr.code?`（${ferr.code}）`:"")); return false; } }
@@ -7058,7 +7067,7 @@ function advStep(dt){
   // 移動
   let mv=A.moveIn; if(A.keys["arrowleft"]||A.keys["a"]) mv=-1; if(A.keys["arrowright"]||A.keys["d"]) mv=1;
   let autoW=false; if(!mv && advAuto){ mv=A.dir; autoW=true; }   // オート移動：向いている方へ歩きつづける（スティックで向きを変えられる）
-  const spd=autoW?0.38:0.55; A.vx=mv*spd;   // オート移動は少しゆっくり if(mv) A.dir=mv>0?1:-1;
+  const spd=autoW?0.19:0.55; A.vx=mv*spd;   // オート移動は少しゆっくり if(mv) A.dir=mv>0?1:-1;
   A.x+=A.vx*dt; if(mv) A.walkT+=dt*8;
   A.vy-=3.4*dt; A.y+=A.vy*dt; if(A.y<=0){ A.y=0; A.vy=0; if(!A.onGround){ A.onGround=true; A.jumps=0; } }
   A.flapT=Math.max(0,A.flapT-dt); A.hurtT=Math.max(0,A.hurtT-dt); A.inv0=Math.max(0,A.inv0-dt);
