@@ -4497,7 +4497,7 @@ async function sha256(t){ const b=await crypto.subtle.digest("SHA-256",new TextE
 
 /* ---------- プロフィール・ランキング ---------- */
 let RANK_TOTAL=0;
-let SIGNED=false, VIEWONLY=false, DB=null, MYID=null, profMode="rank", profTimer=null, lastPub="", RANK=null, myRank=null, myRankAt=0, rankErr=false;
+let SIGNED=false, VIEWONLY=false, DB=null, MYID=null, profMode="rank", profTimer=null, lastPub="", RANK=null, myRank=null, myRankAt=0, myRankSafe=null, top3Seen=0, rankErr=false;
 
 const loginBox=msg=>`<div class="login-box"><p>${msg}</p>
   <button class="btn gold login-btn" type="button" data-login="1">ログイン / はじめて登録</button>
@@ -4536,11 +4536,17 @@ async function loadRanking(force){
     if(rankless()) myRank=null;   // ランク戦が始まって1時間は順位なし
     else if(i>=0) myRank=i+1;     // 一覧（上位100人）に入っていれば、一覧と同じ順位
     else { const higher=await DB.collection("profiles").where("score",">",S.plv*1e6+S.pexp).get(); myRank=higher.size+1; }
+    // 投資の無効の判定用の「かたい順位」：ほかの人のレベルは、見込みで下げた分（空枠・負け・爆弾）を戻して、高いほうで数える
+    //（まだ本人が反映していない減少の見込みだけで、自分が3位以内に入ったことにしない）
+    if(rankless()) myRankSafe=null; else { const mine=S.plv*1e6+(S.pexp||0);
+      const hi=q.docs.filter(d=>d.id!==MYID).map(d=>{ const raw={id:d.id,...d.data()}, cur=(raw.ss??0)>=seasonNow(); const pub=cur?(raw.lv||1)*1e6+(raw.exp||0):0;
+        const adj=RANK.find(x=>x.id===d.id); const a=adj?(adj.lv||1)*1e6+(adj.exp||0):0; return Math.max(pub,a); }).filter(v=>v>mine).length;
+      myRankSafe = i>=0 || q.size<200 ? hi+1 : Math.max(hi+1, myRank||0); }
     myRankAt=gnow();   // いつ計算した順位か（前のランク戦や順位なしの時間の古い順位で判定しないように）
     try{ const col=DB.collection("profiles");   // ランキングの参加人数（まとめて数えるだけなので通信は少ない）
       RANK_TOTAL = col.count ? (await col.count().get()).data().count : Math.max(RANK_TOTAL, q.size); }catch(e){ RANK_TOTAL=Math.max(RANK_TOTAL, q.size); }
     rankErr=false;
-    loadDexStats(); resetOldInvest(); await loadInvestCounts(); checkInvestVoid(); snapTick(); checkTicks(true);
+    loadDexStats(); resetOldInvest(); await loadInvestCounts(); fixVoid4(); checkInvestVoid(); snapTick(); checkTicks(true);
   }catch(e){ rankErr=true; }
   if(tab==="rank"||tab==="home") render(); else try{ renderSide(); }catch(e){}
 }
@@ -4848,19 +4854,22 @@ async function loadInvestList(){
 const TOP3_AMNESTY_SS = 2;
 function top3Amnesty(){ if(seasonNow()!==TOP3_AMNESTY_SS || S.top3amn) return; S.top3amn=1; if(S.top3ss===TOP3_AMNESTY_SS) S.top3ok=S.top3ss; save(); }
 const top3Pardoned = () => { top3Amnesty(); return S.top3ok!=null && S.top3ok===S.top3ss; };
-const top3Locked = () => (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRank && myRank<=3 && rankFresh() && !rankless());   // 古い順位（前のランク戦）では判定しない
+const top3Locked = () => (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRankSafe && myRankSafe<=3 && rankFresh() && !rankless());   // 古い順位（前のランク戦）では判定しない
 // 順位が「今のランク戦で順位がつきはじめたあと」に計算されたものか（アプリを開いたままランク戦をまたぐと、前の順位が残っていることがある）
 const rankFresh = () => { try{ return myRankAt >= seasonEnd(seasonNow()-1) + RANKLESS_MS; }catch(e){ return false; } };
-function markTop3(){ if(!myRank || myRank>3 || !rankFresh() || rankless() || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
+// 本当に3位以内か：「かたい順位」でも3位以内で、それが1分以上あけた2回の読み込みで続けて確認できたときだけ
+function top3Sure(){ const now=gnow(); if(!myRankSafe || myRankSafe>3 || !rankFresh() || rankless()){ top3Seen=0; return false; }
+  if(!top3Seen){ top3Seen=now; return false; } return now-top3Seen>=60000; }
+function markTop3(){ if(!top3Sure() || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
   if(S.top3ss!==seasonNow() || top3Pardoned()){ S.top3ss=seasonNow(); S.top3ok=null; save(); if(tab==="home"&&homeMode==="invest") render(); } }
 function checkInvestVoid(){
   markTop3();
-  const L=activeInvs(); if(!L.length||!myRank||myRank>3||!rankFresh()||rankless()||seasonBusy||(S.season??0)<seasonNow()) return;
+  const L=activeInvs(); if(!L.length||!(top3Seen&&gnow()-top3Seen>=60000)||!myRankSafe||myRankSafe>3||!rankFresh()||rankless()||seasonBusy||(S.season??0)<seasonNow()) return;
   let lose=0; L.forEach(iv=>{ const l=iv.paid?iv.amt:Math.min(iv.amt,S.coins); if(!iv.paid) S.coins-=l; iv.void=1; iv.lost=l; lose+=l;
     try{ DB&&DB.doc("invests/"+invDocId(iv)).update({void:true}).catch(()=>{}); }catch(e){} });
   save(); renderCoins();
   const el=document.createElement("div"); el.className="reveal";
-  el.innerHTML=`<h3>投資が無効になりました</h3><p class="note" style="text-align:center;max-width:320px">あなたがランキング${myRank}位に入ったので、${L.map(iv=>`<span translate="no">${esc(iv.name||"")}</span>さん`).join("・")}への投資は無効になりました。<br><b style="color:#ff6a5a">−${lose.toLocaleString()}コイン</b>（投資額を没収）</p><button class="btn" type="button">OK</button>`;
+  el.innerHTML=`<h3>投資が無効になりました</h3><p class="note" style="text-align:center;max-width:320px">あなたがランキング${myRankSafe}位に入ったので、${L.map(iv=>`<span translate="no">${esc(iv.name||"")}</span>さん`).join("・")}への投資は無効になりました。<br><b style="color:#ff6a5a">−${lose.toLocaleString()}コイン</b>（投資額を没収）</p><button class="btn" type="button">OK</button>`;
   document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); };
 }
 // 投資されたら、すぐに投資額の40%を受け取る（1つの投資につき1回だけ）
@@ -5542,6 +5551,7 @@ async function checkSeason(){
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
+  { id:"fix-2026-10-21-falsevoid", coins:1000 },   // 3位以内に入っていないのに投資が無効になっていた
   { id:"fix-2026-10-21-top3stale", coins:1000 },   // 前のランク戦の古い順位で「3位以内」と判定されていた／プロフィールの一部が保存されていなかった
   { id:"fix-2026-10-20-giftsend", coins:1000 },   // 神からの贈り物が「通信できませんでした」で贈れないことがあった
   { id:"fix-2026-10-20-invvoid", coins:1000 },
@@ -5586,6 +5596,19 @@ async function fixLoveL(){
   setTimeout(()=>{ try{ const el=document.createElement("div"); el.className="reveal";
     el.innerHTML=`<h3>🔄 限定ランクの魔物を戻しました</h3><p class="note" style="text-align:center;max-width:320px">売却してしまった限定ランクの魔物をBOXに戻しました（鍵をかけてあります）。<br><b>${back.map(esc).join("・")}</b><br>売却でもらったコイン（${coins.toLocaleString()}コイン）は差し引きました。</p><button class="btn gold" type="button">OK</button>`;
     document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); }; }catch(e){} },2500);
+}
+// 補正（1回だけ・今のランク戦4）：3位以内に入っていないのに投資が無効になっていた（ほかの人のレベルの「下がる見込み」で順位を高く数えていたバグ）
+// いま「かたい順位」で4位以下の人は、無効になった投資を元に戻し、投資のロックも解除する
+let fixVoid4Done=false;
+async function fixVoid4(){
+  if(fixVoid4Done||S.fixV4||!DB||!MYID||seasonNow()!==4||rankless()||myRankSafe==null||!rankFresh()) return; fixVoid4Done=true;
+  if(myRankSafe<=3){ S.fixV4=1; save(); return; }
+  if(S.top3ss===4){ S.top3ss=null; S.top3ok=null; }
+  const L=invFix().filter(iv=>iv.ss===4 && iv.void); let back=0;
+  for(const iv of L){ if(!iv.paid && iv.lost){ S.coins+=iv.lost; back+=iv.lost; } iv.void=0; delete iv.lost;
+    try{ await withTO(DB.doc("invests/"+invDocId(iv)).update({void:false})); }catch(e){ try{ await withTO(DB.doc("invests/"+invDocId(iv)).set({void:false},{merge:true})); }catch(e2){} } }
+  S.fixV4=1; save(); try{ render(); renderCoins(); }catch(e){}
+  if(L.length) setTimeout(()=>{ try{ toast(LANG==="en"?"Your investment that was wrongly voided has been restored":"まちがって無効になっていた投資を、元に戻しました🙏"); }catch(e){} },2000);
 }
 async function fixInvChun(){
   if(S.fixInvC||!DB||!MYID) return;
