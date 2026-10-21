@@ -3191,7 +3191,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -5689,6 +5689,17 @@ async function fixVoid4(){
     try{ await withTO(DB.doc("invests/"+invDocId(iv)).update({void:false})); }catch(e){ try{ await withTO(DB.doc("invests/"+invDocId(iv)).set({void:false},{merge:true})); }catch(e2){} } }
   S.fixV4=1; save(); try{ render(); renderCoins(); }catch(e){}
   if(L.length) setTimeout(()=>{ try{ toast(LANG==="en"?"Your investment that was wrongly voided has been restored":"まちがって無効になっていた投資を、元に戻しました🙏"); }catch(e){} },2000);
+}
+// 補正（1回だけ）：EASTBLUE🦁さんの消えてしまった魔物（ちむた・ほこり・メロメロバブリー 1体ずつ）をBOXと図鑑に戻す
+function fixEastblue(){
+  if(S.fixEB||!MYID) return;
+  if(normName(myName())!==normName("EASTBLUE🦁")){ S.fixEB=1; save(); return; }
+  const ids=[78,77,94], names=[];
+  ids.forEach(id=>{ const m=mon(id); if(!m) return; S.units.push({u:S.nextUid++,m:id,l:1,e:0,s:0,g:0,k:true,t:gnow()}); S.got[id]=Math.max(1,(S.got[id]||0)+1); names.push(m.name); });
+  S.fixEB=1; save(); queueProfile(true); try{ render(); }catch(e){}
+  setTimeout(()=>{ try{ const el=document.createElement("div"); el.className="reveal";
+    el.innerHTML=`<div class="burst"></div><h3>🔄 魔物を戻しました</h3><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${ids.map(id=>`<img src="${cardURL(id,0,128)}" alt="" style="width:30%;max-width:110px;height:auto">`).join("")}</div><p class="note" style="text-align:center;max-width:320px">消えてしまっていた魔物をBOXと図鑑に戻しました（鍵をかけてあります）。<br><b>${names.map(esc).join("・")}</b><br>ご迷惑をおかけしました🙏</p><button class="btn gold" type="button">OK</button>`;
+    document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); }; }catch(e){} },2500);
 }
 async function fixInvChun(){
   if(S.fixInvC||!DB||!MYID) return;
