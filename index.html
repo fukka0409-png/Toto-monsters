@@ -3138,7 +3138,11 @@ async function pullRemote(fromPush, force){
       // この端末でまだ送っていない、もっと新しい記録があるときは、この端末の記録を優先する
       if(!aheadSeason && (S.updated||0) > ru){ lastRemote=ru; return false; }
       if(!r || !Array.isArray(r.units)) return false;
-      S=r; fixPlayer(); fixGuard(); lastRemote=ru;
+      // この端末で手に入れて、まだクラウドに送れていなかった魔物（クラウドの記録より後に手に入れたもの）は消さずに残す。図鑑の記録も多いほうを残す
+      const keepU=(S.units||[]).filter(u=>u && u.t && u.t>ru && !r.units.some(z=>z.u===u.u && z.m===u.m)), gotL=S.got||{};
+      S=r; S.got=S.got||{}; for(const k in gotL){ if((gotL[k]||0)>(S.got[k]||0)) S.got[k]=gotL[k]; }
+      if(keepU.length){ S.nextUid=Math.max(S.nextUid||1, ...S.units.map(z=>z.u+1)); keepU.forEach(u=>S.units.push({...u, u:S.nextUid++})); S.updated=gnow(); setTimeout(()=>{ try{ save(); }catch(e){} },500); }
+      fixPlayer(); fixGuard(); lastRemote=ru;
       try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
       render(); return true;              // 画面だけ静かに更新する（メッセージは出さない）
     }
@@ -5626,6 +5630,7 @@ async function checkSeason(){
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
+  { id:"fix-2026-10-22-syncloss", coins:1000 },   // クラウドの記録の入れかえで、手に入れたばかりの魔物が消えることがあった
   { id:"fix-2026-10-21-falsevoid", coins:1000 },   // 3位以内に入っていないのに投資が無効になっていた
   { id:"fix-2026-10-21-top3stale", coins:1000 },   // 前のランク戦の古い順位で「3位以内」と判定されていた／プロフィールの一部が保存されていなかった
   { id:"fix-2026-10-20-giftsend", coins:1000 },   // 神からの贈り物が「通信できませんでした」で贈れないことがあった
