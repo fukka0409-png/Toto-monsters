@@ -781,6 +781,21 @@ html[lang=en] .ttl .ttl-adv span{font-size:32px}
 .adv-esc[hidden]{display:none}
 .adv-lure{position:absolute;right:8px;top:calc(max(8px,env(safe-area-inset-top,0px)) + 140px);z-index:3;padding:8px 12px;border:3px solid #6a1040;border-radius:999px;background:linear-gradient(#ff9bd0,#e0458f);color:#fff;font:900 13px/1 var(--f-body);text-shadow:0 1px 0 #0006;box-shadow:0 3px 0 #0006;cursor:pointer}
 .adv-lure:active{transform:translateY(2px)}
+.adv-book{position:absolute;right:8px;top:calc(max(8px,env(safe-area-inset-top,0px)) + 186px);z-index:3;padding:7px 12px;border:3px solid #5b4b38;border-radius:999px;background:#f6e3b4;color:#3a2306;font:900 12.5px/1 var(--f-body);box-shadow:0 3px 0 #0006;cursor:pointer}
+.adv-book:active{transform:translateY(2px)}
+.adv-sheet.book{left:8px;right:8px;top:8%;bottom:6%;max-width:460px;margin:0 auto;background:#3b3632;border:5px solid #1c1a18;border-radius:10px;box-shadow:0 10px 30px #000a;padding:8px;display:flex;flex-direction:column;gap:8px}
+.bk-head{position:relative;background:#e9dcc0;border:4px solid #5b4b38;border-radius:6px;padding:8px 40px 8px 10px;font:900 15px/1.3 var(--f-body);color:#2a1a0a}
+.bk-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:6px;padding-right:2px}
+.bk-sec{font:900 12px/1 var(--f-body);color:#e9dcc0;margin:6px 2px 0}
+.bk-row{display:flex;align-items:center;gap:10px;background:#55504a;border:2px solid #2a2724;border-radius:6px;padding:6px 8px;cursor:pointer;color:#fff;text-align:left;width:100%}
+.bk-row.on{background:#6b6258;border-color:#e9dcc0}
+.bk-ic{flex:none;width:46px;height:46px;border-radius:4px;background:#2f3b46;display:flex;align-items:center;justify-content:center;font-size:26px}
+.bk-ic img{max-width:84%;max-height:84%;image-rendering:pixelated}
+.bk-row.unk .bk-ic img,.bk-row.unk .bk-ic span{filter:brightness(0);opacity:.45}
+.bk-row b{font:900 14px/1.2 var(--f-body)}
+.bk-det{font:700 12px/1.55 var(--f-body);color:#f3ead6;margin-top:3px}
+.bk-det em{font-style:normal;color:#ffe14a;font-weight:900}
+.bk-row.unk .bk-det{color:#d9c7a7}
 .adv-esc:active{transform:translateY(2px)}
 .adv-sheet.bagbg{inset:0;background:#0006;z-index:4}
 .adv-sheet.bag{z-index:5}
@@ -6098,8 +6113,8 @@ function showNewMonsters(){
 
 /* ===================== トトの冒険（2Dアクション） =====================
    タイトル画面の「トトの冒険」→ルール説明→「冒険スタート」で始まる。世界はどこまでも続く横スクロール。
-   ・制限時間12分。1分ごとに敵のLvが上がる（Lv1〜9は4体ずつ・Lv10のボスは1体ずつ、そのLvの間はずっと補充）。ランキングは倒した数
-   ・12分生き延びればステージクリア（報酬10倍）。1分をこえたら「脱出してクリアする」もできる
+   ・制限時間5分。30秒ごとに敵のLvが上がる（Lv1〜9は4体ずつ・Lv10のボスは1体ずつ、そのLvの間はずっと補充）。ランキングは倒した数
+   ・5分生き延びればステージクリア（報酬10倍）。1分をこえたら「脱出してクリアする」もできる
    ・死亡すると報酬はなく、メモも消える（ハート石で復活はできる）
    ・トトのLvは「与えたダメージ」で上がる。攻撃力は 装備なし+5／魔法の欠片+10（Lvごと）、体力上限+12・体力6回復
    ・攻撃する0.1秒前に、敵の頭上に「❗」と、攻撃が当たる範囲（地面の赤い帯）が出る
@@ -6115,7 +6130,7 @@ function showNewMonsters(){
 const ADV_MEMO_FIRST = "魔法の欠片の特徴と融合方法を忘れないように....！";
 const ADV = {
   COUNT_SEC: 30, IDLE_SEC: 30, INV_MAX: 20, ESCAPE_SEC: 60, PER_LV: 10, CLEAR_MUL: 10,
-  LIMIT_MS: 12*60000, LV_MS: 60000, ON_FIELD: 4, ON_FIELD_BOSS: 1, FREEZE0: 3,   // 2026-10-20：12分の時間制限・1分ごとに敵Lvアップ・倒した数ランキング
+  LIMIT_MS: 5*60000, LV_MS: 30000, ON_FIELD: 4, ON_FIELD_BOSS: 1, FREEZE0: 3,   // 2026-10-20：5分の時間制限・1分ごとに敵Lvアップ・倒した数ランキング
   HP0: 10, HP_PER_LV: 12, HEAL_PER_LV: 6, ATK0: 2, ATK_PER_LV: 5, MAG_PER_LV: 10,
   MELEE_REACH: 0.2, MAGIC_RANGE: 1.5,
   WARN: 0.1, ZOOM: 0.56,   // 少し引いたカメラ（ステージが広く見える）
@@ -6125,13 +6140,13 @@ const ADV = {
     {hp:6,   atk:1,   spd:0.145, max:5},
     {hp:14,  atk:2,   spd:0.145, max:5},
     {hp:28,  atk:4,   spd:0.145, max:5},
-    {hp:70,  atk:10,  spd:0.145, max:4},
-    {hp:100, atk:14,  spd:0.145, max:4},
-    {hp:140, atk:19,  spd:0.145, max:4},
-    {hp:220, atk:28,  spd:0.145, max:3},
-    {hp:280, atk:34,  spd:0.145, max:3},
-    {hp:350, atk:40,  spd:0.145, max:3},
-    {hp:1050,atk:120, spd:0.145, max:1}],
+    {hp:1050, atk:120, spd:0.145, max:4},    // 2026-10-21：Lv4から前のボスなみ。そこからどんどん強くなる
+    {hp:1600, atk:170, spd:0.145, max:4},
+    {hp:2400, atk:240, spd:0.145, max:4},
+    {hp:3500, atk:330, spd:0.145, max:3},
+    {hp:5000, atk:450, spd:0.145, max:3},
+    {hp:7000, atk:620, spd:0.145, max:3},
+    {hp:15000,atk:1000,spd:0.145, max:1}],
   // トトのLvが上がるのに必要な「与えたダメージの合計」
   XP: [0,0,40,150,300,450,1100,2000,3400,5500,8300,11800,16000],
   HEAL: 30, PERIOD_MS: 60*60000, PERIOD_ORIGIN: Date.parse("2026-10-19T18:17:00+09:00"), PERIOD_BASE: 1e6,
@@ -6559,21 +6574,21 @@ function openAdventureIntro(){
   const bg=document.createElement("div"); bg.className="sheet-bg center ttl-top"; bg.id="advIntro"; bg.style.zIndex=135; bg.setAttribute("translate","no");
   const L=LANG==="en";
   const rows=L?[
-    ["⚔️","You have 12 minutes. Every minute the monsters level up (Lv1→Lv10). Lv1–9 come 4 at a time, the Lv10 BOSS 1 at a time — defeated ones keep coming back while that level lasts!"],
+    ["⚔️","You have 5 minutes. Every 30 seconds the monsters level up (Lv1→Lv10). Lv1–9 come 4 at a time, the Lv10 BOSS 1 at a time — defeated ones keep coming back while that level lasts!"],
     ["❗","A monster shows ❗ 0.1s before it attacks. The red band on the ground is where it hits — jump or step away!"],
     ["🦅","Tap Jump again in the air to flap your wings (up to 3 jumps)."],
     ["⭐","Toto levels up from the damage dealt. Higher Lv = more power and HP."],
     ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones! Use a Heal-a-thing to restore 30 HP."],
     ["🏆","Rankings (monsters defeated / best Lv) reset every hour. Your rank uses your LATEST record in that hour (a lower record lowers your rank). When the hour ends, #1 gets 5,000, #2 3,000 and #3 1,000 coins (in each ranking)."],
-    ["🏃","After 1 minute you can escape and clear. Survive all 12 minutes for 10× the reward!"],
+    ["🏃","After 1 minute you can escape and clear. Survive all 5 minutes for 10× the reward!"],
     ["🪦","If you die: no reward, and your memo is erased. (You can revive with a heart stone.)"]]:[
-    ["⚔️","制限時間は12分！ 1分ごとに敵のLvが上がる（Lv1→Lv10）。Lv1〜9は4体ずつ、Lv10のボスは1体ずつ出てきて、倒してもそのLvの間はどんどん補充される！"],
+    ["⚔️","制限時間は5分！ 30秒ごとに敵のLvが上がる（Lv1→Lv10）。Lv1〜9は4体ずつ、Lv10のボスは1体ずつ出てきて、倒してもそのLvの間はどんどん補充される！"],
     ["❗","敵は攻撃する0.1秒前に頭上に「❗」を出す。地面の赤い帯が攻撃の当たる範囲。ジャンプかはなれてよけよう！"],
     ["🦅","空中でもう一度ジャンプを押すと、翼でパタパタ（3段ジャンプまで）"],
     ["⭐","トトのLvは、敵に与えたダメージで上がる。Lvが上がると攻撃力と体力がアップ"],
     ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！「回復するやつ」を使うと体力が30回復"],
     ["🏆","ランキング（倒した数・最高レベル）は1時間ごとにリセット。順位は、その1時間で最後に出した記録で決まる（前より下がればその分順位も下がる）。終わったときに1位5000・2位3000・3位1000コイン（それぞれのランキングで）"],
-    ["🏃","1分をこえたら「脱出してクリアする」ができる。12分生き延びてクリアすると報酬10倍！"],
+    ["🏃","1分をこえたら「脱出してクリアする」ができる。5分生き延びてクリアすると報酬10倍！"],
     ["🪦","死亡すると報酬はなし、メモも消えてしまう…（ハート石で復活はできる）"]];
   bg.innerHTML=`<div class="swear adv-intro" role="dialog" aria-modal="true" aria-labelledby="aiT"><p id="aiT">🗺️ ${L?"Toto's Adventure":"トトの冒険"}</p>
     <ul class="ai-list">${rows.map(([i,t])=>`<li><span>${i}</span><div>${t}</div></li>`).join("")}</ul>
@@ -6601,6 +6616,7 @@ function openAdventure(){
     <div class="adv-prog" id="advProg"></div>
     <button class="adv-esc" id="advEsc" type="button" hidden>🏃 ${advT("脱出してクリアする")}</button>
     <button class="adv-lure" id="advLure" type="button">💕 ${advT("魔物を誘惑する")}</button>
+    <button class="adv-book" id="advBook" type="button">📖 ${advT("魔法・アイテム一覧")}</button>
     <div class="adv-pad">
       <button class="ap-btn ap-jump" id="apJump" type="button">${advT("ジャンプ")}</button>
       <div class="ap-stick" id="apStick"><div class="ap-knob" id="apKnob"></div></div>
@@ -6612,13 +6628,14 @@ function openAdventure(){
   document.body.appendChild(el);
   el.querySelector("#advEsc").onclick=()=>advEscapeAsk();
   el.querySelector("#advLure").onclick=e=>{ e.stopPropagation(); advLure(); };
+  el.querySelector("#advBook").onclick=e=>{ e.stopPropagation(); advBook(); };
   advStart();
   advBindInput(el);
   advResize(); addEventListener("resize",advResize); window.visualViewport?.addEventListener("resize",advFixView);
   cancelAnimationFrame(advRaf); A.last=performance.now(); advRaf=requestAnimationFrame(advLoop);
 }
 const advT = t => (LANG==="en" && ADV_EN[t]) || t;
-const ADV_EN = { "風魔法の欠片":"Wind Magic Shard","範囲攻撃：竜巻で巻き上げて運ぶ（つかまっている間ダメージ）":"Area attack: a tornado lifts and carries enemies away (damage while caught)","魔物を誘惑する":"Lure monsters","💕 Lv{n}の魔物が4体おびき寄せられた！":"💕 4 Lv{n} monsters were lured in!","残り時間":"Time left","倒した数":"Defeated","体":" ","12分生き延びた！ ステージクリア！":"Survived 12 minutes! Stage clear!","12分クリア":"12-min clear","脱出してクリアしますか？（12分生き延びると報酬は10倍）":"Escape and clear now? (Surviving 12 minutes gives 10× the reward)","👑 Lv10のボスが現れはじめた！":"👑 Lv10 BOSSES are appearing!","敵Lv{n}・次のLvまで{m}秒":"Enemy Lv{n} · next Lv in {m}s","体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
+const ADV_EN = { "魔法・アイテム一覧":"Magic & Items","風魔法の欠片":"Wind Magic Shard","範囲攻撃：竜巻で巻き上げて運ぶ（つかまっている間ダメージ）":"Area attack: a tornado lifts and carries enemies away (damage while caught)","魔物を誘惑する":"Lure monsters","💕 Lv{n}の魔物が4体おびき寄せられた！":"💕 4 Lv{n} monsters were lured in!","残り時間":"Time left","倒した数":"Defeated","体":" ","5分生き延びた！ ステージクリア！":"Survived 5 minutes! Stage clear!","5分クリア":"5-min clear","脱出してクリアしますか？（5分生き延びると報酬は10倍）":"Escape and clear now? (Surviving 5 minutes gives 10× the reward)","👑 Lv10のボスが現れはじめた！":"👑 Lv10 BOSSES are appearing!","敵Lv{n}・次のLvまで{m}秒":"Enemy Lv{n} · next Lv in {m}s","体力":"HP","生き延びた時間":"Time survived","最高記録":"Best","冒険回数":"Runs","ジャンプ":"Jump","攻撃":"Attack","装備":"Equip","リュック":"Bag",
   "3秒こおらせる（同じ魔物は半分ずつ短く）":"freezes for 3s (half as long each time on the same monster)","⚠️ 動かずにいたら、Lv100の魔物がやってきた…！":"⚠️ You stood still too long... a Lv100 monster appeared!","からっぽ…":"Empty...",
   "のこり":"Left:","アイテムをえらんでね":"Pick an item","タイトル画面に戻る":"Back to title","ハート石の力で復活した！":"Revived by the power of a heart stone!",
   "ハート石を1個消費してこのまま復活する":"Use 1 heart stone to revive here","メモ":"Memo","メモは冒険が終わっても残ります（死亡するとすべて消えます）":"Your memo stays after an adventure ends (but is erased if you die)",
@@ -6720,8 +6737,8 @@ function advStep(dt){
   if(!A.counted && A.t>=ADV.COUNT_SEC*1000){ A.counted=true; S.advCount=(S.advCount||0)+1; save(); }   // 30秒をこえたら冒険回数+1
   // 移動
   let mv=A.moveIn; if(A.keys["arrowleft"]||A.keys["a"]) mv=-1; if(A.keys["arrowright"]||A.keys["d"]) mv=1;
-  if(!mv && advAuto) mv=A.dir;   // オート移動：向いている方へ歩きつづける（スティックで向きを変えられる）
-  const spd=0.55; A.vx=mv*spd; if(mv) A.dir=mv>0?1:-1;
+  let autoW=false; if(!mv && advAuto){ mv=A.dir; autoW=true; }   // オート移動：向いている方へ歩きつづける（スティックで向きを変えられる）
+  const spd=autoW?0.38:0.55; A.vx=mv*spd;   // オート移動は少しゆっくり if(mv) A.dir=mv>0?1:-1;
   A.x+=A.vx*dt; if(mv) A.walkT+=dt*8;
   A.vy-=3.4*dt; A.y+=A.vy*dt; if(A.y<=0){ A.y=0; A.vy=0; if(!A.onGround){ A.onGround=true; A.jumps=0; } }
   A.flapT=Math.max(0,A.flapT-dt); A.hurtT=Math.max(0,A.hurtT-dt); A.inv0=Math.max(0,A.inv0-dt);
@@ -6741,7 +6758,7 @@ function advStep(dt){
   if(A.nextSpawn<=0){ const alive=A.enemies.filter(e=>!e.dead&&!e.extra&&!e.lure&&e.lv===lv).length;
     if(alive<keep){ advSpawn(lv); A.spawned++; }
     A.nextSpawn=0.35+Math.random()*0.5; }
-  // 12分たったら終わり（生き延びたらステージクリア）
+  // 5分たったら終わり（生き延びたらステージクリア）
   if(A.t>=ADV.LIMIT_MS){ A.t=ADV.LIMIT_MS; advFinish("time"); return; }
   // 攻撃
   if(A.atk){ const a=A.atk; a.t+=dt;
@@ -6937,13 +6954,13 @@ async function advDeathScreen(t,lv,rec){
 }
 // 脱出クリア（1分をこえたら）／ボスをたおしてステージクリア
 function advEscapeAsk(){ if(!A||A.dead||A.over||A.t<ADV.ESCAPE_SEC*1000) return;
-  if(confirm(advT2("脱出してクリアしますか？（12分生き延びると報酬は10倍）"))) advFinish("escape"); }
+  if(confirm(advT2("脱出してクリアしますか？（5分生き延びると報酬は10倍）"))) advFinish("escape"); }
 async function advFinish(kind){
   if(!A||A.over||A.dead) return; A.over=true; A.atk=null; const eb=document.getElementById("advEsc"); if(eb) eb.hidden=true; document.querySelectorAll("#adv .adv-sheet").forEach(x=>x.remove());
-  const t=A.kills||0, lv=advLv(); const rec=advRecord(t,lv); const boss=kind==="time";   // 12分生き延びたらステージクリア（報酬10倍）
+  const t=A.kills||0, lv=advLv(); const rec=advRecord(t,lv); const boss=kind==="time";   // 5分生き延びたらステージクリア（報酬10倍）
   try{ SFX.reveal(boss?"Z":"S"); }catch(e){}
   const el=document.createElement("div"); el.className="adv-dead clear"; el.id="advDead";
-  el.innerHTML=`<div class="ad-box"><h2>${boss?"👑 "+advT2("12分生き延びた！ ステージクリア！"):"🏃 "+advT2("脱出成功！")}</h2>
+  el.innerHTML=`<div class="ad-box"><h2>${boss?"👑 "+advT2("5分生き延びた！ ステージクリア！"):"🏃 "+advT2("脱出成功！")}</h2>
     <p class="ad-l">${advT2("記録")}${rec?` <span class="ad-new">${advT2("自己ベスト更新！")}</span>`:""}</p>
     <div class="ad-rec"><div><small>${advT2("倒した数")}</small><b>${t.toLocaleString()}${advT2("体")}</b><small>${advT2("ランキング")}</small><b id="adR1">…</b></div>
       <div><small>${advT2("達成レベル")}</small><b>Lv.${lv}</b><small>${advT2("ランキング")}</small><b id="adR2">…</b></div></div>
@@ -6952,7 +6969,7 @@ async function advFinish(kind){
     <button class="ad-btn" id="adBack" type="button">${advT2("タイトル画面に戻る")}</button></div>`;
   document.getElementById("adv").appendChild(el);
   const cEl=el.querySelector("#adCoin");
-  const showRw=r=>{ cEl.innerHTML=`🪙 ${advT2("報酬")} <b>${r.coins.toLocaleString()}</b> ${advT2("コイン")}<small>(${advT2("時間")} ${r.tc} ＋ Lv ${r.lc})${r.mul>1?` ×${r.mul}（${advT2("ランキング1位更新！")}）`:""}${r.boss?` ×${ADV.CLEAR_MUL}（${advT2("12分クリア")}）`:""}${r.loot?` ＋ ${advT2("宝箱のコイン")} ${r.loot.toLocaleString()}`:""}</small>`; };
+  const showRw=r=>{ cEl.innerHTML=`🪙 ${advT2("報酬")} <b>${r.coins.toLocaleString()}</b> ${advT2("コイン")}<small>(${advT2("時間")} ${r.tc} ＋ Lv ${r.lc})${r.mul>1?` ×${r.mul}（${advT2("ランキング1位更新！")}）`:""}${r.boss?` ×${ADV.CLEAR_MUL}（${advT2("5分クリア")}）`:""}${r.loot?` ＋ ${advT2("宝箱のコイン")} ${r.loot.toLocaleString()}`:""}</small>`; };
   const rw=advReward(Math.floor(A.t),lv,null,boss); showRw(rw);
   advGiveCoins(rw);   // 報酬はクリアした時点でわたす（アプリを閉じても消えない）。お知らせはタイトルに戻ったときに見える
   el.querySelector("#adBack").onclick=()=>advClose();
@@ -6996,7 +7013,36 @@ function advBag(){
   document.getElementById("adv").append(bd,el); A.sel=-1; advBagRefresh();
 }
 function advBagClose(){ document.querySelectorAll("#adv .adv-sheet.bag,#adv .adv-sheet.bagbg").forEach(x=>x.remove()); }
+/* ---------- 魔法・アイテム一覧（図鑑）：見つけたものだけ名前と説明。まだのものはシルエットと「？？？」 ---------- */
+function advMarkSeen(){ if(!A) return; const s=S.advSeen=S.advSeen||{}; let ch=false;
+  const r=S.advRecipes||[]; if(r.includes("g+g")){ if(!s.g){s.g=1;ch=true;} if(!s.b){s.b=1;ch=true;} } if(r.includes("g+b")&&!s.w){ s.w=1; ch=true; }
+  (A.inv||[]).forEach(it=>{ if(it&&!s[it.k]){ s[it.k]=1; ch=true; } }); if(ch) save(); }
+function advBook(){ if(!A||A.dead||A.over) return; advMarkSeen(); document.querySelectorAll("#adv .adv-sheet").forEach(x=>x.remove());
+  const L=LANG==="en", seen=S.advSeen||{};
+  const LIST=[
+    {sec:L?"Weapon":"武器", k:"staff", always:1, icon:`<span>🪄</span>`, name:L?"Toto's Staff (no equipment)":"トトの杖（装備なし）", desc:()=>(L?`Hits enemies right in front of you. Power `:`すぐ前の敵に当たる近くの攻撃。攻撃力 `)+`<em>${advMeleeDmg()}</em>`},
+    {sec:L?"Magic":"魔法", k:"g", kind:"magic", how:"item", desc:()=>(L?`Shoots a magic bolt straight ahead — reaches far. Power `:`まっすぐ魔法の弾を撃つ。遠くまで届く。攻撃力 `)+`<em>${advShardDmg("g")}</em>`+(L?` · ${ADV.SHARD.g.uses} uses`:` ・ ${ADV.SHARD.g.uses}回使える`)},
+    {k:"b", kind:"magic", how:"fuse", desc:()=>(L?`Freezes the monster it hits for 3s (shorter each time on the same monster). Power `:`当たった魔物を3秒こおらせる（同じ魔物は半分ずつ短くなる）。攻撃力 `)+`<em>${advShardDmg("b")}</em>`+(L?` · ${ADV.SHARD.b.uses} uses`:` ・ ${ADV.SHARD.b.uses}回使える`)},
+    {k:"w", kind:"magic", how:"fuse", desc:()=>(L?`Area attack: a tornado grows and lifts every monster it touches, carrying them away while dealing damage. Lasts 1.5s. Power `:`範囲攻撃。だんだん大きくなる竜巻が、触れた魔物を巻き上げて運び、そのあいだダメージを与え続ける（1.5秒）。攻撃力 `)+`<em>${advShardDmg("w")}</em>`+(L?` · ${ADV.SHARD.w.uses} uses`:` ・ ${ADV.SHARD.w.uses}回使える`)},
+    {sec:L?"Items":"アイテム", k:"heal", kind:"item", how:"item", desc:()=>L?`Restores <em>${ADV.HEAL}</em> HP.`:`使うと体力が<em>${ADV.HEAL}</em>回復する。`},
+    {k:"key", kind:"item", how:"item", desc:()=>L?"Opens a rainbow chest.":"虹の宝箱を開けられる。"},
+  ];
+  const nameOf=x=>x.name||advT2(advItemName({k:x.k})), iconOf=x=>x.icon||(x.k==="key"?`<span>🗝</span>`:`<img src="${advItemImg({k:x.k})}" alt="">`);
+  const unkTxt=x=>x.how==="fuse"?(L?"This magic hasn't been unlocked yet! Try fusing in all kinds of patterns to discover it!":"この魔法はまだ解放されていません！色んなパターンの融合で探求しましょう！")
+    :(x.kind==="magic"?(L?"This magic hasn't been found yet!":"この魔法はまだ発見されていません！"):(L?"This item hasn't been found yet.":"このアイテムはまだ発見されていません"));
+  const bg=document.createElement("div"); bg.className="adv-sheet bagbg"; const el=document.createElement("div"); el.className="adv-sheet book";
+  let open=-1;
+  const draw=()=>{ el.innerHTML=`<div class="bk-head">📖 ${L?"Magic & Item List":"魔法・アイテム一覧"}<button class="ab-x" type="button" id="bkX">✕</button></div>
+    <div class="bk-list">${LIST.map((x,i)=>{ const known=x.always||seen[x.k];
+      return `${x.sec?`<div class="bk-sec">${x.sec}</div>`:""}<button class="bk-row ${known?"":"unk"} ${open===i?"on":""}" type="button" data-bk="${i}"><div class="bk-ic">${iconOf(x)}</div>
+        <div><b>${known?nameOf(x):"？？？"}</b>${open===i?`<div class="bk-det">${known?x.desc():unkTxt(x)}</div>`:""}</div></button>`; }).join("")}</div>`;
+    el.querySelector("#bkX").onclick=close;
+    el.querySelectorAll("[data-bk]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.bk; open=open===i?-1:i; const sc=el.querySelector(".bk-list").scrollTop; draw(); el.querySelector(".bk-list").scrollTop=sc; }); };
+  const close=()=>{ bg.remove(); el.remove(); A.last=performance.now(); };
+  bg.onclick=close; const box=document.querySelector("#adv .adv-box")||document.getElementById("adv"); box.appendChild(bg); box.appendChild(el); draw();
+}
 function advBagRefresh(){
+  try{ advMarkSeen(); }catch(e){}
   const el=document.querySelector(".adv-sheet.bag"); if(!el||!A) return;
   A.fuse=A.fuse.map(i=>i<A.inv.length?i:-1);
   const slot=i=>{ const it=A.inv[i]; if(!it||A.fuse.includes(i)) return `<div class="ab-cell empty"></div>`;   // 融合の枠に移した欠片は、下のマスから消える
