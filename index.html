@@ -2830,6 +2830,7 @@ const CODES = [
    h: QRコードの中身を暗号化した値 / name: 名前 / coins・ticket・stone・item+qty: もらえるもの */
 const QR_CODES = [
   { h: "5ab992988f783361709b770887707d115bdb5af0e4a17f16e4903c4255cdeda1", name: "はじめてのQRコード", coins: 1000 },   // 2026-10-21 追加（テスト用）
+  { h: "5e4ed210f00d61b8953488bc4de4a41367b27c16d8ef388fa6e54aec2cb0cc33", name: "3000コインのQRコード", coins: 3000 },   // 2026-10-21 追加
 ];
 const MAX_LV = 100;
 // 進化する魔物：段階ごとのレベル上限（cap）。上限に達したら、進化するまで合成ではレベルは上がらない（2026-10-19から覚醒の石はどのレベルでも使える）
@@ -5578,10 +5579,10 @@ async function fixLoveL(){
   MONSTERS.filter(m=>m.rank==="L").forEach(m=>{ const have=S.units.filter(z=>z.m===m.id).length, got=S.got[m.id]||0;
     for(let i=have;i<got;i++){ const u={u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:true,t:gnow()}; const lg=(S.sellLog||[]).flatMap(x=>x.units.map(v=>({v,x}))).find(o=>o.v.m===m.id);
       if(lg){ u.l=lg.v.l; u.e=lg.v.e||0; } S.units.push(u); back.push(m.name);
-      coins+= lg ? Math.round(lg.x.coins/lg.x.units.length) : (dexPrice(m.id) ?? SELL.L); } });
+      coins+= lg ? Math.round(lg.x.coins/lg.x.units.length) : 50000; } });   // 売却でもらったのは約5万コイン（本人の申告）
   S.fixLoveL=1;
   if(!back.length){ save(); return; }
-  S.coins=Math.max(0,S.coins-coins); save(); try{ render(); renderCoins(); }catch(e){}
+  S.coins=Math.max(0,S.coins-coins); S.fixLoveAmt=coins; save(); try{ render(); renderCoins(); }catch(e){}
   setTimeout(()=>{ try{ const el=document.createElement("div"); el.className="reveal";
     el.innerHTML=`<h3>🔄 限定ランクの魔物を戻しました</h3><p class="note" style="text-align:center;max-width:320px">売却してしまった限定ランクの魔物をBOXに戻しました（鍵をかけてあります）。<br><b>${back.map(esc).join("・")}</b><br>売却でもらったコイン（${coins.toLocaleString()}コイン）は差し引きました。</p><button class="btn gold" type="button">OK</button>`;
     document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); }; }catch(e){} },2500);
