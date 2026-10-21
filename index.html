@@ -3142,7 +3142,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -3933,6 +3933,7 @@ function doSell(uids){
   const lv=sellLv(list); if(lv){ S.plv+=lv; bumpMaxLv(); }
   const nL=list.filter(u=>mon(u.m).rank==="L").length, up=nL*LIMITED_SELL_LV; let raised=0;
   if(up){ S.units.forEach(z=>{ const c=capOf(z); if(evoLocked(z)){ if(z.l>=c) return; z.l=Math.min(c,z.l+up); } else { const b0=z.l; z.l+=up; z.a=(z.a||0)+Math.max(0,z.l-Math.max(b0,MAX_LV)); } if(z.l>=Math.min(c,MAX_LV)) z.e=0; raised++; }); queueProfile(true); }   // Lv100を超えた分も、覚醒の石と同じようにそのまま上がる
+  S.sellLog=(S.sellLog||[]).concat({at:gnow(), units:list.map(u=>({...u})), coins:total, plv:lv, up}).slice(-30);   // 売却の記録（あとで戻せるように）
   S.coins+=total; save(); SFX.coin(); toast(`${list.length}体を売却 +${total.toLocaleString()}コイン`+(lv?` ・ 冒険者Lv+${lv}（Lv${S.plv}）`:"")+(up?` ・ 手持ちの魔物${raised}体のLv+${up}`:"")); if(lv) setTimeout(()=>{ try{ SFX.level(); }catch(e){} },350); return total;
 }
 function confirmSell(uids,onDone,fresh){
@@ -5567,6 +5568,23 @@ async function fixTop3Yoko4(){
   for(const iv of L){ if(!iv.paid && iv.lost) S.coins+=iv.lost; iv.void=0; delete iv.lost;
     try{ await withTO(DB.doc("invests/"+invDocId(iv)).update({void:false})); }catch(e){ try{ await withTO(DB.doc("invests/"+invDocId(iv)).set({void:false},{merge:true})); }catch(e2){} } }
   S.fixT3y4=1; save(); try{ render(); }catch(e){}
+}
+// 補正（1回だけ）：loveさんが売却してしまった限定ランクの魔物をBOXに戻し、売却でもらったコインを差し引く
+async function fixLoveL(){
+  if(S.fixLoveL||!MYID) return;
+  if(normName(myName())!==normName("love")){ S.fixLoveL=1; save(); return; }
+  try{ await loadDexStats(true); }catch(e){}
+  const back=[]; let coins=0;
+  MONSTERS.filter(m=>m.rank==="L").forEach(m=>{ const have=S.units.filter(z=>z.m===m.id).length, got=S.got[m.id]||0;
+    for(let i=have;i<got;i++){ const u={u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:true,t:gnow()}; const lg=(S.sellLog||[]).flatMap(x=>x.units.map(v=>({v,x}))).find(o=>o.v.m===m.id);
+      if(lg){ u.l=lg.v.l; u.e=lg.v.e||0; } S.units.push(u); back.push(m.name);
+      coins+= lg ? Math.round(lg.x.coins/lg.x.units.length) : (dexPrice(m.id) ?? SELL.L); } });
+  S.fixLoveL=1;
+  if(!back.length){ save(); return; }
+  S.coins=Math.max(0,S.coins-coins); save(); try{ render(); renderCoins(); }catch(e){}
+  setTimeout(()=>{ try{ const el=document.createElement("div"); el.className="reveal";
+    el.innerHTML=`<h3>🔄 限定ランクの魔物を戻しました</h3><p class="note" style="text-align:center;max-width:320px">売却してしまった限定ランクの魔物をBOXに戻しました（鍵をかけてあります）。<br><b>${back.map(esc).join("・")}</b><br>売却でもらったコイン（${coins.toLocaleString()}コイン）は差し引きました。</p><button class="btn gold" type="button">OK</button>`;
+    document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); }; }catch(e){} },2500);
 }
 async function fixInvChun(){
   if(S.fixInvC||!DB||!MYID) return;
