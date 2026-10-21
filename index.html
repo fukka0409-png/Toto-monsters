@@ -959,6 +959,37 @@ html[lang=en] .ttl .ttl-adv span{font-size:32px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"自分には投資できない。": "You can't invest in yourself.",
+"。自分には投資できない。": ". You can't invest in yourself.",
+"4位 1.5倍": "4th 1.5x",
+"5位以下 10倍を失う": "5th or lower: lose 10x",
+"👑 自分がランク戦終了時に": "👑 If you are in the ",
+"3位以内": "top 3",
+"なら、投資先が": " when the match ends, and your pick is in the ",
+"4位以内": "top 4",
+"で順位に関係なく": ", you get ",
+"。3位以内の冒険者も投資できる。": " regardless of their rank. Adventurers in the top 3 can invest too.",
+"投資した時点でコインが減る。5位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。": "Coins are taken when you invest. If your pick is 5th or lower, you lose 10x in total (including what you invested). Results apply the next time you open the app after the match ends.",
+"🥇1位 ": "🥇1st ",
+" ／ 🥈2位 ": " / 🥈2nd ",
+" ／ 🥉3位 ": " / 🥉3rd ",
+" ／ 4位 ": " / 4th ",
+"1.5倍": "1.5x",
+"5位以下 ": "5th or lower ",
+"👑 あなたがランク戦終了時に": "👑 If you are in the ",
+"（5位以下なら10倍を失う）": " (5th or lower: lose 10x)",
+"・3位以内の冒険者も投資できます": "• Adventurers in the top 3 can invest too",
+"🥇 投資先がランク戦1位 → ": "🥇 Your pick finishes 1st → ",
+"🥈 2位 → ": "🥈 2nd → ",
+" ／ 🥉 3位 → ": " / 🥉 3rd → ",
+" ／ 4位 → ": " / 4th → ",
+"💸 5位以下 → ": "💸 5th or lower → ",
+"👑 自分がランク戦終了時に3位以内なら、投資先が4位以内で順位に関係なく": "👑 If you're in the top 3 when the match ends and your pick is in the top 4, regardless of rank you get ",
+"4位": "4th",
+"👑 あなたは今{0}位なので、投資先が4位以内なら2倍": "👑 You're #{0} now, so if your pick is in the top 4 you get 2x",
+"👑 あなたが3位以内のまま終われば、4位以内で+{0}": "👑 If you stay in the top 3, a top-4 finish gives +{0}",
+"（あなたが{0}位なので2倍）": "(2x because you were #{0}) ",
+"次のランク戦が始まってから1時間は、だれでもひとことコメントを残せます！ 感想を他の冒険者と共有しよう！！✨": "For the first hour of the next ranked match, anyone can leave a short message! Share your thoughts with the other adventurers!! ✨",
 "📈 投資の素質": "📈 Investing skill",
 "{0}コインの{1}%を受け取りました！！（+{2}コイン）": "Received {1}% of {0} coins!! (+{2} coins)",
 "🤝 投資家{0}人から、投資額の40%（+{1}コイン）": "🤝 40% of investments from {0} investor(s) (+{1} coins)",
@@ -3985,7 +4016,7 @@ function openRules(){
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+"+WIN_LV)}</b></li><li>💀 負け：魔物のレベルが<b>${U("区切りまで下がる")}</b>（1桁は−1／22→20／216→200）、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b>。${U("一度届いた10刻みのチェックポイント（10・20・30…）より下には、そのランク戦の間は下がらない")}</li><li>🤝 引き分け：おたがい魔物のレベルが区切りまで下がる、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}（チェックポイントより下には下がらない）</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を2回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（ランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>希少さに応じたコイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
     ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("<b>ランク戦タイマー</b>が0になると終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
-    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前まで</b>）。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位以下 10倍を失う</b>（0コインまで）。</li><li>投資した時点でコインが減る。4位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>自分が<b>3位以内に入ったら、その時点で投資は無効</b>（投資した分は戻らない）。ただし、ランク戦が始まってから1時間は順位がつかないので、だれでも投資できる。自分には投資できない。</li><li>一度3位以内に入ったら、そのあと4位以下になっても、そのランク戦はもう投資できない。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>${invPct()}%</b>をもらえる。</li></ul>`,"w")],
+    ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前まで</b>）。自分には投資できない。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位 1.5倍</b>／<b>5位以下 10倍を失う</b>（0コインまで）。</li><li>👑 自分がランク戦終了時に<b>3位以内</b>なら、投資先が<b>4位以内</b>で順位に関係なく<b>2倍</b>。3位以内の冒険者も投資できる。</li><li>投資した時点でコインが減る。5位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>${invPct()}%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+"+WIN_LV)}</li><li>${U(`📖 魔物のコンプ率が<b>100%</b>（限定ランクをのぞく全種）になると、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが${COMP_EXP_MUL}倍</b>`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}（バトル・爆弾ではチェックポイントより下に下がらない）／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（チェックポイント関係なし）","j")}</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li>${U("<li>💰 Sランクの魔物を売却すると、コインに加えて<b>冒険者Lv+1</b>、Zランクは<b>冒険者Lv+5</b>上がる（A・B・Cランクはコインのみ）。</li>","x")}<li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
@@ -4511,7 +4542,7 @@ function profilePayload(){
   try{ if(typeof advSync==="function") advSync(); }catch(e){}
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
-    comment:(rankless()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
+    comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
@@ -4812,7 +4843,11 @@ function pullDeco(n, ticket){
    ランク戦終了時の投資先の順位で：1位 投資額の7倍もらえる／2位 5倍／3位 2倍／4位以下 投資額の10倍を失う（投資した分もふくめて合計。0コインまで）
    投資した自分が3位以内に入ったら、その時点で投資は無効（投資した分は戻らない）
    投資された人は、投資されたときにすぐ投資額の40%をもらえる（2026-10-20〜。checkInvestIncoming） */
-const INV_MUL = {1:7, 2:5, 3:2}, INV_LOSE = 10, INV_GIVE40_SS = 5;   // 2026-10-21：次のランク戦（5）から10%→40%
+const INV_MUL = {1:7, 2:5, 3:2}, INV_LOSE = 10, INV_GIVE40_SS = 5;
+// 2026-10-21：ランク戦5から新しいルール。4位でも1.5倍（5位以下は損）。3位以内の冒険者も投資でき、投資先が4位以内なら順位に関係なく2倍
+const INV_NEW_SS = 5, INV_MUL2 = {1:7, 2:5, 3:2, 4:1.5}, INV_TOP_MUL = 2;
+const invNew = ss => (ss??seasonNow()) >= INV_NEW_SS;
+const invMulOf = (tr, ss, meTop3) => !invNew(ss) ? (INV_MUL[tr]||0) : meTop3 ? (tr&&tr<=4?INV_TOP_MUL:0) : (INV_MUL2[tr]||0);   // 2026-10-21：次のランク戦（5）から10%→40%
 const invGiveOf = ss => (ss??seasonNow())>=INV_GIVE40_SS ? 0.4 : 0.1, invPct = () => Math.round(invGiveOf()*100);
 const INV_CLOSE_MS = 10*HOUR_MS;   // 投資できるのはランク戦終了の10時間前まで
 const INV_RESET_AT = Date.parse("2026-10-17T19:45:00+09:00");   // これより前の投資はすべて解除（払ったコインは返す）
@@ -4854,16 +4889,16 @@ async function loadInvestList(){
 const TOP3_AMNESTY_SS = 2;
 function top3Amnesty(){ if(seasonNow()!==TOP3_AMNESTY_SS || S.top3amn) return; S.top3amn=1; if(S.top3ss===TOP3_AMNESTY_SS) S.top3ok=S.top3ss; save(); }
 const top3Pardoned = () => { top3Amnesty(); return S.top3ok!=null && S.top3ok===S.top3ss; };
-const top3Locked = () => (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRankSafe && myRankSafe<=3 && rankFresh() && !rankless());   // 古い順位（前のランク戦）では判定しない
+const top3Locked = () => !invNew() && ( (S.top3ss===seasonNow() && !top3Pardoned()) || (!!myRankSafe && myRankSafe<=3 && rankFresh() && !rankless()));   // 古い順位（前のランク戦）では判定しない
 // 順位が「今のランク戦で順位がつきはじめたあと」に計算されたものか（アプリを開いたままランク戦をまたぐと、前の順位が残っていることがある）
 const rankFresh = () => { try{ return myRankAt >= seasonEnd(seasonNow()-1) + RANKLESS_MS; }catch(e){ return false; } };
 // 本当に3位以内か：「かたい順位」でも3位以内で、それが1分以上あけた2回の読み込みで続けて確認できたときだけ
 function top3Sure(){ const now=gnow(); if(!myRankSafe || myRankSafe>3 || !rankFresh() || rankless()){ top3Seen=0; return false; }
   if(!top3Seen){ top3Seen=now; return false; } return now-top3Seen>=60000; }
-function markTop3(){ if(!top3Sure() || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
+function markTop3(){ if(invNew() || !top3Sure() || seasonBusy || (S.season??0)<seasonNow()) return;   // 精算前（前のランク戦の順位のまま）は数えない
   if(S.top3ss!==seasonNow() || top3Pardoned()){ S.top3ss=seasonNow(); S.top3ok=null; save(); if(tab==="home"&&homeMode==="invest") render(); } }
 function checkInvestVoid(){
-  markTop3();
+  markTop3(); if(invNew()) return;   // 新しいルール：3位以内でも投資は無効にならない
   const L=activeInvs(); if(!L.length||!(top3Seen&&gnow()-top3Seen>=60000)||!myRankSafe||myRankSafe>3||!rankFresh()||rankless()||seasonBusy||(S.season??0)<seasonNow()) return;
   let lose=0; L.forEach(iv=>{ const l=iv.paid?iv.amt:Math.min(iv.amt,S.coins); if(!iv.paid) S.coins-=l; iv.void=1; iv.lost=l; lose+=l;
     try{ DB&&DB.doc("invests/"+invDocId(iv)).update({void:true}).catch(()=>{}); }catch(e){} });
@@ -4912,7 +4947,7 @@ async function ivBackfill(){
       for(const ss of sss){ await loadSeasonEvents(ss); let net=0;
         const all=q.docs.map(x=>{ const isMe=x.id===MYID, v=x.data(); return {id:x.id, score:isMe&&S.sv&&S.sv[ss]!=null?S.sv[ss]:finalScore(x.id,v,ss), ok:true}; }).filter(o=>o.score!=null);
         for(const x of by[ss]){ if(x.void){ net-=x.amt||0; continue; }
-          const t=all.find(o=>o.id===x.def); const tr=t?effRank(t.score,true,all.filter(o=>o!==t)):null, mul=INV_MUL[tr];
+          const t=all.find(o=>o.id===x.def); const tr=t?effRank(t.score,true,all.filter(o=>o!==t)):null, mul=INV_MUL[tr];   // さかのぼり集計は前のルールのランク戦だけ
           net += mul ? (x.amt||0)*(mul-1) : -(x.amt||0)*INV_LOSE; }
         ivRecord(ss, net>0); } }
     S.ivBF=1; save();
@@ -4925,15 +4960,15 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
   for(const iv of invFix().filter(x=>x.ss===old)){ if(iv.void){ ivNet=(ivNet||0)-iv.amt; continue; }
     if(ivNet==null) ivNet=0;
     const nm=esc(iv.name||"相手");
-    if(rank && rank<=3){ ivNet-=iv.amt; const lose=iv.paid?0:Math.min(iv.amt, S.coins+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${(iv.paid?iv.amt:lose).toLocaleString()}コイン没収）`); }
+    if(!invNew(old) && rank && rank<=3){ ivNet-=iv.amt; const lose=iv.paid?0:Math.min(iv.amt, S.coins+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${(iv.paid?iv.amt:lose).toLocaleString()}コイン没収）`); }
     else if(q){
       const d=q.docs.find(x=>x.id===iv.def), ts=d?finalScore(d.id,d.data(),old):null;
       let tr=null; if(ts!=null){
         const others=q.docs.filter(x=>x.id!==iv.def&&x.id!==MYID).map(x=>({score:finalScore(x.id,x.data(),old), ok:profOk(x.data(),old)})).filter(o=>o.score!=null);
         others.push({score:mine, ok:prizeOk(old)});
         tr=effRank(ts, profOk(d.data(),old), others); }
-      const mul=INV_MUL[tr];
-      if(mul){ ivNet+=iv.amt*(mul-1); out.delta+=iv.amt*mul; out.lines.push(`💰 投資先の${nm}さんが${tr}位！ +${(iv.amt*mul).toLocaleString()}コイン`); }
+      const mul=invMulOf(tr, old, !!(rank&&rank<=3));
+      if(mul){ ivNet+=iv.amt*(mul-1); out.delta+=Math.floor(iv.amt*mul); out.lines.push(`💰 投資先の${nm}さんが${tr}位！ ${invNew(old)&&rank&&rank<=3?`（あなたが${rank}位なので2倍）`:""}+${Math.floor(iv.amt*mul).toLocaleString()}コイン`); }
       else { ivNet-=iv.amt*INV_LOSE; const more=Math.min(iv.amt*(INV_LOSE-(iv.paid?1:0)), S.coins+coinsSoFar+out.delta); out.delta-=more; out.lines.push(`💸 投資先の${nm}さんは${tr?tr+"位":"順位なし"}…（−${((iv.paid?iv.amt:0)+more).toLocaleString()}コイン）`); }
     }
   }
@@ -4980,8 +5015,8 @@ function openInvestHelp(intro){
   bg.innerHTML=`<div class="swear news" role="dialog" aria-modal="true" aria-labelledby="ivT"><p id="ivT">${intro?"💰 新機能「冒険者に投資する」":"💰 「冒険者に投資する」とは？"}</p>
     <div class="news-body">
       <p>${intro?"ホームの黄色いボタンから、ほかの冒険者にコインを投資できるようになりました！":"ホームの黄色いボタンから、ほかの冒険者にコインを投資できます。"}</p>
-      <p>🥇 投資先がランク戦1位 → <b>投資額の7倍</b>もらえる<br>🥈 2位 → <b>5倍</b> ／ 🥉 3位 → <b>2倍</b><br>💸 4位以下 → <b>投資額の10倍を失う</b>（0コインまで）</p>
-      <p>・投資は1回のランク戦で2人まで。投資した時点でコインが減ります<br>・投資できるのはランク戦が始まってから、終了の10時間前まで<br>・自分が3位以内に入ると投資は無効（没収）<br>・一度3位以内に入ったら、4位以下になってもそのランク戦は投資できない<br>・投資された人は投資額の${invPct()}%をもらえる</p>
+      <p>🥇 投資先がランク戦1位 → <b>投資額の7倍</b>もらえる<br>🥈 2位 → <b>5倍</b> ／ 🥉 3位 → <b>2倍</b> ／ 4位 → <b>1.5倍</b><br>💸 5位以下 → <b>投資額の10倍を失う</b>（0コインまで）</p>
+      <p>👑 自分がランク戦終了時に3位以内なら、投資先が4位以内で順位に関係なく<b>2倍</b><br>・投資は1回のランク戦で2人まで。投資した時点でコインが減ります<br>・投資できるのはランク戦が始まってから、終了の10時間前まで<br>・3位以内の冒険者も投資できます<br>・投資された人は投資額の${invPct()}%をもらえる</p>
       <p>強い冒険者を見きわめて、一発逆転をねらおう！</p></div>
     <button class="btn gold" type="button" id="ivGoInv">投資してみる</button><button class="btn ghost" type="button" id="ivIntroX">とじる</button></div>`;
   document.body.appendChild(bg);
@@ -5006,12 +5041,12 @@ function renderInvest(){
     ${INV_LIST.length?`<ol class="rank inv-list">${INV_LIST.map((r,i)=>mine.some(x=>x.def===r.id)?"":invRow(r,i)).join("")}</ol><div id="ivHit"></div>`:`<div class="empty">まだ投資できる冒険者がいません</div>`}`;
   $("#stage").innerHTML=`${back}<h2>💰 冒険者に投資する</h2>
     <div class="inv-rule">ランク戦終了時の、投資先の冒険者の順位で決まる！<br>
-      🥇1位 <b class="up">投資額の7倍もらえる</b> ／ 🥈2位 <b class="up">5倍</b> ／ 🥉3位 <b class="up">2倍</b><br>
-      4位以下 <b class="down">投資額の10倍を失う</b>（投資した分もふくめて・0コインまで）<br>
+      🥇1位 <b class="up">投資額の7倍もらえる</b> ／ 🥈2位 <b class="up">5倍</b> ／ 🥉3位 <b class="up">2倍</b> ／ 4位 <b class="up">1.5倍</b><br>
+      5位以下 <b class="down">投資額の10倍を失う</b>（投資した分もふくめて・0コインまで）<br>
+      👑 あなたがランク戦終了時に<b>3位以内</b>なら、投資先が<b>4位以内</b>で順位に関係なく<b class="up">2倍</b>（5位以下なら10倍を失う）<br>
       ・投資は1回のランク戦で2人まで（同じ人には1回だけ）。投資した時点でコインが減ります<br>
       ・投資できるのはランク戦終了の10時間前まで<br>
-      ・あなたが3位以内に入ったら、その時点で投資は無効（投資額は没収）<br>
-      ・一度3位以内に入ったら、4位以下になってもそのランク戦は投資できない<br>
+      ・3位以内の冒険者も投資できます<br>
       ・投資された冒険者は、投資されたときに、すぐに投資額の${invPct()}%をもらえる</div>${body}`;
   $("#backHome").onclick=()=>{ homeMode="scene"; render(); };
   const qi=$("#ivQ"); if(qi){ const f=()=>{ const q=normName(invQ); let n=0; document.querySelectorAll(".inv-list li").forEach(li=>{ const ok=!q||li.dataset.nm.includes(q); li.hidden=!ok; if(ok) n++; });
@@ -5024,13 +5059,13 @@ function renderInvest(){
 }
 function investStatusHtml(iv){
   const r=(INV_LIST||[]).find(x=>x.id===iv.def), cur=r&&!rankless()?r._rank:null, a=iv.amt;
-  const now=cur?(INV_MUL[cur]||0):null;
+  const meTop=!!myRankSafe&&myRankSafe<=3, now=cur?invMulOf(cur,iv.ss,meTop):null;
   const res=iv.void?`<div class="inv-res"><span class="down">−${(iv.lost||0).toLocaleString()}コイン</span></div><p class="note" style="margin:6px 0 0;color:#555">あなたが3位以内に入ったので、この投資は無効になりました（投資額を没収）</p>`
     :`${cur?`<p class="note" style="margin:4px 0 0;color:#555">いまの順位（${cur}位）のまま終わると</p>
-      <div class="inv-res"><span class="${now?"up":"down"}" style="font-size:34px">${now?"+"+(a*now).toLocaleString():"−"+(a*INV_LOSE).toLocaleString()}コイン</span></div>`
+      <div class="inv-res"><span class="${now?"up":"down"}" style="font-size:34px">${now?"+"+Math.floor(a*now).toLocaleString():"−"+(a*INV_LOSE).toLocaleString()}コイン</span></div>${meTop&&invNew(iv.ss)?`<p class="note" style="margin:2px 0 0;color:#555">👑 あなたは今${myRankSafe}位なので、投資先が4位以内なら2倍</p>`:""}`
       :`<p class="note" style="margin:4px 0 0;color:#555">順位を読み込み中…</p>`}
       <table class="inv-tbl"><tr class="${cur===1?"now":""}"><td>🥇 1位</td><td class="up">+${(a*INV_MUL[1]).toLocaleString()}</td></tr><tr class="${cur===2?"now":""}"><td>🥈 2位</td><td class="up">+${(a*INV_MUL[2]).toLocaleString()}</td></tr>
-      <tr class="${cur===3?"now":""}"><td>🥉 3位</td><td class="up">+${(a*2).toLocaleString()}</td></tr><tr class="${cur&&cur>3?"now":""}"><td>4位以下</td><td class="down">−${(a*INV_LOSE).toLocaleString()}</td></tr></table>`;
+      <tr class="${cur===3?"now":""}"><td>🥉 3位</td><td class="up">+${(a*2).toLocaleString()}</td></tr>${invNew(iv.ss)?`<tr class="${cur===4?"now":""}"><td>4位</td><td class="up">+${Math.floor(a*1.5).toLocaleString()}</td></tr>`:""}<tr class="${cur&&cur>(invNew(iv.ss)?4:3)?"now":""}"><td>${invNew(iv.ss)?"5位以下":"4位以下"}</td><td class="down">−${(a*INV_LOSE).toLocaleString()}</td></tr></table>`;
   return `<ol class="rank"><li data-ivprof="${esc(iv.def)}">${avatarImg(r?.icon||iv.icon,56)}<div class="rk-body"><div class="rk-name">${uname(iv.name)}</div><div class="rk-sub">${cur?`現在${cur}位`:"順位を読み込み中…"}</div></div><span class="inv-info" style="display:grid;place-items:center">詳細</span></li></ol>
     <div class="inv-box" style="margin-top:12px"><small>投資コイン</small><span class="amt">${a.toLocaleString()}コイン</span>${res}</div>
     <p class="sub">${iv.paid?"投資したコインはすでに支払い済みです。":""}結果はランク戦終了のあと、次にアプリを開いたときに反映されます。</p>`;
@@ -5046,7 +5081,7 @@ function openInvestForm(r){
   const inp=bg.querySelector("#ivAmt"), prev=bg.querySelector("#ivPrev"), go=bg.querySelector("#ivGo");
   const val=()=>Math.floor(Number(inp.value)||0);
   const upd=()=>{ const a=val(); go.disabled=!(a>=1&&a<=S.coins);
-    prev.innerHTML=a>S.coins?`<span style="color:#ff6a5a">持っているコインより多くは投資できません</span>`:a>=1?`1位 <b style="color:#5fd36a">+${(a*INV_MUL[1]).toLocaleString()}</b> ／ 2位 <b style="color:#5fd36a">+${(a*INV_MUL[2]).toLocaleString()}</b> ／ 3位 <b style="color:#5fd36a">+${(a*2).toLocaleString()}</b> ／ 4位以下 <b style="color:#ff6a5a">−${(a*INV_LOSE).toLocaleString()}</b>`:"金額を入力してね";
+    prev.innerHTML=a>S.coins?`<span style="color:#ff6a5a">持っているコインより多くは投資できません</span>`:a>=1?`1位 <b style="color:#5fd36a">+${(a*INV_MUL[1]).toLocaleString()}</b> ／ 2位 <b style="color:#5fd36a">+${(a*INV_MUL[2]).toLocaleString()}</b> ／ 3位 <b style="color:#5fd36a">+${(a*2).toLocaleString()}</b> ／ 4位 <b style="color:#5fd36a">+${Math.floor(a*1.5).toLocaleString()}</b> ／ 5位以下 <b style="color:#ff6a5a">−${(a*INV_LOSE).toLocaleString()}</b>${myRankSafe&&myRankSafe<=3?`<br><small>👑 あなたが3位以内のまま終われば、4位以内で+${(a*2).toLocaleString()}</small>`:""}`:"金額を入力してね";
     if(a>=1&&a<=S.coins) prev.innerHTML+=`<br><small>投資するとすぐに ${a.toLocaleString()}コイン 減ります</small>`; };
   inp.oninput=upd;
   bg.querySelectorAll("[data-ia]").forEach(b=>b.onclick=()=>{ const v=b.dataset.ia; inp.value=v==="all"?S.coins:v==="0"?"":Math.min(S.coins,val()+(+v)); upd(); });
@@ -5121,7 +5156,7 @@ function renderMe(segHtml){
     ${decayNote?`<div class="note" style="color:var(--berry)">ログインしなかった日があったので、レベルが ${decayNote} 下がりました</div>`:""}
     ${myStatsHtml()}
     <div class="cmt"><div class="pick-label">ひとことコメント <span>ランキング50位以内で表示</span></div>
-      ${rankless()||(myRank&&myRank<=50)?`<form id="cmtForm" class="cmt-row"><input id="cmtIn" maxlength="40" placeholder="ランキングにのせるひとこと" aria-label="ひとことコメント"><button class="btn" type="submit">保存</button></form>`
+      ${cmtOpen()||(myRank&&myRank<=50)?`<form id="cmtForm" class="cmt-row"><input id="cmtIn" maxlength="40" placeholder="ランキングにのせるひとこと" aria-label="ひとことコメント"><button class="btn" type="submit">保存</button></form>`
         :`<div class="note" style="margin:0">ランキング50位以内に入ると、ひとことコメントを書けます。</div>`}</div>
     <div class="row"><button class="btn ghost" id="toDress" type="button">プロフィールアイコンを作る</button></div>
     ${DB?`<div class="row"><button class="btn ghost" id="logoutBtn" type="button">ログアウト</button></div>`:loginBox("ログインすると、ランキングに参加できて、別の端末でも続きから遊べます。")}
@@ -5179,7 +5214,7 @@ function renderRanking(segHtml){
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
         ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${INV_CNT[r.id]}人ついています</div>`:""}
-        ${(rankless()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div>`:""}</div>
+        ${(cmtOpen()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
@@ -5191,7 +5226,7 @@ function renderRanking(segHtml){
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
-    <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${rankless()?"冒険者レベルの上位100人を表示しています。今は順位のつかない時間なので、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
+    <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>
     ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
   $("#reRank").onclick=async()=>{ RANK=null; render(); await loadRanking(true); if(!rankErr) toast("全員の最新の状態に更新しました"); };
@@ -5348,7 +5383,8 @@ const SEASON_SHIFT = 2*HOUR_MS;
 const seasonNow = () => Math.floor((Math.floor((gnow()+JST+SEASON_SHIFT)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);
 const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1))*DAY_MS - JST - SEASON_SHIFT;
 // ランク戦が始まってから1時間は順位をつけない（その間は上位3人もふくめ、だれでも投資できる）。上位キープボーナスもなし
-const RANKLESS_MS = HOUR_MS;
+const RANKLESS_MS = 0;   // 2026-10-21：ランク戦が始まってすぐ順位がつく（休戦タイムなし）
+const cmtOpen = () => gnow() < seasonEnd(seasonNow()-1) + HOUR_MS;   // ランク戦が始まって1時間は、だれでもひとことコメントを書ける
 const rankless = () => gnow() < seasonEnd(seasonNow()-1) + RANKLESS_MS;
 const rkNo = n => rankless() ? "―" : n;
 // ランク戦終了後の待ち時間（集計タイム）はなし：0:00になったらすぐ結果発表＆報酬
@@ -5480,13 +5516,13 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 let seasonBusy=false;
 // ランク戦が終わって精算もすんだあと、順位のつかない1時間のうちに1回だけお知らせ
 function checkSeasonEndMsg(){
-  try{ if(!rankless() || (S.season??0)<seasonNow() || seasonBusy) return; const n=seasonNow()-1; if(n<0 || S.ssEndMsg===n) return;
+  try{ if(!cmtOpen() || (S.season??0)<seasonNow() || seasonBusy) return; const n=seasonNow()-1; if(n<0 || S.ssEndMsg===n) return;
     if(document.querySelector(".ss-end-msg")) return;
     S.ssEndMsg=n; save(); const L=LANG==="en";
     const bg=document.createElement("div"); bg.className="sheet-bg center ss-end-msg"+(document.querySelector("#title:not([hidden])")?" ttl-top":""); bg.style.zIndex=137; bg.setAttribute("translate","no");
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏁</div>
       <p>${L?`Ranked Match #${n} has ended!`:`第${n}回ランク戦が終了しました！`}</p>
-      <div class="note" style="margin:0;text-align:center;line-height:1.7">${L?"Thanks for playing, adventurers!<br>During this hour with no ranks, leave a short message and share your thoughts with the other adventurers!! ✨":"冒険者の皆さんお疲れ様でした！<br>是非順位のでないこの1時間の間はひとことコメントを残して感想を他の冒険者と共有しよう！！✨"}</div>
+      <div class="note" style="margin:0;text-align:center;line-height:1.7">${L?"Thanks for playing, adventurers!<br>For the first hour of the new ranked match, anyone can leave a short message — share your thoughts with the other adventurers!! ✨":"冒険者の皆さんお疲れ様でした！<br>次のランク戦が始まってから1時間は、だれでもひとことコメントを残せます！ 感想を他の冒険者と共有しよう！！✨"}</div>
       <button class="btn gold" type="button" id="ssCm">${L?"Write a message":"ひとことコメントを書く"}</button><button class="btn ghost" type="button" id="ssX">OK</button></div>`;
     document.body.appendChild(bg);
     bg.querySelector("#ssX").onclick=()=>bg.remove();
