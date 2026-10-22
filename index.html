@@ -930,11 +930,14 @@ html[lang=en] .ttl .ttl-kn span{font-size:30px}
 .kn-season .kn-prep{display:block;font-size:20px;color:#ffe9a8}
 .kn-isl{position:absolute;border:0;background:none;padding:0;border-radius:40%}
 .kn-isl:active{transform:scale(.97)}
+.kn-isl.closed{filter:grayscale(.85) brightness(.75)}
+.kn-closed{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);background:#000c;color:#fff;border-radius:999px;padding:6px 16px;font:900 24px/1.2 var(--f-body);white-space:nowrap}
 .kn-icnt{display:block;font:900 22px/1.2 var(--f-body);color:#b23a00;text-align:center;margin-top:2px}
 .kn-iname{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);background:#fff8e8;border:4px solid #3a2306;border-radius:18px;padding:4px 18px;font:900 26px/1.2 var(--f-body);color:#3a2306;white-space:nowrap;box-shadow:0 4px 0 #0005;text-align:center}
 .kn-cand{position:absolute;width:150px;display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;animation:knFloat 3s ease-in-out infinite}
 .kn-cand .kn-mk,.kn-cand .kn-nomk{width:84px;height:84px;border-radius:14px;border:5px solid #ffd54f;box-shadow:0 0 18px #ffd54f,0 4px 0 #0006;object-fit:cover;font-size:44px}
 .kn-cand span{background:#d32f2f;color:#fff;border:3px solid #fff;border-radius:999px;padding:3px 10px;font:900 18px/1.1 var(--f-body);white-space:nowrap}
+.kn-cand.four{width:260px}.kn-c4{display:flex;gap:6px}.kn-cand.four .kn-mk,.kn-cand.four .kn-nomk{width:56px;height:56px;border-width:3px}
 .kn-cand small{background:#000a;border-radius:8px;padding:2px 8px;font:800 16px/1.2 var(--f-body);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kn-mine{position:absolute;width:180px;text-align:center;background:#1976d2;border:3px solid #fff;border-radius:999px;font:900 18px/1.6 var(--f-body);pointer-events:none;box-shadow:0 3px 0 #0006}
 @keyframes knFloat{50%{transform:translateY(-8px)}}
@@ -955,7 +958,7 @@ span.kn-mkbig{font-size:80px}
 .kn-tm{position:absolute;display:flex;align-items:center;justify-content:center}
 .kn-tm span{font:900 46px/1 var(--f-body);color:#3a1a08;white-space:nowrap}
 .kn-tm b{font-size:58px;margin:0 4px}
-.kn-cell{position:absolute;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;border-radius:14px}
+.kn-cell{position:absolute;box-shadow:inset 0 0 0 2px #1f5a1f40;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;border-radius:14px}
 .kn-cell.castle:active,.kn-cell.terr:active{transform:scale(.96)}
 .kn-cell.pickme{background:#ffeb3b44;outline:6px dashed #ffeb3b;outline-offset:-10px;animation:knBlink 1s ease-in-out infinite}
 @keyframes knBlink{50%{background:#ffeb3b11}}
@@ -968,12 +971,12 @@ span.kn-mkbig{font-size:80px}
 .kn-sl{width:58%;max-height:50%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 5px 0 #0005);animation:knSlB 1.2s ease-in-out infinite}
 @keyframes knSlB{50%{transform:scale(1.06,.94)}}
 .kn-plate.mon{background:#3a0d0d!important;border-color:#ff4d4d}.kn-plate.mon span{color:#ffd0d0}
-.kn-plate span{font:900 28px/1.2 var(--f-body);color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kn-mksm{width:34px;height:34px;border-radius:5px;object-fit:cover;flex:none;font-size:16px}
+.kn-plate span{font:900 21px/1.2 var(--f-body);color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kn-mksm{width:26px;height:26px;border-radius:5px;object-fit:cover;flex:none;font-size:16px}
 .kn-tags{position:absolute;left:6px;top:6px;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
-.kn-tags i{font-style:normal;background:#000a;border-radius:8px;padding:2px 6px;font:900 26px/1.2 var(--f-body)}
+.kn-tags i{font-style:normal;background:#000a;border-radius:8px;padding:2px 5px;font:900 20px/1.2 var(--f-body)}
 .kn-tags i.you{background:#1976d2;border:2px solid #fff}
-.kn-flag{font-size:70px;line-height:1;margin-bottom:6px;filter:drop-shadow(0 4px 0 #0005)}
+.kn-flag{font-size:54px;line-height:1;margin-bottom:6px;filter:drop-shadow(0 4px 0 #0005)}
 .kn-cell.terr .kn-plate{opacity:.9}
 .kn-boom{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-size:120px;animation:knBoom .9s ease-out forwards;pointer-events:none}
 @keyframes knBoom{0%{transform:translate(-50%,-50%) scale(.3);opacity:1}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
@@ -7006,7 +7009,7 @@ const KN = {
   INC_KING: [0, 200, 400, 1000, 2000, 3000, 5000], INC_CIT: [0, 100, 200, 500, 1000, 1500, 3000],
   BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
   SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
-  REGEN: 0.03, BEST: 10, MAX_N: 12,
+  REGEN: 0.03, BEST: 10, MAX_N: 24, CELLS: 24, COLS: 6,   // 2026-10-22：島は草原の島ひとつ・24マス（横6×たて4）
   KING_PCT: 0.7, NEG: 1000, PLACE_MUL: [1, 0.8, 0.5, 0.2], CAP: 10000000,   // 振り分けられる資金の上限1000万
   HP:   [0, 2000, 5000, 12000, 30000, 75000, 180000],  // お城Lv：耐久力
   GUARD:[0, 0, .05, .10, .15, .20, .25],               // お城Lv：受けるダメージを減らす
@@ -7018,7 +7021,7 @@ const KN = {
   PTS_PER_DMG: 20,
   ISL: [
     { ja:"草原の島", en:"Grassland Isle", bg:"kuni/bg0.jpg", sel:[268,262,672,632], cand:[690,400],
-      xs:[12,265,525,780,1034], ys:[432,712,998,1250], wh:[[155,47,478,119],[597,206,757,258],[854,206,1010,258]], dk:[[42,129,479,407],[515,266,757,407],[774,266,1011,407]], tm:[539,48,1003,161], bt:[[39,1291,499,1450],[544,1290,1011,1450]] },
+      xs:[12,182,353,523,693,864,1034], ys:[432,637,841,1046,1250], wh:[[155,47,478,119],[597,206,757,258],[854,206,1010,258]], dk:[[42,129,479,407],[515,266,757,407],[774,266,1011,407]], tm:[539,48,1003,161], bt:[[39,1291,499,1450],[544,1290,1011,1450]] },
     { ja:"砂漠の島", en:"Desert Isle", bg:"kuni/bg1.jpg", sel:[500,505,935,925], cand:[860,520],
       xs:[45,285,525,770,1000], ys:[505,785,1035,1280], wh:[[176,174,474,241],[587,307,752,350],[846,307,997,350]], dk:[[73,249,475,463],[521,357,753,463],[769,357,1000,463]], tm:[560,177,975,278], bt:[[16,1305,504,1473],[535,1310,1010,1473]] },
     { ja:"火山の島", en:"Volcano Isle", bg:"kuni/bg2.jpg", sel:[232,812,705,1200], cand:[640,840],
@@ -7060,7 +7063,7 @@ function knAdd(n){ if(KN_TEST){ knS().tc=Math.max(0,knS().tc+n); } else { S.coin
 const knIsl = i => K_(KN.ISL[i].ja, KN.ISL[i].en);
 const knNum = n => Math.round(n).toLocaleString();
 const knH = ms => Math.max(0,Math.ceil(ms/3600e3));
-const knBlank = (ks,i) => ({ s:ks, i, n:{}, c:{}, dead:{}, log:[], v:0 });
+const knBlank = (ks,i) => ({ s:ks, i, n:{}, c:{}, dead:{}, log:[], v:0, g24:1 });
 const knHpMax = c => c.mon ? KN.MON.HP[c.lv] : KN.HP[c.lv];
 const knMax = c => c.sl ? KN.SLIME.HP : knHpMax(c);
 const knHp = (c,now=knNow()) => c.sl ? Math.max(0,c.hp) : Math.max(0,Math.min(knHpMax(c), c.hp + knHpMax(c)*KN.REGEN*Math.max(0,now-(c.hpT||now))/3600e3));
@@ -7083,8 +7086,9 @@ function knRewardsOf(n, place){
   return out;
 }
 // 四天王：各島の1位の国を、資金の多い順に1〜4位
-function knShitenno(docs){ const L=[]; docs.forEach((d,i)=>{ if(!d) return; const r=knRanked(d); if(r.length) L.push({i, nid:r[0][0], n:r[0][1]}); });
-  L.sort((a,b)=>(b.n.f||0)-(a.n.f||0)); return L.slice(0,4); }
+// 四天王：島がひとつになったので、草原の島の資金が多い国の上位4か国（前のしくみのときの島の1位どうしもふくめて数える）
+function knShitenno(docs){ const L=[]; docs.forEach((d,i)=>{ if(!d) return; knRanked(d).forEach(([nid,n])=>L.push({i, nid, n})); });
+  L.sort((a,b)=>(b.n.f||0)-(a.n.f||0)||(a.n.t||0)-(b.n.t||0)); return L.slice(0,4); }
 /* ---- 読み書き ---- */
 async function knLoad(ks){ const out=[]; for(let i=0;i<4;i++){ try{ const s=await knRef(ks,i).get(); out.push(s.exists?s.data():null); }catch(e){ out.push(null); } } return out; }
 async function knTx(i, fn){ const ks=knSeason(); if(ks<0) return {err:K_("まだシーズンが始まっていません","The season hasn't started yet")};
@@ -7099,16 +7103,35 @@ function knErrText(e){ const c=(e&&e.code)||""; try{ console.warn("kuni",e); }ca
   if(c.includes("unavailable")||c.includes("deadline")) return K_("通信できませんでした。電波のよい所でもう一度ためしてね","Couldn't connect. Please try again with a better signal");
   if(c.includes("invalid-argument")) return K_("保存できないデータがありました（invalid-argument）。運営に知らせてね","Invalid data (invalid-argument). Please tell the developer");
   return K_("通信に失敗しました。もう一度ためしてね","Connection failed. Please try again")+(c?`（${c}）`:""); }
+// 島の24マス化（前の4×3の並びを、6×4の左上にそのまま移す）
+function knRemap(d){ if(d.g24) return false; const c={}; for(const [k,v] of Object.entries(d.c||{})){ const r=Math.floor(+k/4), q=+k%4; c[r*KN.COLS+q]=v; } d.c=c;
+  const mv=k=>k==null?k:Math.floor(+k/4)*KN.COLS+(+k%4); for(const n of Object.values(d.n||{})) for(const m of Object.values(n.m||{})) m.at=mv(m.at);   // 王・国民がいるお城の番号も合わせる
+  d.g24=1; return true; }
+// ほかの島（砂漠・火山・氷）の国を、草原の島の空いているマスへ引っ越しさせる（1回だけ）
+let knMergeBusy=false;
+async function knMerge(){ if(knMergeBusy||!DB||!MYID) return; const ks=knSeason(); knMergeBusy=true;
+  try{ await DB.runTransaction(async tx=>{ const refs=[0,1,2,3].map(i=>knRef(ks,i)), sn=[]; for(const r of refs) sn.push(await tx.get(r));
+      const ds=sn.map((x,i)=>x.exists?x.data():null); if(!ds.slice(1).some(d=>d&&!d.mv&&Object.keys(d.n||{}).length)) return;
+      const d0=ds[0]||knBlank(ks,0); d0.n=d0.n||{}; d0.c=d0.c||{}; d0.log=d0.log||[]; knRemap(d0);
+      for(let i=1;i<4;i++){ const d=ds[i]; if(!d||d.mv) continue;
+        for(const [nid,n] of Object.entries(d.n||{})){ if(n.x){ continue; } const cs=Object.entries(d.c||{}).filter(([,c])=>c.n===nid&&c.lv), mp={};
+          for(const [k,c] of cs){ const free=[...Array(KN.CELLS).keys()].filter(q=>!d0.c[q]); if(!free.length) break; const q=free[0]; d0.c[q]=c; mp[k]=q; }
+          if(!Object.keys(mp).length) continue;
+          for(const m of Object.values(n.m||{})) m.at=mp[m.at]??Object.values(mp)[0];
+          d0.n[nid]=n; d0.log.unshift({t:knNow(), k:"move", b:n.nm}); }
+        d.mv=1; d.n={}; d.c={}; tx.set(refs[i],JSON.parse(JSON.stringify(d))); }
+      d0.v=(d0.v||0)+1; d0.log=d0.log.slice(0,40); tx.set(refs[0],JSON.parse(JSON.stringify(d0))); }); }catch(e){} finally{ knMergeBusy=false; } }
 function knTx0(ref,ks,i,fn){
   return DB.runTransaction(async tx=>{ const sn=await tx.get(ref); const d=sn.exists?sn.data():knBlank(ks,i); d.n=d.n||{}; d.c=d.c||{}; d.dead=d.dead||{}; d.log=d.log||[];
+    const rm=i===0?knRemap(d):false;
     const ch=knMonTick(d, knNow()); const r=fn(d, knNow());
-    if((r&&(r.err||r.noop)) && !ch) return r;
+    if((r&&(r.err||r.noop)) && !ch && !rm) return r;
     if(r&&r.err){ d.v=(d.v||0)+1; d.log=d.log.slice(0,40); tx.set(ref,JSON.parse(JSON.stringify(d))); return r; }   // 失敗しても、魔物の城の動きだけは保存する
     d.v=(d.v||0)+1; d.log=d.log.slice(0,40); tx.set(ref,JSON.parse(JSON.stringify(d))); return r||{}; }); }
 /* ---- 魔物の城 ---- */
-const knAdj = k => { const r=Math.floor(k/4), c=k%4, o=[]; if(r>0) o.push(k-4); if(r<2) o.push(k+4); if(c>0) o.push(k-1); if(c<3) o.push(k+1); return o; };
+const knAdj = k => { const C=KN.COLS, R=KN.CELLS/C, r=Math.floor(k/C), c=k%C, o=[]; if(r>0) o.push(k-C); if(r<R-1) o.push(k+C); if(c>0) o.push(k-1); if(c<C-1) o.push(k+1); return o; };
 const knMonCount = d => Object.values(d.c||{}).filter(c=>c.mon&&c.lv).length;
-function knMonSpawn(d,now){ const free=[...Array(12).keys()].filter(k=>!d.c[k]); if(!free.length||knMonCount(d)>=KN.MON.MAX) return false;
+function knMonSpawn(d,now){ const free=[...Array(KN.CELLS).keys()].filter(k=>!d.c[k]); if(!free.length||knMonCount(d)>=KN.MON.MAX) return false;
   const k=free[Math.floor(Math.random()*free.length)]; d.c[k]={mon:1, n:"__m", lv:1, g:[{lv:1}], eq:1, hp:KN.MON.HP[1], hpT:now, as:knSlot(now)}; knLog(d,{k:"mon"}); return true; }
 function knMonNeeds(d,now){ if(!d||knPre(now)) return false; if(d.ms!==Math.floor((now-knT0())/3600e3)) return true; const sl=knSlot(now);
   const hh=Math.floor((now-knT0())/KN.SLIME.MS);
@@ -7130,7 +7153,7 @@ function knMonTick(d,now){ if(knPre(now)) return false; let ch=false;
   // スライム：魔物の城ごとに30分に1回、50%で2体が空いているマスにあらわれる
   for(const c of Object.values(d.c)){ if(!c.mon||!c.lv) continue; if(c.ss==null){ c.ss=hh; ch=true; continue; }
     const n=Math.min(4,hh-c.ss); if(n<=0) continue; c.ss=hh; ch=true;
-    for(let j=0;j<n;j++) if(Math.random()<KN.SLIME.CHANCE) for(let q=0;q<KN.SLIME.N;q++){ const free=[...Array(12).keys()].filter(k=>!d.c[k]); if(!free.length) break;
+    for(let j=0;j<n;j++) if(Math.random()<KN.SLIME.CHANCE) for(let q=0;q<KN.SLIME.N;q++){ const free=[...Array(KN.CELLS).keys()].filter(k=>!d.c[k]); if(!free.length) break;
       d.c[free[Math.floor(Math.random()*free.length)]]={sl:1, hp:KN.SLIME.HP, as:sl}; } }
   // スライムのとなり（上下左右）の冒険者のお城は、15分に1回よわい攻撃を受ける
   for(const [k,c] of Object.entries(d.c)){ if(!c.sl) continue; if(c.as==null){ c.as=sl; ch=true; continue; }
@@ -7167,13 +7190,13 @@ async function knLvTick(){ const st=S.knLv; if(KN_TEST||!st||knLvBusy||!DB||!MYI
   const now=knNow(), end=knT0()+(st.ks+1)*KN.SEASON_MS, lim=Math.min(now,end);
   if(Math.floor((lim-st.t)/3600e3)<=0){ if(now>=end){ delete S.knLv; save(); } return; }
   knLvBusy=true;
-  try{ const sn=await knRef(st.ks,st.i).get(); const d=sn.exists?sn.data():null, n=d&&d.n&&d.n[st.nid];
+  try{ let sn=await knRef(st.ks,st.i).get(); let d=sn.exists?sn.data():null; if(st.i!==0&&!(d&&d.n&&d.n[st.nid])){ st.i=0; sn=await knRef(st.ks,0).get(); d=sn.exists?sn.data():null; } const n=d&&d.n&&d.n[st.nid];
     let stop=lim, fin=now>=end;
     if(!n){ stop=st.t; fin=true; }
     else { if(n.x){ stop=Math.min(stop,n.x); fin=true; }
       if(!n.m||!n.m[MYID]){ const dt=d.dead&&d.dead[MYID]&&d.dead[MYID].t; stop=Math.min(stop, dt||st.t); fin=true; } }
     const king=!!(n&&n.k===MYID), h=Math.max(0,Math.floor((stop-st.t)/3600e3)), up=h*(king?KN.LV_KING:KN.LV_CIT);
-    const per=n?knCastles(d,st.nid).reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0):0, coin=h*per;   // お城からの収入
+    const per=n?knCastles(d,st.nid).reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0):0, coin=Math.floor(h*per*(king?knBestMul():1));   // お城からの収入
     st.t+=h*3600e3; if(fin) delete S.knLv;
     if(coin>0){ knAdd(coin); try{ renderCoins(); }catch(e){} }
     if(up>0){ S.plv=(S.plv||1)+up; bumpMaxLv(); }
@@ -7218,7 +7241,7 @@ function knTip(){ if(knTipDone||!knOn()||!SIGNED||!MYID) return; knTipDone=true;
   show(); }
 /* ---- 国を作る ---- */
 function knMake(i, cell, nm, mk){ const best=S.best||0;
-  if(!(KN_TEST&&knS().ign) && !(best>0&&best<=KN.BEST)) return Promise.resolve({err:K_("国を作れるのは、ランク戦の最高順位が10位以内の冒険者だけです","Only adventurers whose best ranked placement is top 10 can found a nation")});
+  if(false) return Promise.resolve({err:K_("国を作れるのは、ランク戦の最高順位が10位以内の冒険者だけです","Only adventurers whose best ranked placement is top 10 can found a nation")});
   return knPaid(KN.MAKE, i, (d,now)=>{
     if(knMine(d)) return {err:K_("もう国に入っています","You're already in a nation")};
     if(d.c[cell]) return {err:K_("その場所はもう使われています","That spot is already taken")};
@@ -7227,7 +7250,7 @@ function knMake(i, cell, nm, mk){ const best=S.best||0;
     d.n[nid]={nm, mk:mk||"", k:MYID, kn:myName(), f:0, t:now, m:{[MYID]:{nm:myName(), p:0, at:cell, j:now, ls:0}}};
     if(!knPre(now)) d.n[nid].pr=now+KN.NEW_PROTECT;   // シーズン中に作った国は、1時間🔰（ほかの国から攻撃されない）
     d.c[cell]={n:nid, lv:1, g:[], eq:1, hp:KN.HP[1], hpT:now};
-    knLog(d,{k:"make", a:myName(), b:nm}); return {nid}; }).then(r=>{ if(r&&!r.err){ knAdd(KN.MAKE_GIFT); knLvStart(i,r.nid); } return r; }); }
+    knLog(d,{k:"make", a:myName(), b:nm}); return {nid}; }).then(r=>{ if(r&&!r.err){ knAdd(Math.floor(KN.MAKE_GIFT*knBestMul())); knLvStart(i,r.nid); } return r; }); }
 function knJoin(i, nid){ const died=!!knS().died[knSeason()];
   return knPaid(KN.JOIN, i, (d,now)=>{ const n=d.n[nid];
     if(!n||n.x) return {err:K_("その国はもうありません","That nation no longer exists")};
@@ -7315,10 +7338,10 @@ function knCheckDead(docs, ks){ const K=knS(); let hit=null;
 /* ---- シーズン終了の報酬をうけとる ---- */
 async function knClaim(){ const ks=knSeason()-1; if(ks<0||!DB||!MYID) return; const K=knS(); if(K.claimed[ks]) return;
   const docs=await knLoad(ks); const sh=knShitenno(docs); let got=null;
-  sh.forEach((x,place)=>{ if(x.n.m&&x.n.m[MYID]){ const r=knRewardsOf(x.n,place); got={place, amt:r[MYID]||0, king:x.n.k===MYID, n:x.n, i:x.i}; } });
+  sh.forEach((x,place)=>{ if(x.n.m&&x.n.m[MYID]){ const r=knRewardsOf(x.n,place), king=x.n.k===MYID, a=r[MYID]||0; got={place, amt:king&&a>0?Math.floor(a*knBestMul()):a, king, n:x.n, i:x.i}; } });
   K.claimed[ks]=1;
   // 島の1〜3位：王を含む全員で山分け
-  let isl=null; docs.forEach((d,i)=>{ if(!d) return; const r=knRanked(d); const j=r.findIndex(([,n])=>n.m&&n.m[MYID]); if(j>=0&&j<3){ const n=r[j][1], cnt=Math.max(1,Object.keys(n.m||{}).length); isl={place:j, amt:Math.floor(KN.ISL_PRIZE[j]/cnt), cnt, n, i}; } });
+  let isl=null; docs.forEach((d,i)=>{ if(!d) return; const r=knRanked(d); const j=r.findIndex(([,n])=>n.m&&n.m[MYID]); if(j>=0&&j<3){ const n=r[j][1], cnt=Math.max(1,Object.keys(n.m||{}).length); isl={place:j, amt:Math.floor(KN.ISL_PRIZE[j]/cnt*(n.k===MYID?knBestMul():1)), cnt, n, i}; } });
   if(isl){ knAdd(isl.amt); save(); setTimeout(()=>knDlg(`<div class="kn-big">🏆</div><h3>${K_(`${knIsl(isl.i)}で${isl.place+1}位！`,`#${isl.place+1} on ${knIsl(isl.i)}!`)}</h3>
       <div class="kn-res">${knMarkHtml(isl.n,"kn-mk")}<b>${esc(isl.n.nm)}</b></div>
       <p>${K_(`島${isl.place+1}位の賞金 ${knNum(KN.ISL_PRIZE[isl.place])}コインを、王を含む${isl.cnt}人で山分け！`,`The #${isl.place+1} island prize of ${knNum(KN.ISL_PRIZE[isl.place])} coins is split among all ${isl.cnt} members, King included!`)}</p>
@@ -7330,6 +7353,9 @@ async function knClaim(){ const ks=knSeason()-1; if(ks<0||!DB||!MYID) return; co
       <p class="kn-gain ${got.amt<0?"neg":""}">${got.amt>=0?"+":""}${knNum(got.amt)} ${K_("コイン","coins")}</p>
       <p class="kn-sm">${K_(`プロフィールに称号「${got.king?"四天王":"四天王国民"}」がつきました！`,`Your profile now has the title "${got.king?"Heavenly King":"Heavenly King's Citizen"}"!`)}</p>`,[[K_("うけとる","Collect"),null]]); }
   else save(); }
+// 王の報酬の倍率：プロフィールの最高順位が高いほど多い
+const knBestMul = (b=S.best||0) => !b ? 1 : b===1 ? 3 : b<=3 ? 2.5 : b<=10 ? 2 : b<=30 ? 1.5 : b<=100 ? 1.2 : 1;
+const knBestTxt = () => { const m=knBestMul(); return m>1 ? K_(`（最高順位${S.best}位ボーナス ×${m}）`,` (best rank #${S.best} bonus ×${m})`) : ""; };
 function knTitleText(w,c){ const a=[]; if(w>0) a.push(K_("四天王","Heavenly King")+(w>1?`×${w}${K_("回","")}`:"")); if(c>0) a.push(K_("四天王国民","Heavenly King's Citizen")+(c>1?`×${c}${K_("回","")}`:"")); return a.join(" / "); }
 
 /* ================= 画面 ================= */
@@ -7371,7 +7397,7 @@ function knTestBar(root, redraw){ if(!KN_TEST) return; const K=knS(); const bar=
     else if(t==="ign"){ K.ign=K.ign?0:1; }
     else if(t==="nocd"){ K.nocd=K.nocd?0:1; }
     else if(t==="revive"){ K.ban=0; K.died={}; }
-    else if(t==="bot"){ const i=KV.i>=0?KV.i:Math.floor(Math.random()*4); await knTx(i,(d,now)=>{ const free=[...Array(12).keys()].filter(k=>!d.c[k]); if(!free.length) return {err:"full"};
+    else if(t==="bot"){ const i=0; await knTx(i,(d,now)=>{ const free=[...Array(KN.CELLS).keys()].filter(k=>!d.c[k]); if(!free.length) return {err:"full"};
         const cell=free[Math.floor(Math.random()*free.length)], nid=knRid(), no=Object.keys(d.n).length+1, kid="bot_"+knRid();
         const cv=document.createElement("canvas"); cv.width=cv.height=96; const g=cv.getContext("2d"); g.fillStyle=`hsl(${Math.random()*360},70%,45%)`; g.fillRect(0,0,96,96); g.fillStyle="#fff"; g.font="900 56px sans-serif"; g.textAlign="center"; g.textBaseline="middle"; g.fillText(String.fromCharCode(64+no),48,52);
         const m={[kid]:{nm:"テスト王"+no, p:0, at:cell, j:now, ls:0}}; for(let j=0;j<Math.floor(Math.random()*4);j++) m["bot_"+knRid()]={nm:`国民${no}-${j+1}`, p:Math.floor(Math.random()*50000), at:cell, j:now, ls:0};
@@ -7382,7 +7408,7 @@ function knTestBar(root, redraw){ if(!KN_TEST) return; const K=knS(); const bar=
         const bots=knAlive(d).filter(([k])=>k!==nid); if(!bots.length) return {err:K_("敵の国がありません","No enemy nations")}; const [bid,b]=bots[0];
         knHit(d, bid, at, KN.HP[c.lv]*0.45/(1-KN.GUARD[c.lv]), now);
         return {}; }); if(r&&r.err) knMsg(r.err); }
-    else if(t==="slime"){ await knTx(KV.i,(d,now)=>{ for(let q=0;q<2;q++){ const free=[...Array(12).keys()].filter(k=>!d.c[k]); if(!free.length) break; d.c[free[Math.floor(Math.random()*free.length)]]={sl:1,hp:KN.SLIME.HP,as:knSlot(now)}; } }); }
+    else if(t==="slime"){ await knTx(KV.i,(d,now)=>{ for(let q=0;q<2;q++){ const free=[...Array(KN.CELLS).keys()].filter(k=>!d.c[k]); if(!free.length) break; d.c[free[Math.floor(Math.random()*free.length)]]={sl:1,hp:KN.SLIME.HP,as:knSlot(now)}; } }); }
     else if(t==="mon"){ const r=await knTx(KV.i,(d,now)=>knMonSpawn(d,now)?{}:{err:K_("空いている場所がないか、魔物の城がもう2つあります","No free spot, or already 2 monster castles")}); if(r&&r.err) knMsg(r.err); }
     else if(t==="wipe"){ if(KV.i>=0&&ks>=0) await knRef(ks,KV.i).set(knBlank(ks,KV.i)); }
     save(); redraw&&redraw(t); }); }
@@ -7397,7 +7423,9 @@ async function openKuni(){ if(!knOn()) return;
       <div class="kn-cand" id="knCand${i}" style="left:${s.cand[0]-60}px;top:${s.cand[1]-40}px" hidden></div><div class="kn-mine" id="knMine${i}" style="left:${(s.sel[0]+s.sel[2])/2-90}px;top:${s.sel[3]-112}px" hidden></div>`).join("")}
     <div class="kn-ad" id="knAd" style="left:${KN.AD[0]}px;top:${KN.AD[1]}px;width:${KN.AD[2]-KN.AD[0]}px;height:${KN.AD[3]-KN.AD[1]}px"></div>
     <button class="kn-help" type="button" id="knHelp">❓ ${K_("遊び方","How to play")}</button>`;
-  st.querySelectorAll(".kn-isl").forEach(b=>b.onclick=()=>{ try{ SFX.tap(); }catch(e){} openKuniIsland(+b.dataset.i); });
+  st.querySelectorAll(".kn-isl").forEach(b=>{ const i=+b.dataset.i; if(i!==0){ b.classList.add("closed"); b.querySelector(".kn-icnt")?.remove(); b.insertAdjacentHTML("beforeend",`<span class="kn-closed">🔒 ${K_("準備中","Coming soon")}</span>`); }
+    b.onclick=()=>{ if(i!==0) return knMsg(K_("いまは「草原の島」だけで遊べます","Only Grassland Isle is open right now")); try{ SFX.tap(); }catch(e){} openKuniIsland(0); }; });
+  knMerge();
   st.querySelector("#knHelp").onclick=knHelp;
   knTestBar(document.getElementById("kno"), ()=>openKuni());
   const tick=()=>{ const el=document.getElementById("knSeason"); if(!el) return; const ks=knSeason(), now=knNow();
@@ -7413,7 +7441,7 @@ async function openKuni(){ if(!knOn()) return;
   docs.forEach((d,i)=>{ const al=d?knAlive(d):[], ppl=al.reduce((a,[,n])=>a+Object.keys(n.m||{}).length,0), ce=document.getElementById("knCnt"+i);
     if(ce) ce.textContent=K_(`🏰${al.length}か国・👥${ppl}人`,`🏰${al.length} nations · 👥${ppl}`); });
   docs.forEach((d,i)=>{ const r=d?knRanked(d):[]; const c=document.getElementById("knCand"+i);
-    if(half && r.length){ c.hidden=false; c.innerHTML=`${knMarkHtml(r[0][1],"kn-mk")}<span>${K_("四天王候補","Candidate")}</span><small>${esc(r[0][1].nm)}</small>`; }
+    if(half && r.length && i===0){ c.hidden=false; c.classList.add("four"); c.innerHTML=`<div class="kn-c4">${r.slice(0,4).map(x=>knMarkHtml(x[1],"kn-mk")).join("")}</div><span>${K_("四天王候補","Candidates")}</span>`; }
     const mine=d&&knMine(d); const m=document.getElementById("knMine"+i); if(mine){ m.hidden=false; m.textContent=K_("🏯 あなたの国","🏯 Your nation"); } });
   // 前のシーズンの四天王の広告
   const sh=knShitenno(prev); const ads=[];
@@ -7427,19 +7455,20 @@ function knDrawAds(ads){ const el=document.getElementById("knAd"); if(!el) retur
   draw(); if(ads.length>1) KV.adT=setInterval(draw,6000); }
 function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to play the Demon Nations War")}</h3><div class="kn-help-tx">${K_(`
   <p><b>1シーズンは360時間</b>（ゲーム内のタイマー）。島をえらんで、国を作るか、国に参加しよう！ シーズンが始まる前の準備期間も、攻撃以外（国を作る・参加・振り込み・強化・大砲の購入・移動）はできる。</p>
-  <p>👑 <b>国を作る（無料・王に5万コインプレゼント）</b>：ランク戦の最高順位が10位以内の冒険者だけ。国が続くかぎり、王は1時間ごとに冒険者レベル+${KN.LV_KING}。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
+  <p>👑 <b>国を作る（無料・王に5万コインプレゼント）</b>：だれでも作れる（プロフィールの最高順位が高い王ほど、もらえる報酬が多い）。国が続くかぎり、王は1時間ごとに冒険者レベル+${KN.LV_KING}。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
   <p>🏰 <b>お城からの収入</b>：国のお城1つにつき、1時間ごとにコインがもらえる（お城のLvで変わる）。敵のお城をこわして自分のお城が増えれば、その数だけもらえる！<br>王：Lv1：200・Lv2：400・Lv3：1,000・Lv4：2,000・Lv5：3,000・Lv6：5,000コイン<br>国民：Lv1：100・Lv2：200・Lv3：500・Lv4：1,000・Lv5：1,500・Lv6：3,000コイン</p>
   <p>🙋 <b>国に参加する（無料・2万コインプレゼント）</b>：好きな国の国民になれる。国にいる間は1時間ごとに冒険者レベル+${KN.LV_CIT}。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、360時間かけてじっくり育てよう。</p>
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。王は国の資金で、お城をすぐに修復することもできる（耐久力1につき資金10）。</p>
-  <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（すべてのお城がこわれ、資金はすべて奪われる）。</p>
+  <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（王がどのお城にいるかは、ほかの国からは見えない）（すべてのお城がこわれ、資金はすべて奪われる）。</p>
   <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に2つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ 耐久力は低めで、国民が武器で5回くらい攻撃すればこわせる。こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器で3回攻撃すればたおせる。</p>
   <p>🔰 シーズンが始まってから国を作ると、作った直後の1時間は🔰マークがついて、ほかの国から攻撃されない。</p>
   <p>💀 倒れると所持コインから5万コイン没収、120時間は参加できない。そのあとは国を作るか、「はじめのお城を1つだけ建てている国」にだけ参加できる。</p>
-  <p>🏆 島の中では<b>国の資金が多い順</b>。180時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
+  <p>🏆 島の中では<b>国の資金が多い順</b>。180時間をすぎると、島のイラストに「四天王候補（上位4か国）」が出る。シーズンが終わると、資金の多い上位4か国が四天王になり、1〜4位がつく。</p>
+  <p>👑 <b>最高順位ボーナス</b>：王がもらう報酬（作ったときのプレゼント・お城の収入・シーズンの報酬）は、プロフィールの最高順位で増える。1位×3・2〜3位×2.5・4〜10位×2・11〜30位×1.5・31〜100位×1.2。</p>
   <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（国民がいない国は王が100%）（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。さらに<b>島の1〜3位の国</b>には、王を含む全員で山分けする賞金（1位100万・2位50万・3位30万コイン）も出る。四天王の王と国民にはプロフィールに称号がつく。四天王1位の国は、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
   <p><b>A season lasts 360 hours</b> (in-game timer). Pick an island, then found a nation or join one! During the prep time before a season starts, you can do everything except attack.</p>
-  <p>👑 <b>Found a nation (free · the King gets 50,000 coins)</b>: only for adventurers whose best ranked placement is top 10. While the nation stands, the King gains Adventurer Level +${KN.LV_KING} every hour. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
+  <p>👑 <b>Found a nation (free · the King gets 50,000 coins)</b>: anyone can found one (the better your best ranked placement, the bigger the King's rewards). While the nation stands, the King gains Adventurer Level +${KN.LV_KING} every hour. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
   <p>🏰 <b>Castle income</b>: every hour you get coins for each of your nation's castles (depends on castle Lv). Destroy enemy castles to gain more castles and more income!<br>King: Lv1: 200, Lv2: 400, Lv3: 1,000, Lv4: 2,000, Lv5: 3,000, Lv6: 5,000 coins<br>Citizens: Lv1: 100, Lv2: 200, Lv3: 500, Lv4: 1,000, Lv5: 1,500, Lv6: 3,000 coins</p>
   <p>🙋 <b>Join a nation (free · get 20,000 coins)</b>: become a citizen. While in the nation, gain Adventurer Level +${KN.LV_CIT} every hour. Put your coins into the national funds to raise your contribution.</p>
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 360 hours.</p>
@@ -7448,18 +7477,19 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 2 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Their HP is low — about 5 weapon attacks by citizens will destroy one. Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — 3 weapon attacks defeat one.</p>
   <p>🔰 A nation founded after the season starts gets a 🔰 mark for its first hour and can't be attacked by other nations.</p>
   <p>💀 If you fall, you lose 50,000 coins and can't take part for 120 hours. After that you can found a nation, or join only a nation with just one starting castle.</p>
-  <p>🏆 Nations are ranked on each island by <b>national funds</b>. After 180 hours, each island shows its "Candidate" (#1). When the season ends, the #1 nation of each of the 4 islands becomes a Heavenly King, ranked 1–4 by funds.</p>
+  <p>🏆 Nations are ranked on each island by <b>national funds</b>. After 180 hours, the island shows the "Candidates" (top 4). When the season ends, the top 4 nations by funds become the Four Heavenly Kings, ranked 1–4.</p>
+  <p>👑 <b>Best-rank bonus</b>: the King's rewards (founding gift, castle income, season rewards) grow with your best ranked placement: #1 ×3 · #2–3 ×2.5 · #4–10 ×2 · #11–30 ×1.5 · #31–100 ×1.2.</p>
   <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70% (100% if there are no citizens); citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. On top of that, the <b>top 3 nations of each island</b> split a prize among everyone including the King (#1: 1,000,000 · #2: 500,000 · #3: 300,000). Kings and citizens get a profile title, and the #1 nation's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
 
 /* ---------- 島の画面 ---------- */
 function openKuniIsland(i){ const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
   document.querySelector("#kno .kn-x").onclick=()=>{ knClose(); openKuni(); };
-  const cx=k=>(I.xs[k%4]+I.xs[k%4+1])/2, cy=k=>(I.ys[Math.floor(k/4)]+I.ys[Math.floor(k/4)+1])/2, cw=k=>I.xs[k%4+1]-I.xs[k%4], ch=k=>I.ys[Math.floor(k/4)+1]-I.ys[Math.floor(k/4)];
+  const C=KN.COLS, cw=k=>I.xs[k%C+1]-I.xs[k%C], ch=k=>I.ys[Math.floor(k/C)+1]-I.ys[Math.floor(k/C)];
   const box=(b,cls,inner="")=>`<div class="${cls}" style="left:${b[0]}px;top:${b[1]}px;width:${b[2]-b[0]}px;height:${b[3]-b[1]}px">${inner}</div>`;
   st.innerHTML=`<img class="kn-bg" src="${I.bg}" alt="" draggable="false">
     ${[0,1,2].map(r=>box(I.dk[r],"kn-dk",`<div id="knDk${r}"></div>`)+box(I.wh[r],"kn-wh",`<span id="knWh${r}"></span>`)).join("")}
     ${box(I.tm,"kn-tm",`<span id="knTm"></span>`)}
-    ${[...Array(12).keys()].map(k=>`<button class="kn-cell" type="button" data-k="${k}" style="left:${I.xs[k%4]+4}px;top:${I.ys[Math.floor(k/4)]+4}px;width:${cw(k)-8}px;height:${ch(k)-8}px"></button>`).join("")}
+    ${[...Array(KN.CELLS).keys()].map(k=>`<button class="kn-cell" type="button" data-k="${k}" style="left:${I.xs[k%C]+3}px;top:${I.ys[Math.floor(k/C)]+3}px;width:${cw(k)-6}px;height:${ch(k)-6}px"></button>`).join("")}
     ${box(I.bt[0],"kn-bt l",`<button type="button" id="knB0"></button>`)}${box(I.bt[1],"kn-bt r",`<button type="button" id="knB1"></button>`)}
     <div class="kn-pick" id="knPick" hidden>${K_("お城を建てる場所をタップしてね","Tap a free spot to build your castle")} <button type="button" id="knPickX">${K_("やめる","Cancel")}</button></div>`;
   st.querySelectorAll(".kn-cell").forEach(b=>b.onclick=()=>knCellTap(+b.dataset.k));
@@ -7475,7 +7505,7 @@ function openKuniIsland(i){ const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046
   if(!DB||!MYID){ knWaitLogin().then(ok=>{ if(KV.scr!=="isl"||KV.i!==i) return; if(ok){ knClose(); openKuniIsland(i); } else knMsg(K_("ログインすると遊べます","Sign in to play")); }); return; }
   const ks=knSeason(); if(ks<0) return;
   let first=true;
-  KV.unsub=knRef(ks,i).onSnapshot(s=>{ if(KV.scr!=="isl"||KV.i!==i) return; const d=s.exists?s.data():knBlank(ks,i); const old=KV.d; KV.d=d;
+  KV.unsub=knRef(ks,i).onSnapshot(s=>{ if(KV.scr!=="isl"||KV.i!==i) return; const d=s.exists?s.data():knBlank(ks,i); d.c=d.c||{}; if(!d.g24){ knRemap(d); knTx(i,()=>({noop:1})); } const old=KV.d; KV.d=d;
     if(!first) knNotice(old,d); first=false; knCheckDead([0,1,2,3].map(j=>j===i?d:null), ks); knDraw(); }, ()=>{});
 }
 function knTimer(){ const el=document.getElementById("knTm"); if(!el) return; const ks=knSeason(), now=knNow();
@@ -7503,7 +7533,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
       b.classList.add("castle"); if(c.n===mine) b.classList.add("own");
       b.innerHTML=`<img class="kn-cs" src="kuni/castle${c.lv}.png" alt="" draggable="false">${(c.n===mine?knGuns(c):[]).map((g,j)=>`<img class="kn-cn n${j}" src="kuni/cannon${g.lv}.png" alt="" draggable="false">`).join("")}<div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:${pct>50?"#5fd36a":pct>25?"#ffc107":"#ff5252"}"></i></div>
         <div class="kn-plate">${knMarkHtml(n,"kn-mksm")}<span>${esc(n.nm||"?")}</span></div>
-        <div class="kn-tags">${knProt(n,now)?`<i title="${K_("できたばかりの国","New nation")}">🔰</i>`:""}${king?`<i title="${K_("王","King")}">👑</i>`:""}${here.length?`<i>🧍${here.length}</i>`:""}${youHere?`<i class="you">${K_("あなた","You")}</i>`:""}</div>`; }
+        <div class="kn-tags">${knProt(n,now)?`<i title="${K_("できたばかりの国","New nation")}">🔰</i>`:""}${king&&c.n===mine?`<i title="${K_("王","King")}">👑</i>`:""}${here.length?`<i>🧍${here.length}</i>`:""}${youHere?`<i class="you">${K_("あなた","You")}</i>`:""}</div>`; }
     else if(c&&c.own){ const n=d.n[c.own]||{}; b.classList.add("terr"); if(c.own===mine) b.classList.add("own");
       b.innerHTML=`<div class="kn-flag">🚩</div><div class="kn-plate">${knMarkHtml(n,"kn-mksm")}<span>${esc(K_(`${n.nm||"?"}の領土`,`${n.nm||"?"} land`))}</span></div>`; }
     else { b.classList.add("free"); if(KV.pick) b.classList.add("pickme"); } });
@@ -7520,8 +7550,8 @@ function knBtn(j){ try{ SFX.tap(); }catch(e){} const d=KV.d, mine=d&&knMine(d);
   const ks=knSeason(); knLoad(ks).then(docs=>{ docs[KV.i]=KV.d||docs[KV.i]; const other=docs.findIndex((d,k)=>k!==KV.i&&d&&knMine(d));
     if(other>=0) return knMsg(K_(`あなたは「${knIsl(other)}」の国に参加しています`,`You're already in a nation on ${knIsl(other)}`)); knBtn2(j); }); }
 function knBtn2(j){
-  if(j===0){ const best=S.best||0; if(!(KN_TEST&&knS().ign) && !(best>0&&best<=KN.BEST)) return knDlg(`<div class="kn-big">👑</div><h3>${K_("国を作れません","You can't found a nation")}</h3><p>${K_(`国を作れるのは、ランク戦の<b>過去最高順位が10位以内</b>の冒険者だけです。<br>あなたの最高順位：<b>${best?best+"位":"―"}</b>`,`Only adventurers whose <b>best ranked placement is top 10</b> can found a nation.<br>Your best: <b>${best?"#"+best:"―"}</b>`)}</p><p class="kn-sm">${K_("国に参加することはできます！","You can still join a nation!")}</p>`,[[K_("OK","OK"),null]]);
-    if([...Array(12).keys()].some(k=>!((KV.d||{}).c||{})[k])){ KV.pick=true; knDraw(); } else knMsg(K_("この島には空いている場所がありません","No free spots on this island")); }
+  if(j===0){ const best=S.best||0; if(false) return knDlg(`<div class="kn-big">👑</div><h3>${K_("国を作れません","You can't found a nation")}</h3><p>${K_(`国を作れるのは、ランク戦の<b>過去最高順位が10位以内</b>の冒険者だけです。<br>あなたの最高順位：<b>${best?best+"位":"―"}</b>`,`Only adventurers whose <b>best ranked placement is top 10</b> can found a nation.<br>Your best: <b>${best?"#"+best:"―"}</b>`)}</p><p class="kn-sm">${K_("国に参加することはできます！","You can still join a nation!")}</p>`,[[K_("OK","OK"),null]]);
+    if([...Array(KN.CELLS).keys()].some(k=>!((KV.d||{}).c||{})[k])){ KV.pick=true; knDraw(); } else knMsg(K_("この島には空いている場所がありません","No free spots on this island")); }
   else knJoinList(); }
 function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
   if(KV.pick){ if(c) return knMsg(K_("その場所は空いていません","That spot isn't free")); KV.pick=false; knDraw(); return knMakeForm(k); }
@@ -7544,7 +7574,7 @@ function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
       </div>${guns.length?"":`<p class="kn-sm">${K_("あなたがいるお城には、まだ大砲がありません（王が国の資金で購入できます）","Your castle has no cannon yet (the King can buy one with national funds)")}</p>`}<p class="kn-sm">${K_(`武器は1人15分に${KN.W_N}回、大砲は1つにつき15分に${KN.C_N}回（あなたがいるお城の大砲）。回数は${mins}分後にもどります。`,`Weapon: ${KN.W_N} per person every 15 min. Each cannon: ${KN.C_N} shots every 15 min (cannons of the castle you're in). Refills in ${mins} min.`)}</p>`
       : `<p class="kn-warn">${K_("自分のお城に入ってから攻撃してね","Get inside one of your castles first")}</p>`; }
   if(!isMon) btns.push([K_("この国の詳細","Nation details"),()=>{ knDetail(c.n); }]);
-  const dl=knDlg(`${isSl?`<h3>🟦 ${K_("スライム","Slime")}</h3>`:isMon?`<div class="kn-chead"><img class="kn-mk" src="kuni/mmark.jpg" alt=""><div><h3>${K_("魔物の城","Monster Castle")}</h3><small>${K_("島にあらわれた魔物の国","A monster nation on the island")}</small></div></div>`:`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${knProt(n,now)?"🔰 ":""}${esc(n.nm||"?")}</h3><small>${esc(n.kn||"")}${K_("王"," (King)")}${n.m&&n.m[n.k]&&n.m[n.k].at===k?" 👑":""}</small></div></div>`}
+  const dl=knDlg(`${isSl?`<h3>🟦 ${K_("スライム","Slime")}</h3>`:isMon?`<div class="kn-chead"><img class="kn-mk" src="kuni/mmark.jpg" alt=""><div><h3>${K_("魔物の城","Monster Castle")}</h3><small>${K_("島にあらわれた魔物の国","A monster nation on the island")}</small></div></div>`:`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${knProt(n,now)?"🔰 ":""}${esc(n.nm||"?")}</h3><small>${esc(n.kn||"")}${K_("王"," (King)")}${own&&n.m&&n.m[n.k]&&n.m[n.k].at===k?" 👑":""}</small></div></div>`}
     <img class="kn-cimg ${isSl?"sm":""}" src="${isSl?"kuni/slime":"kuni/"+(isMon?"mcastle":"castle"+c.lv)}.png" alt="">
     <div class="kn-hpbig"><span>${K_("耐久力","Durability")}</span><div><i style="width:${(hp/knMax(c)*100).toFixed(1)}%"></i></div><b>${own||isMon?`${knNum(hp)} / ${knNum(knMax(c))}`:`${Math.ceil(hp/knMax(c)*100)}%`}</b></div>
     ${lvRow}<p class="kn-sm" ${isMon?"hidden":""}>${K_(`このお城の中：${here.length}人`,`Inside: ${here.length}`)}${own&&me&&me.at===k?K_("（あなたもここにいます）"," (including you)"):""}</p>
@@ -7579,11 +7609,11 @@ function knMakeForm(cell){ const F={nm:"", mk:"", ad:null, noAd:false};
     bg.querySelector("#knAdB").onclick=async()=>{ const u=await knPickImg(800,330,0.78); if(!u) return; F.ad=u; F.noAd=false; bg.querySelector("#knAdP").innerHTML=`<img src="${u}" alt="">`; };
     bg.querySelector("#knAdN").onclick=()=>{ F.ad=null; F.noAd=true; bg.querySelector("#knAdP").innerHTML=`<span>${K_("搭載しない（国のマークが載ります）","No ad (your emblem is shown)")}</span>`; }; };
   const step3=()=>knDlg(`<h3>🏰 ${K_("この内容で国を作る？","Found this nation?")}</h3><div class="kn-res"><img class="kn-mk" src="${F.mk}" alt=""><b>${esc(F.nm)}</b><small>${knIsl(KV.i)}</small></div>
-    <p class="kn-gain">+${knNum(KN.MAKE_GIFT)} ${K_("コイン","coins")}</p><p class="kn-sm">${K_("無料で作れます。あなたは王になり、国が続くかぎり1時間ごとに冒険者レベル+"+KN.LV_KING+"。","It's free. You become King and gain Adventurer Level +"+KN.LV_KING+" every hour while your nation stands. ")}${K_("あなたは王になります。王がいるお城がこわされると、国は敗北します。","You'll become King. If the castle you're in is destroyed, your nation is defeated.")}</p>`,
+    <p class="kn-gain">+${knNum(Math.floor(KN.MAKE_GIFT*knBestMul()))} ${K_("コイン","coins")}</p><p class="kn-sm">${knBestTxt()||K_("ランク戦の最高順位が高いほど、王の報酬（プレゼント・お城の収入・シーズンの報酬）が多くなります","The better your best ranked placement, the bigger the King's rewards (gift, castle income, season rewards)")}</p><p class="kn-sm">${K_("無料で作れます。あなたは王になり、国が続くかぎり1時間ごとに冒険者レベル+"+KN.LV_KING+"。","It's free. You become King and gain Adventurer Level +"+KN.LV_KING+" every hour while your nation stands. ")}${K_("あなたは王になります。王がいるお城がこわされると、国は敗北します。","You'll become King. If the castle you're in is destroyed, your nation is defeated.")}</p>`,
     [[K_("もどる","Back"),()=>{ setTimeout(step2,0); }],[K_("国を作る","Found it"),async()=>{ const r=await knMake(KV.i,cell,F.nm,F.mk);
       if(r.err){ knMsg(r.err); return; } knCoinUpd();
       if(F.ad){ try{ await DB.collection(KAD()).doc(`${knSeason()}_${r.nid}`).set({img:F.ad, nid:r.nid, s:knSeason(), i:KV.i, nm:F.nm, k:MYID}); }catch(e){} }
-      knMsg(K_(`👑 「${F.nm}」ができた！ あなたは王です（+${knNum(KN.MAKE_GIFT)}コイン）`,`👑 "${F.nm}" is founded! You are the King (+${knNum(KN.MAKE_GIFT)} coins)`)); }]],{lock:true});
+      knMsg(K_(`👑 「${F.nm}」ができた！ あなたは王です（+${knNum(Math.floor(KN.MAKE_GIFT*knBestMul()))}コイン）`,`👑 "${F.nm}" is founded! You are the King (+${knNum(Math.floor(KN.MAKE_GIFT*knBestMul()))} coins)`)); }]],{lock:true});
   step1(); }
 function knJoinList(){ const d=KV.d||knBlank(0,KV.i), died=!!knS().died[knSeason()];
   const L=knRanked(d).map(([nid,n],j)=>{ const cs=knCastles(d,nid), ok=!died||(cs.length===1&&cs[0][1].lv===1);
@@ -7599,7 +7629,7 @@ function knDepositDlg(){ const bg=knDlg(`<h3>💰 ${K_("国の資金に振り込
 function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knContrib(n), cs=knCastles(d,nid), rk=knRanked(d).findIndex(x=>x[0]===nid)+1, mine=knMine(d)===nid;
   const mem=Object.entries(n.m||{}).sort((a,b)=>(a[0]===n.k?-1:b[0]===n.k?1:(b[1].p||0)-(a[1].p||0)));
   const logT=e=>({atk:K_(`💣「${e.a}」→「${e.b}」に${e.x}ダメージ`,`💣 "${e.a}" hit "${e.b}" for ${e.x}`),brk:K_(`💥「${e.a}」が「${e.b}」のお城をこわした（${knNum(e.x)}コイン奪取）`,`💥 "${e.a}" destroyed a castle of "${e.b}" (took ${knNum(e.x)})`),
-    fall:K_(`👑「${e.a}」が「${e.b}」を倒した！`,`👑 "${e.a}" defeated "${e.b}"!`),make:K_(`🏰「${e.b}」ができた（${e.a}王）`,`🏰 "${e.b}" was founded (King ${e.a})`),join:K_(`🙋 ${e.a}が「${e.b}」に参加`,`🙋 ${e.a} joined "${e.b}"`),build:K_(`🏰「${e.a}」が新しいお城を建てた`,`🏰 "${e.a}" built a new castle`),rep:K_(`🧱「${e.a}」がお城を修復（+${knNum(e.x)}）`,`🧱 "${e.a}" repaired a castle (+${knNum(e.x)})`),gun:K_(`💣「${e.a}」が大砲を購入`,`💣 "${e.a}" bought a cannon`),
+    fall:K_(`👑「${e.a}」が「${e.b}」を倒した！`,`👑 "${e.a}" defeated "${e.b}"!`),make:K_(`🏰「${e.b}」ができた（${e.a}王）`,`🏰 "${e.b}" was founded (King ${e.a})`),join:K_(`🙋 ${e.a}が「${e.b}」に参加`,`🙋 ${e.a} joined "${e.b}"`),build:K_(`🏰「${e.a}」が新しいお城を建てた`,`🏰 "${e.a}" built a new castle`),move:K_(`🚚「${e.b}」がほかの島から引っ越してきた`,`🚚 "${e.b}" moved here from another island`),rep:K_(`🧱「${e.a}」がお城を修復（+${knNum(e.x)}）`,`🧱 "${e.a}" repaired a castle (+${knNum(e.x)})`),gun:K_(`💣「${e.a}」が大砲を購入`,`💣 "${e.a}" bought a cannon`),
     matk:e.sl?K_(`🟦 スライム→「${e.b}」に${e.x}ダメージ`,`🟦 A slime hit "${e.b}" for ${e.x}`):K_(`👹 魔物の城→「${e.b}」に${e.x}ダメージ`,`👹 Monster Castle hit "${e.b}" for ${e.x}`),
     skill:K_(`🟦「${e.a}」がスライムをたおした`,`🟦 "${e.a}" defeated a slime`),mbrk:K_(`👹 魔物の城が「${e.b}」のお城をこわした`,`👹 A Monster Castle destroyed a castle of "${e.b}"`),
     mfall:K_(`👹 魔物の城が「${e.b}」を倒した…`,`👹 A Monster Castle defeated "${e.b}"...`),mkill:K_(`⚔️「${e.a}」が魔物の城をこわした（+${knNum(e.x)}）`,`⚔️ "${e.a}" destroyed a Monster Castle (+${knNum(e.x)})`)})[e.k]||"";
