@@ -7040,7 +7040,7 @@ const knMine = d => { if(!MYID||!d) return null; for(const [nid,n] of knAlive(d)
 const knRid = () => Math.random().toString(36).slice(2,10);
 const knNameOf = (n,uid) => { const m=n.m&&n.m[uid]; return (m&&m.nm)||"?"; };
 const knSuffix = (n,uid) => n.k===uid ? K_("王"," (King)") : K_("国民"," (Citizen)");
-function knContrib(n){ const tot=Object.values(n.m||{}).reduce((a,m)=>a+(m.p||0),0); return uid=>tot>0?((n.m[uid]||{}).p||0)/tot*100:0; }
+function knContrib(n){ const tot=Object.entries(n.m||{}).filter(([u])=>u!==n.k).reduce((a,[,m])=>a+(m.p||0),0); return uid=>uid===n.k?0:tot>0?((n.m[uid]||{}).p||0)/tot*100:0; }   // 貢献度は国民だけ（王にはつけない）
 function knMarkHtml(n,cls=""){ return n&&n.mk ? `<img class="${cls}" src="${n.mk}" alt="">` : `<span class="kn-nomk ${cls}">${esc(((n&&n.nm)||"?").slice(0,1))}</span>`; }
 /* ---- 報酬の計算（シーズン終了のときの国の資金を、王と国民に振り分ける） ---- */
 function knRewardsOf(n, place){
@@ -7332,7 +7332,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
   document.getElementById("knPick").hidden=!KV.pick;
   const b0=document.getElementById("knB0"), b1=document.getElementById("knB1");
   if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID);
-    b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　${K_("国の資金","Funds")} <b>${knNum(n.f||0)}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
+    b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(n.f||0)}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
     b1.innerHTML = n.k===MYID ? `<span>${K_("国の強化","Strengthen")}</span><small>${K_("国の資金を使う","Uses national funds")}</small>` : `<span>${K_("資金を追加","Add funds")}</span><small>${K_("自分のコインを振り込む","Send your coins")}</small>`; }
   else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span><small class="red">-${K_("10万コイン","100,000 coins")}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span><small class="red">-${K_("1000コイン","1,000 coins")}</small>`; } }
 function knBtn(j){ try{ SFX.tap(); }catch(e){} const d=KV.d, mine=d&&knMine(d);
@@ -7423,7 +7423,7 @@ function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knC
   knDlg(`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${esc(n.nm)}</h3><small>${knIsl(KV.i)}　${K_(`島で${rk}位`,`#${rk} on the island`)}</small></div></div>
     <div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(n.f||0)}</b><small>${K_("コイン","coins")}</small></div>
     <h4>🏰 ${K_("お城","Castles")}（${cs.length}）</h4><div class="kn-clist">${cs.map(([k,c])=>`<div><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannons")} ${knGunTxt(c)}・${K_("武器","Weapons")}Lv${c.eq}</small><small>${K_("耐久力","HP")} ${knNum(knHp(c))}/${knNum(KN.HP[c.lv])}</small></div>`).join("")}</div>
-    <h4>👥 ${K_("王と国民","King & citizens")}（${mem.length}）</h4><div class="kn-mlist">${mem.map(([u,m])=>`<div class="${u===MYID?"me":""}"><b>${esc(m.nm)}<em>${knSuffix(n,u)}</em></b><span>${K_("貢献度","Contribution")} ${cf(u).toFixed(1)}%</span></div>`).join("")}</div>
+    <h4>👥 ${K_("王と国民","King & citizens")}（${mem.length}）</h4><div class="kn-mlist">${mem.map(([u,m])=>`<div class="${u===MYID?"me":""}"><b>${esc(m.nm)}<em>${knSuffix(n,u)}</em></b>${u===n.k?"":`<span>${K_("貢献度","Contribution")} ${cf(u).toFixed(1)}%</span>`}</div>`).join("")}</div>
     ${logs.length?`<h4>📜 ${K_("最近のできごと","Recent events")}</h4><div class="kn-log">${logs.map(e=>`<div>${esc(logT(e))}</div>`).join("")}</div>`:""}`,
     mine?[[K_("閉じる","Close"),null],[K_("💰 資金を追加","💰 Add funds"),()=>{ setTimeout(knDepositDlg,0); }]]:[[K_("閉じる","Close"),null]],{cls:"wide",stack:true}); }
 // 国の強化：お城が2つ以上なら、まずどのお城かをえらぶ
@@ -7438,7 +7438,7 @@ function knUpDlg(cell){ const draw=()=>{ const d=KV.d, nid=knMine(d), n=d.n[nid]
     <div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(n.f||0)}</b><small>${K_("コイン","coins")}</small></div>
     ${row("lv",l=>`kuni/castle${l}.png`,K_("お城","Castle"),l=>K_(`耐久力${knNum(KN.HP[l])}・守り${Math.round(KN.GUARD[l]*100)}%`,`HP ${knNum(KN.HP[l])}, guard ${Math.round(KN.GUARD[l]*100)}%`))}
     ${knGuns(c).map((g,j)=>row("g"+j,l=>`kuni/cannon${l}.png`,K_(`大砲${j+1}`,`Cannon ${j+1}`),l=>K_(`1発${knNum(KN.GUN[l])}（15分に${KN.C_N}発）`,`${knNum(KN.GUN[l])}/shot (${KN.C_N} per 15 min)`))).join("")}
-    ${knGuns(c).length<KN.GUN_MAX?`<div class="kn-up"><div class="kn-upic"><img src="kuni/cannon1.png" alt="" style="opacity:.55"></div><div class="kn-upt"><b>${K_(`大砲を購入（${knGuns(c).length+1}つ目）`,`Buy a cannon (#${knGuns(c).length+1})`)}</b><small>${K_(`お城ひとつに${KN.GUN_MAX}つまで。買うと撃てるようになる（Lv1：1発${KN.GUN[1]}・15分に${KN.C_N}発）`,`Up to ${KN.GUN_MAX} per castle. Buy one to start firing (Lv1: ${KN.GUN[1]}/shot, ${KN.C_N} per 15 min)`)}</small></div>
+    ${knGuns(c).length<KN.GUN_MAX?`<div class="kn-up"><div class="kn-upic"><img src="kuni/cannon1.png" alt="" style="opacity:.55"></div><div class="kn-upt"><b>${K_(`大砲を購入（${knGuns(c).length+1}つ目）`,`Buy a cannon (#${knGuns(c).length+1})`)}</b><small>${K_(`お城ひとつに${KN.GUN_MAX}つまで。買うと撃てるようになる（Lv1：1発${KN.GUN[1]}・15分に${KN.C_N}発）`,`Up to ${KN.GUN_MAX} per castle. Buy one to start firing (Lv1: ${KN.GUN[1]}/shot, ${KN.C_N} per 15 min)`)}</small><span class="kn-stars">☆☆☆☆☆☆</span></div>
       <button type="button" class="kn-b" id="knBuyGun" ${(n.f||0)<KN.GUN_BUY?"disabled":""}>${knNum(KN.GUN_BUY)}</button></div>`:""}
     ${row("eq",l=>`kuni/weapon${l}.png`,K_("国民の装備（武器）","Citizen weapons"),l=>K_(`1回${knNum(KN.WEP[l])}（1人15分に${KN.W_N}回）`,`${knNum(KN.WEP[l])}/hit (${KN.W_N} per person per 15 min)`))}
     <p class="kn-sm">${K_("購入や強化ができるのは王だけ（国の資金を使う）。強化はお城ごとで、レベルが上がるほど必要な資金はどんどん増えます。国民の武器は、そのお城の中にいる国民が使います。国民が多い国は武器、少ない国は大砲、守りを固めるならお城…国の戦い方を考えよう！","Only the King can buy and upgrade (using national funds). Upgrades are per castle, and each level costs much more than the last. Citizens use the weapons of the castle they're in. Many citizens? Weapons. Few? Cannons. Turtle up? Castles. Find your nation's way to fight!")}</p>`,
