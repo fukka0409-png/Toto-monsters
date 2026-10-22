@@ -133,6 +133,16 @@ details.rates summary{cursor:pointer;font-weight:700}
 .dex .cell.has{border-color:var(--line)}
 .el-head{font-family:var(--f-pix);font-size:16px;margin:16px 0 8px;display:flex;gap:8px;align-items:center}
 .el-head span{color:var(--mist-dim);font-size:13px}
+.el-head span.rk{color:inherit;font-size:inherit}
+.dex-sort{display:flex;gap:6px;margin:0 0 10px}
+.dex-sort button{flex:1;border:2px solid var(--line);border-radius:999px;padding:7px 10px;background:var(--bark-2);color:var(--mist);font:800 13px/1 var(--f-body);cursor:pointer}
+.dex-sort button[aria-pressed="true"]{background:var(--staff);color:#3a2306;border-color:var(--staff)}
+.rv .rv-sell{display:block;width:100%;margin-top:4px;border:0;border-radius:8px;padding:5px 2px;background:#c0392b;color:#fff;font:900 10.5px/1.15 var(--f-body);cursor:pointer}
+.rv-grid.one .rv .rv-sell{font-size:14px;padding:8px}
+.rv .rv-sell:disabled{background:#4a5550;color:#cfd8d3;cursor:default}
+.rv.sold img{filter:grayscale(1) brightness(.55)}
+.reveal .rv-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.reveal .rv-btns .btn{min-width:150px}
 /* sheet */
 .sheet-bg{position:fixed;inset:0;background:#000a;z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bark);width:100%;max-width:720px;max-height:92%;overflow-y:auto;border-radius:20px 20px 0 0;border-top:2px solid var(--line);padding-block:14px calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -1127,6 +1137,16 @@ html[lang=en] .kn-bt span{font-size:38px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"紹介者の名前（いなければ空欄）": "Referrer's name (leave blank if none)",
+"紹介ボーナス！": "Referral bonus!",
+"紹介者に自分の名前は入れられません": "You can't enter your own name as the referrer",
+"紹介者の名前が見つかりません。ランキングにいる冒険者の名前を正しく入れてね（いなければ空欄でOK）": "Referrer not found. Enter the exact name of an adventurer in the rankings (or leave it blank)",
+"うけとる": "Collect",
+"No.順": "By No.",
+"ランク別": "By rank",
+"売却済み": "Sold",
+"まとめて売却": "Sell all",
+"12時間売却不可": "No selling for 12h",
 "魔ノ国の称号": "Demon Nations title",
 "魔ノ国争奪戦": "Demon Nations War",
 "：BOXでSランクの魔物3体と交換（アイテム攻撃を5回防ぐ）。": ": trade 3 S-rank monsters in BOX (blocks 5 item attacks). ",
@@ -3361,7 +3381,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -3435,6 +3455,20 @@ function openNews(force){
 setTimeout(()=>openNews(false),150);
 
 /* ---------- 名前＋4桁でログイン ---------- */
+const REF_BONUS = 10000;   // 紹介ボーナス：新しく登録した冒険者と紹介者に、それぞれ1万コイン
+// 紹介した人が登録したら、紹介者に1万コイン（ログインのたびに確認）
+async function checkRefs(){ if(!DB||!MYID) return;
+  try{ const q=await withTO(DB.collection("refs").where("to","==",MYID).get()); const seen=S.refIds||{}; const names=[];
+    for(const d of q.docs){ if(!seen[d.id]){ seen[d.id]=1; names.push((d.data()||{}).nm||"?"); } d.ref.delete().catch(()=>{}); }
+    S.refIds=seen; if(!names.length) return;
+    S.coins+=REF_BONUS*names.length; capCoins(); save(); try{ renderCoins(); }catch(e){} queueProfile(true);
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎁</div><p>紹介ボーナス！</p>
+      <div class="m-text">${names.map(n=>esc(n)+"さん").join("・")}が、あなたの紹介で登録しました！</div>
+      <div class="m-text" style="color:var(--staff);font-family:var(--f-pix);font-size:20px">+${(REF_BONUS*names.length).toLocaleString()}コイン</div>
+      <button class="btn gold" type="button">うけとる</button></div>`;
+    document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>{ bg.remove(); try{ SFX.coin(); }catch(e){} render(); };
+  }catch(e){} }
 const nameKey=async n=>(await sha256(n.normalize("NFKC").trim().toLowerCase())).slice(0,40);
 const authEmail=k=>`u${k.slice(0,32)}@toto-monsters.app`;
 const authPass=pin=>`toto-${pin}-monsters`;
@@ -3448,6 +3482,8 @@ function openLogin(mode){
     <p id="lgT">${m==="new"?"名前と4桁の数字を決めよう":"名前と4桁の数字でログイン"}</p>
     <input id="lgName" class="nm-in" maxlength="12" placeholder="名前（12文字まで）" aria-label="名前">
     <input id="lgPin" class="nm-in" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4桁の数字" aria-label="4桁の数字">
+    ${m==="new"?`<input id="lgRef" class="nm-in" maxlength="12" placeholder="紹介者の名前（いなければ空欄）" aria-label="紹介者の名前">
+    <div class="note" style="margin:0;color:var(--staff)">🎁 紹介者（ランキングにいる冒険者の名前）を入れて登録すると、あなたと紹介者にそれぞれ${REF_BONUS.toLocaleString()}コインをプレゼント！</div>`:""}
     <div class="note" style="margin:0">${m==="new"?"名前と4桁の数字は、別の端末で続きから遊ぶときに使います。忘れないようにメモしてね。":"別の端末で遊んでいた記録も、ここから引き継げます。"}</div>
     <div class="code-msg" id="lgMsg" role="status"></div>
     <button class="btn gold" type="submit" id="lgGo">${m==="new"?"登録してはじめる":"ログイン"}</button>
@@ -3461,16 +3497,26 @@ function openLogin(mode){
       const pin=bg.querySelector("#lgPin").value.trim();
       if(!name) return say("名前を入力してください");
       if(!/^[0-9]{4}$/.test(pin)) return say("数字を4桁で入力してください");
+      const refName=m==="new"?((bg.querySelector("#lgRef")||{}).value||"").replace(/\s+/g," ").trim().slice(0,12):"";
       go.disabled=true; go.textContent="確認中…";
       try{
         const k=await nameKey(name);
         if(m==="new"){
           const taken=await FDB.doc("names/"+k).get();
           if(taken.exists){ go.disabled=false; draw(); return bg.querySelector("#lgMsg").textContent="その名前はもう使われています。別の名前にしてください"; }
+          // 紹介者：登録ずみの冒険者の名前か確かめる
+          let refUid=null;
+          if(refName){ if(refName.normalize("NFKC").toLowerCase()===name.normalize("NFKC").toLowerCase()){ go.disabled=false; go.textContent="登録してはじめる"; return say("紹介者に自分の名前は入れられません"); }
+            const rd=await FDB.doc("names/"+(await nameKey(refName))).get();
+            if(!rd.exists||!rd.data().uid){ go.disabled=false; go.textContent="登録してはじめる"; return say("紹介者の名前が見つかりません。ランキングにいる冒険者の名前を正しく入れてね（いなければ空欄でOK）"); }
+            refUid=rd.data().uid; }
           const cred=await FBA.createUserWithEmailAndPassword(authEmail(k),authPass(pin));
           await FDB.doc("names/"+k).set({uid:cred.user.uid, name, at:gnow()});
-          LOGIN_NAME=name; S.name=name; save();
-          toast(`ようこそ、${name}さん！`);
+          LOGIN_NAME=name; S.name=name;
+          if(refUid && refUid!==cred.user.uid && !S.refBy){ S.refBy=refUid; S.coins+=REF_BONUS; capCoins();
+            try{ await FDB.collection("refs").doc(cred.user.uid).set({from:cred.user.uid, to:refUid, nm:name, at:gnow()}); }catch(e){} }
+          save();
+          toast(refUid?`ようこそ、${name}さん！ 紹介ボーナス +${REF_BONUS.toLocaleString()}コイン`:`ようこそ、${name}さん！`);
         } else {
           LOGIN_NAME=name;
           let email=authEmail(k);
@@ -3763,7 +3809,7 @@ function pullMonsters(n, ticket){
   for(let i=0;i<n;i++){ const m=rollMonster(ticket); const isNew=!S.got[m.id]; if(isNew){ S.coins+=NEW_COIN; gainPExp(PXP.newMon); S.dm.nw=(S.dm.nw||0)+1; }
     if(m.rank==="C") S.dm.c=(S.dm.c||0)+1;
     S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:false,t:gnow()});
-    res.push({img:cardURL(m.id,0),name:m.name,rank:m.rank,isNew,by:m.by,byUrl:m.byUrl,model:m.model,modelUrl:m.modelUrl}); }
+    res.push({img:cardURL(m.id,0),name:m.name,rank:m.rank,isNew,by:m.by,byUrl:m.byUrl,model:m.model,modelUrl:m.modelUrl,u:S.units[S.units.length-1].u}); }
   save(); renderCoins(); openPack(res,"mon","魔物があらわれた！");
 }
 function pullFrames(n, ticket){
@@ -3779,7 +3825,7 @@ function pullFrames(n, ticket){
 function groupRes(res){
   if(res.length<=10) return res;
   const m=new Map();
-  res.forEach(r=>{ const g=m.get(r.name); if(g){ g.count++; g.isNew=g.isNew||r.isNew; } else m.set(r.name,{...r,count:1}); });
+  res.forEach(r=>{ const g=m.get(r.name); if(g){ g.count++; g.isNew=g.isNew||r.isNew; if(r.u!=null) g.us.push(r.u); } else m.set(r.name,{...r,count:1,us:r.u!=null?[r.u]:[]}); });
   return [...m.values()].sort((a,b)=>(RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank))||(b.isNew-a.isNew)||(b.count-a.count));
 }
 /* ---------- パック開封 ----------
@@ -3831,15 +3877,28 @@ const credLine = (lab,nm,url,cls) => `<div class="${cls}"><span>${lab}</span>${u
 // モデルになった人/動物：MONSTERSの model: "名前", modelUrl: "リンク先" から「魔物のモデル@名前」を自動で表示
 const byLine = (m,cls="by") => !m ? "" : (m.by?credLine("魔物製作者",m.by,m.byUrl,cls):"") + (m.model?credLine("魔物のモデル",m.model,m.modelUrl,cls):"");
 function showReveal(res,title,opts={}){
-  const nc=opts.newCoin??NEW_COIN;
+  const nc=opts.newCoin??NEW_COIN, canSell=res.length>0&&res.every(r=>r.u!=null);
+  const G=groupRes(res).map(r=>({...r, us:r.us||(r.u!=null?[r.u]:[])}));
   const top = res.reduce((a,b)=>RANKS.indexOf(b.rank)>RANKS.indexOf(a)?b.rank:a,"C");
   const el=document.createElement("div"); el.className="reveal"; el.setAttribute("role","dialog");
   el.innerHTML=(top==="Z"||top==="S"?'<div class="burst"></div>':'')+`<h3>${top==="Z"?"★ Zランク降臨 ★":title}</h3>${res.some(r=>r.isNew)?`<p class="new-bonus">はじめての発見 ${res.filter(r=>r.isNew).length}種${nc?` ・ +${res.filter(r=>r.isNew).length*nc}コイン`:""}</p>`:""}${opts.note?`<p class="new-bonus">${opts.note}</p>`:""}
     ${res.length>10?`<p class="rv-sum">${["Z","S","A","B","C"].map(k=>{const n=res.filter(r=>r.rank===k).length;return n?`<span class="rk rk-${k}">${k}</span>×${n}`:""}).join(" ")}</p>`:""}
-    <div class="rv-grid ${res.length>1?"many":"one"} ${res.length>10?"scroll":""}">${groupRes(res).map((r,i)=>`<div class="rv r-${r.rank} ${r.rank==="S"||r.rank==="Z"?"shine":""}" style="animation-delay:${Math.min(i,20)*60}ms">
-      <img src="${r.img}" alt="${r.name}">${r.isNew?'<span class="new">NEW'+(nc?' +'+nc:'')+'</span>':''}${r.count>1?`<span class="cnt">×${r.count}</span>`:""}<div class="nm"><span class="rk rk-${r.rank}">${r.rank}</span> ${r.name}</div>${(r.by||r.model)&&res.length<=10?byLine(r):""}</div>`).join("")}</div>
-    <button class="btn" type="button">OK</button>`;
+    <div class="rv-grid ${res.length>1?"many":"one"} ${res.length>10?"scroll":""}">${groupRes(res).map((r,i)=>`<div class="rv r-${r.rank} ${r.rank==="S"||r.rank==="Z"?"shine":""}" data-rv="${i}" style="animation-delay:${Math.min(i,20)*60}ms">
+      <img src="${r.img}" alt="${r.name}">${r.isNew?'<span class="new">NEW'+(nc?' +'+nc:'')+'</span>':''}${r.count>1?`<span class="cnt">×${r.count}</span>`:""}<div class="nm"><span class="rk rk-${r.rank}">${r.rank}</span> ${r.name}</div>${(r.by||r.model)&&res.length<=10?byLine(r):""}${canSell?`<button class="rv-sell" type="button" data-sell="${i}"></button>`:""}</div>`).join("")}</div>
+    <div class="rv-btns"><button class="btn" type="button">OK</button>${canSell?`<button class="btn ghost" type="button" id="rvSellAll">まとめて売却</button>`:""}</div>`;
   el.querySelector(".btn").onclick=()=>{el.remove();render()};
+  // ガチャで出た魔物を、この画面ですぐ売却できる（新しい魔物の「12時間は売却できない」ルールはそのまま）
+  if(canSell){ const L=LANG==="en";
+    const units=us=>S.units.filter(z=>us.includes(z.u));
+    const upd=()=>{ G.forEach((g,i)=>{ const b=el.querySelector(`[data-sell="${i}"]`), card=el.querySelector(`[data-rv="${i}"]`); if(!b) return; const left=units(g.us);
+        if(!left.length){ b.disabled=true; b.textContent=L?"Sold":"売却済み"; card.classList.add("sold"); return; }
+        const ok=left.filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard);
+        if(!ok.length){ b.disabled=true; b.textContent=left.some(sellLockLeft)?(L?"⏳ No selling for 12h":"⏳12時間売却不可"):(L?"Can't sell":"売却できません"); return; }
+        b.disabled=false; b.textContent=(L?"Sell ":"売却 ")+(ok.length>1?`×${ok.length} `:"")+"+"+ok.reduce((t,z)=>t+sellPrice(z),0).toLocaleString(); });
+      const all=el.querySelector("#rvSellAll"); if(all){ const ok=units(G.flatMap(g=>g.us)).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard); all.disabled=!ok.length; } };
+    el.querySelectorAll("[data-sell]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const g=G[+b.dataset.sell]; confirmSell(units(g.us).map(z=>z.u),()=>{ upd(); renderCoins(); }); });
+    el.querySelector("#rvSellAll").onclick=()=>confirmSell(units(G.flatMap(g=>g.us)).map(z=>z.u),()=>{ upd(); renderCoins(); });
+    upd(); if(DB){ const st=dexStats(); if(!st||gnow()-st.at>=DEX_STALE_MS) loadDexStats(true).then(upd); } }
   document.body.appendChild(el); el.querySelector(".btn").focus(); SFX.reveal(top);
 }
 
@@ -3935,6 +3994,7 @@ renderSnd();
 
 /* ---------- UI ---------- */
 const $ = s=>document.querySelector(s);
+let dexSort="no"; try{ dexSort=localStorage.getItem("toto-dex-sort")||"no"; }catch(e){}
 let tab="home", homeMode="scene", gachaMode="mon", dexMode="mon", boxFilter="all", boxMode="units";
 const today=()=>"ss"+seasonNow();   // 「今日」＝今のランク戦（ランク戦タイマーが切り替わると次の日）
 function toast(t){ document.querySelectorAll(".toast").forEach(x=>x.remove()); const el=document.createElement("div"); el.className="toast"; el.textContent=t; el.setAttribute("role","status"); document.body.appendChild(el); setTimeout(()=>el.remove(),2200); }
@@ -4196,7 +4256,7 @@ function confirmSell(uids,onDone,fresh){
   uids=list.map(z=>z.u);
   const total=list.reduce((t,u)=>t+sellPrice(u),0);
   const rare=list.filter(u=>["S","Z","L"].includes(mon(u.m).rank));
-  const bg=document.createElement("div"); bg.className="sheet-bg center";
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;   // ガチャ結果の画面の上にも出す
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="sellT">
     <p id="sellT">${list.length===1?mon(list[0].m).name+" (Lv"+list[0].l+")":list.length+"体"}を売却しますか？</p>
     <div class="m-text" style="color:var(--staff);font-family:var(--f-pix);font-size:20px">+${total.toLocaleString()}コイン</div>${sellLv(list)?`<div class="m-text" style="color:#5fd36a;font-weight:900;font-size:17px">冒険者Lv +${sellLv(list)}</div>`:""}${list.some(u=>mon(u.m).rank==="L")?`<div class="m-text" style="color:#ffd75e;font-weight:900;font-size:16px">✨ 手持ちの魔物すべてのLv +${list.filter(u=>mon(u.m).rank==="L").length*LIMITED_SELL_LV}（Lv${MAX_LV}を超えてもそのまま上がる）</div>`:""}
@@ -4489,7 +4549,12 @@ function renderDex(){
       <img src="${h?cardURL(m.id,0,160):silhouette(m.id)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${h?m.name:"？？？"}</div>${h?byLine(m):""}</div>`};
     // 限定ランクは図鑑には公開しない。手に入れた冒険者の図鑑にだけ、別の欄で載っていく
     const lim=MONSTERS.filter(m=>m.rank==="L"&&S.got[m.id]);
-    body=`<div class="dex">${DEX_MONS.map(cell).join("")}</div>${lim.length?`<div class="el-head" style="margin-top:16px">✨ 限定ランク（あなたが手に入れた魔物） <span>${lim.length}種</span></div><div class="dex">${lim.map(cell).join("")}</div>`:""}`;
+    const sortBar=`<div class="dex-sort" translate="no">${[["no","No.順"],["rank","ランク別"]].map(([k,l])=>`<button type="button" data-ds="${k}" aria-pressed="${dexSort===k}">${LANG==="en"?(k==="no"?"By No.":"By rank"):l}</button>`).join("")}</div>`;
+    const main = dexSort==="rank"
+      ? ["Z","S","A","B","C"].map(rk=>{ const L=DEX_MONS.filter(m=>m.rank===rk); if(!L.length) return ""; const c=L.filter(m=>S.got[m.id]).length;
+          return `<div class="el-head"><span class="rk rk-${rk}">${rk}</span>${LANG==="en"?"Rank":"ランク"} <span>${c}/${L.length}</span></div><div class="dex">${L.map(cell).join("")}</div>`; }).join("")
+      : `<div class="dex">${DEX_MONS.map(cell).join("")}</div>`;
+    body=`${sortBar}${main}${lim.length?`<div class="el-head" style="margin-top:16px">✨ 限定ランク（あなたが手に入れた魔物） <span>${lim.length}種</span></div><div class="dex">${lim.map(cell).join("")}</div>`:""}`;
   } else {
     body=ELEMENTS.map((e,ei)=>{ const fs=FRAMES.filter(f=>f.el===ei); const c=fs.filter(f=>S.frames[f.id]).length;
       return `<div class="el-head">${e.n}の枠 <span>${c}/10</span></div><div class="dex">${fs.map(f=>{const h=S.frames[f.id];return `<div class="cell ${h?"has":"unk"}">
@@ -4500,6 +4565,7 @@ function renderDex(){
     ${have===all?`<p class="sub" style="color:var(--staff)">★ コンプリート！ 冒険者EXPが${COMP_EXP_MUL}倍になっています</p>`:`<p class="sub" style="margin:0 0 8px">コンプ率100%で、冒険者EXPが${COMP_EXP_MUL}倍になる！</p>`}${body}`;
   if(isMon) document.querySelectorAll("[data-dexm]").forEach(c=>c.onclick=()=>openDexMon(+c.dataset.dexm));
   bindSeg(k=>{boxMode=k;render();$("#stage").scrollTop=0});
+  document.querySelectorAll("[data-ds]").forEach(b=>b.onclick=()=>{ dexSort=b.dataset.ds; try{ localStorage.setItem("toto-dex-sort",dexSort); }catch(e){} render(); });
 }
 // 図鑑の魔物をタップ：過去に獲得した数・全冒険者の獲得数・今の売却価格。10万コインで自分の獲得数を1減らせる
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
