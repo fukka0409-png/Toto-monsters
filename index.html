@@ -5902,6 +5902,7 @@ async function checkSeason(){
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
+  { id:"fix-2026-10-22-knlogin", coins:1000 },   // 魔ノ国争奪戦：開いた直後、ログインしているのに「ログインすると遊べます」と出て遊べなかった
   { id:"fix-2026-10-22-ttloverlap", coins:1000 },   // タイトル画面でランキングのお知らせとリセットタイマーが重なっていた
   { id:"fix-2026-10-22-syncloss", coins:1000 },   // クラウドの記録の入れかえで、手に入れたばかりの魔物が消えることがあった
   { id:"fix-2026-10-21-falsevoid", coins:1000 },   // 3位以内に入っていないのに投資が無効になっていた
@@ -7176,6 +7177,12 @@ function knShell(cls, W, H, bg){ document.getElementById("kno")?.remove(); const
   document.body.appendChild(el); const st=el.querySelector(".kn-st");
   const fit=()=>{ const s=Math.min(innerWidth/W, innerHeight/H); st.style.transform=`translate(${(innerWidth-W*s)/2}px,${(innerHeight-H*s)/2}px) scale(${s})`; };
   fit(); KV.fit=fit; addEventListener("resize",fit); return st; }
+// ゲームを開いた直後は、ログインの読みこみが終わるまで少し待つ（ログインしているのに「ログインすると遊べます」と出ないように）
+function knWaitLogin(){ if(DB&&MYID) return Promise.resolve(true);
+  const signedIn=()=>{ try{ return !!(FBA&&FBA.currentUser); }catch(e){ return false; } };
+  knMsg(K_("ログイン情報を読みこみ中…","Loading your sign-in…"));
+  return new Promise(res=>{ const t0=Date.now(); const iv=setInterval(()=>{ if(DB&&MYID){ clearInterval(iv); return res(true); }
+    const el=Date.now()-t0; if((!signedIn()&&el>4000)||el>20000){ clearInterval(iv); res(false); } },200); }); }
 function knClose(){ if(KV.unsub){ try{ KV.unsub(); }catch(e){} KV.unsub=null; } clearInterval(KV.tick); KV.tick=0; clearInterval(KV.adT); KV.adT=0;
   if(KV.fit) removeEventListener("resize",KV.fit); document.getElementById("kno")?.remove(); KV.scr=null; }
 function knDlg(html, btns, opt={}){ const root=document.getElementById("kno")||document.body; root.querySelectorAll(".kn-dlg").forEach(x=>{ if(!opt.stack) x.remove(); });
@@ -7232,7 +7239,7 @@ async function openKuni(){ if(!knOn()) return;
     el.innerHTML = knPre() ? `${K_("シーズン開始まで","Season starts in")} <b>${knH(knT0()-now)}${K_("時間"," h")}</b><small class="kn-prep">${K_("（準備期間：攻撃以外はできます）"," (prep time: everything but attacks)")}</small>`
       : `${K_(`シーズン${ks+1}`,`Season ${ks+1}`)}　${K_("終了まで","ends in")} <b>${knH(knEnd(ks)-now)}${K_("時間"," h")}</b>`; knCoinUpd(); };
   tick(); KV.tick=setInterval(tick,1000);
-  if(!DB||!MYID){ knDrawAds([]); return; }
+  if(!DB||!MYID){ if(!(await knWaitLogin())){ knDrawAds([]); return; } if(KV.scr!=="sel") return; }
   const ks=knSeason(); if(ks<0){ knDrawAds([]); return; }
   try{ await knClaim(); }catch(e){}
   const [docs, prev]=await Promise.all([knLoad(ks), ks>0?knLoad(ks-1):Promise.resolve([null,null,null,null])]);
@@ -7288,7 +7295,7 @@ function openKuniIsland(i){ const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046
   knTestBar(document.getElementById("kno"), t=>{ if(/^(ff|end|back|wipe)/.test(t)){ knClose(); openKuniIsland(i); } else { knDraw(); knTimer(); knCoinUpd(); } });
   const tick=()=>{ knTimer(); knCoinUpd(); }; tick(); KV.tick=setInterval(tick,1000);
   knDraw();
-  if(!DB||!MYID){ knMsg(K_("ログインすると遊べます","Sign in to play")); return; }
+  if(!DB||!MYID){ knWaitLogin().then(ok=>{ if(KV.scr!=="isl"||KV.i!==i) return; if(ok){ knClose(); openKuniIsland(i); } else knMsg(K_("ログインすると遊べます","Sign in to play")); }); return; }
   const ks=knSeason(); if(ks<0) return;
   let first=true;
   KV.unsub=knRef(ks,i).onSnapshot(s=>{ if(KV.scr!=="isl"||KV.i!==i) return; const d=s.exists?s.data():knBlank(ks,i); const old=KV.d; KV.d=d;
