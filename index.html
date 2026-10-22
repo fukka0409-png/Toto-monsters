@@ -7058,7 +7058,10 @@ function knShitenno(docs){ const L=[]; docs.forEach((d,i)=>{ if(!d) return; cons
 async function knLoad(ks){ const out=[]; for(let i=0;i<4;i++){ try{ const s=await knRef(ks,i).get(); out.push(s.exists?s.data():null); }catch(e){ out.push(null); } } return out; }
 async function knTx(i, fn){ const ks=knSeason(); if(ks<0) return {err:K_("まだシーズンが始まっていません","The season hasn't started yet")};
   const ref=knRef(ks,i);
-  try{ return await knTx0(ref,ks,i,fn); }catch(e){ return {err:knErrText(e)}; } }
+  // 一時的な混雑（resource-exhausted・aborted・unavailable）のときは、少し待って2回までやり直す
+  for(let k=0;;k++){ try{ return await knTx0(ref,ks,i,fn); }catch(e){ const c=(e&&e.code)||"";
+      if(k<2 && /resource-exhausted|aborted|unavailable|deadline/.test(c)){ await new Promise(r=>setTimeout(r,1200*(k+1)+Math.random()*600)); continue; }
+      return {err:knErrText(e)}; } } }
 // 失敗したときは、理由がわかるように表示する（ルールが公開されていない・電波が悪い など）
 function knErrText(e){ const c=(e&&e.code)||""; try{ console.warn("kuni",e); }catch(x){}
   if(c.includes("permission-denied")) return K_("サーバーの設定（Firestoreのルール）がまだ反映されていないため、保存できませんでした（permission-denied）","Couldn't save: the server rules aren't set up yet (permission-denied)");
