@@ -141,6 +141,11 @@ details.rates summary{cursor:pointer;font-weight:700}
 .rv-grid.one .rv .rv-sell{font-size:14px;padding:8px}
 .rv .rv-sell:disabled{background:#4a5550;color:#cfd8d3;cursor:default}
 .rv.sold img{filter:grayscale(1) brightness(.55)}
+.rv.pickable{cursor:pointer}
+.rv.pickable img{outline:3px dashed #ffffff66;outline-offset:-3px}
+.rv.picked img{outline:4px solid #ffd54f;outline-offset:-4px;filter:brightness(.8)}
+.rv.picked::after{content:"✔";position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#ffd54f;color:#3a2306;font:900 22px/34px var(--f-body);text-align:center;box-shadow:0 2px 0 #0006}
+.rv-pickhint{margin:8px 0 0;font-size:13px;font-weight:800;color:#ffd54f}
 .reveal .rv-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .reveal .rv-btns .btn{min-width:150px}
 /* sheet */
@@ -1137,6 +1142,8 @@ html[lang=en] .kn-bt span{font-size:38px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"選択して売却": "Select & sell",
+"売却する魔物をタップしてえらんでね": "Tap the monsters you want to sell",
 "紹介者の名前（いなければ空欄）": "Referrer's name (leave blank if none)",
 "紹介ボーナス！": "Referral bonus!",
 "紹介者に自分の名前は入れられません": "You can't enter your own name as the referrer",
@@ -3885,7 +3892,7 @@ function showReveal(res,title,opts={}){
     ${res.length>10?`<p class="rv-sum">${["Z","S","A","B","C"].map(k=>{const n=res.filter(r=>r.rank===k).length;return n?`<span class="rk rk-${k}">${k}</span>×${n}`:""}).join(" ")}</p>`:""}
     <div class="rv-grid ${res.length>1?"many":"one"} ${res.length>10?"scroll":""}">${groupRes(res).map((r,i)=>`<div class="rv r-${r.rank} ${r.rank==="S"||r.rank==="Z"?"shine":""}" data-rv="${i}" style="animation-delay:${Math.min(i,20)*60}ms">
       <img src="${r.img}" alt="${r.name}">${r.isNew?'<span class="new">NEW'+(nc?' +'+nc:'')+'</span>':''}${r.count>1?`<span class="cnt">×${r.count}</span>`:""}<div class="nm"><span class="rk rk-${r.rank}">${r.rank}</span> ${r.name}</div>${(r.by||r.model)&&res.length<=10?byLine(r):""}${canSell?`<button class="rv-sell" type="button" data-sell="${i}"></button>`:""}</div>`).join("")}</div>
-    <div class="rv-btns"><button class="btn" type="button">OK</button>${canSell?`<button class="btn ghost" type="button" id="rvSellAll">まとめて売却</button>`:""}</div>`;
+    <div class="rv-btns"><button class="btn" type="button">OK</button>${canSell?`<button class="btn ghost" type="button" id="rvSellAll">まとめて売却</button><button class="btn ghost" type="button" id="rvPick">選択して売却</button>`:""}</div>${canSell?`<p class="rv-pickhint" id="rvHint" hidden>売却する魔物をタップしてえらんでね</p>`:""}`;
   el.querySelector(".btn").onclick=()=>{el.remove();render()};
   // ガチャで出た魔物を、この画面ですぐ売却できる（新しい魔物の「12時間は売却できない」ルールはそのまま）
   if(canSell){ const L=LANG==="en";
@@ -3898,6 +3905,17 @@ function showReveal(res,title,opts={}){
       const all=el.querySelector("#rvSellAll"); if(all){ const ok=units(G.flatMap(g=>g.us)).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard); all.disabled=!ok.length; } };
     el.querySelectorAll("[data-sell]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const g=G[+b.dataset.sell]; confirmSell(units(g.us).map(z=>z.u),()=>{ upd(); renderCoins(); }); });
     el.querySelector("#rvSellAll").onclick=()=>confirmSell(units(G.flatMap(g=>g.us)).map(z=>z.u),()=>{ upd(); renderCoins(); });
+    // 選択して売却：ボタンを押すと選ぶモード。魔物をタップしてえらび、もう一度ボタンで売却
+    let picking=false; const pick=new Set(); const pb=el.querySelector("#rvPick"), hint=el.querySelector("#rvHint");
+    const sellable=g=>units(g.us).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard);
+    const drawPick=()=>{ G.forEach((g,i)=>{ const c=el.querySelector(`[data-rv="${i}"]`); if(!c) return; if(pick.has(i)&&!sellable(g).length) pick.delete(i); c.classList.toggle("picked",picking&&pick.has(i)); c.classList.toggle("pickable",picking&&sellable(g).length>0); });
+      const n=[...pick].reduce((t,i)=>t+sellable(G[i]).length,0);
+      pb.textContent=!picking?(L?"Select & sell":"選択して売却"):n?(L?`Sell ${n} selected`:`えらんだ${n}体を売却`):(L?"Cancel":"やめる");
+      pb.classList.toggle("gold",picking&&n>0); pb.classList.toggle("ghost",!(picking&&n>0)); hint.hidden=!picking; };
+    pb.onclick=()=>{ if(!picking){ picking=true; pick.clear(); return drawPick(); }
+      const us=[...pick].flatMap(i=>sellable(G[i]).map(z=>z.u)); if(!us.length){ picking=false; return drawPick(); }
+      confirmSell(us,()=>{ picking=false; pick.clear(); upd(); drawPick(); renderCoins(); }); };
+    G.forEach((g,i)=>{ const c=el.querySelector(`[data-rv="${i}"]`); if(c) c.addEventListener("click",()=>{ if(!picking) return; if(!sellable(g).length) return toast(L?"This one can't be sold":"この魔物は売却できません"); pick.has(i)?pick.delete(i):pick.add(i); drawPick(); }); });
     upd(); if(DB){ const st=dexStats(); if(!st||gnow()-st.at>=DEX_STALE_MS) loadDexStats(true).then(upd); } }
   document.body.appendChild(el); el.querySelector(".btn").focus(); SFX.reveal(top);
 }
