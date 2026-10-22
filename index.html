@@ -6983,9 +6983,10 @@ const KN = {
   SEASON_MS: 360*3600e3, HALF_MS: 180*3600e3,   // 1シーズン360時間（2026-10-22に720時間から変更）
   NEW_PROTECT: 3600e3,
   // 魔物の城：1時間ごとに30%の確率で空いている場所にあらわれる（島に2つまで）。Lv1・大砲1つ（15分に2発）で、まわりの国のお城をランダムに攻撃する
-  MON: { CHANCE: 0.9, FEW: 20, MAX: 2, SHOTS: 2, CATCH: 4, PRIZE: 100000 },
+  MON: { CHANCE: 0.9, FEW: 20, MAX: 2, SHOTS: 2, CATCH: 4, PRIZE: 100000,
+    HP: [0, 45, 80, 140, 250, 450, 800] },   // 2026-10-22：魔物の城の耐久力（守りなし）。国民が武器で5回くらい攻撃するとこわせる
   ISL_PRIZE: [1000000, 500000, 300000],
-  SLIME: { HP: 30, DMG: 10, CHANCE: 0.5, N: 2, MS: 30*60e3 },   // 魔物の城から30分ごとに50%でスライム2体・となりのお城を15分に1回よわく攻撃   // シーズン終了時、島の1〜3位の国：王を含む全員で山分け
+  SLIME: { HP: 27, DMG: 10, CHANCE: 0.5, N: 2, MS: 30*60e3 },   // 魔物の城から30分ごとに50%でスライム2体・となりのお城を15分に1回よわく攻撃   // シーズン終了時、島の1〜3位の国：王を含む全員で山分け
   // 2026-10-22：国を作る・参加するのは無料に。作ると王に5万コイン、参加すると2万コイン。国が生きている間、1時間ごとに冒険者レベル＋（王10・国民5）
   MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 10, LV_CIT: 5, BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
   SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
@@ -7044,8 +7045,9 @@ const knIsl = i => K_(KN.ISL[i].ja, KN.ISL[i].en);
 const knNum = n => Math.round(n).toLocaleString();
 const knH = ms => Math.max(0,Math.ceil(ms/3600e3));
 const knBlank = (ks,i) => ({ s:ks, i, n:{}, c:{}, dead:{}, log:[], v:0 });
-const knMax = c => c.sl ? KN.SLIME.HP : KN.HP[c.lv];
-const knHp = (c,now=knNow()) => c.sl ? Math.max(0,c.hp) : Math.max(0,Math.min(KN.HP[c.lv], c.hp + KN.HP[c.lv]*KN.REGEN*Math.max(0,now-(c.hpT||now))/3600e3));
+const knHpMax = c => c.mon ? KN.MON.HP[c.lv] : KN.HP[c.lv];
+const knMax = c => c.sl ? KN.SLIME.HP : knHpMax(c);
+const knHp = (c,now=knNow()) => c.sl ? Math.max(0,c.hp) : Math.max(0,Math.min(knHpMax(c), c.hp + knHpMax(c)*KN.REGEN*Math.max(0,now-(c.hpT||now))/3600e3));
 const knAlive = d => Object.entries(d.n||{}).filter(([,n])=>!n.x);
 const knRanked = d => knAlive(d).sort((a,b)=>(b[1].f||0)-(a[1].f||0) || (a[1].t||0)-(b[1].t||0));
 const knCastles = (d,nid) => Object.entries(d.c||{}).filter(([,c])=>c.n===nid&&c.lv).map(([k,c])=>[+k,c]);
@@ -7091,7 +7093,7 @@ function knTx0(ref,ks,i,fn){
 const knAdj = k => { const r=Math.floor(k/4), c=k%4, o=[]; if(r>0) o.push(k-4); if(r<2) o.push(k+4); if(c>0) o.push(k-1); if(c<3) o.push(k+1); return o; };
 const knMonCount = d => Object.values(d.c||{}).filter(c=>c.mon&&c.lv).length;
 function knMonSpawn(d,now){ const free=[...Array(12).keys()].filter(k=>!d.c[k]); if(!free.length||knMonCount(d)>=KN.MON.MAX) return false;
-  const k=free[Math.floor(Math.random()*free.length)]; d.c[k]={mon:1, n:"__m", lv:1, g:[{lv:1}], eq:1, hp:KN.HP[1], hpT:now, as:knSlot(now)}; knLog(d,{k:"mon"}); return true; }
+  const k=free[Math.floor(Math.random()*free.length)]; d.c[k]={mon:1, n:"__m", lv:1, g:[{lv:1}], eq:1, hp:KN.MON.HP[1], hpT:now, as:knSlot(now)}; knLog(d,{k:"mon"}); return true; }
 function knMonNeeds(d,now){ if(!d||knPre(now)) return false; if(d.ms!==Math.floor((now-knT0())/3600e3)) return true; const sl=knSlot(now);
   const hh=Math.floor((now-knT0())/KN.SLIME.MS);
   return Object.values(d.c||{}).some(c=>(c.mon&&c.lv&&(c.as==null||c.as<sl||c.ss==null||c.ss<hh))||(c.sl&&(c.as==null||c.as<sl))); }
@@ -7106,7 +7108,7 @@ function knMonTick(d,now){ if(knPre(now)) return false; let ch=false;
   const pc=Object.values(d.c).filter(x=>x.lv&&!x.mon), avg=k=>pc.length?pc.reduce((a,x)=>a+k(x),0)/pc.length:1;
   const mlv=Math.max(1,Math.min(6,Math.round(avg(x=>x.lv)/2))), mgun=Math.max(1,Math.min(6,Math.round(avg(x=>{ const g=knGuns(x); return g.length?Math.max(...g.map(y=>y.lv)):1; })/2)));
   for(const c of Object.values(d.c)){ if(!c.mon||!c.lv) continue;
-    if(c.lv!==mlv){ const r=knHp(c,now)/KN.HP[c.lv]; c.lv=mlv; c.hp=Math.round(KN.HP[mlv]*r); c.hpT=now; ch=true; }
+    if(c.lv!==mlv){ const r=knHp(c,now)/knHpMax(c); c.lv=mlv; c.hp=Math.round(knHpMax(c)*r); c.hpT=now; ch=true; }
     if(!c.g||!c.g[0]||c.g[0].lv!==mgun){ c.g=[{lv:mgun}]; ch=true; } }
   const sl=knSlot(now), hh=Math.floor((now-knT0())/KN.SLIME.MS);
   // スライム：魔物の城ごとに30分に1回、50%で2体が空いているマスにあらわれる
@@ -7161,6 +7163,27 @@ async function knLvTick(){ const st=S.knLv; if(KN_TEST||!st||knLvBusy||!DB||!MYI
   }catch(e){} finally{ knLvBusy=false; } }
 setTimeout(()=>{ try{ knLvTick(); }catch(e){} },8000);
 setInterval(()=>{ try{ knLvTick(); }catch(e){} },60*1000);
+/* ---- 返金とプレゼント（2026-10-22）：無料になる前に国を作った・参加した人へ。1人1回だけ ---- */
+const KN_FREE_T = 1792675176000;   // 国を作る・参加するが無料になった時刻
+let knRfBusy=false;
+async function knRefundOnce(){ if(KN_TEST||!DB||!MYID||knRfBusy) return; const K=knS(); if(K.rf) return;
+  const ks=knSeason(); let docs; knRfBusy=true; try{ docs=await knLoad(ks); }catch(e){ knRfBusy=false; return; } knRfBusy=false; if(K.rf) return;
+  if(docs.every(x=>x==null) && !navigator.onLine) return;
+  let got=null;
+  docs.forEach((d,i)=>{ if(got||!d) return; const nid=knMine(d); if(!nid) return; const n=d.n[nid], m=n.m[MYID]||{};
+    got={i, nid, king:n.k===MYID, old:(m.j||0)<KN_FREE_T}; });
+  K.rf=1;
+  if(got){ if(!S.knLv||S.knLv.nid!==got.nid) S.knLv={ks, i:got.i, nid:got.nid, t:knNow()};
+    const back=got.old?(got.king?100000:1000):0, gift=got.old?(got.king?KN.MAKE_GIFT:KN.JOIN_GIFT):0;
+    if(back+gift>0){ knAdd(back+gift); renderCoins();
+      knDlg(`<div class="kn-big">🎁</div><h3>${K_("返金とプレゼント","Refund & gift")}</h3>
+        <p>${K_("魔ノ国争奪戦で「国を作る」「国に参加する」のが<b>無料</b>になり、さらに作ると5万コイン・参加すると2万コインがもらえるようになりました。","Founding and joining a nation in the Demon Nations War is now <b>free</b>, and you now get 50,000 coins for founding or 20,000 coins for joining.")}</p>
+        <p>${K_("すでに国を作った・参加していたみなさんが損をしないように、払ったコインを返金し、プレゼントもお届けします🙏","So everyone who had already founded or joined doesn't lose out, we're refunding the coins you paid and sending you the gift too 🙏")}</p>
+        <p class="kn-gain">+${knNum(back+gift)} ${K_("コイン","coins")}</p>
+        <p class="kn-sm">${K_(`返金 ${knNum(back)}コイン＋プレゼント ${knNum(gift)}コイン`,`Refund ${knNum(back)} + gift ${knNum(gift)} coins`)}<br>${K_(got.king?"国が続くかぎり、王は1時間ごとに冒険者レベル+10！":"国にいる間は、1時間ごとに冒険者レベル+5！",got.king?"While your nation stands, the King gets Adventurer Level +10 every hour!":"While in the nation, you get Adventurer Level +5 every hour!")}</p>`,[[K_("OK","OK"),null]]); } }
+  save(); }
+setTimeout(()=>{ try{ knRefundOnce(); }catch(e){} },6000);
+setTimeout(()=>{ try{ knRefundOnce(); }catch(e){} },30000);
 /* ---- 国を作る ---- */
 function knMake(i, cell, nm, mk){ const best=S.best||0;
   if(!(KN_TEST&&knS().ign) && !(best>0&&best<=KN.BEST)) return Promise.resolve({err:K_("国を作れるのは、ランク戦の最高順位が10位以内の冒険者だけです","Only adventurers whose best ranked placement is top 10 can found a nation")});
@@ -7210,7 +7233,7 @@ function knMove(i, cell){ return knTx(i,d=>{ const nid=knMine(d), c=d.c[cell]; i
 // ダメージを与える（こわれたら資金を奪う・王のお城なら国が敗北）
 function knHit(d, nid, target, dmg, now){ const n=d.n[nid], tc=d.c[target], vid=tc.n, v=d.n[vid];
   if(tc.sl){ dmg=Math.max(1,Math.round(dmg)); tc.hp-=dmg; if(tc.hp>0) return {dmg}; delete d.c[target]; knLog(d,{k:"skill", a:n.nm}); return {dmg, broke:1, slime:1}; }   // スライム：たおすとマスが空く
-  dmg=Math.max(1,Math.round(dmg*(1-KN.GUARD[tc.lv])));
+  dmg=Math.max(1,Math.round(dmg*(tc.mon?1:1-KN.GUARD[tc.lv])));
   const hp=knHp(tc,now)-dmg;
   if(hp>0){ tc.hp=hp; tc.hpT=now; knLog(d,{k:"atk", a:n.nm, b:v?v.nm:(tc.mon?K_("魔物の城","Monster Castle"):"?"), x:dmg}); return {dmg}; }
   if(tc.mon){ n.f=(n.f||0)+KN.MON.PRIZE; d.c[target]={own:nid}; knLog(d,{k:"mkill", a:n.nm, x:KN.MON.PRIZE}); return {dmg, broke:1, steal:KN.MON.PRIZE, mon:1}; }   // 魔物の城をこわした：国の資金に10万・跡地が領土に
@@ -7369,7 +7392,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、360時間かけてじっくり育てよう。</p>
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（すべてのお城がこわれ、資金はすべて奪われる）。</p>
-  <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に2つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器か大砲でたおそう。</p>
+  <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に2つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ 耐久力は低めで、国民が武器で5回くらい攻撃すればこわせる。こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器で3回攻撃すればたおせる。</p>
   <p>🔰 シーズンが始まってから国を作ると、作った直後の1時間は🔰マークがついて、ほかの国から攻撃されない。</p>
   <p>💀 倒れると所持コインから5万コイン没収、120時間は参加できない。そのあとは国を作るか、「はじめのお城を1つだけ建てている国」にだけ参加できる。</p>
   <p>🏆 島の中では<b>国の資金が多い順</b>。180時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
@@ -7380,7 +7403,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 360 hours.</p>
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour.</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
-  <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 2 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — defeat them with weapons or cannons.</p>
+  <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 2 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Their HP is low — about 5 weapon attacks by citizens will destroy one. Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — 3 weapon attacks defeat one.</p>
   <p>🔰 A nation founded after the season starts gets a 🔰 mark for its first hour and can't be attacked by other nations.</p>
   <p>💀 If you fall, you lose 50,000 coins and can't take part for 120 hours. After that you can found a nation, or join only a nation with just one starting castle.</p>
   <p>🏆 Nations are ranked on each island by <b>national funds</b>. After 180 hours, each island shows its "Candidate" (#1). When the season ends, the #1 nation of each of the 4 islands becomes a Heavenly King, ranked 1–4 by funds.</p>
@@ -7430,7 +7453,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
     b.className="kn-cell"; b.innerHTML="";
     if(c&&c.sl){ const pct=Math.max(0,c.hp)/KN.SLIME.HP*100; b.classList.add("castle","slime");
       b.innerHTML=`<img class="kn-sl" src="kuni/slime.png" alt="" draggable="false"><div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:#ff5252"></i></div><div class="kn-plate mon"><span>${K_("スライム","Slime")}</span></div>`; }
-    else if(c&&c.lv&&c.mon){ const hp=knHp(c,now), pct=hp/KN.HP[c.lv]*100; b.classList.add("castle","mon");
+    else if(c&&c.lv&&c.mon){ const hp=knHp(c,now), pct=hp/knHpMax(c)*100; b.classList.add("castle","mon");
       b.innerHTML=`<img class="kn-cs" src="kuni/mcastle.png" alt="" draggable="false"><div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:${pct>50?"#5fd36a":pct>25?"#ffc107":"#ff5252"}"></i></div>
         <div class="kn-plate mon"><img class="kn-mksm" src="kuni/mmark.jpg" alt=""><span>${K_("魔物の城","Monster Castle")} Lv${c.lv}</span></div>`; }
     else if(c&&c.lv){ const n=d.n[c.n]||{}; const hp=knHp(c,now), pct=hp/KN.HP[c.lv]*100, here=Object.entries(n.m||{}).filter(([,m])=>m.at===k);
@@ -7444,7 +7467,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
     else { b.classList.add("free"); if(KV.pick) b.classList.add("pickme"); } });
   document.getElementById("knPick").hidden=!KV.pick;
   const b0=document.getElementById("knB0"), b1=document.getElementById("knB1");
-  if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && (!S.knLv||S.knLv.nid!==mine)) knLvStart(KV.i,mine);
+  if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && knS().rf && (!S.knLv||S.knLv.nid!==mine)) knLvStart(KV.i,mine); if(!KN_TEST && !knS().rf) knRefundOnce();
     b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(n.f||0)}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
     b1.innerHTML = n.k===MYID ? `<span>${K_("国の強化","Strengthen")}</span><small>${K_("国の資金を使う","Uses national funds")}</small>` : `<span>${K_("資金を追加","Add funds")}</span><small>${K_("自分のコインを振り込む","Send your coins")}</small>`; }
   else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span><small class="grn">+${K_("5万コイン","50,000 coins")}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span><small class="grn">+${K_("2万コイン","20,000 coins")}</small>`; } }
