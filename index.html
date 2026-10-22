@@ -6914,7 +6914,7 @@ try{ KN_TEST = localStorage.getItem("kn-test2")==="1"; }catch(e){}
   if(h==="c55cde67d3dff1b6dbc49478775c109d8844b4d27a25dd8dfea4b218413fbbec"){ localStorage.setItem("kn-test2","1"); KN_TEST=true; knTitleBtn(); }
 }catch(e){} })();
 const knOn = () => KN.ORIGIN>0 || KN_TEST;
-const knT0 = () => KN.ORIGIN || seasonEnd(4);                 // テスト版はシーズン5のはじまりから数える
+const knT0 = () => KN_TEST ? seasonEnd(4) : KN.ORIGIN;        // テスト版はランク戦シーズン5のはじまりから数える
 const knS  = () => { const k=KN_TEST?"knt":"kn"; if(!S[k]) S[k]={off:0,tc:10000000,pen:{},died:{},ban:0,claimed:{},w:0,c:0,ign:0,nocd:0}; return S[k]; };
 const knSlot = (t=knNow()) => Math.floor((t-knT0())/KN.SLOT_MS);
 const knSlotLeft = (t=knNow()) => knT0()+(knSlot(t)+1)*KN.SLOT_MS-t;
@@ -7146,32 +7146,33 @@ async function openKuni(){ if(!knOn()) return;
     const mine=d&&knMine(d); const m=document.getElementById("knMine"+i); if(mine){ m.hidden=false; m.textContent=K_("🏯 あなたの国","🏯 Your nation"); } });
   // 前のシーズンの四天王の広告
   const sh=knShitenno(prev); const ads=[];
-  for(const [p,x] of sh.entries()){ let img=""; try{ const s=await DB.collection(KAD()).doc(`${ks-1}_${x.nid}`).get(); if(s.exists) img=s.data().img||""; }catch(e){} ads.push({p, n:x.n, i:x.i, img}); }
+  for(const [p,x] of sh.slice(0,1).entries()){ let img="";   // 広告が載るのは四天王1位の国だけ
+     try{ const s=await DB.collection(KAD()).doc(`${ks-1}_${x.nid}`).get(); if(s.exists) img=s.data().img||""; }catch(e){} ads.push({p, n:x.n, i:x.i, img}); }
   if(KV.scr==="sel") knDrawAds(ads); }
 function knDrawAds(ads){ const el=document.getElementById("knAd"); if(!el) return; KV.ads=ads; KV.adI=0; clearInterval(KV.adT);
-  if(!ads.length){ el.innerHTML=`<div class="kn-adnone">${K_("シーズンが終わると、四天王になった国の広告がここに載ります","When a season ends, ads from the Four Heavenly Kings appear here")}</div>`; return; }
+  if(!ads.length){ el.innerHTML=`<div class="kn-adnone">${K_("シーズンが終わると、四天王1位の国の広告がここに載ります","When a season ends, the ad of the #1 Heavenly King appears here")}</div>`; return; }
   const draw=()=>{ const a=ads[KV.adI%ads.length]; el.innerHTML=`${a.img?`<img class="kn-adimg" src="${a.img}" alt="">`:`<div class="kn-admk">${knMarkHtml(a.n)}</div>`}
     <div class="kn-adcap">${K_(`四天王 ${a.p+1}位`,`Heavenly King #${a.p+1}`)}　${esc(a.n.nm)}（${esc(a.n.kn||"")}${K_("王"," (King)")}）</div>`; KV.adI++; };
   draw(); if(ads.length>1) KV.adT=setInterval(draw,6000); }
 function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to play the Demon Nations War")}</h3><div class="kn-help-tx">${K_(`
   <p><b>1シーズンは720時間</b>（ゲーム内のタイマー）。島をえらんで、国を作るか、国に参加しよう！</p>
-  <p>👑 <b>国を作る（10万コイン）</b>：ランク戦の最高順位が10位以内の冒険者だけ。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王になったときの広告画像を決めよう。</p>
+  <p>👑 <b>国を作る（10万コイン）</b>：ランク戦の最高順位が10位以内の冒険者だけ。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
   <p>🙋 <b>国に参加する（1000コイン）</b>：好きな国の国民になれる。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、720時間かけてじっくり育てよう。</p>
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（すべてのお城がこわれ、資金はすべて奪われる）。</p>
   <p>💀 倒れると所持コインから5万コイン没収、240時間は参加できない。そのあとは国を作るか、「はじめのお城を1つだけ建てている国」にだけ参加できる。</p>
   <p>🏆 島の中では<b>国の資金が多い順</b>。360時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
-  <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（国民がいない国は王が100%）（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。四天王の王と国民にはプロフィールに称号がつき、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
+  <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（国民がいない国は王が100%）（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。四天王の王と国民にはプロフィールに称号がつく。四天王1位の国は、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
   <p><b>A season lasts 720 hours</b> (in-game timer). Pick an island, then found a nation or join one!</p>
-  <p>👑 <b>Found a nation (100,000 coins)</b>: only for adventurers whose best ranked placement is top 10. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become a Heavenly King.</p>
+  <p>👑 <b>Found a nation (100,000 coins)</b>: only for adventurers whose best ranked placement is top 10. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
   <p>🙋 <b>Join a nation (1,000 coins)</b>: become a citizen. Put your coins into the national funds to raise your contribution.</p>
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 720 hours.</p>
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour.</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
   <p>💀 If you fall, you lose 50,000 coins and can't take part for 240 hours. After that you can found a nation, or join only a nation with just one starting castle.</p>
   <p>🏆 Nations are ranked on each island by <b>national funds</b>. After 360 hours, each island shows its "Candidate" (#1). When the season ends, the #1 nation of each of the 4 islands becomes a Heavenly King, ranked 1–4 by funds.</p>
-  <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70% (100% if there are no citizens); citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. Kings and citizens get a profile title, and the King's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
+  <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70% (100% if there are no citizens); citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. Kings and citizens get a profile title, and the #1 nation's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
 
 /* ---------- 島の画面 ---------- */
 function openKuniIsland(i){ const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
@@ -7277,7 +7278,7 @@ function knMakeForm(cell){ const F={nm:"", mk:"", ad:null, noAd:false};
     [[K_("やめる","Cancel"),null],[K_("つぎへ","Next"),bg=>{ F.nm=bg.querySelector("#knNm").value.trim(); if(!F.nm){ knMsg(K_("国の名前を入れてね","Enter a name")); return true; } if(!F.mk){ knMsg(K_("国のマークをえらんでね","Choose an emblem")); return true; } setTimeout(step2,0); }]],{lock:true});
     bg.querySelector("#knMkB").onclick=async()=>{ F.nm=bg.querySelector("#knNm").value.trim(); const u=await knPickImg(600,600,0.9); if(!u) return; F.mk=await knSquare(u); bg.querySelector("#knMkP").innerHTML=`<img src="${F.mk}" alt="">`; }; };
   const step2=()=>{ const bg=knDlg(`<h3>📣 ${K_("四天王の広告","Heavenly King ad")}</h3>
-    <p>${K_("争奪戦シーズンで四天王になった場合、島を選ぶ画面にて広告を約１ヶ月間搭載することができます！その際の広告画像を決めてください！","If you become one of the Four Heavenly Kings, your ad will be shown on the island-select screen for about a month! Choose the ad image.")}</p>
+    <p>${K_("争奪戦シーズンで四天王1位になった場合、島を選ぶ画面にて広告を約１ヶ月間搭載することができます！その際の広告画像を決めてください！","If you become the #1 Heavenly King, your ad will be shown on the island-select screen for about a month! Choose the ad image.")}</p>
     <div class="kn-adprev" id="knAdP">${F.ad?`<img src="${F.ad}" alt="">`:F.noAd?`<span>${K_("搭載しない（国のマークが載ります）","No ad (your emblem is shown)")}</span>`:`<span>${K_("まだえらんでいません","Not chosen yet")}</span>`}</div>
     <div class="kn-row2"><button type="button" class="kn-b ghost" id="knAdB">🖼 ${K_("写真からえらぶ","Choose a photo")}</button><button type="button" class="kn-b ghost" id="knAdN">${K_("搭載しない","No ad")}</button></div>`,
     [[K_("もどる","Back"),()=>{ setTimeout(step1,0); }],[K_("つぎへ","Next"),()=>{ if(!F.ad&&!F.noAd){ knMsg(K_("広告画像をえらぶか「搭載しない」をえらんでね","Choose an ad image or \"No ad\"")); return true; } setTimeout(step3,0); }]],{lock:true});
