@@ -49,6 +49,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--moss);outl
 html[lang=en] .logo{font-size:15px;letter-spacing:0}
 html[lang=en] .logo small{display:none}
 .fr-stones{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}.fr-stones span{display:flex;align-items:center;gap:6px;background:var(--bark-2);border-radius:12px;padding:6px 10px;font-size:13px;font-weight:700}.fr-stones img{width:30px;height:30px;object-fit:contain}
+.hs-h{margin:14px 0 8px;font-size:14px}.hs-n{margin-left:auto;display:flex;align-items:center;gap:4px;font-size:15px;white-space:nowrap}.hs-n img{width:24px;height:24px}
 .fr-menu{display:flex;flex-direction:column;gap:10px}.fr-menu .btn{position:relative;font-size:16px;padding:14px}
 .fr-n{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:var(--berry,#e8336b);color:#fff;border-radius:999px;min-width:24px;padding:2px 7px;font-size:13px}
 .fr-list{display:flex;flex-direction:column;gap:10px}.fr-item{background:var(--bark-2);border:2px solid var(--line);border-radius:14px;padding:10px}
@@ -6259,8 +6260,9 @@ async function checkFriends(){
     const h=await withTO(DB.collection("hearts").where("to","==",MYID).get());
     const win=15*60*1000, seen=S.hIds||{}, got={}; let tot=0, last=S.lastHeart||0;
     h.docs.forEach(d=>{ const x=d.data(); if(!x||!x.from||(x.at||0)<=(S.lastHeart||0)-win||seen[d.id]) return;
-      const n=Math.max(1,Math.min(WING_MAX,Math.floor(x.n||1))); S.hr=S.hr||{}; S.hr[x.from]=(S.hr[x.from]||0)+n; got[x.from]=(got[x.from]||0)+n; tot+=n; seen[d.id]=x.at||0; last=Math.max(last,x.at||0);
+      const n=Math.max(1,Math.min(WING_MAX,Math.floor(x.n||1))); S.hr=S.hr||{}; S.hr[x.from]=(S.hr[x.from]||0)+n; got[x.from]=(got[x.from]||0)+n; tot+=n; seen[d.id]=x.at||0; (S.hLog=S.hLog||[]).push({f:x.from, n, at:x.at||gnow()}); last=Math.max(last,x.at||0);
       d.ref.delete().catch(()=>{}); });
+    if(S.hLog) S.hLog=S.hLog.sort((a,b)=>b.at-a.at).slice(0,200);   // もらったハート石の記録（新しい200件）
     S.lastHeart=last; Object.keys(seen).forEach(k=>{ if(seen[k]<last-win) delete seen[k]; }); S.hIds=seen;
     if(tot){ S.heart=(S.heart||0)+tot; await Promise.all(Object.keys(got).map(frProfile));
       Object.entries(got).forEach(([id,n])=>lines.push(`💗 ${frName(id)}さんからハート石が${n}個届いた！（親密度 ${intimacy(id)}）`)); }
@@ -6304,6 +6306,13 @@ function drawFriends(){
         <button class="chip" type="button" data-frtrade="${esc(f.id)}" ${open?"":"disabled"}>${open?"🔄 トレード":"🔒 トレード"}</button><button class="chip fr-del" type="button" data-frdel="${esc(f.id)}">フレンド解除</button></div>
         ${open?"":`<div class="dm-gauge" style="margin-top:6px"><i style="width:${Math.min(100,it/TRADE_INT*100)}%"></i></div><small class="fr-lock">親密度${TRADE_INT}でトレード解放（あと${(TRADE_INT-it).toLocaleString()}）</small>`}</div>`; }).join("")}</div>`
       :`<div class="empty">まだフレンドがいません<br><small>ランキングで冒険者をタップして「フレンド申請」を送ろう</small></div>`);
+  } else if(frMode==="hist"){
+    const ago=t=>{ const m=Math.max(0,gnow()-t); return m<3600e3?"さっき":m<86400e3?`${Math.floor(m/3600e3)}時間前`:`${Math.floor(m/86400e3)}日前`; };
+    const row=(id,right,sub)=>{ const p=FR.prof[id]||{}; return `<div class="fr-item"><div class="fr-top">${avatarImg(p.icon,40)}<div class="fr-body"><b>${frName(id)}</b><small>${sub}</small></div><b class="hs-n" translate="no"><img src="${HEART_IMG}" alt="">×${right}</b></div></div>`; };
+    const log=S.hLog||[], tot=Object.entries(S.hr||{}).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+    html=head("💗 もらったハート石の記録")+back+stones
+      +`<h4 class="hs-h">最近もらったハート石</h4>`+(log.length?`<div class="fr-list">${log.map(x=>row(x.f,x.n,ago(x.at))).join("")}</div>`:`<div class="empty">まだ記録がありません<br><small>これからもらったハート石が、ここに残ります</small></div>`)
+      +`<h4 class="hs-h">これまでにもらった合計（人ごと）</h4>`+(tot.length?`<div class="fr-list">${tot.map(([id,v])=>row(id,v.toLocaleString(),`💞 親密度 ${intimacy(id).toLocaleString()}`)).join("")}</div>`:`<div class="empty">まだハート石をもらっていません</div>`);
   } else if(frMode==="req"){
     html=head("📨 フレンド申請")+back+(!FR.loaded?`<div class="empty">読み込み中…</div>`:FR.reqIn.length?`<div class="fr-list">${FR.reqIn.map(q=>{ const p=FR.prof[q.from]||{name:q.fromName};
       return `<div class="fr-item"><div class="fr-top">${avatarImg(p.icon,44)}<div class="fr-body"><b>${uname(p.name||q.fromName)}</b><small>冒険者 Lv${esc(p.lv||1)}</small></div></div>
@@ -6315,7 +6324,7 @@ function drawFriends(){
     html=head("🤝 フレンド")+`<div class="snd-row" style="margin:0 0 10px"><b style="flex-basis:7em">フレンド機能</b><div class="seg" id="frOnOff" style="flex:1;margin:0">${[["on","ON"],["off","OFF"]].map(([k,l])=>`<button type="button" data-fo="${k}" aria-pressed="${(k==="off")===!!S.fOff}" translate="no">${l}</button>`).join("")}</div></div>
       ${S.fOff?`<div class="note" style="margin:0 0 10px">フレンド機能はオフです。新しいフレンド申請は届きません（今のフレンドはそのまま）。</div>`:""}
       ${stones}<div class="note" style="margin:0 0 12px">羽根つきハート石はランク戦が変わるたびに${WING_MAX}個に補充（最大${WING_MAX}個）。ランキングの冒険者をタップして送れます。送った相手との<b>親密度</b>が上がります。もらったハート石は上限なしでたまっていきます。</div>
-      <div class="fr-menu"><button class="btn gold" type="button" id="frList">📋 フレンド一覧${un?`<span class="fr-n">${un}</span>`:""}</button><button class="btn gold" type="button" id="frReq">📨 フレンド申請${n?`<span class="fr-n">${n}</span>`:""}</button></div>`;
+      <div class="fr-menu"><button class="btn gold" type="button" id="frList">📋 フレンド一覧${un?`<span class="fr-n">${un}</span>`:""}</button><button class="btn gold" type="button" id="frReq">📨 フレンド申請${n?`<span class="fr-n">${n}</span>`:""}</button><button class="btn gold" type="button" id="frHist">💗 もらったハート石の記録</button></div>`;
   }
   let bg=document.querySelector(".fr-sheet");
   if(bg) bg.querySelector(".sheet").innerHTML=html; else { bg=sheet(html); bg.classList.add("fr-sheet"); }
@@ -6325,6 +6334,9 @@ function drawFriends(){
   if($$("#frBack")) $$("#frBack").onclick=()=>{ frMode="menu"; drawFriends(); };
   if($$("#frList")) $$("#frList").onclick=()=>{ frMode="list"; drawFriends(); };
   if($$("#frReq")) $$("#frReq").onclick=()=>{ frMode="req"; drawFriends(); };
+  if($$("#frHist")) $$("#frHist").onclick=()=>{ frMode="hist"; drawFriends();
+    const ids=[...new Set([...(S.hLog||[]).map(x=>x.f), ...Object.keys(S.hr||{})])].filter(id=>!FR.prof[id]);
+    if(ids.length) Promise.all(ids.slice(0,60).map(id=>frProfile(id).catch(()=>{}))).then(()=>{ if(frMode==="hist"&&document.querySelector(".fr-sheet")) drawFriends(); }); };
   bg.querySelectorAll("[data-fo]").forEach(b=>b.onclick=()=>{ S.fOff=b.dataset.fo==="off"; save(); queueProfile(true); toast(S.fOff?"フレンド機能をオフにしました":"フレンド機能をオンにしました"); drawFriends(); render(); });
   bg.querySelectorAll("[data-frok]").forEach(b=>b.onclick=e=>busyRun(e.currentTarget,"処理中…",()=>answerReq(b.dataset.frok,true)));
   bg.querySelectorAll("[data-frno]").forEach(b=>b.onclick=e=>busyRun(e.currentTarget,"処理中…",()=>answerReq(b.dataset.frno,false)));
@@ -7184,6 +7196,19 @@ async function knRefundOnce(){ if(KN_TEST||!DB||!MYID||knRfBusy) return; const K
   save(); }
 setTimeout(()=>{ try{ knRefundOnce(); }catch(e){} },6000);
 setTimeout(()=>{ try{ knRefundOnce(); }catch(e){} },30000);
+/* ---- 「ガチャ・育成」に入ったとき、ログイン3回に1回、魔ノ国争奪戦をおすすめする ---- */
+let knTipDone=false;
+function knTip(){ if(knTipDone||!knOn()||!SIGNED||!MYID) return; knTipDone=true;
+  S.knTipN=(S.knTipN||0)+1; save(); if((S.knTipN-1)%3!==0) return;
+  let tries=0; const show=()=>{
+    if(!document.querySelector("#title[hidden]")) return;   // タイトルに戻ったら出さない
+    if(document.querySelector(".sheet-bg.center,.reveal,.rules-stage,#adv,#dfo,.adv-intro,.kn-dlg,#kno:not([hidden])")){ if(++tries<20) setTimeout(show,3000); return; }
+    knDlg(`<div class="kn-big">🏰</div><h3>${K_("冒険者レベルを効率よく上げよう！","Level up efficiently!")}</h3>
+      <p>${K_("「魔ノ国争奪戦」で国を作ったり、国に参加したりすると、冒険者レベルがどんどん上がります！","Found or join a nation in the Demon Nations War and your Adventurer Level keeps rising!")}</p>
+      <p>👑 ${K_(`国を作る：<b>無料</b>・${knNum(KN.MAKE_GIFT)}コインもらえる・国が続くかぎり<b>1時間ごとに冒険者レベル+${KN.LV_KING}</b>`,`Found a nation: <b>free</b>, get ${knNum(KN.MAKE_GIFT)} coins, and <b>Adventurer Level +${KN.LV_KING} every hour</b> while it stands`)}</p>
+      <p>🙋 ${K_(`国に参加する：<b>無料</b>・${knNum(KN.JOIN_GIFT)}コインもらえる・国にいる間<b>1時間ごとに冒険者レベル+${KN.LV_CIT}</b>`,`Join a nation: <b>free</b>, get ${knNum(KN.JOIN_GIFT)} coins, and <b>Adventurer Level +${KN.LV_CIT} every hour</b> while in it`)}</p>`,
+      [[K_("あとで","Later"),null],[K_("魔ノ国争奪戦へ","Go to the War"),()=>{ setTimeout(()=>openKuni(),0); }]]); };
+  show(); }
 /* ---- 国を作る ---- */
 function knMake(i, cell, nm, mk){ const best=S.best||0;
   if(!(KN_TEST&&knS().ign) && !(best>0&&best<=KN.BEST)) return Promise.resolve({err:K_("国を作れるのは、ランク戦の最高順位が10位以内の冒険者だけです","Only adventurers whose best ranked placement is top 10 can found a nation")});
@@ -8552,6 +8577,7 @@ async function titleRanks(){
     try{ SFX.reveal("S"); }catch(e){}
     T.classList.add("out"); document.body.classList.remove("ttl-open");
     setTimeout(()=>{ T.hidden=true; document.querySelectorAll(".ttl-top").forEach(x=>x.classList.remove("ttl-top")); try{ render(); }catch(e){} },480);
+    setTimeout(()=>{ try{ knTip(); }catch(e){} },3000);
   };
   // ホームの「タイトル画面に戻る」から、もう一度タイトルを出す
   window.showTitle=()=>{ document.querySelectorAll(".sheet-bg,.reveal").forEach(x=>x.remove()); T.hidden=false; T.classList.add("out"); document.body.classList.add("ttl-open"); lay();
