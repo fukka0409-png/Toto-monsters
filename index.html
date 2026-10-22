@@ -7000,7 +7000,10 @@ const KN = {
   ISL_PRIZE: [1000000, 500000, 300000],
   SLIME: { HP: 27, DMG: 10, CHANCE: 0.5, N: 2, MS: 30*60e3 },   // 魔物の城から30分ごとに50%でスライム2体・となりのお城を15分に1回よわく攻撃   // シーズン終了時、島の1〜3位の国：王を含む全員で山分け
   // 2026-10-22：国を作る・参加するのは無料に。作ると王に5万コイン、参加すると2万コイン。国が生きている間、1時間ごとに冒険者レベル＋（王10・国民5）
-  MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 3, LV_CIT: 1, BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
+  MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 3, LV_CIT: 1,
+  // 2026-10-22：お城からの収入（1時間ごと・お城1つにつき・お城Lvで変わる）。お城が増えれば、その数だけもらえる
+  INC_KING: [0, 200, 400, 1000, 2000, 3000, 5000], INC_CIT: [0, 100, 200, 500, 1000, 1500, 3000],
+  BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
   SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
   REGEN: 0.03, BEST: 10, MAX_N: 12,
   KING_PCT: 0.7, NEG: 1000, PLACE_MUL: [1, 0.8, 0.5, 0.2], CAP: 10000000,   // 振り分けられる資金の上限1000万
@@ -7168,9 +7171,12 @@ async function knLvTick(){ const st=S.knLv; if(KN_TEST||!st||knLvBusy||!DB||!MYI
     if(!n){ stop=st.t; fin=true; }
     else { if(n.x){ stop=Math.min(stop,n.x); fin=true; }
       if(!n.m||!n.m[MYID]){ const dt=d.dead&&d.dead[MYID]&&d.dead[MYID].t; stop=Math.min(stop, dt||st.t); fin=true; } }
-    const h=Math.max(0,Math.floor((stop-st.t)/3600e3)), up=h*(n&&n.k===MYID?KN.LV_KING:KN.LV_CIT);
+    const king=!!(n&&n.k===MYID), h=Math.max(0,Math.floor((stop-st.t)/3600e3)), up=h*(king?KN.LV_KING:KN.LV_CIT);
+    const per=n?knCastles(d,st.nid).reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0):0, coin=h*per;   // お城からの収入
     st.t+=h*3600e3; if(fin) delete S.knLv;
-    if(up>0){ S.plv=(S.plv||1)+up; bumpMaxLv(); setTimeout(()=>toast(K_(`🏰 国にいるので冒険者レベル+${up}！`,`🏰 Your nation raised your Adventurer Level +${up}!`)),1500); }
+    if(coin>0){ knAdd(coin); try{ renderCoins(); }catch(e){} }
+    if(up>0){ S.plv=(S.plv||1)+up; bumpMaxLv(); }
+    if(up>0||coin>0) setTimeout(()=>toast(K_(`🏰 国から：冒険者レベル+${up}${coin?`・お城の収入 +${knNum(coin)}コイン`:""}！`,`🏰 From your nation: Adventurer Level +${up}${coin?`, castle income +${knNum(coin)} coins`:""}!`)),1500);
     save(); if(up>0 && typeof queueProfile==="function") queueProfile();
   }catch(e){} finally{ knLvBusy=false; } }
 setTimeout(()=>{ try{ knLvTick(); }catch(e){} },8000);
@@ -7413,6 +7419,7 @@ function knDrawAds(ads){ const el=document.getElementById("knAd"); if(!el) retur
 function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to play the Demon Nations War")}</h3><div class="kn-help-tx">${K_(`
   <p><b>1シーズンは360時間</b>（ゲーム内のタイマー）。島をえらんで、国を作るか、国に参加しよう！ シーズンが始まる前の準備期間も、攻撃以外（国を作る・参加・振り込み・強化・大砲の購入・移動）はできる。</p>
   <p>👑 <b>国を作る（無料・王に5万コインプレゼント）</b>：ランク戦の最高順位が10位以内の冒険者だけ。国が続くかぎり、王は1時間ごとに冒険者レベル+${KN.LV_KING}。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
+  <p>🏰 <b>お城からの収入</b>：国のお城1つにつき、1時間ごとにコインがもらえる（お城のLvで変わる）。敵のお城をこわして自分のお城が増えれば、その数だけもらえる！<br>王：Lv1：200・Lv2：400・Lv3：1,000・Lv4：2,000・Lv5：3,000・Lv6：5,000コイン<br>国民：Lv1：100・Lv2：200・Lv3：500・Lv4：1,000・Lv5：1,500・Lv6：3,000コイン</p>
   <p>🙋 <b>国に参加する（無料・2万コインプレゼント）</b>：好きな国の国民になれる。国にいる間は1時間ごとに冒険者レベル+${KN.LV_CIT}。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、360時間かけてじっくり育てよう。</p>
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。</p>
@@ -7424,6 +7431,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（国民がいない国は王が100%）（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。さらに<b>島の1〜3位の国</b>には、王を含む全員で山分けする賞金（1位100万・2位50万・3位30万コイン）も出る。四天王の王と国民にはプロフィールに称号がつく。四天王1位の国は、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
   <p><b>A season lasts 360 hours</b> (in-game timer). Pick an island, then found a nation or join one! During the prep time before a season starts, you can do everything except attack.</p>
   <p>👑 <b>Found a nation (free · the King gets 50,000 coins)</b>: only for adventurers whose best ranked placement is top 10. While the nation stands, the King gains Adventurer Level +${KN.LV_KING} every hour. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
+  <p>🏰 <b>Castle income</b>: every hour you get coins for each of your nation's castles (depends on castle Lv). Destroy enemy castles to gain more castles and more income!<br>King: Lv1: 200, Lv2: 400, Lv3: 1,000, Lv4: 2,000, Lv5: 3,000, Lv6: 5,000 coins<br>Citizens: Lv1: 100, Lv2: 200, Lv3: 500, Lv4: 1,000, Lv5: 1,500, Lv6: 3,000 coins</p>
   <p>🙋 <b>Join a nation (free · get 20,000 coins)</b>: become a citizen. While in the nation, gain Adventurer Level +${KN.LV_CIT} every hour. Put your coins into the national funds to raise your contribution.</p>
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 360 hours.</p>
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour.</p>
