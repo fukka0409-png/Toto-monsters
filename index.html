@@ -6947,7 +6947,7 @@ function knMarkHtml(n,cls=""){ return n&&n.mk ? `<img class="${cls}" src="${n.mk
 function knRewardsOf(n, place){
   const fund=Math.min(KN.CAP,Math.max(0,n.f||0)), mul=KN.PLACE_MUL[place]??0, cit=Object.keys(n.m||{}).filter(u=>u!==n.k), out={};
   const tot=cit.reduce((a,u)=>a+(n.m[u].p||0),0), pool=Math.floor(fund*(1-KN.KING_PCT));
-  out[n.k]=Math.floor(fund*KN.KING_PCT*mul);
+  out[n.k]=Math.floor((cit.length?fund*KN.KING_PCT:fund)*mul);   // 国民がいない国は、王が100%
   const avg=cit.length?tot/cit.length:0;
   for(const u of cit){ const p=n.m[u].p||0; out[u]= (tot<=0 || p<avg*0.1) ? -KN.NEG : Math.floor(pool*p/tot*mul); }
   return out;
@@ -7160,7 +7160,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（すべてのお城がこわれ、資金はすべて奪われる）。</p>
   <p>💀 倒れると所持コインから5万コイン没収、240時間は参加できない。そのあとは国を作るか、「はじめのお城を1つだけ建てている国」にだけ参加できる。</p>
   <p>🏆 島の中では<b>国の資金が多い順</b>。360時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
-  <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。四天王の王と国民にはプロフィールに称号がつき、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
+  <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（国民がいない国は王が100%）（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。四天王の王と国民にはプロフィールに称号がつき、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
   <p><b>A season lasts 720 hours</b> (in-game timer). Pick an island, then found a nation or join one!</p>
   <p>👑 <b>Found a nation (100,000 coins)</b>: only for adventurers whose best ranked placement is top 10. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become a Heavenly King.</p>
   <p>🙋 <b>Join a nation (1,000 coins)</b>: become a citizen. Put your coins into the national funds to raise your contribution.</p>
@@ -7169,7 +7169,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
   <p>💀 If you fall, you lose 50,000 coins and can't take part for 240 hours. After that you can found a nation, or join only a nation with just one starting castle.</p>
   <p>🏆 Nations are ranked on each island by <b>national funds</b>. After 360 hours, each island shows its "Candidate" (#1). When the season ends, the #1 nation of each of the 4 islands becomes a Heavenly King, ranked 1–4 by funds.</p>
-  <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70%; citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. Kings and citizens get a profile title, and the King's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
+  <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70% (100% if there are no citizens); citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. Kings and citizens get a profile title, and the King's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
 
 /* ---------- 島の画面 ---------- */
 function openKuniIsland(i){ const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
