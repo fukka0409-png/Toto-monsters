@@ -7000,7 +7000,7 @@ const KN = {
   ISL_PRIZE: [1000000, 500000, 300000],
   SLIME: { HP: 27, DMG: 10, CHANCE: 0.5, N: 2, MS: 30*60e3 },   // 魔物の城から30分ごとに50%でスライム2体・となりのお城を15分に1回よわく攻撃   // シーズン終了時、島の1〜3位の国：王を含む全員で山分け
   // 2026-10-22：国を作る・参加するのは無料に。作ると王に5万コイン、参加すると2万コイン。国が生きている間、1時間ごとに冒険者レベル＋（王10・国民5）
-  MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 10, LV_CIT: 5, BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
+  MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 3, LV_CIT: 1, BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
   SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
   REGEN: 0.03, BEST: 10, MAX_N: 12,
   KING_PCT: 0.7, NEG: 1000, PLACE_MUL: [1, 0.8, 0.5, 0.2], CAP: 10000000,   // 振り分けられる資金の上限1000万
@@ -7192,7 +7192,7 @@ async function knRefundOnce(){ if(KN_TEST||!DB||!MYID||knRfBusy) return; const K
         <p>${K_("魔ノ国争奪戦で「国を作る」「国に参加する」のが<b>無料</b>になり、さらに作ると5万コイン・参加すると2万コインがもらえるようになりました。","Founding and joining a nation in the Demon Nations War is now <b>free</b>, and you now get 50,000 coins for founding or 20,000 coins for joining.")}</p>
         <p>${K_("すでに国を作った・参加していたみなさんが損をしないように、払ったコインを返金し、プレゼントもお届けします🙏","So everyone who had already founded or joined doesn't lose out, we're refunding the coins you paid and sending you the gift too 🙏")}</p>
         <p class="kn-gain">+${knNum(back+gift)} ${K_("コイン","coins")}</p>
-        <p class="kn-sm">${K_(`返金 ${knNum(back)}コイン＋プレゼント ${knNum(gift)}コイン`,`Refund ${knNum(back)} + gift ${knNum(gift)} coins`)}<br>${K_(got.king?"国が続くかぎり、王は1時間ごとに冒険者レベル+10！":"国にいる間は、1時間ごとに冒険者レベル+5！",got.king?"While your nation stands, the King gets Adventurer Level +10 every hour!":"While in the nation, you get Adventurer Level +5 every hour!")}</p>`,[[K_("OK","OK"),null]]); } }
+        <p class="kn-sm">${K_(`返金 ${knNum(back)}コイン＋プレゼント ${knNum(gift)}コイン`,`Refund ${knNum(back)} + gift ${knNum(gift)} coins`)}<br>${K_(got.king?"国が続くかぎり、王は1時間ごとに冒険者レベル+"+KN.LV_KING+"！":"国にいる間は、1時間ごとに冒険者レベル+"+KN.LV_CIT+"！",got.king?"While your nation stands, the King gets Adventurer Level +"+KN.LV_KING+" every hour!":"While in the nation, you get Adventurer Level +"+KN.LV_CIT+" every hour!")}</p>`,[[K_("OK","OK"),null]]); } }
   save(); }
 setTimeout(()=>{ try{ knRefundOnce(); }catch(e){} },6000);
 setTimeout(()=>{ try{ knRefundOnce(); }catch(e){} },30000);
@@ -7412,8 +7412,8 @@ function knDrawAds(ads){ const el=document.getElementById("knAd"); if(!el) retur
   draw(); if(ads.length>1) KV.adT=setInterval(draw,6000); }
 function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to play the Demon Nations War")}</h3><div class="kn-help-tx">${K_(`
   <p><b>1シーズンは360時間</b>（ゲーム内のタイマー）。島をえらんで、国を作るか、国に参加しよう！ シーズンが始まる前の準備期間も、攻撃以外（国を作る・参加・振り込み・強化・大砲の購入・移動）はできる。</p>
-  <p>👑 <b>国を作る（無料・王に5万コインプレゼント）</b>：ランク戦の最高順位が10位以内の冒険者だけ。国が続くかぎり、王は1時間ごとに冒険者レベル+10。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
-  <p>🙋 <b>国に参加する（無料・2万コインプレゼント）</b>：好きな国の国民になれる。国にいる間は1時間ごとに冒険者レベル+5。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
+  <p>👑 <b>国を作る（無料・王に5万コインプレゼント）</b>：ランク戦の最高順位が10位以内の冒険者だけ。国が続くかぎり、王は1時間ごとに冒険者レベル+${KN.LV_KING}。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
+  <p>🙋 <b>国に参加する（無料・2万コインプレゼント）</b>：好きな国の国民になれる。国にいる間は1時間ごとに冒険者レベル+${KN.LV_CIT}。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、360時間かけてじっくり育てよう。</p>
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（すべてのお城がこわれ、資金はすべて奪われる）。</p>
@@ -7423,8 +7423,8 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🏆 島の中では<b>国の資金が多い順</b>。180時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
   <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（国民がいない国は王が100%）（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。さらに<b>島の1〜3位の国</b>には、王を含む全員で山分けする賞金（1位100万・2位50万・3位30万コイン）も出る。四天王の王と国民にはプロフィールに称号がつく。四天王1位の国は、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
   <p><b>A season lasts 360 hours</b> (in-game timer). Pick an island, then found a nation or join one! During the prep time before a season starts, you can do everything except attack.</p>
-  <p>👑 <b>Found a nation (free · the King gets 50,000 coins)</b>: only for adventurers whose best ranked placement is top 10. While the nation stands, the King gains Adventurer Level +10 every hour. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
-  <p>🙋 <b>Join a nation (free · get 20,000 coins)</b>: become a citizen. While in the nation, gain Adventurer Level +5 every hour. Put your coins into the national funds to raise your contribution.</p>
+  <p>👑 <b>Found a nation (free · the King gets 50,000 coins)</b>: only for adventurers whose best ranked placement is top 10. While the nation stands, the King gains Adventurer Level +${KN.LV_KING} every hour. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
+  <p>🙋 <b>Join a nation (free · get 20,000 coins)</b>: become a citizen. While in the nation, gain Adventurer Level +${KN.LV_CIT} every hour. Put your coins into the national funds to raise your contribution.</p>
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 360 hours.</p>
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour.</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
@@ -7562,7 +7562,7 @@ function knMakeForm(cell){ const F={nm:"", mk:"", ad:null, noAd:false};
     bg.querySelector("#knAdB").onclick=async()=>{ const u=await knPickImg(800,330,0.78); if(!u) return; F.ad=u; F.noAd=false; bg.querySelector("#knAdP").innerHTML=`<img src="${u}" alt="">`; };
     bg.querySelector("#knAdN").onclick=()=>{ F.ad=null; F.noAd=true; bg.querySelector("#knAdP").innerHTML=`<span>${K_("搭載しない（国のマークが載ります）","No ad (your emblem is shown)")}</span>`; }; };
   const step3=()=>knDlg(`<h3>🏰 ${K_("この内容で国を作る？","Found this nation?")}</h3><div class="kn-res"><img class="kn-mk" src="${F.mk}" alt=""><b>${esc(F.nm)}</b><small>${knIsl(KV.i)}</small></div>
-    <p class="kn-gain">+${knNum(KN.MAKE_GIFT)} ${K_("コイン","coins")}</p><p class="kn-sm">${K_("無料で作れます。あなたは王になり、国が続くかぎり1時間ごとに冒険者レベル+10。","It's free. You become King and gain Adventurer Level +10 every hour while your nation stands. ")}${K_("あなたは王になります。王がいるお城がこわされると、国は敗北します。","You'll become King. If the castle you're in is destroyed, your nation is defeated.")}</p>`,
+    <p class="kn-gain">+${knNum(KN.MAKE_GIFT)} ${K_("コイン","coins")}</p><p class="kn-sm">${K_("無料で作れます。あなたは王になり、国が続くかぎり1時間ごとに冒険者レベル+"+KN.LV_KING+"。","It's free. You become King and gain Adventurer Level +"+KN.LV_KING+" every hour while your nation stands. ")}${K_("あなたは王になります。王がいるお城がこわされると、国は敗北します。","You'll become King. If the castle you're in is destroyed, your nation is defeated.")}</p>`,
     [[K_("もどる","Back"),()=>{ setTimeout(step2,0); }],[K_("国を作る","Found it"),async()=>{ const r=await knMake(KV.i,cell,F.nm,F.mk);
       if(r.err){ knMsg(r.err); return; } knCoinUpd();
       if(F.ad){ try{ await DB.collection(KAD()).doc(`${knSeason()}_${r.nid}`).set({img:F.ad, nid:r.nid, s:knSeason(), i:KV.i, nm:F.nm, k:MYID}); }catch(e){} }
@@ -7574,7 +7574,7 @@ function knJoinList(){ const d=KV.d||knBlank(0,KV.i), died=!!knS().died[knSeason
       <button type="button" class="kn-b" data-nid="${nid}" ${ok?"":"disabled"}>${K_("参加","Join")}</button></div>`; }).join("");
   const bg=knDlg(`<h3>🙋 ${K_("国に参加する","Join a nation")}<small>（${K_("無料・+2万コイン","free · +20,000 coins")}）</small></h3>${died?`<p class="kn-warn">${K_("倒れたあとは「はじめのお城を1つだけ建てている国」にしか参加できません","After falling, you can only join nations with just one starting castle")}</p>`:""}
     <div class="kn-jlist">${L||`<p class="kn-sm">${K_("この島にはまだ国がありません","No nations on this island yet")}</p>`}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"});
-  bg.querySelectorAll("[data-nid]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const r=await knJoin(KV.i,b.dataset.nid); b.disabled=false; if(r.err) return knMsg(r.err); bg.remove(); knCoinUpd(); knMsg(K_(`🙋 国民になった！（+${knNum(KN.JOIN_GIFT)}コイン）国にいる間は1時間ごとに冒険者レベル+5`,`🙋 You're now a citizen! (+${knNum(KN.JOIN_GIFT)} coins) While in the nation, Adventurer Level +5 every hour`)); }); }
+  bg.querySelectorAll("[data-nid]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const r=await knJoin(KV.i,b.dataset.nid); b.disabled=false; if(r.err) return knMsg(r.err); bg.remove(); knCoinUpd(); knMsg(K_(`🙋 国民になった！（+${knNum(KN.JOIN_GIFT)}コイン）国にいる間は1時間ごとに冒険者レベル+${KN.LV_CIT}`,`🙋 You're now a citizen! (+${knNum(KN.JOIN_GIFT)} coins) While in the nation, Adventurer Level +${KN.LV_CIT} every hour`)); }); }
 function knDepositDlg(){ const bg=knDlg(`<h3>💰 ${K_("国の資金に振り込む","Send coins to national funds")}</h3><p class="kn-sm">${K_("振り込んだコインは国の資金になり、貢献度が上がります。（戻ってきません）","Coins you send become national funds and raise your contribution. (They can't be taken back.)")}</p>
     <input class="kn-amt" id="knAmt" type="number" min="1" inputmode="numeric" placeholder="0"><div class="kn-row2 four">${[1000,10000,100000,1000000].map(v=>`<button type="button" class="kn-b ghost" data-v="${v}">+${knNum(v)}</button>`).join("")}</div>
     <p class="kn-sm">${K_("所持コイン","Coins")}：${knNum(knCoins())}</p>`,[[K_("やめる","Cancel"),null],[K_("振り込む","Send"),async bg=>{ const v=+bg.querySelector("#knAmt").value; const r=await knDeposit(KV.i,v); if(r.err){ knMsg(r.err); return true; } knCoinUpd(); knMsg(K_(`💰 ${knNum(v)} コイン振り込んだ！`,`💰 Sent ${knNum(v)} coins!`)); }]]);
