@@ -3398,7 +3398,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -5982,6 +5982,19 @@ async function fixVoid4(){
   if(L.length) setTimeout(()=>{ try{ toast(LANG==="en"?"Your investment that was wrongly voided has been restored":"まちがって無効になっていた投資を、元に戻しました🙏"); }catch(e){} },2000);
 }
 // 補正（1回だけ）：EASTBLUE🦁さんの消えてしまった魔物（ちむた・ほこり・メロメロバブリー 1体ずつ）をBOXと図鑑に戻す
+// お知らせ（1回だけ）：タピオカさんへ、キノコの進化のしかた（運営から）
+function noteTapioka(){
+  if(S.noteTapi||!MYID) return;
+  if(normName(myName())!==normName("タピオカ")){ S.noteTapi=1; save(); return; }
+  S.noteTapi=1; save();
+  setTimeout(()=>{ try{ const el=document.createElement("div"); el.className="reveal"; const ids=[88,89,90,91,92], L=LANG==="en";
+    el.innerHTML=`<h3>🍄 ${L?"How to evolve the Mushroom":"キノコの進化のしかた"}</h3>
+      <div style="display:flex;gap:4px;justify-content:center;align-items:center;flex-wrap:wrap;max-width:420px">${ids.map((id,j)=>`${j?"<b>→</b>":""}<img src="${cardURL(id,0,96)}" alt="" style="width:15%;max-width:64px;height:auto">`).join("")}</div>
+      <div class="note" style="text-align:left;max-width:420px;line-height:1.7;margin-top:10px">${L?`<b>Starter Mushroom</b> (from the gacha) evolves by level:<br>C Lv1–10 → B Lv11–30 → A Lv31–70 → S Lv71–100 → Z Lv101+<br>① Raise a Starter Mushroom to the stage's max level (Lv10).<br>② Get <b>two</b> of the same mushroom at max level.<br>③ Fuse one into the other — it evolves to the next stage!<br>Repeat at each stage's max (Lv30 → Lv70 → Lv100).<br>At max level, fusing won't raise the level until it evolves. Awakening Stones work at any level.`
+        :`ガチャで出る<b>「始まりキノコ」</b>は、レベルで進化します。<br>C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜<br>① 始まりキノコを、その段階の最大レベル（Lv10）まで上げる<br>② 最大レベルになった<b>同じキノコを2体</b>そろえる<br>③ 1体をもう1体に合成すると、次の段階に進化！<br>あとは段階ごとの最大レベル（Lv30 → Lv70 → Lv100）で同じことをくり返すと、最後は「1部の界隈から称えられ続ける邪悪なキノコ」（Zランク）に！<br>※最大レベルになると、進化するまで合成ではレベルが上がりません。覚醒の石はどのレベルでも使えます。`}</div>
+      <button class="btn" type="button">OK</button>`;
+    document.body.appendChild(el); el.querySelector(".btn").onclick=()=>{ el.remove(); render(); }; }catch(e){} },3000);
+}
 function fixEastblue(){
   if(S.fixEB||!MYID) return;
   if(normName(myName())!==normName("EASTBLUE🦁")){ S.fixEB=1; save(); return; }
