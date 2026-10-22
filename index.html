@@ -982,7 +982,7 @@ span.kn-mkbig{font-size:80px}
 .kn-bt span{font:900 48px/1.05 var(--f-body);white-space:nowrap}
 html[lang=en] .kn-bt span{font-size:38px}
 .kn-bt small{font:900 26px/1.1 var(--f-body);color:#5a3410}
-.kn-bt small.red{color:#d32f2f;font-size:30px}
+.kn-bt small.red{color:#d32f2f;font-size:30px}small.grn{color:#2e7d32;font-size:30px}
 .kn-bt small b{color:#b71c1c}
 .kn-bt .kn-in{font-size:36px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .kn-bt em{font:900 22px/1 var(--f-body);font-style:normal;background:#3a2306;color:#fff8e8;border-radius:999px;padding:5px 14px}
@@ -6986,7 +6986,8 @@ const KN = {
   MON: { CHANCE: 0.9, FEW: 20, MAX: 2, SHOTS: 2, CATCH: 4, PRIZE: 100000 },
   ISL_PRIZE: [1000000, 500000, 300000],
   SLIME: { HP: 30, DMG: 10, CHANCE: 0.5, N: 2, MS: 30*60e3 },   // 魔物の城から30分ごとに50%でスライム2体・となりのお城を15分に1回よわく攻撃   // シーズン終了時、島の1〜3位の国：王を含む全員で山分け
-  MAKE: 100000, JOIN: 1000, BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
+  // 2026-10-22：国を作る・参加するのは無料に。作ると王に5万コイン、参加すると2万コイン。国が生きている間、1時間ごとに冒険者レベル＋（王10・国民5）
+  MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 10, LV_CIT: 5, BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
   SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
   REGEN: 0.03, BEST: 10, MAX_N: 12,
   KING_PCT: 0.7, NEG: 1000, PLACE_MUL: [1, 0.8, 0.5, 0.2], CAP: 10000000,   // 振り分けられる資金の上限1000万
@@ -7141,6 +7142,25 @@ const knCan = () => { const ks=knSeason(), now=knNow();
   if(ks<0) return K_("まだシーズンが始まっていません","The season hasn't started yet");
   if(knS().ban>now) return K_(`戦いに倒れたため、あと${knH(knS().ban-now)}時間は参加できません`,`You fell in battle — you can't take part for ${knH(knS().ban-now)} more hours`);
   return ""; };
+/* ---- 国にいる間の冒険者レベルアップ（王は1時間に+10・国民は+5。国が負けるか、自分が倒れるか、シーズンが終わるまで） ---- */
+function knLvStart(i,nid){ if(KN_TEST) return; S.knLv={ks:knSeason(), i, nid, t:knNow()}; save(); }
+let knLvBusy=false;
+async function knLvTick(){ const st=S.knLv; if(KN_TEST||!st||knLvBusy||!DB||!MYID) return;
+  const now=knNow(), end=knT0()+(st.ks+1)*KN.SEASON_MS, lim=Math.min(now,end);
+  if(Math.floor((lim-st.t)/3600e3)<=0){ if(now>=end){ delete S.knLv; save(); } return; }
+  knLvBusy=true;
+  try{ const sn=await knRef(st.ks,st.i).get(); const d=sn.exists?sn.data():null, n=d&&d.n&&d.n[st.nid];
+    let stop=lim, fin=now>=end;
+    if(!n){ stop=st.t; fin=true; }
+    else { if(n.x){ stop=Math.min(stop,n.x); fin=true; }
+      if(!n.m||!n.m[MYID]){ const dt=d.dead&&d.dead[MYID]&&d.dead[MYID].t; stop=Math.min(stop, dt||st.t); fin=true; } }
+    const h=Math.max(0,Math.floor((stop-st.t)/3600e3)), up=h*(n&&n.k===MYID?KN.LV_KING:KN.LV_CIT);
+    st.t+=h*3600e3; if(fin) delete S.knLv;
+    if(up>0){ S.plv=(S.plv||1)+up; bumpMaxLv(); setTimeout(()=>toast(K_(`🏰 国にいるので冒険者レベル+${up}！`,`🏰 Your nation raised your Adventurer Level +${up}!`)),1500); }
+    save(); if(up>0 && typeof queueProfile==="function") queueProfile();
+  }catch(e){} finally{ knLvBusy=false; } }
+setTimeout(()=>{ try{ knLvTick(); }catch(e){} },8000);
+setInterval(()=>{ try{ knLvTick(); }catch(e){} },60*1000);
 /* ---- 国を作る ---- */
 function knMake(i, cell, nm, mk){ const best=S.best||0;
   if(!(KN_TEST&&knS().ign) && !(best>0&&best<=KN.BEST)) return Promise.resolve({err:K_("国を作れるのは、ランク戦の最高順位が10位以内の冒険者だけです","Only adventurers whose best ranked placement is top 10 can found a nation")});
@@ -7152,7 +7172,7 @@ function knMake(i, cell, nm, mk){ const best=S.best||0;
     d.n[nid]={nm, mk:mk||"", k:MYID, kn:myName(), f:0, t:now, m:{[MYID]:{nm:myName(), p:0, at:cell, j:now, ls:0}}};
     if(!knPre(now)) d.n[nid].pr=now+KN.NEW_PROTECT;   // シーズン中に作った国は、1時間🔰（ほかの国から攻撃されない）
     d.c[cell]={n:nid, lv:1, g:[], eq:1, hp:KN.HP[1], hpT:now};
-    knLog(d,{k:"make", a:myName(), b:nm}); return {nid}; }); }
+    knLog(d,{k:"make", a:myName(), b:nm}); return {nid}; }).then(r=>{ if(r&&!r.err){ knAdd(KN.MAKE_GIFT); knLvStart(i,r.nid); } return r; }); }
 function knJoin(i, nid){ const died=!!knS().died[knSeason()];
   return knPaid(KN.JOIN, i, (d,now)=>{ const n=d.n[nid];
     if(!n||n.x) return {err:K_("その国はもうありません","That nation no longer exists")};
@@ -7160,7 +7180,7 @@ function knJoin(i, nid){ const died=!!knS().died[knSeason()];
     const cs=knCastles(d,nid); if(died && !(cs.length===1 && cs[0][1].lv===1)) return {err:K_("倒れたあとは「はじめのお城を1つだけ建てている国」にしか参加できません","After falling, you can only join a nation with just one starting castle")};
     const at=(n.m[n.k]||{}).at ?? (cs[0]&&cs[0][0]);
     n.m[MYID]={nm:myName(), p:0, at, j:now, ls:0}; n.f=(n.f||0)+KN.JOIN;
-    knLog(d,{k:"join", a:myName(), b:n.nm}); return {nid}; }); }
+    knLog(d,{k:"join", a:myName(), b:n.nm}); return {nid}; }).then(r=>{ if(r&&!r.err){ knAdd(KN.JOIN_GIFT); knLvStart(i,r.nid); } return r; }); }
 function knDeposit(i, amt){ amt=Math.floor(amt); if(!(amt>0)) return Promise.resolve({err:K_("金額を入れてね","Enter an amount")});
   return knPaid(amt, i, d=>{ const nid=knMine(d); if(!nid) return {err:K_("国に入っていません","You're not in a nation")};
     const n=d.n[nid], m=n.m[MYID]; n.f=(n.f||0)+amt; m.p=(m.p||0)+amt; m.d=(m.d||0)+amt; return {}; }); }
@@ -7344,8 +7364,8 @@ function knDrawAds(ads){ const el=document.getElementById("knAd"); if(!el) retur
   draw(); if(ads.length>1) KV.adT=setInterval(draw,6000); }
 function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to play the Demon Nations War")}</h3><div class="kn-help-tx">${K_(`
   <p><b>1シーズンは360時間</b>（ゲーム内のタイマー）。島をえらんで、国を作るか、国に参加しよう！ シーズンが始まる前の準備期間も、攻撃以外（国を作る・参加・振り込み・強化・大砲の購入・移動）はできる。</p>
-  <p>👑 <b>国を作る（10万コイン）</b>：ランク戦の最高順位が10位以内の冒険者だけ。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
-  <p>🙋 <b>国に参加する（1000コイン）</b>：好きな国の国民になれる。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
+  <p>👑 <b>国を作る（無料・王に5万コインプレゼント）</b>：ランク戦の最高順位が10位以内の冒険者だけ。国が続くかぎり、王は1時間ごとに冒険者レベル+10。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
+  <p>🙋 <b>国に参加する（無料・2万コインプレゼント）</b>：好きな国の国民になれる。国にいる間は1時間ごとに冒険者レベル+5。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、360時間かけてじっくり育てよう。</p>
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（すべてのお城がこわれ、資金はすべて奪われる）。</p>
@@ -7355,8 +7375,8 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🏆 島の中では<b>国の資金が多い順</b>。180時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
   <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（国民がいない国は王が100%）（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。さらに<b>島の1〜3位の国</b>には、王を含む全員で山分けする賞金（1位100万・2位50万・3位30万コイン）も出る。四天王の王と国民にはプロフィールに称号がつく。四天王1位の国は、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
   <p><b>A season lasts 360 hours</b> (in-game timer). Pick an island, then found a nation or join one! During the prep time before a season starts, you can do everything except attack.</p>
-  <p>👑 <b>Found a nation (100,000 coins)</b>: only for adventurers whose best ranked placement is top 10. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
-  <p>🙋 <b>Join a nation (1,000 coins)</b>: become a citizen. Put your coins into the national funds to raise your contribution.</p>
+  <p>👑 <b>Found a nation (free · the King gets 50,000 coins)</b>: only for adventurers whose best ranked placement is top 10. While the nation stands, the King gains Adventurer Level +10 every hour. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
+  <p>🙋 <b>Join a nation (free · get 20,000 coins)</b>: become a citizen. While in the nation, gain Adventurer Level +5 every hour. Put your coins into the national funds to raise your contribution.</p>
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 360 hours.</p>
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour.</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
@@ -7424,10 +7444,10 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
     else { b.classList.add("free"); if(KV.pick) b.classList.add("pickme"); } });
   document.getElementById("knPick").hidden=!KV.pick;
   const b0=document.getElementById("knB0"), b1=document.getElementById("knB1");
-  if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID);
+  if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && (!S.knLv||S.knLv.nid!==mine)) knLvStart(KV.i,mine);
     b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(n.f||0)}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
     b1.innerHTML = n.k===MYID ? `<span>${K_("国の強化","Strengthen")}</span><small>${K_("国の資金を使う","Uses national funds")}</small>` : `<span>${K_("資金を追加","Add funds")}</span><small>${K_("自分のコインを振り込む","Send your coins")}</small>`; }
-  else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span><small class="red">-${K_("10万コイン","100,000 coins")}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span><small class="red">-${K_("1000コイン","1,000 coins")}</small>`; } }
+  else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span><small class="grn">+${K_("5万コイン","50,000 coins")}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span><small class="grn">+${K_("2万コイン","20,000 coins")}</small>`; } }
 function knBtn(j){ try{ SFX.tap(); }catch(e){} const d=KV.d, mine=d&&knMine(d);
   if(mine){ const n=d.n[mine]; if(j===0) return knDetail(mine); return n.k===MYID ? knUpPick() : knDepositDlg(); }
   const why=knCan(); if(why) return knMsg(why);
@@ -7436,7 +7456,6 @@ function knBtn(j){ try{ SFX.tap(); }catch(e){} const d=KV.d, mine=d&&knMine(d);
     if(other>=0) return knMsg(K_(`あなたは「${knIsl(other)}」の国に参加しています`,`You're already in a nation on ${knIsl(other)}`)); knBtn2(j); }); }
 function knBtn2(j){
   if(j===0){ const best=S.best||0; if(!(KN_TEST&&knS().ign) && !(best>0&&best<=KN.BEST)) return knDlg(`<div class="kn-big">👑</div><h3>${K_("国を作れません","You can't found a nation")}</h3><p>${K_(`国を作れるのは、ランク戦の<b>過去最高順位が10位以内</b>の冒険者だけです。<br>あなたの最高順位：<b>${best?best+"位":"―"}</b>`,`Only adventurers whose <b>best ranked placement is top 10</b> can found a nation.<br>Your best: <b>${best?"#"+best:"―"}</b>`)}</p><p class="kn-sm">${K_("国に参加することはできます！","You can still join a nation!")}</p>`,[[K_("OK","OK"),null]]);
-    if(knCoins()<KN.MAKE) return knMsg(K_("コインが足りません（10万コイン必要）","Not enough coins (100,000 needed)"));
     if([...Array(12).keys()].some(k=>!((KV.d||{}).c||{})[k])){ KV.pick=true; knDraw(); } else knMsg(K_("この島には空いている場所がありません","No free spots on this island")); }
   else knJoinList(); }
 function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
@@ -7495,19 +7514,19 @@ function knMakeForm(cell){ const F={nm:"", mk:"", ad:null, noAd:false};
     bg.querySelector("#knAdB").onclick=async()=>{ const u=await knPickImg(800,330,0.78); if(!u) return; F.ad=u; F.noAd=false; bg.querySelector("#knAdP").innerHTML=`<img src="${u}" alt="">`; };
     bg.querySelector("#knAdN").onclick=()=>{ F.ad=null; F.noAd=true; bg.querySelector("#knAdP").innerHTML=`<span>${K_("搭載しない（国のマークが載ります）","No ad (your emblem is shown)")}</span>`; }; };
   const step3=()=>knDlg(`<h3>🏰 ${K_("この内容で国を作る？","Found this nation?")}</h3><div class="kn-res"><img class="kn-mk" src="${F.mk}" alt=""><b>${esc(F.nm)}</b><small>${knIsl(KV.i)}</small></div>
-    <p class="kn-gain neg">-${knNum(KN.MAKE)} ${K_("コイン","coins")}</p><p class="kn-sm">${K_("あなたは王になります。王がいるお城がこわされると、国は敗北します。","You'll become King. If the castle you're in is destroyed, your nation is defeated.")}</p>`,
+    <p class="kn-gain">+${knNum(KN.MAKE_GIFT)} ${K_("コイン","coins")}</p><p class="kn-sm">${K_("無料で作れます。あなたは王になり、国が続くかぎり1時間ごとに冒険者レベル+10。","It's free. You become King and gain Adventurer Level +10 every hour while your nation stands. ")}${K_("あなたは王になります。王がいるお城がこわされると、国は敗北します。","You'll become King. If the castle you're in is destroyed, your nation is defeated.")}</p>`,
     [[K_("もどる","Back"),()=>{ setTimeout(step2,0); }],[K_("国を作る","Found it"),async()=>{ const r=await knMake(KV.i,cell,F.nm,F.mk);
       if(r.err){ knMsg(r.err); return; } knCoinUpd();
       if(F.ad){ try{ await DB.collection(KAD()).doc(`${knSeason()}_${r.nid}`).set({img:F.ad, nid:r.nid, s:knSeason(), i:KV.i, nm:F.nm, k:MYID}); }catch(e){} }
-      knMsg(K_(`👑 「${F.nm}」ができた！ あなたは王です`,`👑 "${F.nm}" is founded! You are the King`)); }]],{lock:true});
+      knMsg(K_(`👑 「${F.nm}」ができた！ あなたは王です（+${knNum(KN.MAKE_GIFT)}コイン）`,`👑 "${F.nm}" is founded! You are the King (+${knNum(KN.MAKE_GIFT)} coins)`)); }]],{lock:true});
   step1(); }
 function knJoinList(){ const d=KV.d||knBlank(0,KV.i), died=!!knS().died[knSeason()];
   const L=knRanked(d).map(([nid,n],j)=>{ const cs=knCastles(d,nid), ok=!died||(cs.length===1&&cs[0][1].lv===1);
     return `<div class="kn-jrow ${ok?"":"off"}">${knMarkHtml(n,"kn-mk")}<div class="kn-jt"><b>${j+1}${K_("位","")}　${esc(n.nm)}</b><small>${esc(n.kn||"")}${K_("王"," (King)")}・${K_("国民","Citizens")}${Object.keys(n.m||{}).length-1}${K_("人","")}・${K_("お城","Castles")}${cs.length}</small></div>
       <button type="button" class="kn-b" data-nid="${nid}" ${ok?"":"disabled"}>${K_("参加","Join")}</button></div>`; }).join("");
-  const bg=knDlg(`<h3>🙋 ${K_("国に参加する","Join a nation")}<small>（-1000${K_("コイン"," coins")}）</small></h3>${died?`<p class="kn-warn">${K_("倒れたあとは「はじめのお城を1つだけ建てている国」にしか参加できません","After falling, you can only join nations with just one starting castle")}</p>`:""}
+  const bg=knDlg(`<h3>🙋 ${K_("国に参加する","Join a nation")}<small>（${K_("無料・+2万コイン","free · +20,000 coins")}）</small></h3>${died?`<p class="kn-warn">${K_("倒れたあとは「はじめのお城を1つだけ建てている国」にしか参加できません","After falling, you can only join nations with just one starting castle")}</p>`:""}
     <div class="kn-jlist">${L||`<p class="kn-sm">${K_("この島にはまだ国がありません","No nations on this island yet")}</p>`}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"});
-  bg.querySelectorAll("[data-nid]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const r=await knJoin(KV.i,b.dataset.nid); b.disabled=false; if(r.err) return knMsg(r.err); bg.remove(); knCoinUpd(); knMsg(K_("🙋 国民になった！","🙋 You're now a citizen!")); }); }
+  bg.querySelectorAll("[data-nid]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const r=await knJoin(KV.i,b.dataset.nid); b.disabled=false; if(r.err) return knMsg(r.err); bg.remove(); knCoinUpd(); knMsg(K_(`🙋 国民になった！（+${knNum(KN.JOIN_GIFT)}コイン）国にいる間は1時間ごとに冒険者レベル+5`,`🙋 You're now a citizen! (+${knNum(KN.JOIN_GIFT)} coins) While in the nation, Adventurer Level +5 every hour`)); }); }
 function knDepositDlg(){ const bg=knDlg(`<h3>💰 ${K_("国の資金に振り込む","Send coins to national funds")}</h3><p class="kn-sm">${K_("振り込んだコインは国の資金になり、貢献度が上がります。（戻ってきません）","Coins you send become national funds and raise your contribution. (They can't be taken back.)")}</p>
     <input class="kn-amt" id="knAmt" type="number" min="1" inputmode="numeric" placeholder="0"><div class="kn-row2 four">${[1000,10000,100000,1000000].map(v=>`<button type="button" class="kn-b ghost" data-v="${v}">+${knNum(v)}</button>`).join("")}</div>
     <p class="kn-sm">${K_("所持コイン","Coins")}：${knNum(knCoins())}</p>`,[[K_("やめる","Cancel"),null],[K_("振り込む","Send"),async bg=>{ const v=+bg.querySelector("#knAmt").value; const r=await knDeposit(KV.i,v); if(r.err){ knMsg(r.err); return true; } knCoinUpd(); knMsg(K_(`💰 ${knNum(v)} コイン振り込んだ！`,`💰 Sent ${knNum(v)} coins!`)); }]]);
