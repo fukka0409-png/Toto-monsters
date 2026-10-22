@@ -3917,7 +3917,7 @@ function showReveal(res,title,opts={}){
       const us=[...pick].flatMap(i=>sellable(G[i]).map(z=>z.u)); if(!us.length){ picking=false; return drawPick(); }
       confirmSell(us,()=>{ picking=false; pick.clear(); upd(); drawPick(); renderCoins(); }); };
     G.forEach((g,i)=>{ const c=el.querySelector(`[data-rv="${i}"]`); if(c) c.addEventListener("click",()=>{ if(!picking) return; if(!sellable(g).length) return toast(L?"This one can't be sold":"この魔物は売却できません"); pick.has(i)?pick.delete(i):pick.add(i); drawPick(); }); });
-    upd(); if(DB){ const st=dexStats(); if(!st||gnow()-st.at>=DEX_STALE_MS) loadDexStats(true).then(upd); } }
+    upd(); }
   document.body.appendChild(el); el.querySelector(".btn").focus(); SFX.reveal(top);
 }
 
@@ -4231,7 +4231,8 @@ let sellMode=false, lockMode=false; const sellSel=new Set();
 /* ---------- 売却価格は図鑑の「獲得数の希少さ」で決まる（2026-10-21） ----------
    全冒険者の過去の獲得数の合計を T、ランキングの参加人数を N とすると、1体の価格 = N×1000÷T（最低1コイン）
    （自分1人だけが1体なら N×1000。1人が2体でも、2人が1体ずつでも同じ価値） */
-const DEX_STALE_MS = 3*60000, DEX_FIX_COST = 100000;
+const DEX_STALE_MS = 30*60000,   // 全員の図鑑の集計は30分ごと（読みこみ回数を節約）
+  DEX_FIX_COST = 100000;
 let DEXP=null;   // 読み込み中のPromise
 function dexStats(){ return S.dexStats||null; }
 function dexTotal(id){ const st=dexStats(); if(!st) return null; const others=(st.tot&&st.tot[id])||0; return others+((S.got&&S.got[id])||0); }
@@ -4862,8 +4863,12 @@ function queueProfile(now){
     try{ await DB.doc("profiles/"+MYID).set(p); lastPub=key; }catch(e){}
   }, now?300:20000);
 }
+let RANK_LOAD_AT=0;
 async function loadRanking(force){
   if(!DB) return;
+  // 2分以内に読みこんだばかりなら、読みなおさない（Firebaseの1日の読みこみ回数を節約）
+  if(!force && RANK && Date.now()-RANK_LOAD_AT<2*60000){ if(tab==="rank"||tab==="home") render(); return; }
+  RANK_LOAD_AT=Date.now();
   try{
     const q=await DB.collection("profiles").orderBy("score","desc").limit(200).get();
     const now=gnow();
@@ -5179,8 +5184,10 @@ async function loadInvestCounts(){
   if(!DB) return; try{ const q=await DB.collection("invests").where("ss","==",seasonNow()).get(); const c={};
     q.docs.forEach(d=>{ const x=d.data(); if(invValid(x)&&x.def) c[x.def]=(c[x.def]||0)+1; }); INV_CNT=c; }catch(e){}
 }
+let INV_LIST_AT=0;
 async function loadInvestList(){
   if(!DB){ render(); return; }
+  if(INV_LIST && Date.now()-INV_LIST_AT<2*60000){ render(); return; } INV_LIST_AT=Date.now();
   try{ const q=await withTO(DB.collection("profiles").orderBy("score","desc").limit(300).get()); const now=gnow();
     const all=q.docs.map(d=>normRank({id:d.id,...d.data()},now)).sort((a,b)=>(b.lv-a.lv)||((b.exp||0)-(a.exp||0)));
     all.forEach((r,i)=>r._rank=i+1);
@@ -5902,6 +5909,7 @@ async function checkSeason(){
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
+  { id:"fix-2026-10-22-readquota", coins:1000 },   // ランキングなどの読みこみが多すぎて、サーバーの1日の上限に達し通信できないことがあった
   { id:"fix-2026-10-22-knlogin", coins:1000 },   // 魔ノ国争奪戦：開いた直後、ログインしているのに「ログインすると遊べます」と出て遊べなかった
   { id:"fix-2026-10-22-ttloverlap", coins:1000 },   // タイトル画面でランキングのお知らせとリセットタイマーが重なっていた
   { id:"fix-2026-10-22-syncloss", coins:1000 },   // クラウドの記録の入れかえで、手に入れたばかりの魔物が消えることがあった
