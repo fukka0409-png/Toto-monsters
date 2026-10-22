@@ -1029,7 +1029,14 @@ html[lang=en] .kn-bt span{font-size:38px}
 .kn-jrow .kn-b{flex:none;padding:9px 14px}
 .kn-jrow .kn-mk{width:48px;height:48px}
 .kn-up{display:flex;align-items:center;gap:8px;background:#efe2c6;border-radius:12px;padding:8px;margin:6px 0;text-align:left}
-.kn-upic{font-size:30px;width:44px;text-align:center}
+.kn-upic{width:54px;height:54px;flex:none;display:flex;align-items:center;justify-content:center}.kn-upic img{max-width:100%;max-height:100%;object-fit:contain}
+.kn-cn{position:absolute;right:2%;bottom:30%;width:34%;filter:drop-shadow(0 3px 0 #0006);pointer-events:none}
+.kn-atk{display:flex;gap:8px;margin-top:10px}
+.kn-atkb{flex:1;display:flex;align-items:center;gap:6px;border:0;border-radius:12px;padding:8px;color:#fff;font-family:inherit;text-align:left;box-shadow:0 3px 0 #0006}
+.kn-atkb.w{background:#5e35b1}.kn-atkb.c{background:#d84315}
+.kn-atkb img{width:40px;height:40px;object-fit:contain;flex:none}
+.kn-atkb span{display:flex;flex-direction:column;min-width:0}.kn-atkb b{font-size:14px}.kn-atkb small{font-size:10.5px;opacity:.95}
+.kn-atkb:disabled{opacity:.4}.kn-atkb:active:not(:disabled){transform:translateY(2px);box-shadow:none}
 .kn-upt{flex:1;display:flex;flex-direction:column;min-width:0}
 .kn-upt small{font-size:11px}
 .kn-stars{color:#e6a700;font-size:13px;letter-spacing:1px}
@@ -6870,13 +6877,14 @@ const KN = {
   ORIGIN: 0,                         // 公開するときに「次のランク戦終了」の時刻を入れる（0のあいだは、ふつうの冒険者には出ない）
   SEASON_MS: 720*3600e3, HALF_MS: 360*3600e3,
   MAKE: 100000, JOIN: 1000, BUILD: 100000, DEATH: 50000, BAN_MS: 240*3600e3,
-  CD_MS: 10*60e3, REGEN: 0.03, BEST: 10, MAX_N: 12,
-  KING_PCT: 0.7, NEG: 1000, PLACE_MUL: [1, 0.8, 0.5, 0.2],
-  HP:   [0, 1000, 2500, 6000, 15000, 35000, 80000],    // お城Lvごとの耐久力
-  GUN:  [0, 30, 60, 110, 200, 360, 650],               // 大砲Lvごとの威力
-  EATK: [0, 1, 1.15, 1.3, 1.5, 1.75, 2],               // 国民の装備：攻撃の強さ
-  EDEF: [0, 0, .08, .15, .22, .3, .4],                 // 国民の装備：受けるダメージを減らす
-  UP:   [0, 0, 50000, 150000, 400000, 1000000, 3000000],
+  SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
+  REGEN: 0.03, BEST: 10, MAX_N: 12,
+  KING_PCT: 0.7, NEG: 1000, PLACE_MUL: [1, 0.8, 0.5, 0.2], CAP: 10000000,   // 振り分けられる資金の上限1000万
+  HP:   [0, 2000, 5000, 12000, 30000, 75000, 180000],  // お城Lv：耐久力
+  GUARD:[0, 0, .05, .10, .15, .20, .25],               // お城Lv：受けるダメージを減らす
+  GUN:  [0, 100, 170, 290, 490, 830, 1400],            // 大砲Lv：1発の威力（Lv1は武器Lv1の10倍）
+  WEP:  [0, 10, 18, 32, 56, 100, 180],                 // 国民の装備（武器）Lv：1回の攻撃の威力
+  UP: { lv:[0,0,60000,200000,600000,1800000,5000000], cn:[0,0,80000,250000,750000,2200000,6000000], eq:[0,0,50000,180000,550000,1600000,4500000] },
   PTS_PER_DMG: 20,
   ISL: [
     { ja:"草原の島", en:"Grassland Isle", bg:"kuni/bg0.jpg", sel:[268,262,672,632], cand:[690,400],
@@ -6902,6 +6910,10 @@ try{ KN_TEST = localStorage.getItem("kn-test")==="1"; }catch(e){}
 const knOn = () => KN.ORIGIN>0 || KN_TEST;
 const knT0 = () => KN.ORIGIN || seasonEnd(4);                 // テスト版はシーズン5のはじまりから数える
 const knS  = () => { const k=KN_TEST?"knt":"kn"; if(!S[k]) S[k]={off:0,tc:10000000,pen:{},died:{},ban:0,claimed:{},w:0,c:0,ign:0,nocd:0}; return S[k]; };
+const knSlot = (t=knNow()) => Math.floor((t-knT0())/KN.SLOT_MS);
+const knSlotLeft = (t=knNow()) => knT0()+(knSlot(t)+1)*KN.SLOT_MS-t;
+const knWLeft = m => KN.W_N-(m&&m.as===knSlot()?(m.an||0):0);
+const knCLeft = c => KN.C_N-(c&&c.cs===knSlot()?(c.cu||0):0);
 const knNow = () => gnow() + (KN_TEST ? (knS().off||0) : 0);
 const knSeason = (t=knNow()) => t<knT0() ? -1 : Math.floor((t-knT0())/KN.SEASON_MS);
 const knStart = ks => knT0()+ks*KN.SEASON_MS;
@@ -6927,9 +6939,9 @@ function knContrib(n){ const tot=Object.values(n.m||{}).reduce((a,m)=>a+(m.p||0)
 function knMarkHtml(n,cls=""){ return n&&n.mk ? `<img class="${cls}" src="${n.mk}" alt="">` : `<span class="kn-nomk ${cls}">${esc(((n&&n.nm)||"?").slice(0,1))}</span>`; }
 /* ---- 報酬の計算（シーズン終了のときの国の資金を、王と国民に振り分ける） ---- */
 function knRewardsOf(n, place){
-  const fund=Math.max(0,n.f||0), mul=KN.PLACE_MUL[place]??0, cit=Object.keys(n.m||{}).filter(u=>u!==n.k), out={};
-  const tot=cit.reduce((a,u)=>a+(n.m[u].p||0),0), pool=cit.length&&tot>0?Math.floor(fund*(1-KN.KING_PCT)):0;
-  out[n.k]=Math.floor((fund-pool)*mul);
+  const fund=Math.min(KN.CAP,Math.max(0,n.f||0)), mul=KN.PLACE_MUL[place]??0, cit=Object.keys(n.m||{}).filter(u=>u!==n.k), out={};
+  const tot=cit.reduce((a,u)=>a+(n.m[u].p||0),0), pool=Math.floor(fund*(1-KN.KING_PCT));
+  out[n.k]=Math.floor(fund*KN.KING_PCT*mul);
   const avg=cit.length?tot/cit.length:0;
   for(const u of cit){ const p=n.m[u].p||0; out[u]= (tot<=0 || p<avg*0.1) ? -KN.NEG : Math.floor(pool*p/tot*mul); }
   return out;
@@ -6980,7 +6992,7 @@ function knUpgrade(i, cell, kind){ return knTx(i,(d,now)=>{ const nid=knMine(d),
   if(!n||n.k!==MYID) return {err:K_("国の強化ができるのは王だけです","Only the King can strengthen the nation")};
   if(!c||c.n!==nid||!c.lv) return {err:K_("そのお城はもうありません","That castle is gone")};
   const lv=c[kind]; if(lv>=6) return {err:K_("もう最大レベルです","Already at max level")};
-  const cost=KN.UP[lv+1]; if((n.f||0)<cost) return {err:K_("国の資金が足りません","Not enough national funds")};
+  const cost=KN.UP[kind][lv+1]; if((n.f||0)<cost) return {err:K_("国の資金が足りません","Not enough national funds")};
   n.f-=cost; if(kind==="lv"){ const r=knHp(c,now)/KN.HP[lv]; c.lv=lv+1; c.hp=Math.round(KN.HP[c.lv]*r); c.hpT=now; } else c[kind]=lv+1;
   return {lv:lv+1}; }); }
 function knBuild(i, cell){ return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&d.n[nid], c=d.c[cell];
@@ -6991,29 +7003,34 @@ function knBuild(i, cell){ return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&
 function knMove(i, cell){ return knTx(i,d=>{ const nid=knMine(d), c=d.c[cell]; if(!nid) return {err:K_("国に入っていません","You're not in a nation")};
   if(!c||c.n!==nid||!c.lv) return {err:K_("自分の国のお城にだけ移動できます","You can only move into your own castles")};
   d.n[nid].m[MYID].at=cell; return {}; }); }
-// 大砲で攻撃（自分がいるお城の大砲で撃つ）
-function knAttack(i, target){ const nocd=KN_TEST&&knS().nocd; return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&d.n[nid];
-  if(!n) return {err:K_("国に入っていません","You're not in a nation")};
-  const me=n.m[MYID], mc=d.c[me.at], tc=d.c[target];
-  if(!mc||mc.n!==nid||!mc.lv) return {err:K_("自分のお城に入ってから攻撃してね","Get inside one of your castles first")};
-  if(!tc||!tc.lv||tc.n===nid) return {err:K_("そのお城は攻撃できません","You can't attack that castle")};
-  if(!nocd && (me.ls||0)+KN.CD_MS>now) return {err:K_("大砲の準備中です","The cannon is reloading"), wait:(me.ls||0)+KN.CD_MS-now};
-  const dmg=Math.max(1,Math.round(KN.GUN[mc.cn]*KN.EATK[mc.eq]*(0.85+Math.random()*0.3)*(1-KN.EDEF[tc.eq])));
-  me.ls=now; me.p=(me.p||0)+dmg*KN.PTS_PER_DMG;
-  const hp=knHp(tc,now)-dmg, vid=tc.n, v=d.n[vid];
+// ダメージを与える（こわれたら資金を奪う・王のお城なら国が敗北）
+function knHit(d, nid, target, dmg, now){ const n=d.n[nid], tc=d.c[target], vid=tc.n, v=d.n[vid];
+  dmg=Math.max(1,Math.round(dmg*(1-KN.GUARD[tc.lv])));
+  const hp=knHp(tc,now)-dmg;
   if(hp>0){ tc.hp=hp; tc.hpT=now; knLog(d,{k:"atk", a:n.nm, b:v?v.nm:"?", x:dmg}); return {dmg}; }
-  // お城がこわれた
   const kingAt=v&&v.m[v.k]?v.m[v.k].at:null;
   if(v && kingAt===target){   // 王がいたお城 → その国は敗北（全部のお城がこわれる）
     for(const [k,c] of Object.entries(d.c)) if(c.n===vid||c.own===vid) delete d.c[k];
     d.c[target]={own:nid}; const steal=v.f||0; n.f=(n.f||0)+steal; v.f=0; v.x=now;
     for(const [u,m] of Object.entries(v.m)) d.dead[u]={t:now, nm:m.nm, by:n.nm, of:v.nm};
-    knLog(d,{k:"fall", a:n.nm, b:v.nm, x:steal}); return {dmg, broke:1, fell:1, steal};
-  }
+    knLog(d,{k:"fall", a:n.nm, b:v.nm, x:steal}); return {dmg, broke:1, fell:1, steal}; }
   const N=Math.max(1,v?knCastles(d,vid).length:1), steal=v?Math.floor((v.f||0)/N):0;
   if(v){ v.f-=steal; for(const [u,m] of Object.entries(v.m)) if(m.at===target){ d.dead[u]={t:now, nm:m.nm, by:n.nm, of:v.nm}; delete v.m[u]; } }
   n.f=(n.f||0)+steal; d.c[target]={own:nid};
-  knLog(d,{k:"brk", a:n.nm, b:v?v.nm:"?", x:steal}); return {dmg, broke:1, steal}; }); }
+  knLog(d,{k:"brk", a:n.nm, b:v?v.nm:"?", x:steal}); return {dmg, broke:1, steal}; }
+// 攻撃：mode "w"＝自分の武器（15分に3回）／"c"＝自分がいるお城の大砲（お城ごとに15分に2回）
+function knAttack(i, target, mode){ const nocd=KN_TEST&&knS().nocd; return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&d.n[nid];
+  if(!n) return {err:K_("国に入っていません","You're not in a nation")};
+  const me=n.m[MYID], mc=d.c[me.at], tc=d.c[target], sl=knSlot(now);
+  if(!mc||mc.n!==nid||!mc.lv) return {err:K_("自分のお城に入ってから攻撃してね","Get inside one of your castles first")};
+  if(!tc||!tc.lv||tc.n===nid) return {err:K_("そのお城は攻撃できません","You can't attack that castle")};
+  let base;
+  if(mode==="c"){ if(mc.cs!==sl){ mc.cs=sl; mc.cu=0; } if(!nocd && mc.cu>=KN.C_N) return {err:K_("このお城の大砲は準備中です","This castle's cannon is reloading"), wait:knSlotLeft(now)};
+    mc.cu++; base=KN.GUN[mc.cn]; }
+  else { if(me.as!==sl){ me.as=sl; me.an=0; } if(!nocd && me.an>=KN.W_N) return {err:K_("もう攻撃できません","No attacks left"), wait:knSlotLeft(now)};
+    me.an++; base=KN.WEP[mc.eq]; }
+  const r=knHit(d, nid, target, base*(0.9+Math.random()*0.2), now);
+  me.p=(me.p||0)+r.dmg*KN.PTS_PER_DMG; return {...r, mode}; }); }
 /* ---- 倒れたとき（5万コイン没収・240時間参加できない） ---- */
 function knCheckDead(docs, ks){ const K=knS(); let hit=null;
   docs.forEach((d,i)=>{ const x=d&&d.dead&&MYID&&d.dead[MYID]; if(!x) return; const key=`${ks}_${i}_${x.t}`; if(K.pen[key]) return;
@@ -7059,7 +7076,7 @@ function knCoinUpd(){ const el=document.getElementById("knCoin"); if(el) el.text
 function knTestBar(root, redraw){ if(!KN_TEST) return; const K=knS(); const bar=document.createElement("div"); bar.className="kn-test";
   bar.innerHTML=`<b>🧪 ${K_("テスト版","Test")}</b><button data-t="coin">${K_("テスト用コイン+100万","+1M test coins")}</button><button data-t="bot">${K_("敵の国を作る","Add enemy nation")}</button>
     <button data-t="ff24">⏩+24${K_("時間","h")}</button><button data-t="ff360">⏩+360${K_("時間","h")}</button><button data-t="end">${K_("シーズンを終わらせる","End season")}</button><button data-t="back">${K_("時間を元に戻す","Reset time")}</button>
-    <button data-t="ign" class="${K.ign?"on":""}">${K_("10位以内の条件を無視","Ignore top-10 rule")}</button><button data-t="nocd" class="${K.nocd?"on":""}">${K_("大砲の待ち時間なし","No cannon wait")}</button>
+    <button data-t="ign" class="${K.ign?"on":""}">${K_("10位以内の条件を無視","Ignore top-10 rule")}</button><button data-t="nocd" class="${K.nocd?"on":""}">${K_("攻撃の回数制限なし","Unlimited attacks")}</button>
     ${KV.i>=0?`<button data-t="hitme">${K_("敵が自分のお城を攻撃","Enemy hits my castle")}</button>`:""}<button data-t="revive">${K_("参加できない時間を消す","Clear ban")}</button><button data-t="wipe">${K_("今の島のデータを消す","Wipe this island")}</button>`;
   root.appendChild(bar);
   bar.querySelectorAll("button").forEach(b=>b.onclick=async()=>{ const t=b.dataset.t, ks=knSeason();
@@ -7079,10 +7096,7 @@ function knTestBar(root, redraw){ if(!KN_TEST) return; const K=knS(); const bar=
         d.c[cell]={n:nid, lv, cn:1+Math.floor(Math.random()*3), eq:1+Math.floor(Math.random()*3), hp:KN.HP[lv], hpT:now}; return {}; }); }
     else if(t==="hitme"){ const r=await knTx(KV.i,(d,now)=>{ const nid=knMine(d); if(!nid) return {err:K_("国に入っていません","Not in a nation")}; const at=d.n[nid].m[MYID].at, c=d.c[at];
         const bots=knAlive(d).filter(([k])=>k!==nid); if(!bots.length) return {err:K_("敵の国がありません","No enemy nations")}; const [bid,b]=bots[0];
-        const dmg=Math.round(KN.HP[c.lv]*0.4), hp=knHp(c,now)-dmg; if(hp>0){ c.hp=hp; c.hpT=now; knLog(d,{k:"atk",a:b.nm,b:d.n[nid].nm,x:dmg}); return {}; }
-        // こわれる
-        const v=d.n[nid]; if(v.m[v.k].at===at){ for(const [k,cc] of Object.entries(d.c)) if(cc.n===nid||cc.own===nid) delete d.c[k]; d.c[at]={own:bid}; b.f+=v.f; v.f=0; v.x=now; for(const [u,m] of Object.entries(v.m)) d.dead[u]={t:now,nm:m.nm,by:b.nm,of:v.nm}; knLog(d,{k:"fall",a:b.nm,b:v.nm,x:0}); }
-        else { for(const [u,m] of Object.entries(v.m)) if(m.at===at){ d.dead[u]={t:now,nm:m.nm,by:b.nm,of:v.nm}; delete v.m[u]; } d.c[at]={own:bid}; knLog(d,{k:"brk",a:b.nm,b:v.nm,x:0}); }
+        knHit(d, bid, at, KN.HP[c.lv]*0.45/(1-KN.GUARD[c.lv]), now);
         return {}; }); if(r&&r.err) knMsg(r.err); }
     else if(t==="wipe"){ if(KV.i>=0&&ks>=0) await knRef(ks,KV.i).set(knBlank(ks,KV.i)); }
     save(); redraw&&redraw(t); }); }
@@ -7126,21 +7140,21 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p><b>1シーズンは720時間</b>（ゲーム内のタイマー）。島をえらんで、国を作るか、国に参加しよう！</p>
   <p>👑 <b>国を作る（10万コイン）</b>：ランク戦の最高順位が10位以内の冒険者だけ。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王になったときの広告画像を決めよう。</p>
   <p>🙋 <b>国に参加する（1000コイン）</b>：好きな国の国民になれる。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
-  <p>🏰 <b>国の強化</b>（王だけ）：国の資金で「お城・大砲・国民の装備」をそれぞれ6段階までレベルアップ。</p>
-  <p>💣 <b>攻撃</b>：自分がいるお城の大砲で、ほかの国のお城を撃てる（10分ごとに1発）。攻撃しても貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。</p>
+  <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。</p>
+  <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲はお城ごとに15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（すべてのお城がこわれ、資金はすべて奪われる）。</p>
   <p>💀 倒れると所持コインから5万コイン没収、240時間は参加できない。そのあとは国を作るか、「はじめのお城を1つだけ建てている国」にだけ参加できる。</p>
   <p>🏆 島の中では<b>国の資金が多い順</b>。360時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
-  <p>💰 <b>報酬</b>：四天王の国の資金を、王が70%、国民が残りを貢献度に応じて分ける（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。四天王の王と国民にはプロフィールに称号がつき、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
+  <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。四天王の王と国民にはプロフィールに称号がつき、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
   <p><b>A season lasts 720 hours</b> (in-game timer). Pick an island, then found a nation or join one!</p>
   <p>👑 <b>Found a nation (100,000 coins)</b>: only for adventurers whose best ranked placement is top 10. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become a Heavenly King.</p>
   <p>🙋 <b>Join a nation (1,000 coins)</b>: become a citizen. Put your coins into the national funds to raise your contribution.</p>
-  <p>🏰 <b>Strengthen</b> (King only): use national funds to level up Castle, Cannon and Citizen Gear, up to 6 stages each.</p>
-  <p>💣 <b>Attack</b>: fire the cannon of the castle you're in at another nation's castle (1 shot every 10 min). Attacks raise your contribution too. Castles regain 3% durability per hour.</p>
+  <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too.</p>
+  <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 Each castle's cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour.</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
   <p>💀 If you fall, you lose 50,000 coins and can't take part for 240 hours. After that you can found a nation, or join only a nation with just one starting castle.</p>
   <p>🏆 Nations are ranked on each island by <b>national funds</b>. After 360 hours, each island shows its "Candidate" (#1). When the season ends, the #1 nation of each of the 4 islands becomes a Heavenly King, ranked 1–4 by funds.</p>
-  <p>💰 <b>Rewards</b>: the King gets 70% of the funds; citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. Kings and citizens get a profile title, and the King's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
+  <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70%; citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. Kings and citizens get a profile title, and the King's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
 
 /* ---------- 島の画面 ---------- */
 function openKuniIsland(i){ const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
@@ -7179,7 +7193,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
     if(c&&c.lv){ const n=d.n[c.n]||{}; const hp=knHp(c,now), pct=hp/KN.HP[c.lv]*100, here=Object.entries(n.m||{}).filter(([,m])=>m.at===k);
       const king=n.m&&n.m[n.k]&&n.m[n.k].at===k, youHere=me&&me.at===k&&c.n===mine;
       b.classList.add("castle"); if(c.n===mine) b.classList.add("own");
-      b.innerHTML=`<img class="kn-cs" src="kuni/castle${c.lv}.png" alt="" draggable="false"><div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:${pct>50?"#5fd36a":pct>25?"#ffc107":"#ff5252"}"></i></div>
+      b.innerHTML=`<img class="kn-cs" src="kuni/castle${c.lv}.png" alt="" draggable="false"><img class="kn-cn" src="kuni/cannon${c.cn}.png" alt="" draggable="false"><div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:${pct>50?"#5fd36a":pct>25?"#ffc107":"#ff5252"}"></i></div>
         <div class="kn-plate">${knMarkHtml(n,"kn-mksm")}<span>${esc(n.nm||"?")}</span></div>
         <div class="kn-tags">${king?`<i title="${K_("王","King")}">👑</i>`:""}${here.length?`<i>🧍${here.length}</i>`:""}${youHere?`<i class="you">${K_("あなた","You")}</i>`:""}</div>`; }
     else if(c&&c.own){ const n=d.n[c.own]||{}; b.classList.add("terr"); if(c.own===mine) b.classList.add("own");
@@ -7209,20 +7223,27 @@ function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
     return knDlg(`<h3>🚩 ${esc(K_(`${n.nm||"?"}の領土`,`${n.nm||"?"} territory`))}</h3><p>${K_("こわしたお城の跡地です。この国の王は、国の資金10万コインでここにお城を建てられます。","The site of a destroyed castle. This nation's King can build a castle here for 100,000 of national funds.")}</p>`,
       can?[[K_("閉じる","Close"),null],[K_("ここにお城を建てる（資金10万）","Build a castle here (100,000 funds)"),async()=>{ const r=await knBuild(KV.i,k); knMsg(r.err||K_("🏰 お城を建てた！","🏰 Castle built!")); }]]:[[K_("閉じる","Close"),null]]); }
   const n=d.n[c.n]||{}, now=knNow(), hp=knHp(c,now), here=Object.entries(n.m||{}).filter(([,m])=>m.at===k), own=c.n===mine, me=mine&&d.n[mine].m[MYID];
-  const lvRow=`<div class="kn-lvs"><div><small>${K_("お城","Castle")}</small><b>Lv${c.lv}</b></div><div><small>${K_("大砲","Cannon")}</small><b>Lv${c.cn}</b></div><div><small>${K_("国民の装備","Gear")}</small><b>Lv${c.eq}</b></div></div>`;
+  const lvRow=`<div class="kn-lvs"><div><small>${K_("お城","Castle")}</small><b>Lv${c.lv}</b></div><div><small>${K_("大砲","Cannon")}</small><b>Lv${c.cn}</b></div><div><small>${K_("国民の武器","Weapons")}</small><b>Lv${c.eq}</b></div></div>`;
   const btns=[[K_("閉じる","Close"),null]];
   if(own && me && me.at!==k) btns.push([K_("このお城に移動","Move into this castle"),async()=>{ const r=await knMove(KV.i,k); knMsg(r.err||K_("お城に移動した！","Moved!")); }]);
-  if(mine && !own){ const wait=Math.max(0,(me.ls||0)+KN.CD_MS-now); const mc=d.c[me.at];
-    btns.push([wait>0&&!(KN_TEST&&knS().nocd)?K_(`大砲の準備中（あと${Math.ceil(wait/60000)}分）`,`Reloading (${Math.ceil(wait/60000)} min)`):K_("💣 大砲で攻撃","💣 Fire the cannon"),async()=>{ const r=await knAttack(KV.i,k);
-      if(r.err) return knMsg(r.wait?`${r.err}（${K_("あと","")}${Math.ceil(r.wait/60000)}${K_("分","min left")}）`:r.err);
-      knBoom(k); knMsg(r.fell?K_(`👑 王のお城をこわした！ 国を倒して ${knNum(r.steal)} コイン奪った！`,`👑 You destroyed the King's castle! The nation fell — took ${knNum(r.steal)} coins!`):r.broke?K_(`💥 お城をこわした！ ${knNum(r.steal)} コイン奪った！`,`💥 Castle destroyed! Took ${knNum(r.steal)} coins!`):K_(`💣 ${r.dmg} ダメージ！`,`💣 ${r.dmg} damage!`)); }, mc&&mc.lv?"red":"red"]); }
+  let atkHtml="";
+  if(mine && !own){ const mc=d.c[me.at]; const nocd=KN_TEST&&knS().nocd, wl=knWLeft(me), cl=mc&&mc.lv?knCLeft(mc):0, mins=Math.ceil(knSlotLeft()/60000);
+    atkHtml = mc&&mc.lv ? `<div class="kn-atk">
+      <button type="button" class="kn-atkb w" data-m="w" ${wl>0||nocd?"":"disabled"}><img src="kuni/weapon${mc.eq}.png" alt=""><span><b>${K_("武器で攻撃","Weapon attack")}</b><small>${K_("威力","Power")} ${KN.WEP[mc.eq]}　${K_("のこり","left")} ${wl}/${KN.W_N}</small></span></button>
+      <button type="button" class="kn-atkb c" data-m="c" ${cl>0||nocd?"":"disabled"}><img src="kuni/cannon${mc.cn}.png" alt=""><span><b>${K_("大砲を撃つ","Fire cannon")}</b><small>${K_("威力","Power")} ${KN.GUN[mc.cn]}　${K_("のこり","left")} ${cl}/${KN.C_N}</small></span></button>
+      </div><p class="kn-sm">${K_(`武器は1人15分に${KN.W_N}回、大砲はお城ごとに15分に${KN.C_N}回（あなたがいるお城の大砲）。回数は${mins}分後にもどります。`,`Weapon: ${KN.W_N} per person every 15 min. Cannon: ${KN.C_N} per castle every 15 min (the castle you're in). Refills in ${mins} min.`)}</p>`
+      : `<p class="kn-warn">${K_("自分のお城に入ってから攻撃してね","Get inside one of your castles first")}</p>`; }
   btns.push([K_("この国の詳細","Nation details"),()=>{ knDetail(c.n); }]);
-  knDlg(`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${esc(n.nm||"?")}</h3><small>${esc(n.kn||"")}${K_("王"," (King)")}${n.m&&n.m[n.k]&&n.m[n.k].at===k?" 👑":""}</small></div></div>
+  const dl=knDlg(`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${esc(n.nm||"?")}</h3><small>${esc(n.kn||"")}${K_("王"," (King)")}${n.m&&n.m[n.k]&&n.m[n.k].at===k?" 👑":""}</small></div></div>
     <img class="kn-cimg" src="kuni/castle${c.lv}.png" alt="">
     <div class="kn-hpbig"><span>${K_("耐久力","Durability")}</span><div><i style="width:${(hp/KN.HP[c.lv]*100).toFixed(1)}%"></i></div><b>${knNum(hp)} / ${knNum(KN.HP[c.lv])}</b></div>
     ${lvRow}<p class="kn-sm">${K_(`このお城の中：${here.length}人`,`Inside: ${here.length}`)}${own&&me&&me.at===k?K_("（あなたもここにいます）"," (including you)"):""}</p>
-    ${mine&&!own?`<p class="kn-sm">${K_("あなたがいるお城の大砲で撃ちます。10分に1発。","You fire the cannon of the castle you're in. 1 shot every 10 min.")}</p>`:""}`, btns); }
-function knBoom(k){ const b=document.querySelector(`#kno .kn-cell[data-k="${k}"]`); if(!b) return; const e=document.createElement("div"); e.className="kn-boom"; e.textContent="💥"; b.appendChild(e); setTimeout(()=>e.remove(),900); }
+    ${atkHtml}`, btns);
+  dl.querySelectorAll("[data-m]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const r=await knAttack(KV.i,k,b.dataset.m);
+    if(r.err){ knMsg(r.wait?`${r.err}（${K_("あと","")}${Math.ceil(r.wait/60000)}${K_("分","min left")}）`:r.err); return knCellTap(k); }
+    knBoom(k, r.mode); knMsg(r.fell?K_(`👑 王のお城をこわした！ 国を倒して ${knNum(r.steal)} コイン奪った！`,`👑 You destroyed the King's castle! The nation fell — took ${knNum(r.steal)} coins!`):r.broke?K_(`💥 お城をこわした！ ${knNum(r.steal)} コイン奪った！`,`💥 Castle destroyed! Took ${knNum(r.steal)} coins!`):(r.mode==="c"?"💣 ":"⚔️ ")+K_(`${r.dmg} ダメージ！`,`${r.dmg} damage!`));
+    if(r.broke) dl.remove(); else setTimeout(()=>knCellTap(k),120); }); }
+function knBoom(k,mode){ const b=document.querySelector(`#kno .kn-cell[data-k="${k}"]`); if(!b) return; const e=document.createElement("div"); e.className="kn-boom"; e.textContent=mode==="w"?"⚔️":"💥"; b.appendChild(e); setTimeout(()=>e.remove(),900); }
 // 画像をえらんで小さくする
 function knPickImg(maxW,maxH,q){ return new Promise(res=>{ const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
   inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f) return res(null); const rd=new FileReader(); rd.onload=()=>{ const im=new Image(); im.onload=()=>{
@@ -7270,24 +7291,24 @@ function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knC
   const logs=(d.log||[]).filter(e=>e.a===n.nm||e.b===n.nm).slice(0,12);
   knDlg(`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${esc(n.nm)}</h3><small>${knIsl(KV.i)}　${K_(`島で${rk}位`,`#${rk} on the island`)}</small></div></div>
     <div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(n.f||0)}</b><small>${K_("コイン","coins")}</small></div>
-    <h4>🏰 ${K_("お城","Castles")}（${cs.length}）</h4><div class="kn-clist">${cs.map(([k,c])=>`<div><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannon")}Lv${c.cn}・${K_("装備","Gear")}Lv${c.eq}</small><small>${K_("耐久力","HP")} ${knNum(knHp(c))}/${knNum(KN.HP[c.lv])}</small></div>`).join("")}</div>
+    <h4>🏰 ${K_("お城","Castles")}（${cs.length}）</h4><div class="kn-clist">${cs.map(([k,c])=>`<div><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannon")}Lv${c.cn}・${K_("武器","Weapons")}Lv${c.eq}</small><small>${K_("耐久力","HP")} ${knNum(knHp(c))}/${knNum(KN.HP[c.lv])}</small></div>`).join("")}</div>
     <h4>👥 ${K_("王と国民","King & citizens")}（${mem.length}）</h4><div class="kn-mlist">${mem.map(([u,m])=>`<div class="${u===MYID?"me":""}"><b>${esc(m.nm)}<em>${knSuffix(n,u)}</em></b><span>${K_("貢献度","Contribution")} ${cf(u).toFixed(1)}%</span></div>`).join("")}</div>
     ${logs.length?`<h4>📜 ${K_("最近のできごと","Recent events")}</h4><div class="kn-log">${logs.map(e=>`<div>${esc(logT(e))}</div>`).join("")}</div>`:""}`,
     mine?[[K_("閉じる","Close"),null],[K_("💰 資金を追加","💰 Add funds"),()=>{ setTimeout(knDepositDlg,0); }]]:[[K_("閉じる","Close"),null]],{cls:"wide",stack:true}); }
 // 国の強化：お城が2つ以上なら、まずどのお城かをえらぶ
 function knUpPick(){ const d=KV.d, nid=knMine(d), cs=knCastles(d,nid); if(cs.length===1) return knUpDlg(cs[0][0]);
-  const bg=knDlg(`<h3>🏰 ${K_("どのお城を強化する？","Which castle?")}</h3><div class="kn-clist pick">${cs.map(([k,c])=>`<button type="button" data-k="${k}"><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannon")}Lv${c.cn}・${K_("装備","Gear")}Lv${c.eq}</small></button>`).join("")}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"});
+  const bg=knDlg(`<h3>🏰 ${K_("どのお城を強化する？","Which castle?")}</h3><div class="kn-clist pick">${cs.map(([k,c])=>`<button type="button" data-k="${k}"><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannon")}Lv${c.cn}・${K_("武器","Weapons")}Lv${c.eq}</small></button>`).join("")}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"});
   bg.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ bg.remove(); knUpDlg(+b.dataset.k); }); }
 function knUpDlg(cell){ const draw=()=>{ const d=KV.d, nid=knMine(d), n=d.n[nid], c=d.c[cell]; if(!c||!c.lv) return;
-  const row=(kind,ic,nm,eff)=>{ const lv=c[kind], mx=lv>=6, cost=KN.UP[lv+1];
-    return `<div class="kn-up"><div class="kn-upic">${ic}</div><div class="kn-upt"><b>${nm} Lv${lv}${mx?" (MAX)":` → Lv${lv+1}`}</b><small>${eff(lv)}${mx?"":` → ${eff(lv+1)}`}</small><span class="kn-stars">${"★".repeat(lv)}${"☆".repeat(6-lv)}</span></div>
+  const row=(kind,ic,nm,eff)=>{ const lv=c[kind], mx=lv>=6, cost=KN.UP[kind][lv+1];
+    return `<div class="kn-up"><div class="kn-upic"><img src="${ic(lv)}" alt=""></div><div class="kn-upt"><b>${nm} Lv${lv}${mx?" (MAX)":` → Lv${lv+1}`}</b><small>${eff(lv)}${mx?"":` → ${eff(lv+1)}`}</small><span class="kn-stars">${"★".repeat(lv)}${"☆".repeat(6-lv)}</span></div>
       <button type="button" class="kn-b" data-up="${kind}" ${mx||(n.f||0)<cost?"disabled":""}>${mx?"MAX":`${knNum(cost)}`}</button></div>`; };
   const bg=knDlg(`<h3>🔨 ${K_("国の強化","Strengthen the nation")}</h3><img class="kn-cimg sm" src="kuni/castle${c.lv}.png" alt="">
     <div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(n.f||0)}</b><small>${K_("コイン","coins")}</small></div>
-    ${row("lv","🏰",K_("お城","Castle"),l=>K_(`耐久力${knNum(KN.HP[l])}`,`HP ${knNum(KN.HP[l])}`))}
-    ${row("cn","💣",K_("大砲","Cannon"),l=>K_(`威力${KN.GUN[l]}`,`Power ${KN.GUN[l]}`))}
-    ${row("eq","🛡",K_("国民の装備","Citizen gear"),l=>K_(`攻撃×${KN.EATK[l]}・被害-${Math.round(KN.EDEF[l]*100)}%`,`Atk ×${KN.EATK[l]}, dmg taken -${Math.round(KN.EDEF[l]*100)}%`))}
-    <p class="kn-sm">${K_("大砲と国民の装備の見た目は、のちほど追加されます。","Cannon and gear artwork is coming later.")}</p>`,
+    ${row("lv",l=>`kuni/castle${l}.png`,K_("お城","Castle"),l=>K_(`耐久力${knNum(KN.HP[l])}・守り${Math.round(KN.GUARD[l]*100)}%`,`HP ${knNum(KN.HP[l])}, guard ${Math.round(KN.GUARD[l]*100)}%`))}
+    ${row("cn",l=>`kuni/cannon${l}.png`,K_("大砲","Cannon"),l=>K_(`1発${knNum(KN.GUN[l])}（15分に${KN.C_N}発）`,`${knNum(KN.GUN[l])}/shot (${KN.C_N} per 15 min)`))}
+    ${row("eq",l=>`kuni/weapon${l}.png`,K_("国民の装備（武器）","Citizen weapons"),l=>K_(`1回${knNum(KN.WEP[l])}（1人15分に${KN.W_N}回）`,`${knNum(KN.WEP[l])}/hit (${KN.W_N} per person per 15 min)`))}
+    <p class="kn-sm">${K_("強化はお城ごと。国民の武器は、そのお城の中にいる国民が使います。国民が多い国は武器、少ない国は大砲、守りを固めるならお城…国の戦い方を考えよう！","Upgrades are per castle. Citizens use the weapons of the castle they're in. Many citizens? Weapons. Few? Cannons. Turtle up? Castles. Find your nation's way to fight!")}</p>`,
     [[K_("閉じる","Close"),null],[K_("💰 資金を追加","💰 Add funds"),()=>{ setTimeout(knDepositDlg,0); }]],{cls:"wide"});
   bg.querySelectorAll("[data-up]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const r=await knUpgrade(KV.i,cell,b.dataset.up); if(r.err){ b.disabled=false; return knMsg(r.err); } knMsg(K_(`✨ Lv${r.lv}になった！`,`✨ Now Lv${r.lv}!`)); setTimeout(draw,150); }); };
   draw(); }
