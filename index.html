@@ -926,6 +926,7 @@ html[lang=en] .ttl .ttl-kn span{font-size:30px}
 /* 島えらび */
 .kn-season{position:absolute;left:170px;top:258px;width:600px;text-align:center;background:#2a1a0ae6;border:5px solid #3a2306;border-radius:999px;padding:8px 0;font:900 26px/1.2 var(--f-body);color:#fff8e8;box-shadow:0 5px 0 #0005}
 .kn-season b{color:#ffd54f;font-size:32px}
+.kn-season .kn-prep{display:block;font-size:20px;color:#ffe9a8}
 .kn-isl{position:absolute;border:0;background:none;padding:0;border-radius:40%}
 .kn-isl:active{transform:scale(.97)}
 .kn-iname{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);background:#fff8e8;border:4px solid #3a2306;border-radius:999px;padding:4px 18px;font:900 26px/1.2 var(--f-body);color:#3a2306;white-space:nowrap;box-shadow:0 4px 0 #0005}
@@ -7009,7 +7010,8 @@ const knCLeft = g => KN.C_N-(g&&g.cs===knSlot()?(g.cu||0):0);
 const knGuns = c => (c&&Array.isArray(c.g))?c.g:[];
 const knGunTxt = c => { const g=knGuns(c); return g.length?g.map(x=>"Lv"+x.lv).join("・"):K_("なし","none"); };
 const knNow = () => gnow() + (KN_TEST ? (knS().off||0) : 0);
-const knSeason = (t=knNow()) => t<knT0() ? -1 : Math.floor((t-knT0())/KN.SEASON_MS);
+const knSeason = (t=knNow()) => t<knT0() ? 0 : Math.floor((t-knT0())/KN.SEASON_MS);   // シーズン開始前は、シーズン1の準備期間（攻撃以外はできる）
+const knPre = (t=knNow()) => t<knT0();
 const knStart = ks => knT0()+ks*KN.SEASON_MS;
 const knEnd = ks => knT0()+(ks+1)*KN.SEASON_MS;
 const KC  = () => KN_TEST ? "kunit" : "kuni";
@@ -7131,7 +7133,8 @@ function knHit(d, nid, target, dmg, now){ const n=d.n[nid], tc=d.c[target], vid=
 // 攻撃：mode "w"＝自分の武器（15分に3回）／"c0","c1"＝自分がいるお城の大砲（大砲1つにつき15分に2回）
 function knAttack(i, target, mode){ const nocd=KN_TEST&&knS().nocd; return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&d.n[nid];
   if(!n) return {err:K_("国に入っていません","You're not in a nation")};
-  const me=n.m[MYID], mc=d.c[me.at], tc=d.c[target], sl=knSlot(now);
+  if(knPre(now)) return {err:K_(`攻撃はシーズンが始まってからできます（あと${knH(knT0()-now)}時間）`,`Attacks unlock when the season starts (${knH(knT0()-now)} h left)`)};
+  const me=n.m[MYID], mc=d.c[me.at], tc=d.c[target], sl=Math.max(0,knSlot(now));
   if(!mc||mc.n!==nid||!mc.lv) return {err:K_("自分のお城に入ってから攻撃してね","Get inside one of your castles first")};
   if(!tc||!tc.lv||tc.n===nid) return {err:K_("そのお城は攻撃できません","You can't attack that castle")};
   let base;
@@ -7226,7 +7229,7 @@ async function openKuni(){ if(!knOn()) return;
   st.querySelector("#knHelp").onclick=knHelp;
   knTestBar(document.getElementById("kno"), ()=>openKuni());
   const tick=()=>{ const el=document.getElementById("knSeason"); if(!el) return; const ks=knSeason(), now=knNow();
-    el.innerHTML = ks<0 ? `${K_("シーズン開始まで","Season starts in")} <b>${knH(knT0()-now)}${K_("時間"," h")}</b>`
+    el.innerHTML = knPre() ? `${K_("シーズン開始まで","Season starts in")} <b>${knH(knT0()-now)}${K_("時間"," h")}</b><small class="kn-prep">${K_("（準備期間：攻撃以外はできます）"," (prep time: everything but attacks)")}</small>`
       : `${K_(`シーズン${ks+1}`,`Season ${ks+1}`)}　${K_("終了まで","ends in")} <b>${knH(knEnd(ks)-now)}${K_("時間"," h")}</b>`; knCoinUpd(); };
   tick(); KV.tick=setInterval(tick,1000);
   if(!DB||!MYID){ knDrawAds([]); return; }
@@ -7249,7 +7252,7 @@ function knDrawAds(ads){ const el=document.getElementById("knAd"); if(!el) retur
     <div class="kn-adcap">${K_(`四天王 ${a.p+1}位`,`Heavenly King #${a.p+1}`)}　${esc(a.n.nm)}（${esc(a.n.kn||"")}${K_("王"," (King)")}）</div>`; KV.adI++; };
   draw(); if(ads.length>1) KV.adT=setInterval(draw,6000); }
 function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to play the Demon Nations War")}</h3><div class="kn-help-tx">${K_(`
-  <p><b>1シーズンは720時間</b>（ゲーム内のタイマー）。島をえらんで、国を作るか、国に参加しよう！</p>
+  <p><b>1シーズンは720時間</b>（ゲーム内のタイマー）。島をえらんで、国を作るか、国に参加しよう！ シーズンが始まる前の準備期間も、攻撃以外（国を作る・参加・振り込み・強化・大砲の購入・移動）はできる。</p>
   <p>👑 <b>国を作る（10万コイン）</b>：ランク戦の最高順位が10位以内の冒険者だけ。空いている場所に早い者勝ちでお城を1つ建てられる。国の名前と国のマーク、四天王1位になったときの広告画像を決めよう。</p>
   <p>🙋 <b>国に参加する（1000コイン）</b>：好きな国の国民になれる。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、720時間かけてじっくり育てよう。</p>
@@ -7258,7 +7261,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>💀 倒れると所持コインから5万コイン没収、240時間は参加できない。そのあとは国を作るか、「はじめのお城を1つだけ建てている国」にだけ参加できる。</p>
   <p>🏆 島の中では<b>国の資金が多い順</b>。360時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
   <p>💰 <b>報酬</b>：四天王の国の資金（振り分けられるのは最大1000万コインまで。こえた分は消える）を、王が70%、国民が残りを貢献度に応じて分ける（国民がいない国は王が100%）（貢献度がとても低い国民は−1000コイン）。1位は全額、2位は80%、3位は50%、4位は20%。四天王の王と国民にはプロフィールに称号がつく。四天王1位の国は、王が決めた広告が次のシーズンのあいだ島えらびの画面に載る。</p>`,`
-  <p><b>A season lasts 720 hours</b> (in-game timer). Pick an island, then found a nation or join one!</p>
+  <p><b>A season lasts 720 hours</b> (in-game timer). Pick an island, then found a nation or join one! During the prep time before a season starts, you can do everything except attack.</p>
   <p>👑 <b>Found a nation (100,000 coins)</b>: only for adventurers whose best ranked placement is top 10. First come, first served — build one castle on any free spot. Choose a name, an emblem and the ad image shown if you become the #1 Heavenly King.</p>
   <p>🙋 <b>Join a nation (1,000 coins)</b>: become a citizen. Put your coins into the national funds to raise your contribution.</p>
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 720 hours.</p>
@@ -7292,7 +7295,7 @@ function openKuniIsland(i){ const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046
     if(!first) knNotice(old,d); first=false; knCheckDead([0,1,2,3].map(j=>j===i?d:null), ks); knDraw(); }, ()=>{});
 }
 function knTimer(){ const el=document.getElementById("knTm"); if(!el) return; const ks=knSeason(), now=knNow();
-  el.innerHTML = ks<0 ? `${K_("開始まで","Starts in")}<b>${knH(knT0()-now)}</b>${K_("時間","h")}` : `${K_("残り","")}<b>${knH(knEnd(ks)-now)}</b>${K_("時間","h left")}`; }
+  el.innerHTML = knPre() ? `${K_("開始まで","Starts in")}<b>${knH(knT0()-now)}</b>${K_("時間","h")}` : `${K_("残り","")}<b>${knH(knEnd(ks)-now)}</b>${K_("時間","h left")}`; }
 // 自分の国が攻撃されたら知らせる
 function knNotice(old,d){ const nid=knMine(old)||knMine(d); if(!nid||!d.log||!d.log.length) return; const myN=(d.n[nid]||{}).nm; const t0=(old.log&&old.log[0]&&old.log[0].t)||0;
   for(const e of d.log.filter(e=>e.t>t0).reverse()){ if(e.b===myN && e.k==="atk") knMsg(K_(`⚠️「${e.a}」があなたの国を攻撃！（−${e.x}）`,`⚠️ "${e.a}" attacked your nation! (−${e.x})`));
@@ -7340,7 +7343,8 @@ function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
   if(own && me && me.at!==k) btns.push([K_("このお城に移動","Move into this castle"),async()=>{ const r=await knMove(KV.i,k); knMsg(r.err||K_("お城に移動した！","Moved!")); }]);
   let atkHtml="";
   if(mine && !own){ const mc=d.c[me.at]; const nocd=KN_TEST&&knS().nocd, wl=knWLeft(me), mins=Math.ceil(knSlotLeft()/60000), guns=mc&&mc.lv?knGuns(mc):[];
-    atkHtml = mc&&mc.lv ? `<div class="kn-atk">
+    atkHtml = knPre() ? `<p class="kn-warn">${K_(`⏳ 攻撃はシーズンが始まってからできます（あと${knH(knT0()-knNow())}時間）。それまでに国を強くしておこう！`,`⏳ Attacks unlock when the season starts (${knH(knT0()-knNow())} h left). Get your nation ready!`)}</p>`
+      : mc&&mc.lv ? `<div class="kn-atk">
       <button type="button" class="kn-atkb w" data-m="w" ${wl>0||nocd?"":"disabled"}><img src="kuni/weapon${mc.eq}.png" alt=""><span><b>${K_("武器で攻撃","Weapon attack")}</b><small>${K_("威力","Power")} ${KN.WEP[mc.eq]}　${K_("のこり","left")} ${wl}/${KN.W_N}</small></span></button>
       ${guns.map((g,j)=>{ const cl=knCLeft(g); return `<button type="button" class="kn-atkb c" data-m="c${j}" ${cl>0||nocd?"":"disabled"}><img src="kuni/cannon${g.lv}.png" alt=""><span><b>${K_(`大砲${j+1}を撃つ`,`Fire cannon ${j+1}`)}</b><small>${K_("威力","Power")} ${KN.GUN[g.lv]}　${K_("のこり","left")} ${cl}/${KN.C_N}</small></span></button>`; }).join("")}
       </div>${guns.length?"":`<p class="kn-sm">${K_("あなたがいるお城には、まだ大砲がありません（王が国の資金で購入できます）","Your castle has no cannon yet (the King can buy one with national funds)")}</p>`}<p class="kn-sm">${K_(`武器は1人15分に${KN.W_N}回、大砲は1つにつき15分に${KN.C_N}回（あなたがいるお城の大砲）。回数は${mins}分後にもどります。`,`Weapon: ${KN.W_N} per person every 15 min. Each cannon: ${KN.C_N} shots every 15 min (cannons of the castle you're in). Refills in ${mins} min.`)}</p>`
