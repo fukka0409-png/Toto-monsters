@@ -7047,13 +7047,21 @@ function knShitenno(docs){ const L=[]; docs.forEach((d,i)=>{ if(!d) return; cons
 async function knLoad(ks){ const out=[]; for(let i=0;i<4;i++){ try{ const s=await knRef(ks,i).get(); out.push(s.exists?s.data():null); }catch(e){ out.push(null); } } return out; }
 async function knTx(i, fn){ const ks=knSeason(); if(ks<0) return {err:K_("まだシーズンが始まっていません","The season hasn't started yet")};
   const ref=knRef(ks,i);
+  try{ return await knTx0(ref,ks,i,fn); }catch(e){ return {err:knErrText(e)}; } }
+// 失敗したときは、理由がわかるように表示する（ルールが公開されていない・電波が悪い など）
+function knErrText(e){ const c=(e&&e.code)||""; try{ console.warn("kuni",e); }catch(x){}
+  if(c.includes("permission-denied")) return K_("サーバーの設定（Firestoreのルール）がまだ反映されていないため、保存できませんでした（permission-denied）","Couldn't save: the server rules aren't set up yet (permission-denied)");
+  if(c.includes("unavailable")||c.includes("deadline")) return K_("通信できませんでした。電波のよい所でもう一度ためしてね","Couldn't connect. Please try again with a better signal");
+  if(c.includes("invalid-argument")) return K_("保存できないデータがありました（invalid-argument）。運営に知らせてね","Invalid data (invalid-argument). Please tell the developer");
+  return K_("通信に失敗しました。もう一度ためしてね","Connection failed. Please try again")+(c?`（${c}）`:""); }
+function knTx0(ref,ks,i,fn){
   return DB.runTransaction(async tx=>{ const sn=await tx.get(ref); const d=sn.exists?sn.data():knBlank(ks,i); d.n=d.n||{}; d.c=d.c||{}; d.dead=d.dead||{}; d.log=d.log||[];
-    const r=fn(d, knNow()); if(r&&r.err) return r; d.v=(d.v||0)+1; d.log=d.log.slice(0,40); tx.set(ref,d); return r||{}; }); }
+    const r=fn(d, knNow()); if(r&&r.err) return r; d.v=(d.v||0)+1; d.log=d.log.slice(0,40); tx.set(ref,JSON.parse(JSON.stringify(d))); return r||{}; }); }   // undefined などを取りのぞいてから保存
 function knLog(d,o){ d.log.unshift({t:knNow(),...o}); }
 // 支払い→書きこみ（失敗したら返金）
 async function knPaid(cost, i, fn){ if(knCoins()<cost) return {err:K_("コインが足りません","Not enough coins")};
   if(cost) knAdd(-cost);
-  let r; try{ r=await knTx(i,fn); }catch(e){ r={err:K_("通信に失敗しました。もう一度ためしてね","Connection failed. Please try again")}; }
+  const r=await knTx(i,fn);
   if(r&&r.err&&cost) knAdd(cost); return r; }
 const knCan = () => { const ks=knSeason(), now=knNow();
   if(!DB||!MYID) return K_("ログインすると遊べます","Sign in to play");
