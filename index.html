@@ -6876,7 +6876,7 @@ function defBuy(R,k){ if(R.over) return false; const cost=k==="provoke"?DEF.PROV
 
 /* ===== 魔ノ国争奪戦（まだ非公開：テスト版だけ） ===== */
 const KN = {
-  ORIGIN: 0,                         // 公開するときに「次のランク戦終了」の時刻を入れる（0のあいだは、ふつうの冒険者には出ない）
+  ORIGIN: 1792674000000,             // 公開：シーズン1は、公開した日の次のランク戦終了（2026-10-22のランク戦終了）からスタート
   SEASON_MS: 720*3600e3, HALF_MS: 360*3600e3,
   MAKE: 100000, JOIN: 1000, BUILD: 100000, DEATH: 50000, BAN_MS: 240*3600e3,
   SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
@@ -6904,12 +6904,12 @@ const KN = {
 };
 const K_ = (ja,en) => LANG==="en" ? en : ja;
 let KN_TEST = false;
-try{ KN_TEST = localStorage.getItem("kn-test")==="1"; }catch(e){}
+try{ KN_TEST = localStorage.getItem("kn-test2")==="1"; }catch(e){}
 // テスト版のカギ（URLに ?kn=カギ をつけて開くと、この端末だけテスト版が出る。?kn=off で消える）
 (async()=>{ try{ const q=new URLSearchParams(location.search).get("kn"); if(!q) return;
-  if(q==="off"){ localStorage.removeItem("kn-test"); KN_TEST=false; knTitleBtn(); return; }
+  if(q==="off"){ localStorage.removeItem("kn-test2"); KN_TEST=false; knTitleBtn(); return; }
   const h=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(q)))).map(b=>b.toString(16).padStart(2,"0")).join("");
-  if(h==="c55cde67d3dff1b6dbc49478775c109d8844b4d27a25dd8dfea4b218413fbbec"){ localStorage.setItem("kn-test","1"); KN_TEST=true; knTitleBtn(); }
+  if(h==="c55cde67d3dff1b6dbc49478775c109d8844b4d27a25dd8dfea4b218413fbbec"){ localStorage.setItem("kn-test2","1"); KN_TEST=true; knTitleBtn(); }
 }catch(e){} })();
 const knOn = () => KN.ORIGIN>0 || KN_TEST;
 const knT0 = () => KN.ORIGIN || seasonEnd(4);                 // テスト版はシーズン5のはじまりから数える
