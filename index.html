@@ -6982,7 +6982,7 @@ const KN = {
   SEASON_MS: 360*3600e3, HALF_MS: 180*3600e3,   // 1シーズン360時間（2026-10-22に720時間から変更）
   NEW_PROTECT: 3600e3,
   // 魔物の城：1時間ごとに30%の確率で空いている場所にあらわれる（島に2つまで）。Lv1・大砲1つ（15分に2発）で、まわりの国のお城をランダムに攻撃する
-  MON: { CHANCE: 0.9, FEW: 20, MAX: 3, SHOTS: 2, CATCH: 4, PRIZE: 100000 },
+  MON: { CHANCE: 0.9, FEW: 20, MAX: 2, SHOTS: 2, CATCH: 4, PRIZE: 100000 },
   ISL_PRIZE: [1000000, 500000, 300000],
   SLIME: { HP: 30, DMG: 10, CHANCE: 0.5, N: 2, MS: 30*60e3 },   // 魔物の城から30分ごとに50%でスライム2体・となりのお城を15分に1回よわく攻撃   // シーズン終了時、島の1〜3位の国：王を含む全員で山分け
   MAKE: 100000, JOIN: 1000, BUILD: 100000, DEATH: 50000, BAN_MS: 120*3600e3,
@@ -7348,7 +7348,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、360時間かけてじっくり育てよう。</p>
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（すべてのお城がこわれ、資金はすべて奪われる）。</p>
-  <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に3つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器か大砲でたおそう。</p>
+  <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に2つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器か大砲でたおそう。</p>
   <p>🔰 シーズンが始まってから国を作ると、作った直後の1時間は🔰マークがついて、ほかの国から攻撃されない。</p>
   <p>💀 倒れると所持コインから5万コイン没収、120時間は参加できない。そのあとは国を作るか、「はじめのお城を1つだけ建てている国」にだけ参加できる。</p>
   <p>🏆 島の中では<b>国の資金が多い順</b>。180時間をすぎると、島のイラストに「四天王候補（島の1位）」が出る。シーズンが終わると、4つの島の1位の国が四天王になり、資金の多い順に1〜4位。</p>
@@ -7359,7 +7359,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 360 hours.</p>
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour.</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
-  <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 3 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — defeat them with weapons or cannons.</p>
+  <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 2 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — defeat them with weapons or cannons.</p>
   <p>🔰 A nation founded after the season starts gets a 🔰 mark for its first hour and can't be attacked by other nations.</p>
   <p>💀 If you fall, you lose 50,000 coins and can't take part for 120 hours. After that you can found a nation, or join only a nation with just one starting castle.</p>
   <p>🏆 Nations are ranked on each island by <b>national funds</b>. After 180 hours, each island shows its "Candidate" (#1). When the season ends, the #1 nation of each of the 4 islands becomes a Heavenly King, ranked 1–4 by funds.</p>
@@ -7408,7 +7408,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
   st.querySelectorAll(".kn-cell").forEach(b=>{ const k=+b.dataset.k, c=d.c[k];
     b.className="kn-cell"; b.innerHTML="";
     if(c&&c.sl){ const pct=Math.max(0,c.hp)/KN.SLIME.HP*100; b.classList.add("castle","slime");
-      b.innerHTML=`<img class="kn-sl" src="adv/sl_s.png" alt="" draggable="false"><div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:#ff5252"></i></div><div class="kn-plate mon"><span>${K_("スライム","Slime")}</span></div>`; }
+      b.innerHTML=`<img class="kn-sl" src="kuni/slime.png" alt="" draggable="false"><div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:#ff5252"></i></div><div class="kn-plate mon"><span>${K_("スライム","Slime")}</span></div>`; }
     else if(c&&c.lv&&c.mon){ const hp=knHp(c,now), pct=hp/KN.HP[c.lv]*100; b.classList.add("castle","mon");
       b.innerHTML=`<img class="kn-cs" src="kuni/mcastle.png" alt="" draggable="false"><div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:${pct>50?"#5fd36a":pct>25?"#ffc107":"#ff5252"}"></i></div>
         <div class="kn-plate mon"><img class="kn-mksm" src="kuni/mmark.jpg" alt=""><span>${K_("魔物の城","Monster Castle")} Lv${c.lv}</span></div>`; }
@@ -7460,7 +7460,7 @@ function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
       : `<p class="kn-warn">${K_("自分のお城に入ってから攻撃してね","Get inside one of your castles first")}</p>`; }
   if(!isMon) btns.push([K_("この国の詳細","Nation details"),()=>{ knDetail(c.n); }]);
   const dl=knDlg(`${isSl?`<h3>🟦 ${K_("スライム","Slime")}</h3>`:isMon?`<div class="kn-chead"><img class="kn-mk" src="kuni/mmark.jpg" alt=""><div><h3>${K_("魔物の城","Monster Castle")}</h3><small>${K_("島にあらわれた魔物の国","A monster nation on the island")}</small></div></div>`:`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${knProt(n,now)?"🔰 ":""}${esc(n.nm||"?")}</h3><small>${esc(n.kn||"")}${K_("王"," (King)")}${n.m&&n.m[n.k]&&n.m[n.k].at===k?" 👑":""}</small></div></div>`}
-    <img class="kn-cimg ${isSl?"sm":""}" src="${isSl?"adv/sl_s":"kuni/"+(isMon?"mcastle":"castle"+c.lv)}.png" alt="">
+    <img class="kn-cimg ${isSl?"sm":""}" src="${isSl?"kuni/slime":"kuni/"+(isMon?"mcastle":"castle"+c.lv)}.png" alt="">
     <div class="kn-hpbig"><span>${K_("耐久力","Durability")}</span><div><i style="width:${(hp/knMax(c)*100).toFixed(1)}%"></i></div><b>${own||isMon?`${knNum(hp)} / ${knNum(knMax(c))}`:`${Math.ceil(hp/knMax(c)*100)}%`}</b></div>
     ${lvRow}<p class="kn-sm" ${isMon?"hidden":""}>${K_(`このお城の中：${here.length}人`,`Inside: ${here.length}`)}${own&&me&&me.at===k?K_("（あなたもここにいます）"," (including you)"):""}</p>
     ${atkHtml}`, btns);
