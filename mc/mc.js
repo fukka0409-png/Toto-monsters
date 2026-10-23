@@ -4,14 +4,14 @@
    本体（index.html）のグローバル（S・save・DB・MYID・MONSTERS・gnow・seasonNow など）を使う
    ========================================================= */
 (()=>{
-const MC = { PLAY:2000, SWITCH:3000, ARM:500, SALE:500, MAXARM:5, USES:20, LIST_MS:24*3600e3, COL:"arms" };
+const MC = { PLAY:3000, SWITCH:5000, ARM:500, SALE:500, MAXARM:5, USES:20, LIST_MS:24*3600e3, COL:"arms" };
 // 台に置くグッズ。null のときはガチャに出る魔物から自動でえらぶ。魔物の id を並べると、その魔物だけが置かれる（例：[5, 29, 48]）
 const MC_GOODS = null;
-// 台の種類（cost：1回のコイン・ランクの出やすさ）。ランクが上がるほど出にくい。いくつでも増やせる
+// 台の種類（cost：1回のコイン・w：ランクの出やすさ・z：その日その台にZランクが1体だけ入る確率＝ごくまれ）。限定ランクは MC_GOODS で指定しない限り出ない。ランクが上がるほど出にくい。いくつでも増やせる
 const MC_MACHINES = [
-  { nm:"ノーマル台", en:"Normal", cost:2000, w:{ C:.4, B:.32, A:.2, S:.07, Z:.01 } },
-  { nm:"レア台", en:"Rare", cost:2000, w:{ C:.2, B:.3, A:.3, S:.16, Z:.04 } },
-  { nm:"スーパーレア台", en:"Super Rare", cost:2000, w:{ B:.2, A:.4, S:.3, Z:.1 } },
+  { nm:"ノーマル台", en:"Normal", cost:3000, z:.02, w:{ C:.4, B:.33, A:.2, S:.07 } },
+  { nm:"レア台", en:"Rare", cost:3000, z:.03, w:{ C:.2, B:.32, A:.3, S:.18 } },
+  { nm:"スーパーレア台", en:"Super Rare", cost:3000, z:.05, w:{ B:.25, A:.43, S:.32 } },
 ];
 const RANK_GRIP = { C:1, B:.9, A:.75, S:.55, Z:.35, L:.3 };   // 重さ：レアなほどつかみにくい
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
@@ -193,16 +193,18 @@ function openMC(){ closeAll(); const m=st(); sfx("tap");
     <button type="button" data-p="c"><i>✏️</i><span>${T("アーム作家になる","Become an arm maker")}<small>${T(`指でアームを描いて出品。売れるたびに${fmt(MC.SALE)}コイン！`,`Draw an arm and sell it. ${fmt(MC.SALE)} coins every sale!`)}</small></span></button></div>`,[[T("閉じる","Close"),null]]);
   bg.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{ bg.remove(); sfx("tap"); ({a:()=>openGame(0), b:openShop, c:openWork})[b.dataset.p](); });
   checkSales(); }
-window.openMC = openMC; window.__mc = { openShop:()=>openShop(), openGame:i=>openGame(i), openWork:()=>openWork(), openStats:()=>openStats() };
+window.openMC = openMC; window.__mc = { openShop:()=>openShop(), openGame:i=>openGame(i), openWork:()=>openWork(), openStats:()=>openStats(), goods:(mi,d)=>goods(mi,d) };
 
 /* ---------- A：台 ---------- */
 const GAME={ W:1026, H:1532, XMIN:150, XMAX:905, CHUTE:157, X0:560, TOP:262, IDLE:46, AW:330, PILE:[262,925], ROW:[1032,1096] };
-function goods(mi){ const d=day(), M=MC_MACHINES[mi], r=rng(d*7919+mi*104729+11);
+function goods(mi, d=day()){ const M=MC_MACHINES[mi], r=rng(d*7919+mi*104729+11);
   const pool = MC_GOODS ? MC_GOODS.map(id=>mon(id)).filter(Boolean) : MONSTERS.filter(m=>!m.gift&&!m.evoOnly&&m.rank!=="L");
   const pick=()=>{ if(MC_GOODS) return pool[Math.floor(r()*pool.length)]; let x=r(), rk="A"; for(const [k,w] of Object.entries(M.w)){ if((x-=w)<0){ rk=k; break; } }
-    const order=[rk, ...RANKS.filter(k=>k!==rk&&k!=="L")]; for(const k of order){ const p=pool.filter(m=>m.rank===k); if(p.length) return p[Math.floor(r()*p.length)]; } return pool[0]; };
+    const order=[rk, ...RANKS.filter(k=>k!==rk&&k!=="L"&&k!=="Z")]; for(const k of order){ const p=pool.filter(m=>m.rank===k); if(p.length) return p[Math.floor(r()*p.length)]; } return pool[0]; };
   const items=[], N=9;
   for(let i=0;i<N;i++){ const m=pick(); const back=i%2===0; const x=GAME.PILE[0]+(GAME.PILE[1]-GAME.PILE[0])*((i+.5)/N)+(r()-.5)*40; items.push({i, m, x:Math.round(x), y:back?GAME.ROW[0]+r()*16:GAME.ROW[1]+r()*14, rot:(r()-.5)*24}); }
+  // Zランクが入る台は、ごくまれ（入っても1体だけ）
+  if(!MC_GOODS && r()<(M.z||0)){ const zs=pool.filter(m=>m.rank==="Z"); if(zs.length){ const k=Math.floor(r()*N); items[k].m=zs[Math.floor(r()*zs.length)]; } }
   const taken=st().taken[`${d}_${mi}`]||[]; return items.filter(o=>!taken.includes(o.i)); }
 function curArm(){ const m=st(); return m.arms.find(a=>a.u===m.cur) || m.arms[0] || null; }
 function openGame(mi){ const s=shell(GAME.W,GAME.H,"mc/machine.jpg"), m=st(); mi=((mi%MC_MACHINES.length)+MC_MACHINES.length)%MC_MACHINES.length; V.mi=mi;
