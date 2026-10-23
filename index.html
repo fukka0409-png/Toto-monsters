@@ -6083,16 +6083,19 @@ function fixBest4Yoko(){
 // 指定した冒険者へのプレゼント（名前で指定・1回だけ）。1セット＝チケット3枚＋5000コイン、名前の後の数だけセット
 const NAMED_GIFTS = [
   { id:"ng-2026-10-23", ticket:3, coins:5000, to:{ "あわ":1, "love":6, "yoko★":1, "おじな":2, "ちゅん":1, "ふっかー":2 } },
+  { id:"ng-2026-10-23b-love", ticket:5, coins:60000, to:{ "love":1 } },
+  { id:"ng-2026-10-23b-yoko", coins:5000, to:{ "yoko★":1 } },
+  { id:"ng-2026-10-23b-chun", stone:100, to:{ "ちゅん":1 } },
 ];
 function checkNamedGift(){
   if(!MYID||isFreshSave(S)) return; S.ngift=S.ngift||[];
-  const me=normName(myName()); let tk=0, cn=0;
-  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; });
-  if(!tk&&!cn){ save(); return; }
-  if(tk) addItem("ticket",tk); S.coins+=cn; save(); try{ renderCoins(); render(); }catch(e){}
+  const me=normName(myName()); let tk=0, cn=0, stn=0;
+  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; });
+  if(!tk&&!cn&&!stn){ save(); return; }
+  if(tk) addItem("ticket",tk); if(stn) addItem("stone",stn); S.coins+=cn; save(); try{ renderCoins(); render(); }catch(e){}
   const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
     const L=LANG==="en", g=document.createElement("div"); g.className="reveal"; g.setAttribute("translate","no");
-    g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"A present for you!":"プレゼントが届きました！"}</h3><p class="note" style="text-align:center;max-width:320px">${L?`🎫 Gacha Ticket ×${tk}<br>💰 ${cn.toLocaleString()} coins`:`🎫 ガチャチケット ×${tk}枚<br>💰 ${cn.toLocaleString()}コイン`}</p><button class="btn gold" type="button">OK</button>`;
+    g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"A present for you!":"プレゼントが届きました！"}</h3><p class="note" style="text-align:center;max-width:320px">${(L?[tk&&`🎫 Gacha Ticket ×${tk}`, cn&&`💰 ${cn.toLocaleString()} coins`, stn&&`💎 Awakening Stone ×${stn}`]:[tk&&`🎫 ガチャチケット ×${tk}枚`, cn&&`💰 ${cn.toLocaleString()}コイン`, stn&&`💎 覚醒の石 ×${stn}個`]).filter(Boolean).join("<br>")}</p><button class="btn gold" type="button">OK</button>`;
     document.body.appendChild(g); try{ SFX.coin(); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
   show();
 }
