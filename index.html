@@ -1059,6 +1059,8 @@ html[lang=en] .kn-bt span{font-size:38px}
 .kn-fund b{font-size:24px}
 .kn-clist{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
 .kn-clist>*{background:#efe2c6;border:0;border-radius:10px;padding:6px;display:flex;flex-direction:column;align-items:center;font-family:inherit;color:inherit}
+.kn-inc{background:#e8f5e9;border:3px solid #2e7d32;border-radius:12px;padding:8px;margin:8px 0}.kn-inch{font:900 14px/1.3 var(--f-body);color:#1b5e20}.kn-inch small{font-size:10px;font-weight:700;color:#4c7a4f;margin-left:4px}
+.kn-incg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 2px}.kn-incg div{background:#fff;border-radius:10px;padding:4px;display:flex;flex-direction:column}.kn-incg b{font-size:22px;color:#2e7d32}.kn-incg small{font-size:10px}
 .kn-bdbtn{border:3px solid #3a2306!important;background:#fff3d6!important;cursor:pointer;justify-content:center;gap:2px}.kn-bdbtn b{font-size:30px}.kn-bdbtn span{font-weight:900;font-size:14px}.kn-bdbtn small{font-size:11px}.kn-bdbtn small.new{color:#fff;background:#e53935;border-radius:999px;padding:1px 8px}
 .kn-bdlist{max-height:46vh;min-height:120px;overflow-y:auto;background:#efe2c6;border-radius:12px;padding:8px;text-align:left;display:flex;flex-direction:column;gap:6px}
 .kn-bdm{background:#fff;border-radius:10px;padding:6px 9px;max-width:85%;align-self:flex-start;display:flex;flex-direction:column}
@@ -7270,6 +7272,7 @@ async function knLvTick(){ const st=S.knLv; if(KN_TEST||!st||knLvBusy||!DB||!MYI
     const per=n?knCastles(d,st.nid).reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0):0, coin=Math.floor(h*per*(king?knBestMul():1));   // お城からの収入
     st.t+=h*3600e3; if(fin) delete S.knLv;
     if(coin>0){ knAdd(coin); try{ renderCoins(); }catch(e){} }
+    if(coin>0||up>0){ const E=S.knEarn&&S.knEarn.ks===st.ks?S.knEarn:{ks:st.ks,c:0,l:0}; E.c+=coin; E.l+=up; S.knEarn=E; }   // このシーズンにもらった不労所得の合計
     if(up>0){ S.plv=(S.plv||1)+up; bumpMaxLv(); }
     if(up>0||coin>0) setTimeout(()=>toast(K_(`🏰 国から：冒険者レベル+${up}${coin?`・お城の収入 +${knNum(coin)}コイン`:""}！`,`🏰 From your nation: Adventurer Level +${up}${coin?`, castle income +${knNum(coin)} coins`:""}!`)),1500);
     save(); if(up>0 && typeof queueProfile==="function") queueProfile();
@@ -7732,6 +7735,14 @@ function knBoard(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n||!DB) return; let unsu
     b.disabled=false; };
   bg.querySelector("#knBdS").onclick=send; bg.querySelector("#knBdT").onkeydown=e=>{ if(e.key==="Enter"&&!e.isComposing) send(); }; }
 const knAgo = t => { const m=Math.max(0,Math.floor((knNow()-(t||0))/60000)); return m<1?K_("いま","now"):m<60?K_(`${m}分前`,`${m}m ago`):m<1440?K_(`${Math.floor(m/60)}時間前`,`${Math.floor(m/60)}h ago`):K_(`${Math.floor(m/1440)}日前`,`${Math.floor(m/1440)}d ago`); };
+// 自分の不労所得（1時間ごとのお城の収入と冒険者レベル）。自分の国の中だけで表示
+function knIncomeHtml(d,nid,n){ const king=n.k===MYID, cs=knCastles(d,nid);
+  const coin=Math.floor(cs.reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0)*(king?knBestMul():1)), lv=king?KN.LV_KING:KN.LV_CIT;
+  const st=S.knLv, nx=st&&st.nid===nid?Math.max(0,3600e3-((knNow()-st.t)%3600e3)):null, E=S.knEarn&&S.knEarn.ks===knSeason()?S.knEarn:{c:0,l:0};
+  return `<div class="kn-inc"><div class="kn-inch">💰 ${K_("あなたの不労所得","Your passive income")}<small>${K_("（自分の国の中だけで見られます）","(only visible inside your nation)")}</small></div>
+    <div class="kn-incg"><div><small>${K_("1時間ごと","Every hour")}</small><b>+${knNum(coin)}</b><small>${K_("コイン","coins")}</small></div><div><small>${K_("1時間ごと","Every hour")}</small><b>Lv+${lv}</b><small>${K_("冒険者レベル","Adventurer Lv")}</small></div></div>
+    <p class="kn-sm">${K_(`お城${cs.length}つぶん（${king?"王":"国民"}の収入）${king&&knBestMul()>1?`・最高順位ボーナス×${knBestMul()}`:""}`,`From ${cs.length} castle(s) (${king?"King":"citizen"} rate)${king&&knBestMul()>1?` · best-rank bonus ×${knBestMul()}`:""}`)}${nx!=null?K_(`・次の受け取りまで ${Math.ceil(nx/60000)}分`,` · next in ${Math.ceil(nx/60000)} min`):""}</p>
+    <p class="kn-sm">${K_(`このシーズンの合計：+${knNum(E.c)}コイン・冒険者Lv+${E.l}`,`This season so far: +${knNum(E.c)} coins, Adventurer Lv+${E.l}`)}</p></div>`; }
 function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knContrib(n), cs=knCastles(d,nid), rk=knRanked(d).findIndex(x=>x[0]===nid)+1, mine=knMine(d)===nid;
   const mem=Object.entries(n.m||{}).sort((a,b)=>(a[0]===n.k?-1:b[0]===n.k?1:(b[1].p||0)-(a[1].p||0)));
   const logT=e=>({atk:K_(`💣「${e.a}」→「${e.b}」に${e.x}ダメージ`,`💣 "${e.a}" hit "${e.b}" for ${e.x}`),brk:K_(`💥「${e.a}」が「${e.b}」のお城をこわした（${knNum(e.x)}コイン奪取）`,`💥 "${e.a}" destroyed a castle of "${e.b}" (took ${knNum(e.x)})`),
@@ -7741,6 +7752,7 @@ function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knC
     mfall:K_(`👹 魔物の城が「${e.b}」を倒した…`,`👹 A Monster Castle defeated "${e.b}"...`),mkill:K_(`⚔️「${e.a}」が魔物の城をこわした（+${knNum(e.x)}）`,`⚔️ "${e.a}" destroyed a Monster Castle (+${knNum(e.x)})`)})[e.k]||"";
   const logs=(d.log||[]).filter(e=>e.a===n.nm||e.b===n.nm).slice(0,12);
   knDlg(`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${esc(n.nm)}</h3><small>${knIsl(KV.i)}　${K_(`島で${rk}位`,`#${rk} on the island`)}</small></div></div>
+    ${mine?knIncomeHtml(d,nid,n):""}
     ${mine?`<div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(n.f||0)}</b><small>${K_("コイン","coins")}</small></div>`:`<p class="kn-sm">🔒 ${K_("国の資金・お城・大砲・武器のレベル・国民の名前は、この国の王と国民しか見られません","Only this nation's King and citizens can see its funds, levels and citizens' names")}</p>`}
     <h4>🏰 ${K_("お城","Castles")}（${cs.length}）</h4><div class="kn-clist">${cs.map(([k,c])=>{ const hc=Object.values(n.m||{}).filter(m=>m.at===k).length;
       return mine?`<div><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannons")} ${knGunTxt(c)}・${K_("武器","Weapons")}Lv${c.eq}</small><small>${K_("耐久力","HP")} ${knNum(knHp(c))}/${knNum(KN.HP[c.lv])}・${K_(`中に${hc}人`,`${hc} inside`)}</small></div>`
