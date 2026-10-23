@@ -6904,7 +6904,8 @@ function advSync(){
   // 2026-10-20：ランキングを「生き延びた時間」→「倒した数」に変更。前の時間の記録はリセット（終わった区切りの報酬は前のしくみで精算）
   if(S.advKV!==1){ S.advKV=1; S.advBestT=0; S.advHiT=0; if(S.advPrev&&S.advPrev.t) S.advPrev.legacyT=1; }
   const p=advPer(); if(S.advP!==p){ if(S.advP!=null&&(S.advBestT||S.advBestL)) S.advPrev={kv:1,p:S.advP,end:S.advPEnd||(S.advP>=ADV.PERIOD_BASE?advPerEnd(S.advP):(S.advP+1)*(S.advPMs||3600000)),t:S.advBestT||0,l:S.advBestL||0}; S.advP=p; S.advPEnd=advPerEnd(p); S.advBestT=0; S.advBestL=0; S.advHiT=0; S.advHiL=0; } return p; }
-const ADV_PRIZE=[5000,3000,1000];   // 30分ごとのランキング報酬（1位・2位・3位）。生き延びた時間・最高レベルのそれぞれで
+const ADV_PRIZE=[5000,3000,1000], ADV_PRIZE_LV=[5,3,0];   // 2026-10-23：1位は冒険者レベル+5・2位は+3（ランキングごと）
+const ADV_PRIZE_DUMMY=0;   // 30分ごとのランキング報酬（1位・2位・3位）。生き延びた時間・最高レベルのそれぞれで
 const advCnt=async q=>{ try{ return q.count ? (await withTO(q.count().get())).data().count : (await withTO(q.get())).size; }catch(e){ return null; } };
 // 前の30分のランキングが終わっていたら、自分の順位をしらべて報酬をわたす（1回だけ）
 let advSettling=false;
@@ -6922,11 +6923,12 @@ async function advSettle(){
     const rt=pv.legacyT?await rankOf("advTk","advTkP",pv.t,1e9):await rankOf("advKk","advKkP",pv.t,1e6), rl=await rankOf("advLk","advLkP",pv.l,1e6);
     if(rt==null||rl==null) return;   // 通信できなかったら、あとでもう一度
     const gT=rt>=1&&rt<=3?ADV_PRIZE[rt-1]:0, gL=rl>=1&&rl<=3?ADV_PRIZE[rl-1]:0;
-    S.advPaid=P; if(gT+gL) S.coins=(S.coins||0)+gT+gL; save();
+    const vT=rt>=1&&rt<=3?ADV_PRIZE_LV[rt-1]:0, vL=rl>=1&&rl<=3?ADV_PRIZE_LV[rl-1]:0;
+    S.advPaid=P; if(gT+gL) S.coins=(S.coins||0)+gT+gL; if(vT+vL){ S.plv=(S.plv||1)+vT+vL; try{ bumpMaxLv(); queueProfile(true); }catch(e){} } save();
     if(gT+gL){ try{ SFX.reveal("S"); }catch(e){} const L=LANG==="en", rk=n=>L?"#"+n:n+"位";
       const bg=document.createElement("div"); bg.className="sheet-bg center"+(document.querySelector("#title:not([hidden])")?" ttl-top":""); bg.style.zIndex=136; bg.setAttribute("translate","no");
       bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏆</div><p>${L?"Toto's Adventure ranking reward!":"トトの冒険 ランキング報酬！"}</p>
-        <div class="note" style="margin:0;text-align:center;line-height:1.7">${gT?`${pv.legacyT?(L?"Time survived":"生き延びたランキング"):(L?"Most defeated":"倒した数ランキング")} <b>${rk(rt)}</b> → <b>+${gT.toLocaleString()}</b><br>`:""}${gL?`${L?"Best level":"最高レベルランキング"} <b>${rk(rl)}</b> → <b>+${gL.toLocaleString()}</b><br>`:""}<small>${L?"Total":"合計"} +${(gT+gL).toLocaleString()} ${L?"coins":"コイン"}</small></div>
+        <div class="note" style="margin:0;text-align:center;line-height:1.7">${gT?`${pv.legacyT?(L?"Time survived":"生き延びたランキング"):(L?"Most defeated":"倒した数ランキング")} <b>${rk(rt)}</b> → <b>+${gT.toLocaleString()}</b>${vT?` ・ <b style="color:#5fd36a">${L?"Adventurer Lv":"冒険者Lv"}+${vT}</b>`:""}<br>`:""}${gL?`${L?"Best level":"最高レベルランキング"} <b>${rk(rl)}</b> → <b>+${gL.toLocaleString()}</b>${vL?` ・ <b style="color:#5fd36a">${L?"Adventurer Lv":"冒険者Lv"}+${vL}</b>`:""}<br>`:""}<small>${L?"Total":"合計"} +${(gT+gL).toLocaleString()} ${L?"coins":"コイン"}</small></div>
         <button class="btn gold" type="button">OK</button></div>`;
       document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); try{ render(); }catch(e){} }
   } finally{ advSettling=false; }
@@ -8035,7 +8037,7 @@ function openAdventureIntro(){
     ["🦅","Tap Jump again in the air to flap your wings (up to 3 jumps)."],
     ["⭐","Toto levels up from the damage dealt. Higher Lv = more power and HP."],
     ["💎","Open chests by attacking them. Equip magic shards from the bag for long-range magic. Fuse shards to make new ones! Use a Heal-a-thing to restore 30 HP."],
-    ["🏆","Rankings (monsters defeated / best Lv) reset every hour. Your rank uses your LATEST record in that hour (a lower record lowers your rank). When the hour ends, #1 gets 5,000, #2 3,000 and #3 1,000 coins (in each ranking)."],
+    ["🏆","Rankings (monsters defeated / best Lv) reset every hour. Your rank uses your LATEST record in that hour (a lower record lowers your rank). When the hour ends, #1 gets 5,000 coins + Adventurer Lv+5, #2 3,000 coins + Adventurer Lv+3, and #3 1,000 coins (in each ranking)."],
     ["🏃","After 1 minute you can escape and clear. Survive all 5 minutes for 10× the reward!"],
     ["🪦","If you die: no reward, and your memo is erased. (You can revive with a heart stone.)"]]:[
     ["⚔️","制限時間は5分！ 30秒ごとに敵のLvが上がる（Lv1→Lv10）。Lv1〜9は4体ずつ、Lv10のボスは1体ずつ出てきて、倒してもそのLvの間はどんどん補充される！"],
@@ -8043,7 +8045,7 @@ function openAdventureIntro(){
     ["🦅","空中でもう一度ジャンプを押すと、翼でパタパタ（3段ジャンプまで）"],
     ["⭐","トトのLvは、敵に与えたダメージで上がる。Lvが上がると攻撃力と体力がアップ"],
     ["💎","宝箱は攻撃すると開く。魔法の欠片をリュックで装備すると、遠くまで届く魔法で攻撃できる。欠片どうしの融合も！「回復するやつ」を使うと体力が30回復"],
-    ["🏆","ランキング（倒した数・最高レベル）は1時間ごとにリセット。順位は、その1時間で最後に出した記録で決まる（前より下がればその分順位も下がる）。終わったときに1位5000・2位3000・3位1000コイン（それぞれのランキングで）"],
+    ["🏆","ランキング（倒した数・最高レベル）は1時間ごとにリセット。順位は、その1時間で最後に出した記録で決まる（前より下がればその分順位も下がる）。終わったときに1位5000コイン＋冒険者Lv+5・2位3000コイン＋冒険者Lv+3・3位1000コイン（それぞれのランキングで）"],
     ["🏃","1分をこえたら「脱出してクリアする」ができる。5分生き延びてクリアすると報酬10倍！"],
     ["🪦","死亡すると報酬はなし、メモも消えてしまう…（ハート石で復活はできる）"]];
   bg.innerHTML=`<div class="swear adv-intro" role="dialog" aria-modal="true" aria-labelledby="aiT"><p id="aiT">🗺️ ${L?"Toto's Adventure":"トトの冒険"}</p>
