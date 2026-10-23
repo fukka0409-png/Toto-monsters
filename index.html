@@ -1008,7 +1008,7 @@ html[lang=en] .kn-bt span{font-size:38px}
 .kn-bt small{font:900 26px/1.1 var(--f-body);color:#5a3410}
 .kn-bt small.red{color:#d32f2f;font-size:30px}small.grn{color:#2e7d32;font-size:30px}
 .kn-bt small b{color:#b71c1c}
-.kn-bt .kn-exp{font-size:38px}.kn-bt small.kn-exs{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:22px}
+.kn-bt .kn-exp{font-size:44px}.kn-bt small.kn-exs{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:22px}
 .kn-bt .kn-in{font-size:36px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .kn-bt em{font:900 22px/1 var(--f-body);font-style:normal;background:#3a2306;color:#fff8e8;border-radius:999px;padding:5px 14px}
 .kn-pick{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:3;background:#000c;border:4px solid #ffeb3b;border-radius:18px;padding:14px 22px;font:900 30px/1.3 var(--f-body);text-align:center;pointer-events:none;white-space:nowrap}
@@ -7131,7 +7131,7 @@ const KN = {
   ISL: [
     { ja:"草原の島", en:"Grassland Isle", bg:"kuni/bg0.jpg", sel:[268,262,672,632], cand:[690,400],
       xs:[12,182,353,523,693,864,1034], ys:[432,637,841,1046,1250], wh:[[155,47,478,119],[597,206,757,258],[854,206,1010,258]], dk:[[42,129,479,407],[515,266,757,407],[774,266,1011,407]], tm:[539,48,1003,161], bt:[[39,1291,499,1450],[544,1290,1011,1450]] },
-    { ja:"砂漠の島", en:"Desert Isle", bg:"kuni/bg1.jpg", sel:[500,505,935,925], cand:[860,520],
+    { ja:"砂漠の島", en:"Desert Isle", bg:"kuni/bg1.jpg?v=2", sel:[500,505,935,925], cand:[860,520],
       xs:[45,204,363,522,682,841,1000], ys:[505,699,892,1086,1280], wh:[[176,174,474,241],[587,307,752,350],[846,307,997,350]], dk:[[73,249,475,463],[521,357,753,463],[769,357,1000,463]], tm:[560,177,975,278], bt:[[16,1305,504,1473],[535,1310,1010,1473]] },
     { ja:"火山の島", en:"Volcano Isle", bg:"kuni/bg2.jpg", sel:[232,812,705,1200], cand:[640,840],
       xs:[40,202,363,525,687,848,1010], ys:[500,689,878,1066,1255], wh:[[178,182,475,246],[589,319,756,361],[845,319,1001,360]], dk:[[77,253,476,461],[521,367,757,469],[773,366,1002,469]], tm:[568,193,978,275], bt:[[71,1289,477,1427],[570,1292,982,1428]] },
@@ -7736,7 +7736,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
   if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && knS().rf && (!knLvOf(KV.i)||knLvOf(KV.i).nid!==mine)) knLvStart(KV.i,mine); if(!KN_TEST && !knS().rf) knRefundOnce();
     b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(knFundOf(d,mine))}</b>${knLocTag()}</small><em>${K_("国の詳細","Nation details")} ▶</em>`;
     b1.innerHTML = n.k===MYID ? `<span>${K_("国の強化","Strengthen")}</span><small>${K_("国の資金を使う","Uses national funds")}</small>` : `<span>${K_("資金を追加","Add funds")}</span><small>${K_("自分のコインを振り込む","Send your coins")}</small>`; }
-  else if(knOther()){ const o=knOther(); b0.innerHTML=`<span class="kn-exp">${K_("🗺 国を広げる","🗺 Expand")}</span><small class="kn-exs">${K_(`「${esc(o.n.nm)}」をこの島へ`,`Bring "${esc(o.n.nm)}" here`)}</small><small class="kn-exs">${K_(`国の資金${knNum(KN.EXPAND)}コイン`,`${knNum(KN.EXPAND)} national funds`)}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; }
+  else if(knOther()){ const o=knOther(); b0.innerHTML=`<span class="kn-exp">${K_("この島に進出する","Expand here")}</span><small class="kn-exs">${esc(o.n.nm)}${K_(`・国の資金${knNum(KN.EXPAND)}`,` · ${knNum(KN.EXPAND)} funds`)}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; }
   else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; } }
 // 国が2つ以上の島にあるとき、いまいる島を表示
 function knLocTag(){ const n=(KN_DC[knSeason()]||[]).filter(d=>d&&knMine(d)).length; if(n<2||knPre()) return ""; const h=knHere(KV.i), L=knLoc();
