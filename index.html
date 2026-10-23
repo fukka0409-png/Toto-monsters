@@ -146,6 +146,8 @@ details.rates summary{cursor:pointer;font-weight:700}
 .rv.pickable img{outline:3px dashed #ffffff66;outline-offset:-3px}
 .rv.picked img{outline:4px solid #ffd54f;outline-offset:-4px;filter:brightness(.8)}
 .rv.picked::after{content:"✔";position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#ffd54f;color:#3a2306;font:900 22px/34px var(--f-body);text-align:center;box-shadow:0 2px 0 #0006}
+.rv-rk{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin-top:10px}.rv-rk small{width:100%;text-align:center;font-weight:800;font-size:12px;color:var(--mist-dim)}
+.rv-rk button{border:2px solid var(--line);border-radius:999px;background:var(--bark-2);color:var(--mist);padding:6px 12px;font:800 13px/1 var(--f-body);display:flex;gap:5px;align-items:center;cursor:pointer}
 .rv-pickhint{margin:8px 0 0;font-size:13px;font-weight:800;color:#ffd54f}
 .reveal .rv-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .reveal .rv-btns .btn{min-width:150px}
@@ -3940,7 +3942,7 @@ function showReveal(res,title,opts={}){
     ${res.length>10?`<p class="rv-sum">${["Z","S","A","B","C"].map(k=>{const n=res.filter(r=>r.rank===k).length;return n?`<span class="rk rk-${k}">${k}</span>×${n}`:""}).join(" ")}</p>`:""}
     <div class="rv-grid ${res.length>1?"many":"one"} ${res.length>10?"scroll":""}">${groupRes(res).map((r,i)=>`<div class="rv r-${r.rank} ${r.rank==="S"||r.rank==="Z"?"shine":""}" data-rv="${i}" style="animation-delay:${Math.min(i,20)*60}ms">
       <img src="${r.img}" alt="${r.name}">${r.isNew?'<span class="new">NEW'+(nc?' +'+nc:'')+'</span>':''}${r.count>1?`<span class="cnt">×${r.count}</span>`:""}<div class="nm"><span class="rk rk-${r.rank}">${r.rank}</span> ${r.name}</div>${(r.by||r.model)&&res.length<=10?byLine(r):""}${canSell?`<button class="rv-sell" type="button" data-sell="${i}"></button>`:""}</div>`).join("")}</div>
-    <div class="rv-btns"><button class="btn" type="button">OK</button>${canSell?`<button class="btn ghost" type="button" id="rvSellAll">まとめて売却</button><button class="btn ghost" type="button" id="rvPick">選択して売却</button>`:""}</div>${canSell?`<p class="rv-pickhint" id="rvHint" hidden>売却する魔物をタップしてえらんでね</p>`:""}`;
+    <div class="rv-btns"><button class="btn" type="button">OK</button>${canSell?`<button class="btn ghost" type="button" id="rvSellAll">まとめて売却</button><button class="btn ghost" type="button" id="rvPick">選択して売却</button>`:""}</div>${canSell?`<div class="rv-rk" id="rvRk"></div>`:""}${canSell?`<p class="rv-pickhint" id="rvHint" hidden>売却する魔物をタップしてえらんでね</p>`:""}`;
   el.querySelector(".btn").onclick=()=>{el.remove();render()};
   // ガチャで出た魔物を、この画面ですぐ売却できる（新しい魔物の「12時間は売却できない」ルールはそのまま）
   if(canSell){ const L=LANG==="en";
@@ -3950,6 +3952,9 @@ function showReveal(res,title,opts={}){
         const ok=left.filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard);
         if(!ok.length){ b.disabled=true; b.textContent=left.some(sellLockLeft)?(L?"⏳ No selling for 12h":"⏳12時間売却不可"):(L?"Can't sell":"売却できません"); return; }
         b.disabled=false; b.textContent=(L?"Sell ":"売却 ")+(ok.length>1?`×${ok.length} `:"")+"+"+ok.reduce((t,z)=>t+sellPrice(z),0).toLocaleString(); });
+      const rk=el.querySelector("#rvRk"); if(rk){ const by={}; units(G.flatMap(g=>g.us)).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard).forEach(z=>{ const r=mon(z.m).rank; (by[r]=by[r]||[]).push(z.u); });
+        const rs=["C","B","A","S","Z","L"].filter(r=>by[r]); rk.innerHTML=rs.length?`<small>${L?"Sell by rank":"ランク別に売却"}</small>${rs.map(r=>`<button type="button" data-rks="${r}"><span class="rk rk-${r}">${r==="L"?(L?"Ltd":"限定"):r}</span>×${by[r].length}</button>`).join("")}`:"";
+        rk.querySelectorAll("[data-rks]").forEach(b=>b.onclick=()=>confirmSell(by[b.dataset.rks],()=>{ upd(); renderCoins(); try{ drawPick(); }catch(e){} })); }
       const all=el.querySelector("#rvSellAll"); if(all){ const ok=units(G.flatMap(g=>g.us)).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard); all.disabled=!ok.length; } };
     el.querySelectorAll("[data-sell]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const g=G[+b.dataset.sell]; confirmSell(units(g.us).map(z=>z.u),()=>{ upd(); renderCoins(); }); });
     el.querySelector("#rvSellAll").onclick=()=>confirmSell(units(G.flatMap(g=>g.us)).map(z=>z.u),()=>{ upd(); renderCoins(); });
