@@ -1008,6 +1008,7 @@ html[lang=en] .kn-bt span{font-size:38px}
 .kn-bt small{font:900 26px/1.1 var(--f-body);color:#5a3410}
 .kn-bt small.red{color:#d32f2f;font-size:30px}small.grn{color:#2e7d32;font-size:30px}
 .kn-bt small b{color:#b71c1c}
+.kn-pkhp{width:78%;height:12px;margin:0 auto 2px;background:#3a2306;border:2px solid #3a2306;border-radius:999px;overflow:hidden}.kn-pkhp i{display:block;height:100%;border-radius:999px}.kn-pkhpt{display:block;font-size:11px!important;opacity:.85;margin-bottom:2px}
 .kn-bt .kn-exp{font-size:44px}.kn-bt small.kn-exs{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:22px}
 .kn-bt .kn-in{font-size:36px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .kn-bt em{font:900 22px/1 var(--f-body);font-style:normal;background:#3a2306;color:#fff8e8;border-radius:999px;padding:5px 14px}
@@ -7903,7 +7904,7 @@ function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knC
   if(mine){ const b=document.getElementById("knBd"); if(b) b.onclick=()=>knBoard(nid); knBdNew(nid); } }
 // 国の強化：お城が2つ以上なら、まずどのお城かをえらぶ
 function knUpPick(){ const d=KV.d, nid=knMine(d), cs=knCastles(d,nid); if(cs.length===1) return knUpDlg(cs[0][0]);
-  const bg=knDlg(`<h3>🏰 ${K_("どのお城を強化する？","Which castle?")}</h3><div class="kn-clist pick">${cs.map(([k,c])=>`<button type="button" data-k="${k}"><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannons")} ${knGunTxt(c)}・${K_("武器","Weapons")}Lv${c.eq}</small></button>`).join("")}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"});
+  const bg=knDlg(`<h3>🏰 ${K_("どのお城を強化する？","Which castle?")}</h3><div class="kn-clist pick">${cs.map(([k,c])=>{ const hp=knHp(c,knNow()), mx=knMax(c), pct=Math.max(0,Math.min(100,hp/mx*100)); return `<button type="button" data-k="${k}"><div class="kn-pkhp" title="${K_("耐久力","Durability")}"><i style="width:${pct.toFixed(1)}%;background:${pct>50?"#5fd36a":pct>25?"#ffc107":"#ff5252"}"></i></div><small class="kn-pkhpt">${K_("耐久力","Durability")} ${knNum(Math.floor(hp))}/${knNum(mx)}</small><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannons")} ${knGunTxt(c)}・${K_("武器","Weapons")}Lv${c.eq}</small></button>`; }).join("")}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"});
   bg.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ bg.remove(); knUpDlg(+b.dataset.k); }); }
 function knUpDlg(cell){ const draw=()=>{ const d=KV.d, nid=knMine(d), n=d.n[nid], c=d.c[cell]; if(!c||!c.lv) return;
   const row=(kind,ic,nm,eff)=>{ const gi=kind[0]==="g"?+kind.slice(1):-1, lv=gi>=0?knGuns(c)[gi].lv:c[kind], mx=lv>=6, cost=KN.UP[gi>=0?"g":kind][lv+1];
