@@ -7036,11 +7036,11 @@ const KN = {
     { ja:"草原の島", en:"Grassland Isle", bg:"kuni/bg0.jpg", sel:[268,262,672,632], cand:[690,400],
       xs:[12,182,353,523,693,864,1034], ys:[432,637,841,1046,1250], wh:[[155,47,478,119],[597,206,757,258],[854,206,1010,258]], dk:[[42,129,479,407],[515,266,757,407],[774,266,1011,407]], tm:[539,48,1003,161], bt:[[39,1291,499,1450],[544,1290,1011,1450]] },
     { ja:"砂漠の島", en:"Desert Isle", bg:"kuni/bg1.jpg", sel:[500,505,935,925], cand:[860,520],
-      xs:[45,285,525,770,1000], ys:[505,785,1035,1280], wh:[[176,174,474,241],[587,307,752,350],[846,307,997,350]], dk:[[73,249,475,463],[521,357,753,463],[769,357,1000,463]], tm:[560,177,975,278], bt:[[16,1305,504,1473],[535,1310,1010,1473]] },
+      xs:[45,204,363,522,682,841,1000], ys:[505,699,892,1086,1280], wh:[[176,174,474,241],[587,307,752,350],[846,307,997,350]], dk:[[73,249,475,463],[521,357,753,463],[769,357,1000,463]], tm:[560,177,975,278], bt:[[16,1305,504,1473],[535,1310,1010,1473]] },
     { ja:"火山の島", en:"Volcano Isle", bg:"kuni/bg2.jpg", sel:[232,812,705,1200], cand:[640,840],
-      xs:[40,282,525,778,1010], ys:[500,780,1035,1255], wh:[[178,182,475,246],[589,319,756,361],[845,319,1001,360]], dk:[[77,253,476,461],[521,367,757,469],[773,366,1002,469]], tm:[568,193,978,275], bt:[[71,1289,477,1427],[570,1292,982,1428]] },
+      xs:[40,202,363,525,687,848,1010], ys:[500,689,878,1066,1255], wh:[[178,182,475,246],[589,319,756,361],[845,319,1001,360]], dk:[[77,253,476,461],[521,367,757,469],[773,366,1002,469]], tm:[568,193,978,275], bt:[[71,1289,477,1427],[570,1292,982,1428]] },
     { ja:"氷の島", en:"Ice Isle", bg:"kuni/bg3.jpg", sel:[12,505,412,915], cand:[330,525],
-      xs:[45,285,525,770,995], ys:[505,785,1035,1285], wh:[[176,174,472,242],[587,327,746,370],[847,327,998,370]], dk:[[75,249,473,481],[517,376,751,482],[769,377,999,482]], tm:[554,180,971,276], bt:[[68,1317,484,1459],[562,1317,980,1460]] },
+      xs:[45,203,362,520,678,837,995], ys:[505,700,895,1090,1285], wh:[[176,174,472,242],[587,327,746,370],[847,327,998,370]], dk:[[75,249,473,481],[517,376,751,482],[769,377,999,482]], tm:[554,180,971,276], bt:[[68,1317,484,1459],[562,1317,980,1460]] },
   ],
   AD: [70,1262,872,1592],            // 島えらび画面の広告欄（941×1672の中）
 };
@@ -7127,9 +7127,9 @@ function knRemap(d){ if(d.g24) return false; const c={}; for(const [k,v] of Obje
 let knMergeBusy=false;
 async function knMerge(){ if(knMergeBusy||!DB||!MYID) return; const ks=knSeason(); knMergeBusy=true;
   try{ await DB.runTransaction(async tx=>{ const refs=[0,1,2,3].map(i=>knRef(ks,i)), sn=[]; for(const r of refs) sn.push(await tx.get(r));
-      const ds=sn.map((x,i)=>x.exists?x.data():null); if(!ds.slice(1).some(d=>d&&!d.mv&&Object.keys(d.n||{}).length)) return;
+      const ds=sn.map((x,i)=>x.exists?x.data():null); if(!ds.slice(1).some(d=>d&&!d.mv&&!d.g24&&Object.keys(d.n||{}).length)) return;
       const d0=ds[0]||knBlank(ks,0); d0.n=d0.n||{}; d0.c=d0.c||{}; d0.log=d0.log||[]; knRemap(d0);
-      for(let i=1;i<4;i++){ const d=ds[i]; if(!d||d.mv) continue;
+      for(let i=1;i<4;i++){ const d=ds[i]; if(!d||d.mv||d.g24) continue;
         for(const [nid,n] of Object.entries(d.n||{})){ if(n.x){ continue; } const cs=Object.entries(d.c||{}).filter(([,c])=>c.n===nid&&c.lv), mp={};
           for(const [k,c] of cs){ const free=[...Array(KN.CELLS).keys()].filter(q=>!d0.c[q]); if(!free.length) break; const q=free[0]; d0.c[q]=c; mp[k]=q; }
           if(!Object.keys(mp).length) continue;
@@ -7141,11 +7141,16 @@ function knTx0(ref,ks,i,fn){
   return DB.runTransaction(async tx=>{ const sn=await tx.get(ref); const d=sn.exists?sn.data():knBlank(ks,i); d.n=d.n||{}; d.c=d.c||{}; d.dead=d.dead||{}; d.log=d.log||[];
     const rm=i===0?knRemap(d):false;
     const ch=knMonTick(d, knNow()); const r=fn(d, knNow());
-    if((r&&(r.err||r.noop)) && !ch && !rm) return r;
+    const fl=!(r&&r.err)&&!d.full&&knIsFull(d); if(fl){ d.full=1; knLog(d,{k:"full"}); }   // マスが国で全部うまった（1回でも）→ 次の島が解放される
+    if((r&&(r.err||r.noop)) && !ch && !rm && !fl) return r;
     if(r&&r.err){ d.v=(d.v||0)+1; d.log=d.log.slice(0,40); tx.set(ref,JSON.parse(JSON.stringify(d))); return r; }   // 失敗しても、魔物の城の動きだけは保存する
     d.v=(d.v||0)+1; d.log=d.log.slice(0,40); tx.set(ref,JSON.parse(JSON.stringify(d))); return r||{}; }); }
 /* ---- 魔物の城 ---- */
 const knAdj = k => { const C=KN.COLS, R=KN.CELLS/C, r=Math.floor(k/C), c=k%C, o=[]; if(r>0) o.push(k-C); if(r<R-1) o.push(k+C); if(c>0) o.push(k-1); if(c<C-1) o.push(k+1); return o; };
+const knIsFull = d => [...Array(KN.CELLS).keys()].every(k=>{ const c=(d.c||{})[k]; return c && ((c.n&&c.lv&&!c.mon) || c.own); });
+// 解放されている島の数：草原の島がうまったら砂漠、砂漠がうまったら火山、火山がうまったら氷
+const knOpenN = docs => { let u=1; while(u<4 && docs && docs[u-1] && docs[u-1].full) u++; return u; };
+let KN_OPEN=1;
 const knMonCount = d => Object.values(d.c||{}).filter(c=>c.mon&&c.lv).length;
 function knMonSpawn(d,now){ const free=[...Array(KN.CELLS).keys()].filter(k=>!d.c[k]); if(!free.length||knMonCount(d)>=KN.MON.MAX) return false;
   const k=free[Math.floor(Math.random()*free.length)]; d.c[k]={mon:1, n:"__m", lv:1, g:[{lv:1}], eq:1, hp:KN.MON.HP[1], hpT:now, as:knSlot(now)}; knLog(d,{k:"mon"}); return true; }
@@ -7439,8 +7444,10 @@ async function openKuni(){ if(!knOn()) return;
       <div class="kn-cand" id="knCand${i}" style="left:${s.cand[0]-60}px;top:${s.cand[1]-40}px" hidden></div><div class="kn-mine" id="knMine${i}" style="left:${(s.sel[0]+s.sel[2])/2-90}px;top:${s.sel[3]-112}px" hidden></div>`).join("")}
     <div class="kn-ad" id="knAd" style="left:${KN.AD[0]}px;top:${KN.AD[1]}px;width:${KN.AD[2]-KN.AD[0]}px;height:${KN.AD[3]-KN.AD[1]}px"></div>
     <button class="kn-help" type="button" id="knHelp">❓ ${K_("遊び方","How to play")}</button>`;
-  st.querySelectorAll(".kn-isl").forEach(b=>{ const i=+b.dataset.i; if(i!==0){ b.classList.add("closed"); b.querySelector(".kn-icnt")?.remove(); b.insertAdjacentHTML("beforeend",`<span class="kn-closed">🔒 ${K_("準備中","Coming soon")}</span>`); }
-    b.onclick=()=>{ if(i!==0) return knMsg(K_("いまは「草原の島」だけで遊べます","Only Grassland Isle is open right now")); try{ SFX.tap(); }catch(e){} openKuniIsland(0); }; });
+  const lockIsl=()=>st.querySelectorAll(".kn-isl").forEach(b=>{ const i=+b.dataset.i, open=i<KN_OPEN; b.classList.toggle("closed",!open); b.querySelector(".kn-closed")?.remove();
+    if(!open){ b.insertAdjacentHTML("beforeend",`<span class="kn-closed">🔒 ${K_("準備中","Locked")}</span>`); }
+    b.onclick=()=>{ if(!open) return knMsg(K_(`「${knIsl(i-1)}」のマスが国で全部うまると、「${knIsl(i)}」が解放されます`,`${knIsl(i)} opens once every spot on ${knIsl(i-1)} is filled by nations`)); try{ SFX.tap(); }catch(e){} openKuniIsland(i); }; });
+  lockIsl(); KV.lockIsl=lockIsl;
   knMerge();
   st.querySelector("#knHelp").onclick=knHelp;
   knTestBar(document.getElementById("kno"), ()=>openKuni());
@@ -7453,9 +7460,12 @@ async function openKuni(){ if(!knOn()) return;
   try{ await knClaim(); }catch(e){}
   const [docs, prev]=await Promise.all([knLoad(ks), ks>0?knLoad(ks-1):Promise.resolve([null,null,null,null])]);
   if(KV.scr!=="sel") return; KV.docs=docs; knCheckDead(docs, ks);
+  KN_OPEN=knOpenN(docs); KV.lockIsl&&KV.lockIsl();
+  { const K=knS(), seen=(K.openSeen||{})[ks]||1; if(KN_OPEN>seen){ K.openSeen={...(K.openSeen||{}),[ks]:KN_OPEN}; save();
+      knDlg(`<div class="kn-big">🗺</div><h3>${K_(`「${knIsl(KN_OPEN-1)}」が解放された！`,`${knIsl(KN_OPEN-1)} is now open!`)}</h3><p>${K_(`「${knIsl(KN_OPEN-2)}」のマスが国で全部うまったので、新しい島で国を作れるようになりました！`,`Every spot on ${knIsl(KN_OPEN-2)} was filled, so you can now found nations on a new island!`)}</p>`,[[K_("OK","OK"),null]]); } }
   const half=knNow()-knStart(ks)>=KN.HALF_MS;
   docs.forEach((d,i)=>{ const al=d?knAlive(d):[], ppl=al.reduce((a,[,n])=>a+Object.keys(n.m||{}).length,0), ce=document.getElementById("knCnt"+i);
-    if(ce) ce.textContent=K_(`🏰${al.length}か国・👥${ppl}人`,`🏰${al.length} nations · 👥${ppl}`); });
+    if(ce) ce.textContent=i>=knOpenN(docs)?"":K_(`🏰${al.length}か国・👥${ppl}人`,`🏰${al.length} nations · 👥${ppl}`); });
   docs.forEach((d,i)=>{ const r=d?knRanked(d):[]; const c=document.getElementById("knCand"+i);
     if(half && r.length && i===0){ c.hidden=false; c.classList.add("four"); c.innerHTML=`<div class="kn-c4">${r.slice(0,4).map(x=>knMarkHtml(x[1],"kn-mk")).join("")}</div><span>${K_("四天王候補","Candidates")}</span>`; }
     const mine=d&&knMine(d); const m=document.getElementById("knMine"+i); if(mine){ m.hidden=false; m.textContent=K_("🏯 あなたの国","🏯 Your nation"); } });
@@ -7478,6 +7488,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。王は国の資金で、お城をすぐに修復することもできる（耐久力1につき資金10）。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（王がどのお城にいるかは、ほかの国からは見えない）（すべてのお城がこわれ、資金はすべて奪われる）。</p>
   <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に2つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ 耐久力は低めで、国民が武器で5回くらい攻撃すればこわせる。こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器で3回攻撃すればたおせる。</p>
+  <p>🗺 はじめは草原の島だけ。シーズン中に島のマスが国（お城と領土）で<b>一度でも全部うまる</b>と、次の島（砂漠 → 火山 → 氷）が解放される。</p>
   <p>🎭 王と国民はみんな<b>匿名</b>。ほかの国からも、同じ国の中でも、名前は出ない（「王」「国民1」…と表示）。</p>
   <p>🔰 シーズンが始まってから国を作ると、作った直後の1時間は🔰マークがついて、ほかの国から攻撃されない。</p>
   <p>💀 倒れると所持コインから5万コイン没収。待ち時間はなく、すぐにまた国を作れる（参加できるのは「はじめのお城を1つだけ建てている国」だけ）。</p>
@@ -7492,6 +7503,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour. The King can also repair a castle right away with national funds (10 funds per HP).</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
   <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 2 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Their HP is low — about 5 weapon attacks by citizens will destroy one. Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — 3 weapon attacks defeat one.</p>
+  <p>🗺 Only Grassland Isle is open at first. Once every spot on the newest island is filled by nations (castles and territory) even once during the season, the next island opens (Desert → Volcano → Ice).</p>
   <p>🎭 Kings and citizens are all <b>anonymous</b> — no names are shown, even inside your own nation (shown as "King", "Citizen 1"…).</p>
   <p>🔰 A nation founded after the season starts gets a 🔰 mark for its first hour and can't be attacked by other nations.</p>
   <p>💀 If you fall, you lose 50,000 coins. There's no waiting time — you can found a nation again right away (you can only join a nation that has just one starting castle).</p>
@@ -7500,7 +7512,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70% (100% if there are no citizens); citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. On top of that, the <b>top 3 nations of each island</b> split a prize among everyone including the King (#1: 1,000,000 · #2: 500,000 · #3: 300,000). Kings and citizens get a profile title, and the #1 nation's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
 
 /* ---------- 島の画面 ---------- */
-function openKuniIsland(i){ const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
+function openKuniIsland(i){ if(i>=KN_OPEN && !KN_TEST) i=0; const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
   document.querySelector("#kno .kn-x").onclick=()=>{ knClose(); openKuni(); };
   const C=KN.COLS, cw=k=>I.xs[k%C+1]-I.xs[k%C], ch=k=>I.ys[Math.floor(k/C)+1]-I.ys[Math.floor(k/C)];
   const box=(b,cls,inner="")=>`<div class="${cls}" style="left:${b[0]}px;top:${b[1]}px;width:${b[2]-b[0]}px;height:${b[3]-b[1]}px">${inner}</div>`;
@@ -7647,7 +7659,7 @@ function knDepositDlg(){ const bg=knDlg(`<h3>💰 ${K_("国の資金に振り込
 function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knContrib(n), cs=knCastles(d,nid), rk=knRanked(d).findIndex(x=>x[0]===nid)+1, mine=knMine(d)===nid;
   const mem=Object.entries(n.m||{}).sort((a,b)=>(a[0]===n.k?-1:b[0]===n.k?1:(b[1].p||0)-(a[1].p||0)));
   const logT=e=>({atk:K_(`💣「${e.a}」→「${e.b}」に${e.x}ダメージ`,`💣 "${e.a}" hit "${e.b}" for ${e.x}`),brk:K_(`💥「${e.a}」が「${e.b}」のお城をこわした（${knNum(e.x)}コイン奪取）`,`💥 "${e.a}" destroyed a castle of "${e.b}" (took ${knNum(e.x)})`),
-    fall:K_(`👑「${e.a}」が「${e.b}」を倒した！`,`👑 "${e.a}" defeated "${e.b}"!`),make:K_(`🏰「${e.b}」ができた`,`🏰 "${e.b}" was founded`),join:K_(`🙋「${e.b}」に新しい国民が参加`,`🙋 A new citizen joined "${e.b}"`),build:K_(`🏰「${e.a}」が新しいお城を建てた`,`🏰 "${e.a}" built a new castle`),move:K_(`🚚「${e.b}」がほかの島から引っ越してきた`,`🚚 "${e.b}" moved here from another island`),rep:K_(`🧱「${e.a}」がお城を修復（+${knNum(e.x)}）`,`🧱 "${e.a}" repaired a castle (+${knNum(e.x)})`),gun:K_(`💣「${e.a}」が大砲を購入`,`💣 "${e.a}" bought a cannon`),
+    fall:K_(`👑「${e.a}」が「${e.b}」を倒した！`,`👑 "${e.a}" defeated "${e.b}"!`),make:K_(`🏰「${e.b}」ができた`,`🏰 "${e.b}" was founded`),join:K_(`🙋「${e.b}」に新しい国民が参加`,`🙋 A new citizen joined "${e.b}"`),build:K_(`🏰「${e.a}」が新しいお城を建てた`,`🏰 "${e.a}" built a new castle`),full:K_("🗺 島のマスが国で全部うまった！ 次の島が解放された","🗺 Every spot is filled by nations! The next island is now open"),move:K_(`🚚「${e.b}」がほかの島から引っ越してきた`,`🚚 "${e.b}" moved here from another island`),rep:K_(`🧱「${e.a}」がお城を修復（+${knNum(e.x)}）`,`🧱 "${e.a}" repaired a castle (+${knNum(e.x)})`),gun:K_(`💣「${e.a}」が大砲を購入`,`💣 "${e.a}" bought a cannon`),
     matk:e.sl?K_(`🟦 スライム→「${e.b}」に${e.x}ダメージ`,`🟦 A slime hit "${e.b}" for ${e.x}`):K_(`👹 魔物の城→「${e.b}」に${e.x}ダメージ`,`👹 Monster Castle hit "${e.b}" for ${e.x}`),
     skill:K_(`🟦「${e.a}」がスライムをたおした`,`🟦 "${e.a}" defeated a slime`),mbrk:K_(`👹 魔物の城が「${e.b}」のお城をこわした`,`👹 A Monster Castle destroyed a castle of "${e.b}"`),
     mfall:K_(`👹 魔物の城が「${e.b}」を倒した…`,`👹 A Monster Castle defeated "${e.b}"...`),mkill:K_(`⚔️「${e.a}」が魔物の城をこわした（+${knNum(e.x)}）`,`⚔️ "${e.a}" destroyed a Monster Castle (+${knNum(e.x)})`)})[e.k]||"";
