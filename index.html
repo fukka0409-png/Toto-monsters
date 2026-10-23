@@ -7572,7 +7572,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
   if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && knS().rf && (!S.knLv||S.knLv.nid!==mine)) knLvStart(KV.i,mine); if(!KN_TEST && !knS().rf) knRefundOnce();
     b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(n.f||0)}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
     b1.innerHTML = n.k===MYID ? `<span>${K_("国の強化","Strengthen")}</span><small>${K_("国の資金を使う","Uses national funds")}</small>` : `<span>${K_("資金を追加","Add funds")}</span><small>${K_("自分のコインを振り込む","Send your coins")}</small>`; }
-  else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span><small class="grn">+${K_("5万コイン","50,000 coins")}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span><small class="grn">+${K_("2万コイン","20,000 coins")}</small>`; } }
+  else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; } }
 function knBtn(j){ try{ SFX.tap(); }catch(e){} const d=KV.d, mine=d&&knMine(d);
   if(mine){ const n=d.n[mine]; if(j===0) return knDetail(mine); return n.k===MYID ? knUpPick() : knDepositDlg(); }
   const why=knCan(); if(why) return knMsg(why);
