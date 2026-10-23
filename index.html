@@ -7123,7 +7123,8 @@ const KN = {
   MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 3, LV_CIT: 1,
   // 2026-10-22：お城からの収入（1時間ごと・お城1つにつき・お城Lvで変わる）。お城が増えれば、その数だけもらえる
   INC_KING: [0, 200, 400, 1000, 2000, 3000, 5000], INC_CIT: [0, 100, 200, 500, 1000, 1500, 3000],
-  BUILD: 100000, EXPAND: 300000, ROOM: 10,   // 1つのお城に入れるのは王を含めて10人まで
+  BUILD: 100000, EXPAND: 300000, TERR_MS: 3600e3,   // TERR_MS：領土は1時間お城を建てなければ空き地にもどる
+  ROOM: 10,   // 1つのお城に入れるのは王を含めて10人まで
   DEATH: 50000, BAN_MS: 0,   // 2026-10-23：倒れても待ち時間なし（すぐ国を作れる・参加できる）
   SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
   REGEN: 0.03, BEST: 10, MAX_N: 24, CELLS: 24, COLS: 6,   // 2026-10-22：島は草原の島ひとつ・24マス（横6×たて4）
@@ -7265,7 +7266,7 @@ function knTx0(ref,ks,i,fn,opt){
     const fundW=()=>{ for(const [nid,n] of Object.entries(d.n)){ if(n.hm==null||n.hm===i) continue; const hn=H[n.hm]&&H[n.hm].n&&H[n.hm].n[nid]; if(!hn) continue;
         const dl=(n.f||0)-(pre[nid]??(hn.f||0)); if(dl){ const v=Math.max(0,(hn.f||0)+dl); n.f=v; tx.update(knRef(ks,n.hm),{[`n.${nid}.f`]:v}); } } };
     const rm=i===0?knRemap(d):false;
-    const ch=knMonTick(d, knNow()); const r=fn(d, knNow(), H);
+    const ch=knTerrTick(d, knNow()) | knMonTick(d, knNow()); const r=fn(d, knNow(), H);
     const fl=!(r&&r.err)&&!d.full&&knIsFull(d); if(fl){ d.full=1; knLog(d,{k:"full"}); }   // マスが国で全部うまった（1回でも）→ 次の島が解放される
     if((r&&(r.err||r.noop)) && !ch && !rm && !fl) return r;
     fundW();
@@ -7282,7 +7283,14 @@ let KN_OPEN=1;
 const knMonCount = d => Object.values(d.c||{}).filter(c=>c.mon&&c.lv).length;
 function knMonSpawn(d,now){ const free=[...Array(KN.CELLS).keys()].filter(k=>!d.c[k]); if(!free.length||knMonCount(d)>=KN.MON.MAX) return false;
   const k=free[Math.floor(Math.random()*free.length)]; d.c[k]={mon:1, n:"__m", lv:1, g:[{lv:1}], eq:1, hp:KN.MON.HP[1], hpT:now, as:knSlot(now)}; knLog(d,{k:"mon"}); return true; }
-function knMonNeeds(d,now){ if(!d||knPre(now)) return false; if(d.ms!==Math.floor((now-knT0())/3600e3)) return true; const sl=knSlot(now);
+/* ---- 領土：1時間お城を建てなければ空き地にもどる ---- */
+const knTerrGone = (c,now=knNow()) => !!(c&&c.own&&c.ot&&now-c.ot>=KN.TERR_MS);
+const knTerrLeft = (c,now=knNow()) => c&&c.own&&c.ot ? Math.max(0,c.ot+KN.TERR_MS-now) : KN.TERR_MS;
+const knCellAt = (d,k,now=knNow()) => { const c=d&&d.c&&d.c[k]; return knTerrGone(c,now)?null:c; };
+function knTerrTick(d,now){ let ch=false; for(const [k,c] of Object.entries(d.c||{})){ if(!c||!c.own) continue;
+    if(!c.ot){ c.ot=now; ch=true; }   // 前からある領土は、いまから1時間
+    else if(knTerrGone(c,now)){ const n=d.n[c.own]; delete d.c[k]; knLog(d,{k:"tfree", b:(n&&n.nm)||""}); ch=true; } } return ch; }
+function knMonNeeds(d,now){ if(!d) return false; if(Object.values(d.c||{}).some(c=>c&&c.own&&(!c.ot||knTerrGone(c,now)))) return true; if(knPre(now)) return false; if(d.ms!==Math.floor((now-knT0())/3600e3)) return true; const sl=knSlot(now);
   const hh=Math.floor((now-knT0())/KN.SLIME.MS);
   return Object.values(d.c||{}).some(c=>(c.mon&&c.lv&&(c.as==null||c.as<sl||c.ss==null||c.ss<hh))||(c.sl&&(c.as==null||c.as<sl))); }
 // だれかが島のデータを書きこむとき（と、島の画面を開いているあいだ）に、魔物の城の出現と攻撃をまとめて進める
@@ -7484,16 +7492,16 @@ function knHit(d, nid, target, dmg, now){ const n=d.n[nid], tc=d.c[target], vid=
   dmg=Math.max(1,Math.round(dmg*(tc.mon?1:1-KN.GUARD[tc.lv])));
   const hp=knHp(tc,now)-dmg;
   if(hp>0){ tc.hp=hp; tc.hpT=now; knLog(d,{k:"atk", a:n.nm, b:v?v.nm:(tc.mon?K_("魔物の城","Monster Castle"):"?"), x:dmg}); return {dmg}; }
-  if(tc.mon){ n.f=(n.f||0)+KN.MON.PRIZE; d.c[target]={own:nid}; knLog(d,{k:"mkill", a:n.nm, x:KN.MON.PRIZE}); return {dmg, broke:1, steal:KN.MON.PRIZE, mon:1}; }   // 魔物の城をこわした：国の資金に10万・跡地が領土に
+  if(tc.mon){ n.f=(n.f||0)+KN.MON.PRIZE; d.c[target]={own:nid, ot:now}; knLog(d,{k:"mkill", a:n.nm, x:KN.MON.PRIZE}); return {dmg, broke:1, steal:KN.MON.PRIZE, mon:1}; }   // 魔物の城をこわした：国の資金に10万・跡地が領土に
   const kingAt=v&&v.m[v.k]?v.m[v.k].at:null;
   if(v && kingAt===target){   // 王がいたお城 → その国は敗北（全部のお城がこわれる）
     for(const [k,c] of Object.entries(d.c)) if(c.n===vid||c.own===vid) delete d.c[k];
-    d.c[target]={own:nid}; const steal=v.f||0; n.f=(n.f||0)+steal; v.f=0; v.x=now;
+    d.c[target]={own:nid, ot:now}; const steal=v.f||0; n.f=(n.f||0)+steal; v.f=0; v.x=now;
     for(const [u,m] of Object.entries(v.m)) d.dead[u]={t:now, nm:m.nm, by:n.nm, of:v.nm};
     knLog(d,{k:"fall", a:n.nm, b:v.nm, x:steal}); return {dmg, broke:1, fell:1, steal}; }
   const N=Math.max(1,v?knCastles(d,vid).length:1), steal=v?Math.floor((v.f||0)/N):0;
   if(v){ v.f-=steal; for(const [u,m] of Object.entries(v.m)) if(m.at===target){ d.dead[u]={t:now, nm:m.nm, by:n.nm, of:v.nm}; delete v.m[u]; } }
-  n.f=(n.f||0)+steal; d.c[target]={own:nid};
+  n.f=(n.f||0)+steal; d.c[target]={own:nid, ot:now};
   knLog(d,{k:"brk", a:n.nm, b:v?v.nm:"?", x:steal}); return {dmg, broke:1, steal}; }
 // 攻撃：mode "w"＝自分の武器（15分に3回）／"c0","c1"＝自分がいるお城の大砲（大砲1つにつき15分に2回）
 /* ---- いる島（国がいくつかの島に広がっていても、攻撃できるのは今いる島だけ。島から島への移動は1時間に1回） ---- */
@@ -7662,7 +7670,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🙋 <b>国に参加する（無料・2万コインプレゼント）</b>：好きな国の国民になれる。国にいる間は1時間ごとに冒険者レベル+${KN.LV_CIT}。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、360時間かけてじっくり育てよう。</p>
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器は自分がいるお城のもの。大砲は、国のお城についているものをぜんぶ撃てる（大砲のあるお城の数だけ攻撃できる）。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。王は国の資金で、お城をすぐに修復することもできる（耐久力1につき資金10から。同じお城を修復するたびに1.5倍ずつ高くなる）。</p>
-  <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（王がどのお城にいるかは、ほかの国からは見えない）（すべてのお城がこわれ、資金はすべて奪われる）。</p>
+  <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる。1時間お城を建てないと空き地にもどる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（王がどのお城にいるかは、ほかの国からは見えない）（すべてのお城がこわれ、資金はすべて奪われる）。</p>
   <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に2つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ 耐久力は低めで、国民が武器で5回くらい攻撃すればこわせる。こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器で3回攻撃すればたおせる。</p>
   <p>🗺 はじめは草原の島だけ。シーズン中に島のマスが国（お城と領土）で<b>一度でも全部うまる</b>と、次の島（砂漠 → 雪原（氷の島） → 火山）が解放される。</p>
   <p>📋 国の詳細の<b>「国の掲示板」</b>で、王と国民どうしでメッセージを送り合える（匿名・その国の人だけが見られる）。</p>
@@ -7679,7 +7687,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🙋 <b>Join a nation (free · get 20,000 coins)</b>: become a citizen. While in the nation, gain Adventurer Level +${KN.LV_CIT} every hour. Put your coins into the national funds to raise your contribution.</p>
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 360 hours.</p>
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapon of the castle you're in, and you can fire every cannon on your nation's castles. Attacks raise your contribution. Castles regain 3% durability per hour. The King can also repair a castle right away with national funds (from 10 funds per HP, ×1.5 each time you repair the same castle).</p>
-  <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
+  <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds; if nothing is built within 1 hour, it becomes free land). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
   <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 2 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Their HP is low — about 5 weapon attacks by citizens will destroy one. Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — 3 weapon attacks defeat one.</p>
   <p>🗺 Only Grassland Isle is open at first. Once every spot on the newest island is filled by nations (castles and territory) even once during the season, the next island opens (Desert → Ice → Volcano).</p>
   <p>📋 Use the <b>Nation board</b> in Nation details to message your King and fellow citizens (anonymous, only your nation can see it).</p>
@@ -7732,7 +7740,7 @@ function knNotice(old,d){ const nid=knMine(old)||knMine(d); if(!nid||!d.log||!d.
 function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) return; const i=KV.i, I=KN.ISL[i], d=KV.d||knBlank(knSeason(),i), now=knNow();
   const r=knRanked(d), mine=knMine(d), me=mine&&d.n[mine].m[MYID];
   for(let j=0;j<3;j++){ const x=r[j]; document.getElementById("knDk"+j).innerHTML=x?knMarkHtml(x[1],"kn-mkbig"):""; const w=document.getElementById("knWh"+j); w.textContent=x?x[1].nm:""; w.style.fontSize=(j?Math.min(30,Math.max(16,150/Math.max(1,(x?x[1].nm.length:1)))):Math.min(46,Math.max(20,300/Math.max(1,(x?x[1].nm.length:1)))))+"px"; }
-  st.querySelectorAll(".kn-cell").forEach(b=>{ const k=+b.dataset.k, c=d.c[k];
+  st.querySelectorAll(".kn-cell").forEach(b=>{ const k=+b.dataset.k, c=knCellAt(d,k,now);
     b.className="kn-cell"; b.innerHTML="";
     if(c&&c.sl){ const pct=Math.max(0,c.hp)/KN.SLIME.HP*100; b.classList.add("castle","slime");
       b.innerHTML=`<img class="kn-sl" src="kuni/slime.png" alt="" draggable="false"><div class="kn-hp"><i style="width:${pct.toFixed(1)}%;background:#ff5252"></i></div><div class="kn-plate mon"><span>${K_("スライム","Slime")}</span></div>`; }
@@ -7746,7 +7754,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
         <div class="kn-plate">${knMarkHtml(n,"kn-mksm")}<span>${esc(n.nm||"?")}</span></div>
         <div class="kn-tags">${knProt(n,now)?`<i title="${K_("できたばかりの国","New nation")}">🔰</i>`:""}${king&&c.n===mine?`<i title="${K_("王","King")}">👑</i>`:""}${here.length?`<i>🧍${here.length}</i>`:""}${youHere?`<i class="you">${K_("あなた","You")}</i>`:""}</div>`; }
     else if(c&&c.own){ const n=d.n[c.own]||{}; b.classList.add("terr"); if(c.own===mine) b.classList.add("own");
-      b.innerHTML=`<div class="kn-flag">🚩</div><div class="kn-plate">${knMarkHtml(n,"kn-mksm")}<span>${esc(K_(`${n.nm||"?"}の領土`,`${n.nm||"?"} land`))}</span></div>`; }
+      b.innerHTML=`<div class="kn-flag">🚩</div><div class="kn-plate">${knMarkHtml(n,"kn-mksm")}<span>${esc(K_(`${n.nm||"?"}の領土`,`${n.nm||"?"} land`))}</span></div><div class="kn-tags"><i title="${K_("空き地にもどるまで","Until it becomes free")}">⏳${Math.ceil(knTerrLeft(c,now)/60000)}${K_("分","m")}</i></div>`; }
     else { b.classList.add("free"); if(KV.pick) b.classList.add("pickme"); } });
   document.getElementById("knPick").hidden=!KV.pick;
   const b0=document.getElementById("knB0"), b1=document.getElementById("knB1");
@@ -7777,14 +7785,14 @@ function knBtn2(j){
   if(j===0){ const best=S.best||0; if(false) return knDlg(`<div class="kn-big">👑</div><h3>${K_("国を作れません","You can't found a nation")}</h3><p>${K_(`国を作れるのは、ランク戦の<b>過去最高順位が10位以内</b>の冒険者だけです。<br>あなたの最高順位：<b>${best?best+"位":"―"}</b>`,`Only adventurers whose <b>best ranked placement is top 10</b> can found a nation.<br>Your best: <b>${best?"#"+best:"―"}</b>`)}</p><p class="kn-sm">${K_("国に参加することはできます！","You can still join a nation!")}</p>`,[[K_("OK","OK"),null]]);
     if([...Array(KN.CELLS).keys()].some(k=>!((KV.d||{}).c||{})[k])){ KV.pick=true; knDraw(); } else knMsg(K_("この島には空いている場所がありません","No free spots on this island")); }
   else knJoinList(); }
-function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
+function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=knCellAt(d,k), mine=knMine(d);
   if(KV.pick){ if(c) return knMsg(K_("その場所は空いていません","That spot isn't free")); const ex=KV.pick==="exp"&&KV.exp; KV.pick=false; knDraw();
     if(ex) return knDlg(`<div class="kn-big">🗺</div><h3>${K_(`「${esc(ex.nm)}」を${knIsl(KV.i)}に広げる`,`Spread "${esc(ex.nm)}" to ${knIsl(KV.i)}`)}</h3><p>${K_(`あなたがこの島の<b>王</b>になって、国を背負って進出します。国の名前・マーク・資金はそのまま。国民もみんなこの島で戦えます。`,`You become the <b>King</b> here and lead the nation in. Name, mark and funds stay the same, and every citizen can fight on this island too.`)}</p><p class="kn-sm">${K_(`国の資金 −${knNum(KN.EXPAND)}コイン`,`National funds −${knNum(KN.EXPAND)}`)}</p>`,
       [[K_("やめる","Cancel"),null],[K_("進出する！","Expand!"),async()=>{ const r=await knExpand(KV.i,k,ex.nid,ex.hm); knMsg(r.err||K_("🗺 この島に国が広がった！","🗺 Your nation spread to this island!")); }]]);
     return knMakeForm(k); }
   if(!c) return;
   if(c.own){ const n=d.n[c.own]||{}; const can=c.own===mine && d.n[mine].k===MYID;
-    return knDlg(`<h3>🚩 ${esc(K_(`${n.nm||"?"}の領土`,`${n.nm||"?"} territory`))}</h3><p>${K_("こわしたお城の跡地です。この国の王は、国の資金10万コインでここにお城を建てられます。","The site of a destroyed castle. This nation's King can build a castle here for 100,000 of national funds.")}</p>`,
+    return knDlg(`<h3>🚩 ${esc(K_(`${n.nm||"?"}の領土`,`${n.nm||"?"} territory`))}</h3><p>${K_(`こわしたお城の跡地です。この国の王は、国の資金10万コインでここにお城を建てられます。<br>⏳ 1時間以内にお城を建てないと、空き地にもどります（あと${Math.ceil(knTerrLeft(c)/60000)}分）。`,`The site of a destroyed castle. This nation's King can build a castle here for 100,000 of national funds.<br>⏳ If no castle is built within 1 hour, it becomes free land (${Math.ceil(knTerrLeft(c)/60000)} min left).`)}</p>`,
       can?[[K_("閉じる","Close"),null],[K_("ここにお城を建てる（資金10万）","Build a castle here (100,000 funds)"),async()=>{ const r=await knBuild(KV.i,k); knMsg(r.err||K_("🏰 お城を建てた！","🏰 Castle built!")); }]]:[[K_("閉じる","Close"),null]]); }
   const isSl=!!c.sl, isMon=!!c.mon||isSl, n=isMon?{}:(d.n[c.n]||{}), now=knNow(), hp=knHp(c,now), here=Object.entries(n.m||{}).filter(([,m])=>m.at===k), own=!isMon&&c.n===mine, me=mine&&d.n[mine].m[MYID];
   const lvRow=isSl?`<p class="kn-sm">${K_(`魔物の城から出てきたスライム。上下左右のとなりにある国のお城を、15分に1回よわく攻撃してくる（${KN.SLIME.DMG}ダメージ）。武器か大砲でたおすと、マスが空く。`,`A slime from a Monster Castle. Every 15 min it weakly attacks nations' castles right next to it (up/down/left/right, ${KN.SLIME.DMG} damage). Defeat it with weapons or cannons to free the spot.`)}</p>`:isMon?`<div class="kn-lvs"><div><small>${K_("お城","Castle")}</small><b>Lv${c.lv}</b></div><div><small>${K_("大砲","Cannons")}</small><b>Lv${(c.g&&c.g[0]?c.g[0].lv:1)}</b></div><div><small>${K_("こわすと","Reward")}</small><b style="font-size:13px">+${knNum(KN.MON.PRIZE)}</b></div></div>
@@ -7895,6 +7903,7 @@ function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knC
     fall:K_(`👑「${e.a}」が「${e.b}」を倒した！`,`👑 "${e.a}" defeated "${e.b}"!`),make:K_(`🏰「${e.b}」ができた`,`🏰 "${e.b}" was founded`),exp:K_(`🗺「${e.b}」がほかの島から進出してきた`,`🗺 "${e.b}" spread here from another island`),join:K_(`🙋「${e.b}」に新しい国民が参加`,`🙋 A new citizen joined "${e.b}"`),build:K_(`🏰「${e.a}」が新しいお城を建てた`,`🏰 "${e.a}" built a new castle`),full:K_("🗺 島のマスが国で全部うまった！ 次の島が解放された","🗺 Every spot is filled by nations! The next island is now open"),move:K_(`🚚「${e.b}」がほかの島から引っ越してきた`,`🚚 "${e.b}" moved here from another island`),rep:K_(`🧱「${e.a}」がお城を修復（+${knNum(e.x)}）`,`🧱 "${e.a}" repaired a castle (+${knNum(e.x)})`),gun:K_(`💣「${e.a}」が大砲を購入`,`💣 "${e.a}" bought a cannon`),
     matk:e.sl?K_(`🟦 スライム→「${e.b}」に${e.x}ダメージ`,`🟦 A slime hit "${e.b}" for ${e.x}`):K_(`👹 魔物の城→「${e.b}」に${e.x}ダメージ`,`👹 Monster Castle hit "${e.b}" for ${e.x}`),
     skill:K_(`🟦「${e.a}」がスライムをたおした`,`🟦 "${e.a}" defeated a slime`),mbrk:K_(`👹 魔物の城が「${e.b}」のお城をこわした`,`👹 A Monster Castle destroyed a castle of "${e.b}"`),
+    tfree:K_(`⏳「${e.b}」の領土が空き地にもどった`,`⏳ A territory of "${e.b}" became free land`),
     mfall:K_(`👹 魔物の城が「${e.b}」を倒した…`,`👹 A Monster Castle defeated "${e.b}"...`),mkill:K_(`⚔️「${e.a}」が魔物の城をこわした（+${knNum(e.x)}）`,`⚔️ "${e.a}" destroyed a Monster Castle (+${knNum(e.x)})`)})[e.k]||"";
   const logs=(d.log||[]).filter(e=>e.a===n.nm||e.b===n.nm).slice(0,12);
   knDlg(`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${esc(n.nm)}</h3><small>${knIsl(KV.i)}　${K_(`島で${rk}位`,`#${rk} on the island`)}</small></div></div>
