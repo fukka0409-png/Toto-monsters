@@ -613,6 +613,17 @@ body.ttl-open .ttl-top{z-index:130!important}
 /* ===== 防衛作戦（放置ゲーム） ===== */
 .ubw-spell{margin:10px auto 6px;max-width:330px;padding:10px 12px;border-radius:12px;background:#ffffff12;border:2px dashed #ffd75e88;font-size:13px;line-height:1.7;text-align:center}.ubw-spell code{display:inline-block;margin:2px 0;padding:2px 10px;border-radius:8px;background:#000a;color:#ffd75e;font:900 15px/1.4 var(--f-body)}
 .gp-tbl{display:grid;gap:3px;margin:0 0 10px;font-size:13px}.gp-tbl div{display:flex;justify-content:space-between;padding:4px 10px;border-radius:8px;background:#ffffff10}.gp-tbl b{color:var(--staff)}
+.ttl-mini{position:absolute;left:343px;top:900px;width:360px;height:130px;padding:0;border:0;background:none;cursor:pointer}
+.ttl-mini img{position:absolute;inset:0;width:100%;height:100%}
+html .ttl .ttl-mini span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:900 46px/1 var(--f-body);color:#3a1a08;white-space:nowrap}
+html .ttl .ttl-mini span small{font:900 20px/1 var(--f-body);color:#7a3d10;display:block}
+html .ttl .ttl-mini span small:empty{display:none}
+html[lang=en] .ttl .ttl-mini span{font-size:36px}
+.ttl-mini:active{transform:scale(.96)}
+.mg-pick{display:flex;flex-direction:column;gap:10px;width:100%}
+.mg-pick button{display:flex;align-items:center;gap:12px;text-align:left;border:3px solid #3a2306;border-radius:16px;background:#fff3d6;padding:12px 14px;cursor:pointer;font-family:var(--f-body);color:#3a2306;box-shadow:0 4px 0 #0005}
+.mg-pick button:active{transform:translateY(2px);box-shadow:none}
+.mg-pick i{font-style:normal;font-size:38px}.mg-pick b{display:block;font-size:19px}.mg-pick small{display:block;font-size:12px;color:#7a5a32;margin-top:2px}.mg-pick em{font-style:normal;color:#c62828;font-weight:900}
 .ttl-def{position:absolute;left:358px;top:890px;width:340px;height:112px;padding:0;border:0;background:none;cursor:pointer}
 .ttl-def img{position:absolute;inset:0;width:100%;height:100%}
 html .ttl .ttl-def span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:900 46px/1 var(--f-body);color:#3a1a08;white-space:nowrap}
@@ -910,8 +921,7 @@ html[lang=en] .ttl .ttl-kn span{font-size:30px}
 .ttl-kn:active{transform:scale(.96)}
 .ttl.kn-on .ttl-start{top:582px}
 .ttl.kn-on .ttl-kn{top:778px;height:132px}
-.ttl.kn-on .ttl-def{top:916px;width:320px;left:368px;height:98px}
-.ttl.kn-on .ttl-adv{top:1020px;width:320px;left:368px;height:98px}
+.ttl.kn-on .ttl-mini{top:946px;height:124px}
 .ttl.kn-on .ttl-rk{top:1140px}
 .ttl.kn-on .ttl-nx{top:1236px}
 .ttl.kn-on .ttl-rt{top:1324px}
@@ -1102,8 +1112,7 @@ html[lang=en] .kn-bt span{font-size:38px}
       <img src="title/c1.png" alt="" style="top:1180px;--w:280px;--d:115s;--o:-90s;opacity:.95">
       <img src="title/c2.png" alt="" style="top:960px;--w:200px;--d:100s;--o:-55s;opacity:.9">
     </div>
-    <button class="ttl-def" id="ttlDef" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>防衛作戦<small id="ttlDefSt"></small></span></button>
-    <button class="ttl-adv" id="ttlAdv" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>トトの冒険</span></button>
+    <button class="ttl-mini" id="ttlMini" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
     <div class="ttl-nx" id="ttlNx" translate="no"></div>
     <div class="ttl-rt" id="ttlRt" translate="no"></div>
@@ -1157,6 +1166,7 @@ html[lang=en] .kn-bt span{font-size:38px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"🎮 ミニゲーム": "🎮 Mini games",
 "選択して売却": "Select & sell",
 "売却する魔物をタップしてえらんでね": "Tap the monsters you want to sell",
 "紹介者の名前（いなければ空欄）": "Referrer's name (leave blank if none)",
@@ -8672,13 +8682,23 @@ async function titleRanks(){
     bg.querySelectorAll("[data-tsl]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.tsl!==LANG) setLang(b.dataset.tsl); });
   });
   upd.onclick=()=>onTop(()=>openRules());
-  document.getElementById("ttlAdv").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); };
-  document.getElementById("ttlDef").onclick=()=>{ try{ SFX.tap(); }catch(e){} openDefense(); };
+  // ミニゲーム：防衛作戦とトトの冒険をえらぶ
+  document.getElementById("ttlMini").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(()=>{ const L=LANG==="en", R=S.def&&S.def.run;
+    const st=R?(gnow()>=R.end?(L?"Finished! Tap to see":"終了！ 結果を見る"):(L?"Defending ":"防衛中 ")+defFmtT(R.end-gnow())):"";
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56; bg.setAttribute("translate","no");
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎮</div><p>${L?"Mini games":"ミニゲーム"}</p>
+      <div class="mg-pick"><button type="button" id="mgDef"><i>🛡</i><span><b>${L?"Defense":"防衛作戦"}</b><small>${L?"An idle game — guard your base for 24 hours and earn coins":"放置ゲーム。24時間土台を守ってコインをかせごう"}</small>${st?`<small><em>${st}</em></small>`:""}</span></button>
+      <button type="button" id="mgAdv"><i>🗡</i><span><b>${L?"Toto's Adventure":"トトの冒険"}</b><small>${L?"Action — defeat monsters for 5 minutes and climb the ranking":"アクション。5分間魔物を倒してランキング上位をめざそう"}</small></span></button></div>
+      <button class="btn ghost" type="button" id="mgX">${L?"Close":"閉じる"}</button></div>`;
+    document.body.appendChild(bg); const close=()=>bg.remove();
+    bg.onclick=e=>{ if(e.target===bg) close(); }; bg.querySelector("#mgX").onclick=close;
+    bg.querySelector("#mgDef").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} openDefense(); };
+    bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); }; }); };
   document.getElementById("ttlKn").onclick=()=>{ try{ SFX.tap(); }catch(e){} openKuni(); };
   knTitleBtn();
   // 防衛作戦のボタンに、防衛中なら残り時間を出す
   setInterval(()=>{ const el=document.getElementById("ttlDefSt"); if(!el||T.hidden) return; const R=S.def&&S.def.run;
-    el.textContent=R?(gnow()>=R.end?(LANG==="en"?"Finished! Tap to see":"終了！ 結果を見る"):(LANG==="en"?"Defending ":"防衛中 ")+defFmtT(R.end-gnow())):""; },1000);
+    el.textContent=R?(gnow()>=R.end?(LANG==="en"?"🛡 Defense finished!":"🛡 防衛作戦 終了！"):(LANG==="en"?"🛡 Defending ":"🛡 防衛中 ")+defFmtT(R.end-gnow())):""; },1000);
   setTimeout(()=>{ try{ titleRanks(); }catch(e){} },2500);
   // ランキングがリセットされるまでのタイマー（1時間ごと）
   let rtPer=null; const rtEl=document.getElementById("ttlRt");
