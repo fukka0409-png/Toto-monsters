@@ -7481,7 +7481,17 @@ function knHit(d, nid, target, dmg, now){ const n=d.n[nid], tc=d.c[target], vid=
   n.f=(n.f||0)+steal; d.c[target]={own:nid};
   knLog(d,{k:"brk", a:n.nm, b:v?v.nm:"?", x:steal}); return {dmg, broke:1, steal}; }
 // 攻撃：mode "w"＝自分の武器（15分に3回）／"c0","c1"＝自分がいるお城の大砲（大砲1つにつき15分に2回）
-function knAttack(i, target, mode){ const nocd=KN_TEST&&knS().nocd; return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&d.n[nid];
+/* ---- いる島（国がいくつかの島に広がっていても、攻撃できるのは今いる島だけ。島から島への移動は1時間に1回） ---- */
+const KN_HOP = 3600e3;
+function knLoc(){ const L=knS().loc; return L&&L.ks===knSeason()?L:null; }
+function knHere(i){ const L=knLoc(); if(!L||L.i===i) return true; const d=(KN_DC[knSeason()]||[])[L.i]; return !(d&&knMine(d)); }   // いた島に自分の国がもうなければ、どこでもOK
+const knHopLeft = () => { const L=knLoc(); return L ? Math.max(0, L.t+KN_HOP-knNow()) : 0; };
+function knHop(i){ if(knHere(i)&&knLoc()&&knLoc().i===i) return {err:K_("もうこの島にいます","You're already here")};
+  const w=knHere(i)?0:knHopLeft(); if(w>0) return {err:K_(`島の移動は1時間に1回です（あと${Math.ceil(w/60000)}分）`,`You can move between islands once an hour (${Math.ceil(w/60000)} min left)`)};
+  knS().loc={ks:knSeason(), i, t:knNow()}; save(); return {}; }
+function knAttack(i, target, mode){ if(!knHere(i)){ const L=knLoc(); return Promise.resolve({err:K_(`あなたは今「${knIsl(L.i)}」にいます。この島で攻撃するには、この島へ移動してね`,`You're on ${knIsl(L.i)} right now. Move to this island to attack here`)}); }
+  if(!knLoc()){ knS().loc={ks:knSeason(), i, t:knNow()}; save(); }
+  const nocd=KN_TEST&&knS().nocd; return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&d.n[nid];
   if(!n) return {err:K_("国に入っていません","You're not in a nation")};
   if(knPre(now)) return {err:K_(`攻撃はシーズンが始まってからできます（あと${knH(knT0()-now)}時間）`,`Attacks unlock when the season starts (${knH(knT0()-now)} h left)`)};
   const me=n.m[MYID], mc=d.c[me.at], tc=d.c[target], sl=Math.max(0,knSlot(now));
@@ -7723,10 +7733,13 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
   document.getElementById("knPick").hidden=!KV.pick;
   const b0=document.getElementById("knB0"), b1=document.getElementById("knB1");
   if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && knS().rf && (!knLvOf(KV.i)||knLvOf(KV.i).nid!==mine)) knLvStart(KV.i,mine); if(!KN_TEST && !knS().rf) knRefundOnce();
-    b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(knFundOf(d,mine))}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
+    b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(knFundOf(d,mine))}</b>${knLocTag()}</small><em>${K_("国の詳細","Nation details")} ▶</em>`;
     b1.innerHTML = n.k===MYID ? `<span>${K_("国の強化","Strengthen")}</span><small>${K_("国の資金を使う","Uses national funds")}</small>` : `<span>${K_("資金を追加","Add funds")}</span><small>${K_("自分のコインを振り込む","Send your coins")}</small>`; }
   else if(knOther()){ const o=knOther(); b0.innerHTML=`<span>${K_("この島に進出する","Expand here")}</span><small>${esc(o.n.nm)}${K_(`・国の資金${knNum(KN.EXPAND)}`,` · ${knNum(KN.EXPAND)} funds`)}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; }
   else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; } }
+// 国が2つ以上の島にあるとき、いまいる島を表示
+function knLocTag(){ const n=(KN_DC[knSeason()]||[]).filter(d=>d&&knMine(d)).length; if(n<2||knPre()) return ""; const h=knHere(KV.i), L=knLoc();
+  return `<br>📍 ${h?K_("この島にいます（ここで攻撃できる）","You're on this island (you can attack here)"):K_(`いまは「${knIsl(L.i)}」にいます`,`You're on ${knIsl(L.i)}`)}`; }
 // ほかの島にある自分の国（この島にはまだいない）
 function knOther(){ const docs=(KN_DC[knSeason()]||[]).map((d,k)=>k===KV.i?null:d); return knMyNat(docs); }
 function knBtn(j){ try{ SFX.tap(); }catch(e){} const d=KV.d, mine=d&&knMine(d);
@@ -7768,13 +7781,18 @@ function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
       <button type="button" class="kn-atkb w" data-m="w" ${wl>0||nocd?"":"disabled"}><img src="kuni/weapon${mc.eq}.png" alt=""><span><b>${K_("武器で攻撃","Weapon attack")}</b><small>${K_("威力","Power")} ${KN.WEP[mc.eq]}　${K_("のこり","left")} ${wl}/${KN.W_N}</small></span></button>
       ${guns.map((g,j)=>{ const cl=knCLeft(g); return `<button type="button" class="kn-atkb c" data-m="c${j}" ${cl>0||nocd?"":"disabled"}><img src="kuni/cannon${g.lv}.png" alt=""><span><b>${K_(`大砲${j+1}を撃つ`,`Fire cannon ${j+1}`)}</b><small>${K_("威力","Power")} ${KN.GUN[g.lv]}　${K_("のこり","left")} ${cl}/${KN.C_N}</small></span></button>`; }).join("")}
       </div>${guns.length?"":`<p class="kn-sm">${K_("あなたがいるお城には、まだ大砲がありません（王が国の資金で購入できます）","Your castle has no cannon yet (the King can buy one with national funds)")}</p>`}<p class="kn-sm">${K_(`武器は1人15分に${KN.W_N}回、大砲は1つにつき15分に${KN.C_N}回（あなたがいるお城の大砲）。回数は${mins}分後にもどります。`,`Weapon: ${KN.W_N} per person every 15 min. Each cannon: ${KN.C_N} shots every 15 min (cannons of the castle you're in). Refills in ${mins} min.`)}</p>`
-      : `<p class="kn-warn">${K_("自分のお城に入ってから攻撃してね","Get inside one of your castles first")}</p>`; }
+      : `<p class="kn-warn">${K_("自分のお城に入ってから攻撃してね","Get inside one of your castles first")}</p>`;
+    if(!knHere(KV.i)&&!knPre()){ const L=knLoc(), w=knHopLeft();
+      atkHtml=`<p class="kn-warn">${K_(`📍 あなたは今「${knIsl(L.i)}」にいます。攻撃できるのは、いる島だけです。`,`📍 You're on ${knIsl(L.i)} right now. You can only attack on the island you're on.`)}</p>
+        <button type="button" class="kn-b" data-hop="1" ${w>0?"disabled":""}>${w>0?K_(`この島へ移動（あと${Math.ceil(w/60000)}分）`,`Move here (${Math.ceil(w/60000)} min)`):K_("この島へ移動する","Move to this island")}</button>
+        <p class="kn-sm">${K_("島から島への移動は1時間に1回までです。","You can move between islands once an hour.")}</p>`; } }
   if(!isMon) btns.push([K_("この国の詳細","Nation details"),()=>{ knDetail(c.n); }]);
   const dl=knDlg(`${isSl?`<h3>🟦 ${K_("スライム","Slime")}</h3>`:isMon?`<div class="kn-chead"><img class="kn-mk" src="kuni/mmark.jpg" alt=""><div><h3>${K_("魔物の城","Monster Castle")}</h3><small>${K_("島にあらわれた魔物の国","A monster nation on the island")}</small></div></div>`:`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${knProt(n,now)?"🔰 ":""}${esc(n.nm||"?")}</h3><small>${K_("王と国民は匿名","King & citizens are anonymous")}${own&&n.m&&n.m[n.k]&&n.m[n.k].at===k?" 👑":""}</small></div></div>`}
     <img class="kn-cimg ${isSl?"sm":""}" src="${isSl?"kuni/slime":"kuni/"+(isMon?"mcastle":"castle"+c.lv)}.png" alt="">
     <div class="kn-hpbig"><span>${K_("耐久力","Durability")}</span><div><i style="width:${(hp/knMax(c)*100).toFixed(1)}%"></i></div><b>${own||isMon?`${knNum(hp)} / ${knNum(knMax(c))}`:`${Math.ceil(hp/knMax(c)*100)}%`}</b></div>
     ${lvRow}<p class="kn-sm" ${isMon?"hidden":""}>${K_(`このお城の中：${here.length}人`,`Inside: ${here.length}`)}${own&&me&&me.at===k?K_("（あなたもここにいます）"," (including you)"):""}</p>
     ${atkHtml}`, btns);
+  { const hb=dl.querySelector("[data-hop]"); if(hb) hb.onclick=()=>{ const r=knHop(KV.i); knMsg(r.err||K_(`📍「${knIsl(KV.i)}」へ移動した！`,`📍 Moved to ${knIsl(KV.i)}!`)); knCellTap(k); knDraw(); }; }
   dl.querySelectorAll("[data-m]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const r=await knAttack(KV.i,k,b.dataset.m);
     if(r.err){ knMsg(r.wait?`${r.err}（${K_("あと","")}${Math.ceil(r.wait/60000)}${K_("分","min left")}）`:r.err); return knCellTap(k); }
     knBoom(k, r.mode); if(r.slime){ knMsg(K_("🟦 スライムをたおした！","🟦 Slime defeated!")); dl.remove(); return; }
