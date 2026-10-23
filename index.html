@@ -7303,20 +7303,25 @@ const knCan = () => { const ks=knSeason(), now=knNow();
   if(KN.BAN_MS>0 && knS().ban>now) return K_(`戦いに倒れたため、あと${knH(knS().ban-now)}時間は参加できません`,`You fell in battle — you can't take part for ${knH(knS().ban-now)} more hours`);
   return ""; };
 /* ---- 国にいる間の冒険者レベルアップ（王は1時間に+10・国民は+5。国が負けるか、自分が倒れるか、シーズンが終わるまで） ---- */
-function knLvStart(i,nid){ if(KN_TEST) return; S.knLv={ks:knSeason(), i, nid, t:knNow()}; save(); }
+// 島ごとに1つずつ（ほかの島にも国を持てる）：S.knLvs = {島の番号: {ks, i, nid, t}}
+function knLvs(){ S.knLvs=S.knLvs||{}; if(S.knLv){ const o=S.knLv; delete S.knLv; if(o&&o.nid) S.knLvs[o.i||0]=o; } return S.knLvs; }
+const knLvOf = i => knLvs()[i] || null;
+function knLvStart(i,nid){ if(KN_TEST) return; knLvs()[i]={ks:knSeason(), i, nid, t:knNow()}; save(); }
 let knLvBusy=false;
-async function knLvTick(){ const st=S.knLv; if(KN_TEST||!st||knLvBusy||!DB||!MYID) return;
+async function knLvTick(){ if(KN_TEST||knLvBusy||!DB||!MYID) return; const L=knLvs();
+  for(const key of Object.keys(L)){ try{ await knLvTick1(key); }catch(e){} } }
+async function knLvTick1(key){ const L=knLvs(), st=L[key]; if(!st) return; const del=()=>{ if(L[key]===st) delete L[key]; };
   const now=knNow(), end=knT0()+(st.ks+1)*KN.SEASON_MS, lim=Math.min(now,end);
-  if(Math.floor((lim-st.t)/3600e3)<=0){ if(now>=end){ delete S.knLv; save(); } return; }
+  if(Math.floor((lim-st.t)/3600e3)<=0){ if(now>=end){ del(); save(); } return; }
   knLvBusy=true;
-  try{ let sn=await knRef(st.ks,st.i).get(); let d=sn.exists?sn.data():null; if(st.i!==0&&!(d&&d.n&&d.n[st.nid])){ st.i=0; sn=await knRef(st.ks,0).get(); d=sn.exists?sn.data():null; } const n=d&&d.n&&d.n[st.nid];
+  try{ let sn=await knRef(st.ks,st.i).get(); let d=sn.exists?sn.data():null; if(st.i!==0&&!(d&&d.n&&d.n[st.nid])&&!L[0]){ const s0=await knRef(st.ks,0).get(), d0=s0.exists?s0.data():null; if(d0&&d0.n&&d0.n[st.nid]){ d=d0; del(); st.i=0; L[0]=st; } }   // むかし島0にまとめた国 const n=d&&d.n&&d.n[st.nid];
     let stop=lim, fin=now>=end;
     if(!n){ stop=st.t; fin=true; }
     else { if(n.x){ stop=Math.min(stop,n.x); fin=true; }
       if(!n.m||!n.m[MYID]){ const dt=d.dead&&d.dead[MYID]&&d.dead[MYID].t; stop=Math.min(stop, dt||st.t); fin=true; } }
     const king=!!(n&&n.k===MYID), h=Math.max(0,Math.floor((stop-st.t)/3600e3)), up=h*(king?KN.LV_KING:KN.LV_CIT);
     const per=n?knCastles(d,st.nid).reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0):0, coin=Math.floor(h*per*(king?knBestMul():1));   // お城からの収入
-    st.t+=h*3600e3; if(fin) delete S.knLv;
+    st.t+=h*3600e3; if(fin){ if(L[st.i]===st) delete L[st.i]; del(); }
     if(coin>0){ knAdd(coin); try{ renderCoins(); }catch(e){} }
     if(coin>0||up>0){ const E=S.knEarn&&S.knEarn.ks===st.ks?S.knEarn:{ks:st.ks,c:0,l:0}; E.c+=coin; E.l+=up; S.knEarn=E; }   // このシーズンにもらった不労所得の合計
     if(up>0){ S.plv=(S.plv||1)+up; bumpMaxLv(); }
@@ -7335,7 +7340,8 @@ async function knRefundOnce(){ if(KN_TEST||!DB||!MYID||knRfBusy) return; const K
   docs.forEach((d,i)=>{ if(got||!d) return; const nid=knMine(d); if(!nid) return; const n=d.n[nid], m=n.m[MYID]||{};
     got={i, nid, king:n.k===MYID, old:(m.j||0)<KN_FREE_T}; });
   K.rf=1;
-  if(got){ if(!S.knLv||S.knLv.nid!==got.nid) S.knLv={ks, i:got.i, nid:got.nid, t:knNow()};
+  docs.forEach((d,i)=>{ const nid=d&&knMine(d); if(nid && (!knLvOf(i)||knLvOf(i).nid!==nid)) knLvs()[i]={ks, i, nid, t:knNow()}; });
+  if(got){
     const back=got.old?(got.king?100000:1000):0, gift=got.old?(got.king?KN.MAKE_GIFT:KN.JOIN_GIFT):0;
     if(back+gift>0){ knAdd(back+gift); renderCoins();
       knDlg(`<div class="kn-big">🎁</div><h3>${K_("返金とプレゼント","Refund & gift")}</h3>
@@ -7458,22 +7464,22 @@ function knCheckDead(docs, ks){ const K=knS(); let hit=null;
   return hit; }
 /* ---- シーズン終了の報酬をうけとる ---- */
 async function knClaim(){ const ks=knSeason()-1; if(ks<0||!DB||!MYID) return; const K=knS(); if(K.claimed[ks]) return;
-  const docs=await knLoad(ks); const sh=knShitenno(docs); let got=null;
-  sh.forEach((x,place)=>{ if(x.n.m&&x.n.m[MYID]){ const r=knRewardsOf(x.n,place), king=x.n.k===MYID, a=r[MYID]||0; got={place, amt:king&&a>0?Math.floor(a*knBestMul()):a, king, n:x.n, i:x.i}; } });
+  const docs=await knLoad(ks); const sh=knShitenno(docs); const gots=[];   // ほかの島にも国を持てるので、複数あることもある
+  sh.forEach((x,place)=>{ if(x.n.m&&x.n.m[MYID]){ const r=knRewardsOf(x.n,place), king=x.n.k===MYID, a=r[MYID]||0; gots.push({place, amt:king&&a>0?Math.floor(a*knBestMul()):a, king, n:x.n, i:x.i}); } });
   K.claimed[ks]=1;
   // 島の1〜3位：王を含む全員で山分け
-  let isl=null; docs.forEach((d,i)=>{ if(!d) return; const r=knRanked(d); const j=r.findIndex(([,n])=>n.m&&n.m[MYID]); if(j>=0&&j<3){ const n=r[j][1], cnt=Math.max(1,Object.keys(n.m||{}).length); isl={place:j, amt:Math.floor(KN.ISL_PRIZE[j]/cnt*(n.k===MYID?knBestMul():1)), cnt, n, i}; } });
-  if(isl){ knAdd(isl.amt); save(); setTimeout(()=>knDlg(`<div class="kn-big">🏆</div><h3>${K_(`${knIsl(isl.i)}で${isl.place+1}位！`,`#${isl.place+1} on ${knIsl(isl.i)}!`)}</h3>
+  const isls=[]; docs.forEach((d,i)=>{ if(!d) return; const r=knRanked(d); const j=r.findIndex(([,n])=>n.m&&n.m[MYID]); if(j>=0&&j<3){ const n=r[j][1], cnt=Math.max(1,Object.keys(n.m||{}).length); isls.push({place:j, amt:Math.floor(KN.ISL_PRIZE[j]/cnt*(n.k===MYID?knBestMul():1)), cnt, n, i}); } });
+  isls.forEach(isl=>{ knAdd(isl.amt); save(); setTimeout(()=>knDlg(`<div class="kn-big">🏆</div><h3>${K_(`${knIsl(isl.i)}で${isl.place+1}位！`,`#${isl.place+1} on ${knIsl(isl.i)}!`)}</h3>
       <div class="kn-res">${knMarkHtml(isl.n,"kn-mk")}<b>${esc(isl.n.nm)}</b></div>
       <p>${K_(`島${isl.place+1}位の賞金 ${knNum(KN.ISL_PRIZE[isl.place])}コインを、王を含む${isl.cnt}人で山分け！`,`The #${isl.place+1} island prize of ${knNum(KN.ISL_PRIZE[isl.place])} coins is split among all ${isl.cnt} members, King included!`)}</p>
-      <p class="kn-gain">+${knNum(isl.amt)} ${K_("コイン","coins")}</p>`,[[K_("うけとる","Collect"),null]],{stack:true}), got?400:0); }
-  if(got){ knAdd(got.amt); if(!KN_TEST){ if(got.king) K.w=(K.w||0)+1; else K.c=(K.c||0)+1; try{ queueProfile(true); }catch(e){} } else { if(got.king) K.w=(K.w||0)+1; else K.c=(K.c||0)+1; }
+      <p class="kn-gain">+${knNum(isl.amt)} ${K_("コイン","coins")}</p>`,[[K_("うけとる","Collect"),null]],{stack:true}), gots.length?400:0); });
+  gots.forEach((got,gi)=>{ knAdd(got.amt); if(!KN_TEST){ if(got.king) K.w=(K.w||0)+1; else K.c=(K.c||0)+1; try{ queueProfile(true); }catch(e){} } else { if(got.king) K.w=(K.w||0)+1; else K.c=(K.c||0)+1; }
     save(); knDlg(`<div class="kn-big">🏯</div><h3>${K_(`四天王 ${got.place+1}位！`,`Four Heavenly Kings — #${got.place+1}!`)}</h3>
       <div class="kn-res">${knMarkHtml(got.n,"kn-mk")}<b>${esc(got.n.nm)}</b><small>${knIsl(got.i)}</small></div>
       <p>${got.king?K_("あなたは王として国を四天王に導きました！","As King, you led your nation into the Four Heavenly Kings!"):K_("あなたは国民として国を支えました！","As a citizen, you supported your nation!")}</p>
       <p class="kn-gain ${got.amt<0?"neg":""}">${got.amt>=0?"+":""}${knNum(got.amt)} ${K_("コイン","coins")}</p>
-      <p class="kn-sm">${K_(`プロフィールに称号「${got.king?"四天王":"四天王国民"}」がつきました！`,`Your profile now has the title "${got.king?"Heavenly King":"Heavenly King's Citizen"}"!`)}</p>`,[[K_("うけとる","Collect"),null]]); }
-  else save(); }
+      <p class="kn-sm">${K_(`プロフィールに称号「${got.king?"四天王":"四天王国民"}」がつきました！`,`Your profile now has the title "${got.king?"Heavenly King":"Heavenly King's Citizen"}"!`)}</p>`,[[K_("うけとる","Collect"),null]],gi?{stack:true}:{}); });
+  if(!gots.length) save(); }
 // 王の報酬の倍率：プロフィールの最高順位が高いほど多い
 const knBestMul = (b=S.best||0) => !b ? 1 : b===1 ? 3 : b<=3 ? 2.5 : b<=10 ? 2 : b<=30 ? 1.5 : b<=100 ? 1.2 : 1;
 const knBestTxt = () => { const m=knBestMul(); return m>1 ? K_(`（最高順位${S.best}位ボーナス ×${m}）`,` (best rank #${S.best} bonus ×${m})`) : ""; };
@@ -7671,7 +7677,7 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
     else { b.classList.add("free"); if(KV.pick) b.classList.add("pickme"); } });
   document.getElementById("knPick").hidden=!KV.pick;
   const b0=document.getElementById("knB0"), b1=document.getElementById("knB1");
-  if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && knS().rf && (!S.knLv||S.knLv.nid!==mine)) knLvStart(KV.i,mine); if(!KN_TEST && !knS().rf) knRefundOnce();
+  if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && knS().rf && (!knLvOf(KV.i)||knLvOf(KV.i).nid!==mine)) knLvStart(KV.i,mine); if(!KN_TEST && !knS().rf) knRefundOnce();
     b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(n.f||0)}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
     b1.innerHTML = n.k===MYID ? `<span>${K_("国の強化","Strengthen")}</span><small>${K_("国の資金を使う","Uses national funds")}</small>` : `<span>${K_("資金を追加","Add funds")}</span><small>${K_("自分のコインを振り込む","Send your coins")}</small>`; }
   else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; } }
@@ -7679,8 +7685,7 @@ function knBtn(j){ try{ SFX.tap(); }catch(e){} const d=KV.d, mine=d&&knMine(d);
   if(mine){ const n=d.n[mine]; if(j===0) return knDetail(mine); return n.k===MYID ? knUpPick() : knDepositDlg(); }
   const why=knCan(); if(why) return knMsg(why);
   if(knSeason()>=0 && knNow()>=knEnd(knSeason())) return knMsg(K_("シーズン終了","The season is over"));
-  const ks=knSeason(); knLoad(ks).then(docs=>{ docs[KV.i]=KV.d||docs[KV.i]; const other=docs.findIndex((d,k)=>k!==KV.i&&d&&knMine(d));
-    if(other>=0) return knMsg(K_(`あなたは「${knIsl(other)}」の国に参加しています`,`You're already in a nation on ${knIsl(other)}`)); knBtn2(j); }); }
+  knBtn2(j); }   // ほかの島に国があっても、この島で国を作る・参加することができる（1つの島では1つの国だけ。島をまたいだ攻撃はできない）
 function knBtn2(j){
   if(j===0){ const best=S.best||0; if(false) return knDlg(`<div class="kn-big">👑</div><h3>${K_("国を作れません","You can't found a nation")}</h3><p>${K_(`国を作れるのは、ランク戦の<b>過去最高順位が10位以内</b>の冒険者だけです。<br>あなたの最高順位：<b>${best?best+"位":"―"}</b>`,`Only adventurers whose <b>best ranked placement is top 10</b> can found a nation.<br>Your best: <b>${best?"#"+best:"―"}</b>`)}</p><p class="kn-sm">${K_("国に参加することはできます！","You can still join a nation!")}</p>`,[[K_("OK","OK"),null]]);
     if([...Array(KN.CELLS).keys()].some(k=>!((KV.d||{}).c||{})[k])){ KV.pick=true; knDraw(); } else knMsg(K_("この島には空いている場所がありません","No free spots on this island")); }
@@ -7784,7 +7789,7 @@ const knAgo = t => { const m=Math.max(0,Math.floor((knNow()-(t||0))/60000)); ret
 // 自分の不労所得（1時間ごとのお城の収入と冒険者レベル）。自分の国の中だけで表示
 function knIncomeHtml(d,nid,n){ const king=n.k===MYID, cs=knCastles(d,nid);
   const coin=Math.floor(cs.reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0)*(king?knBestMul():1)), lv=king?KN.LV_KING:KN.LV_CIT;
-  const st=S.knLv, nx=st&&st.nid===nid?Math.max(0,3600e3-((knNow()-st.t)%3600e3)):null, E=S.knEarn&&S.knEarn.ks===knSeason()?S.knEarn:{c:0,l:0};
+  const st=knLvOf(KV.i), nx=st&&st.nid===nid?Math.max(0,3600e3-((knNow()-st.t)%3600e3)):null, E=S.knEarn&&S.knEarn.ks===knSeason()?S.knEarn:{c:0,l:0};
   return `<div class="kn-inc"><div class="kn-inch">💰 ${K_("あなたの不労所得","Your passive income")}<small>${K_("（自分の国の中だけで見られます）","(only visible inside your nation)")}</small></div>
     <div class="kn-incg"><div><small>${K_("1時間ごと","Every hour")}</small><b>+${knNum(coin)}</b><small>${K_("コイン","coins")}</small></div><div><small>${K_("1時間ごと","Every hour")}</small><b>Lv+${lv}</b><small>${K_("冒険者レベル","Adventurer Lv")}</small></div></div>
     <p class="kn-sm">${K_(`お城${cs.length}つぶん（${king?"王":"国民"}の収入）${king&&knBestMul()>1?`・最高順位ボーナス×${knBestMul()}`:""}`,`From ${cs.length} castle(s) (${king?"King":"citizen"} rate)${king&&knBestMul()>1?` · best-rank bonus ×${knBestMul()}`:""}`)}${nx!=null?K_(`・次の受け取りまで ${Math.ceil(nx/60000)}分`,` · next in ${Math.ceil(nx/60000)} min`):""}</p>
