@@ -7061,7 +7061,7 @@ const KN = {
   MON: { CHANCE: 0.9, FEW: 20, MAX: 2, SHOTS: 2, CATCH: 4, PRIZE: 100000,
     HP: [0, 45, 80, 140, 250, 450, 800] },   // 2026-10-22：魔物の城の耐久力（守りなし）。国民が武器で5回くらい攻撃するとこわせる
   ISL_PRIZE: [1000000, 500000, 300000],
-  REPAIR: 10,   // お城の修復：耐久力1につき国の資金10コイン
+  REPAIR: 10, REPAIR_UP: 1.5,   // お城の修復：耐久力1につき国の資金10コイン。そのお城を修復するたびに1.5倍ずつ高くなる
   SLIME: { HP: 27, DMG: 10, CHANCE: 0.5, N: 2, MS: 30*60e3 },   // 魔物の城から30分ごとに50%でスライム2体・となりのお城を15分に1回よわく攻撃   // シーズン終了時、島の1〜3位の国：王を含む全員で山分け
   // 2026-10-22：国を作る・参加するのは無料に。作ると王に5万コイン、参加すると2万コイン。国が生きている間、1時間ごとに冒険者レベル＋（王10・国民5）
   MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 3, LV_CIT: 1,
@@ -7343,13 +7343,14 @@ function knUpgrade(i, cell, kind){ return knTx(i,(d,now)=>{ const nid=knMine(d),
   n.f-=cost; if(gi>=0) g.lv=lv+1; else if(kind==="lv"){ const r=knHp(c,now)/KN.HP[lv]; c.lv=lv+1; c.hp=Math.round(KN.HP[c.lv]*r); c.hpT=now; } else c[kind]=lv+1;
   return {lv:lv+1}; }); }
 // お城の修復（王だけ・国の資金）：frac=0.5 で最大耐久力の半分まで回復・1 で全回復
-const knRepairCost = (c,frac,now=knNow()) => { const mx=KN.HP[c.lv], add=Math.max(0,Math.ceil(Math.min(mx-knHp(c,now), mx*frac)-1e-6)); return {add, cost:Math.ceil(add*KN.REPAIR)}; };
+const knRepairCost = (c,frac,now=knNow()) => { const mx=KN.HP[c.lv], add=Math.max(0,Math.ceil(Math.min(mx-knHp(c,now), mx*frac)-1e-6)); return {add, cost:Math.ceil(add*knRepairRate(c))}; };
+const knRepairRate = c => Math.round(KN.REPAIR*Math.pow(KN.REPAIR_UP, c.rn||0)*10)/10;   // 耐久力1あたりの値段（修復した回数で上がる）
 function knRepair(i, cell, frac){ return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&d.n[nid], c=d.c[cell];
   if(!n||n.k!==MYID) return {err:K_("お城の修復ができるのは王だけです","Only the King can repair castles")};
   if(!c||c.n!==nid||!c.lv) return {err:K_("そのお城はもうありません","That castle is gone")};
   const {add,cost}=knRepairCost(c,frac,now); if(add<=0) return {err:K_("耐久力はもう満タンです","Already at full durability")};
   if((n.f||0)<cost) return {err:K_("国の資金が足りません","Not enough national funds")};
-  n.f-=cost; c.hp=knHp(c,now)+add; c.hpT=now; knLog(d,{k:"rep", a:n.nm, x:add}); return {add, cost}; }); }
+  n.f-=cost; c.hp=knHp(c,now)+add; c.hpT=now; c.rn=(c.rn||0)+1; knLog(d,{k:"rep", a:n.nm, x:add}); return {add, cost}; }); }
 function knBuyGun(i, cell){ return knTx(i,(d,now)=>{ const nid=knMine(d), n=nid&&d.n[nid], c=d.c[cell];
   if(!n||n.k!==MYID) return {err:K_("購入や強化ができるのは王だけです","Only the King can buy and upgrade")};
   if(!c||c.n!==nid||!c.lv) return {err:K_("そのお城はもうありません","That castle is gone")};
@@ -7535,7 +7536,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🏰 <b>お城からの収入</b>：国のお城1つにつき、1時間ごとにコインがもらえる（お城のLvで変わる）。敵のお城をこわして自分のお城が増えれば、その数だけもらえる！<br>王：Lv1：200・Lv2：400・Lv3：1,000・Lv4：2,000・Lv5：3,000・Lv6：5,000コイン<br>国民：Lv1：100・Lv2：200・Lv3：500・Lv4：1,000・Lv5：1,500・Lv6：3,000コイン</p>
   <p>🙋 <b>国に参加する（無料・2万コインプレゼント）</b>：好きな国の国民になれる。国にいる間は1時間ごとに冒険者レベル+${KN.LV_CIT}。自分のコインを国の資金に振り込むと貢献度が上がる。</p>
   <p>🏰 <b>国の強化</b>（王だけ）：国の資金で、お城ごとに「お城・大砲・国民の装備（武器）」をそれぞれ6段階までレベルアップ。見た目もどんどん進化する。レベルが上がるほど必要な資金は大きく増えるので、360時間かけてじっくり育てよう。</p>
-  <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。王は国の資金で、お城をすぐに修復することもできる（耐久力1につき資金10）。</p>
+  <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。王は国の資金で、お城をすぐに修復することもできる（耐久力1につき資金10から。同じお城を修復するたびに1.5倍ずつ高くなる）。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（王がどのお城にいるかは、ほかの国からは見えない）（すべてのお城がこわれ、資金はすべて奪われる）。</p>
   <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に2つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ 耐久力は低めで、国民が武器で5回くらい攻撃すればこわせる。こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器で3回攻撃すればたおせる。</p>
   <p>🗺 はじめは草原の島だけ。シーズン中に島のマスが国（お城と領土）で<b>一度でも全部うまる</b>と、次の島（砂漠 → 雪原（氷の島） → 火山）が解放される。</p>
@@ -7551,7 +7552,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>🏰 <b>Castle income</b>: every hour you get coins for each of your nation's castles (depends on castle Lv). Destroy enemy castles to gain more castles and more income!<br>King: Lv1: 200, Lv2: 400, Lv3: 1,000, Lv4: 2,000, Lv5: 3,000, Lv6: 5,000 coins<br>Citizens: Lv1: 100, Lv2: 200, Lv3: 500, Lv4: 1,000, Lv5: 1,500, Lv6: 3,000 coins</p>
   <p>🙋 <b>Join a nation (free · get 20,000 coins)</b>: become a citizen. While in the nation, gain Adventurer Level +${KN.LV_CIT} every hour. Put your coins into the national funds to raise your contribution.</p>
   <p>🏰 <b>Strengthen</b> (King only): use national funds to level up each castle's Castle, Cannon and Citizen Weapons, up to 6 stages each. Their look evolves too. Each level costs far more than the last, so grow your nation over the 360 hours.</p>
-  <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour. The King can also repair a castle right away with national funds (10 funds per HP).</p>
+  <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour. The King can also repair a castle right away with national funds (from 10 funds per HP, ×1.5 each time you repair the same castle).</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
   <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 2 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Their HP is low — about 5 weapon attacks by citizens will destroy one. Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — 3 weapon attacks defeat one.</p>
   <p>🗺 Only Grassland Isle is open at first. Once every spot on the newest island is filled by nations (castles and territory) even once during the season, the next island opens (Desert → Ice → Volcano).</p>
@@ -7760,7 +7761,7 @@ function knUpDlg(cell){ const draw=()=>{ const d=KV.d, nid=knMine(d), n=d.n[nid]
   const bg=knDlg(`<h3>🔨 ${K_("国の強化","Strengthen the nation")}</h3><img class="kn-cimg sm" src="kuni/castle${c.lv}.png" alt="">
     <div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(n.f||0)}</b><small>${K_("コイン","coins")}</small></div>
     ${(()=>{ const now=knNow(), hp=knHp(c,now), mx=KN.HP[c.lv], h=knRepairCost(c,0.5,now), f=knRepairCost(c,1,now);
-      return `<div class="kn-up"><div class="kn-upic" style="font-size:34px">🧱</div><div class="kn-upt"><b>${K_("お城の修復","Repair castle")}</b><small>${K_("耐久力","HP")} ${knNum(hp)} / ${knNum(mx)}（${K_(`耐久力1につき資金${KN.REPAIR}`,`${KN.REPAIR} funds per HP`)}）</small>
+      return `<div class="kn-up"><div class="kn-upic" style="font-size:34px">🧱</div><div class="kn-upt"><b>${K_("お城の修復","Repair castle")}</b><small>${K_("耐久力","HP")} ${knNum(hp)} / ${knNum(mx)}（${K_(`耐久力1につき資金${knNum(knRepairRate(c))}・修復${(c.rn||0)+1}回目`,`${knNum(knRepairRate(c))} funds per HP · repair #${(c.rn||0)+1}`)}）</small>
         <div class="kn-hpbig" style="margin-top:4px"><div><i style="width:${(hp/mx*100).toFixed(1)}%"></i></div></div></div>
         <div style="display:flex;flex-direction:column;gap:5px"><button type="button" class="kn-b" data-rep="0.5" ${h.add<=0||(n.f||0)<h.cost?"disabled":""}>${K_("半分","Half")} ${knNum(h.cost)}</button><button type="button" class="kn-b" data-rep="1" ${f.add<=0||(n.f||0)<f.cost?"disabled":""}>${K_("全回復","Full")} ${knNum(f.cost)}</button></div></div>`; })()}
     ${row("lv",l=>`kuni/castle${l}.png`,K_("お城","Castle"),l=>K_(`耐久力${knNum(KN.HP[l])}・守り${Math.round(KN.GUARD[l]*100)}%`,`HP ${knNum(KN.HP[l])}, guard ${Math.round(KN.GUARD[l]*100)}%`))}
