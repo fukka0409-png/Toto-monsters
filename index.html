@@ -4946,7 +4946,9 @@ async function loadRanking(force){
     try{ const col=DB.collection("profiles");   // ランキングの参加人数（まとめて数えるだけなので通信は少ない）
       RANK_TOTAL = col.count ? (await col.count().get()).data().count : Math.max(RANK_TOTAL, q.size); }catch(e){ RANK_TOTAL=Math.max(RANK_TOTAL, q.size); }
     rankErr=false;
-    loadDexStats(); resetOldInvest(); await loadInvestCounts(); fixVoid4(); checkInvestVoid(); snapTick(); checkTicks(true);
+    // 参加人数：count()はこのSDKでは使えないので、図鑑の集計（全員分のプロフィールを読む）の人数を使う（上位200人の読みこみだけだと「/200人」で止まってしまっていた）
+    try{ const st0=dexStats(); if(st0&&st0.n>RANK_TOTAL) RANK_TOTAL=st0.n; }catch(e){}
+    loadDexStats().then(st=>{ if(st&&st.n>RANK_TOTAL){ RANK_TOTAL=st.n; if(tab==="rank"||tab==="home") render(); } }).catch(()=>{}); resetOldInvest(); await loadInvestCounts(); fixVoid4(); checkInvestVoid(); snapTick(); checkTicks(true);
   }catch(e){ rankErr=true; }
   if(tab==="rank"||tab==="home") render(); else try{ renderSide(); }catch(e){}
 }
@@ -5967,6 +5969,7 @@ async function checkSeason(){
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
 const APOLOGIES = [
+  { id:"fix-2026-10-23-ranktotal", coins:1000 },   // ランキングの参加人数が「/200人」で止まって、それ以上ふえなかった
   { id:"fix-2026-10-22-readquota", coins:1000 },   // ランキングなどの読みこみが多すぎて、サーバーの1日の上限に達し通信できないことがあった
   { id:"fix-2026-10-22-knlogin", coins:1000 },   // 魔ノ国争奪戦：開いた直後、ログインしているのに「ログインすると遊べます」と出て遊べなかった
   { id:"fix-2026-10-22-ttloverlap", coins:1000 },   // タイトル画面でランキングのお知らせとリセットタイマーが重なっていた
