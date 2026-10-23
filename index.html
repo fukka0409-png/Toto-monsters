@@ -7290,6 +7290,16 @@ const knCellAt = (d,k,now=knNow()) => { const c=d&&d.c&&d.c[k]; return knTerrGon
 function knTerrTick(d,now){ let ch=false; for(const [k,c] of Object.entries(d.c||{})){ if(!c||!c.own) continue;
     if(!c.ot){ c.ot=now; ch=true; }   // 前からある領土は、いまから1時間
     else if(knTerrGone(c,now)){ const n=d.n[c.own]; delete d.c[k]; knLog(d,{k:"tfree", b:(n&&n.nm)||""}); ch=true; } } return ch; }
+// 王へのお知らせ：自分の国の領土が増えたら、そのたびに知らせる（島を開いたとき・見ているときに）
+function knTerrNotify(d,i){ if(!d||!MYID) return; const nid=knMine(d), n=nid&&d.n[nid]; if(!n||n.k!==MYID) return;
+  const K=knS(), key=`${d.s}_${i}`; K.tseen=K.tseen||{}; const seen=K.tseen[key]||0;
+  const L=Object.entries(d.c||{}).filter(([,c])=>c&&c.own===nid&&c.ot&&c.ot>seen&&!knTerrGone(c)); if(!L.length) return;
+  K.tseen[key]=Math.max(...L.map(([,c])=>c.ot)); save();
+  const left=Math.min(...L.map(([,c])=>knTerrLeft(c)));
+  knDlg(`<div class="kn-big">🚩</div><h3>${K_(`領土が${L.length}つ増えた！`,`+${L.length} territor${L.length>1?"ies":"y"}!`)}</h3>
+    <p>${K_(`${knIsl(i)}で、「${esc(n.nm)}」の領土が増えました。`,`"${esc(n.nm)}" gained territory on ${knIsl(i)}.`)}</p>
+    <p class="kn-warn">${K_(`⏳ 1時間以内にお城を建てないと、空き地にもどります（いちばん早いもので、あと${Math.ceil(left/60000)}分）`,`⏳ Build a castle within 1 hour or it becomes free land (soonest: ${Math.ceil(left/60000)} min left)`)}</p>
+    <p class="kn-sm">${K_(`🚩の領土をタップすると、国の資金${knNum(KN.BUILD)}コインでお城を建てられます。`,`Tap a 🚩 territory to build a castle for ${knNum(KN.BUILD)} national funds.`)}</p>`,[[K_("OK","OK"),null]],{stack:true}); }
 function knMonNeeds(d,now){ if(!d) return false; if(Object.values(d.c||{}).some(c=>c&&c.own&&(!c.ot||knTerrGone(c,now)))) return true; if(knPre(now)) return false; if(d.ms!==Math.floor((now-knT0())/3600e3)) return true; const sl=knSlot(now);
   const hh=Math.floor((now-knT0())/KN.SLIME.MS);
   return Object.values(d.c||{}).some(c=>(c.mon&&c.lv&&(c.as==null||c.as<sl||c.ss==null||c.ss<hh))||(c.sl&&(c.as==null||c.as<sl))); }
@@ -7643,7 +7653,7 @@ async function openKuni(){ if(!knOn()) return;
   const ks=knSeason(); if(ks<0){ knDrawAds([]); return; }
   try{ await knClaim(); }catch(e){}
   const [docs, prev]=await Promise.all([knLoad(ks), ks>0?knLoad(ks-1):Promise.resolve([null,null,null,null])]);
-  if(KV.scr!=="sel") return; KV.docs=docs; knCheckDead(docs, ks);
+  if(KV.scr!=="sel") return; KV.docs=docs; knCheckDead(docs, ks); docs.forEach((d,i)=>{ try{ knTerrNotify(d,i); }catch(e){} });
   KN_OPEN=knOpenN(docs); KV.lockIsl&&KV.lockIsl();
   { const K=knS(), seen=(K.openSeen||{})[ks]||1; if(KN_OPEN>seen){ K.openSeen={...(K.openSeen||{}),[ks]:KN_OPEN}; save();
       knDlg(`<div class="kn-big">🗺</div><h3>${K_(`「${knIsl(KN_ORDER[KN_OPEN-1])}」が解放された！`,`${knIsl(KN_ORDER[KN_OPEN-1])} is now open!`)}</h3><p>${K_(`「${knIsl(KN_ORDER[KN_OPEN-2])}」のマスが国で全部うまったので、新しい島で国を作れるようになりました！`,`Every spot on ${knIsl(KN_ORDER[KN_OPEN-2])} was filled, so you can now found nations on a new island!`)}</p>`,[[K_("OK","OK"),null]]); } }
@@ -7723,7 +7733,7 @@ function openKuniIsland(i){ if(!knIsOpen(i) && !KN_TEST) i=0; const I=KN.ISL[i];
   const ks=knSeason(); if(ks<0) return;
   let first=true;
   KV.unsub=knRef(ks,i).onSnapshot(s=>{ if(KV.scr!=="isl"||KV.i!==i) return; const d=s.exists?s.data():knBlank(ks,i); d.c=d.c||{}; if(!d.g24){ knRemap(d); knTx(i,()=>({noop:1})); } const old=KV.d; KV.d=d; (KN_DC[ks]=KN_DC[ks]||[])[i]=d;
-    if(!first) knNotice(old,d); first=false;
+    if(!first) knNotice(old,d); first=false; try{ knTerrNotify(d,i); }catch(e){}
     { const mine=knMine(d), mn=mine&&d.n[mine]; if(mn&&mn.hm!=null&&!KV.hmUn){ KV.hmUn=knRef(ks,mn.hm).onSnapshot(s2=>{ if(KV.i!==i) return; (KN_DC[ks]=KN_DC[ks]||[])[mn.hm]=s2.exists?s2.data():null; knDraw(); },()=>{}); }   // 資金は最初の島にあるので、そちらも見ておく
       if(!mine&&!KV.aj){ const o=knOther(); if(o&&d.n[o.nid]&&!d.n[o.nid].x){ KV.aj=1; knAutoJoin(i,o.nid,true); } } } knCheckDead([0,1,2,3].map(j=>j===i?d:null), ks); knDraw(); }, ()=>{});
 }
