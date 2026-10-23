@@ -62,7 +62,7 @@ css.textContent = `
 #mco .mc-shl small{font-size:18px;color:#7a5520;margin-left:8px}
 #mco .mc-shi{position:absolute;left:224px;top:1322px;width:410px;height:70px;border:0;border-radius:6px;background:#fdf7e6;padding:0 14px;font:900 30px/1 var(--f-body,sans-serif);color:#3a2306;outline:none}
 #mco .mc-tb{position:absolute;top:max(10px,env(safe-area-inset-top));right:10px}
-#mco .mc-stat{position:absolute;right:14px;top:20px;z-index:2;border:3px solid #3a2306;background:#fff3d6;color:#3a2306;border-radius:999px;padding:10px 18px;font:900 24px/1 var(--f-body,sans-serif)}
+#mco .mc-stat{position:absolute;left:14px;top:96px;z-index:2;border:3px solid #3a2306;background:#fff3d6;color:#3a2306;border-radius:999px;padding:10px 18px;font:900 24px/1 var(--f-body,sans-serif)}
 #mco .mc-back{position:absolute;left:14px;top:20px;z-index:2;border:3px solid #3a2306;background:#fff3d6;color:#3a2306;border-radius:999px;padding:10px 18px;font:900 24px/1 var(--f-body,sans-serif)}
 /* お店・一覧 */
 #mco.page{background:linear-gradient(#3b2410,#1f1307)}
