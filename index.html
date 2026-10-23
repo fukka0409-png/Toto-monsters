@@ -187,6 +187,7 @@ details.rates summary{cursor:pointer;font-weight:700}
 .rv-grid.scroll{max-height:58vh;overflow-y:auto;padding:8px 4px}
 .rv .cnt{position:absolute;left:-4px;top:-6px;background:var(--staff);color:#3a2306;font-family:var(--f-pix);font-size:12px;padding:0 5px;border-radius:5px}
 .rv-sum{margin:-6px 0 10px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-family:var(--f-pix);font-size:15px}
+.pull.hundred.five{background:linear-gradient(90deg,#ffd54f,#ff7ad9,#7c4dff,#29b6f6,#ffd54f);box-shadow:0 4px 0 #4a2a6a;font-size:18px}.pull.hundred.five small{font-size:11px}
 .pull.hundred{grid-column:1/-1;background:linear-gradient(90deg,#ff5e8a,#ffb84d,#7ee08a,#5fb7e0,#b78cf0);color:#1b1b1b;box-shadow:0 4px 0 #6a3a6a}
 @media (max-width:480px){.rv-grid.many{grid-template-columns:repeat(4,1fr)}}
 .rv{position:relative;opacity:0;transform:scale(.6) rotate(-6deg);animation:pop .45s cubic-bezier(.2,1.6,.4,1) forwards}
@@ -1173,6 +1174,8 @@ html[lang=en] .kn-bt span{font-size:38px}
 <script>
 /* ---------- 英語の辞書（日本語 → English） ---------- */
 const I18N_EN = {
+"500連パック": "500-Pack",
+"コイン・BOXの魔物が500体以下のときだけ": " coins · only with 500 or fewer monsters in BOX",
 "図鑑に登録されました": "Added to your Monster Index",
 "🎮 ミニゲーム": "🎮 Mini games",
 "選択して売却": "Select & sell",
@@ -1778,6 +1781,7 @@ const I18N_EN = {
 "魔物パック・アイコン枠パックは": "Monster Packs and Icon Frame Packs cost ",
 "1パック{0}コイン": "{0} coins per pack",
 "。10連・100連もあります。": ". 10-Packs and 100-Packs are available too.",
+"。10連・100連・500連（BOXの魔物が500体以下のときだけ）もあります。": ". 10-, 100- and 500-Packs are available too (500-Packs only with 500 or fewer monsters in your BOX).",
 "パックの上の切り込みを": "Open a pack by ",
 "指で横になぞって": "swiping your finger sideways",
 "開けよう。": " along the notch at the top.",
@@ -3841,7 +3845,17 @@ function pickFrom(list, rank){
     // コラボの魔物（by あり）は、同じランクのほかの魔物の半分の出やすさ
     const w=x=>x.by?COLLAB_W:1, tot=p.reduce((a,x)=>a+w(x),0); let k=Math.random()*tot; for(const x of p){ if((k-=w(x))<0) return x; } return p[p.length-1]; }
 }
+const BIG_PACK = 500;   // 500連パック：BOXの魔物が500体以下のときだけ
 function pullMonsters(n, ticket){
+  if(!ticket && n>=BIG_PACK && (S.units||[]).length>BIG_PACK){
+    const L=LANG==="en", bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚠️</div><p>${L?"Reduce the monsters in your BOX to 500 or fewer":"BOXの魔物を500体以下まで減らしてください"}</p>
+      <div class="m-text">${L?`500-Packs can only be opened when your BOX has 500 or fewer monsters. You have <b>${S.units.length}</b> now (${S.units.length-BIG_PACK} too many).`:`500連パックは、BOXの魔物が500体以下のときだけ回せます。今は<b>${S.units.length}体</b>（あと${S.units.length-BIG_PACK}体へらす）です。`}</div>
+      ${byeSpellHtml(L)}<button class="btn gold" type="button" id="bpGo">${L?"Go to BOX":"BOXへ移動"}</button></div>`;
+    document.body.appendChild(bg); try{ SFX.ng(); }catch(e){}
+    bg.querySelector("#bpGo").onclick=()=>{ bg.remove(); tab="box"; boxMode="units"; render(); try{ $("#stage").scrollTop=0; }catch(e){} };
+    bg.onclick=e=>{ if(e.target===bg) bg.querySelector("#bpGo").click(); };
+    return; }
   if(ticket){ if(!inv("ticket")) return toast("ガチャチケットがありません"); addItem("ticket",-1); n=TICKET_PACKS; }
   else { if(S.coins < COST*n) return toast("コインが足りません"); S.coins-=COST*n; }
   const res=[];
@@ -4177,6 +4191,7 @@ function renderGacha(){
       <button class="pull" data-pull="${k}" data-n="1" type="button" ${S.coins<COST?"disabled":""}>1パック<small>${COST}コイン</small></button>
       <button class="pull ten" data-pull="${k}" data-n="10" type="button" ${S.coins<COST*10?"disabled":""}>10連パック<small>${COST*10}コイン</small></button>
       <button class="pull hundred" data-pull="${k}" data-n="100" type="button" ${S.coins<COST*100?"disabled":""}>100連パック<small>${(COST*100).toLocaleString()}コイン</small></button>
+      ${k==="mon"?`<button class="pull hundred five" data-pull="${k}" data-n="500" type="button" ${S.coins<COST*500?"disabled":""}>500連パック<small>${(COST*500).toLocaleString()}コイン・BOXの魔物が500体以下のときだけ</small></button>`:""}
       ${tkBtn("tk-"+k,`チケットで10連パック<b class="tk-boost">S・Z確率${TICKET_BOOST}倍！</b>`)}</div>`;
   const rankRates=(list,tk)=>["Z","S","A","B","C"].map(r=>`<div class="rate-row"><span><span class="rk rk-${r}">${r}</span> ${list.filter(x=>x.rank===r).length}種</span><span>${RATES[r]}%${tk?` <small style="color:var(--staff)">（🎫 ${RATES_TICKET[r]}%）</small>`:""}</span></div>`).join("");
   $("#stage").innerHTML = `${rulesBtn()}<h2>ガチャ</h2><p class="sub">好きなガチャを選んでね。下にスクロールすると、ほかのガチャもあります。</p>
@@ -4344,7 +4359,7 @@ function openRules(){
   const secs=[
     ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>ランク戦終了時の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
     ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：ミッションの「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）</li><li>${U("デイリーミッション：Cランクの魔物を500体集める（1日2回）／新しい魔物と出会う（1日2回）／冒険者に投資する（1日1回）","r")}</li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
-    ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span></li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b></li></ul>`],
+    ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連・500連（BOXの魔物が500体以下のときだけ）もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span></li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b></li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+"+WIN_LV)}</b></li><li>💀 負け：魔物のレベルが<b>${U("区切りまで下がる")}</b>（1桁は−1／22→20／216→200）、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b>。${U("一度届いた10刻みのチェックポイント（10・20・30…）より下には、そのランク戦の間は下がらない")}</li><li>🤝 引き分け：おたがい魔物のレベルが区切りまで下がる、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
