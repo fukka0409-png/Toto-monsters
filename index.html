@@ -3433,7 +3433,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); checkNamedGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -6079,6 +6079,22 @@ function fixBest4Yoko(){
   if(S.fixB4y) return; S.fixB4y=1;
   if(normName(myName())===normName("yoko★")){ S.best=4; S.firsts=0; S.comp1019b=1; S.comp1019e=1; queueProfile(true); try{ render(); }catch(e){} }
   save();
+}
+// 指定した冒険者へのプレゼント（名前で指定・1回だけ）。1セット＝チケット3枚＋5000コイン、名前の後の数だけセット
+const NAMED_GIFTS = [
+  { id:"ng-2026-10-23", ticket:3, coins:5000, to:{ "あわ":1, "love":6, "yoko★":1, "おじな":2, "ちゅん":1, "ふっかー":2 } },
+];
+function checkNamedGift(){
+  if(!MYID||isFreshSave(S)) return; S.ngift=S.ngift||[];
+  const me=normName(myName()); let tk=0, cn=0;
+  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; });
+  if(!tk&&!cn){ save(); return; }
+  if(tk) addItem("ticket",tk); S.coins+=cn; save(); try{ renderCoins(); render(); }catch(e){}
+  const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
+    const L=LANG==="en", g=document.createElement("div"); g.className="reveal"; g.setAttribute("translate","no");
+    g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"A present for you!":"プレゼントが届きました！"}</h3><p class="note" style="text-align:center;max-width:320px">${L?`🎫 Gacha Ticket ×${tk}<br>💰 ${cn.toLocaleString()} coins`:`🎫 ガチャチケット ×${tk}枚<br>💰 ${cn.toLocaleString()}コイン`}</p><button class="btn gold" type="button">OK</button>`;
+    document.body.appendChild(g); try{ SFX.coin(); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
+  show();
 }
 function checkApology(){
   S.apol=S.apol||[];
