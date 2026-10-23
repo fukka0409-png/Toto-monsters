@@ -4269,8 +4269,8 @@ let DEXP=null;   // 読み込み中のPromise
 function dexStats(){ return S.dexStats||null; }
 function dexTotal(id){ const st=dexStats(); if(!st) return null; const others=(st.tot&&st.tot[id])||0; return others+((S.got&&S.got[id])||0); }
 function dexPrice(id){ const st=dexStats(); if(!st||!st.n) return null; const T=Math.max(1,dexTotal(id)); return Math.max(1,Math.floor(st.n*1000/T)); }
-// 新しく追加された魔物（added から7日間）は、手に入れてから12時間は売却できない（追加直後の高値での売却を防ぐ）
-const NEW_SP_MS = 7*24*HOUR_MS, SELL_LOCK_MS = 12*HOUR_MS;
+// 新キャラ（ゲームに追加されてから48時間）は、手に入れてから12時間は売却できない（追加直後の高値での売却を防ぐ）。48時間をすぎたら、ガチャで出てもすぐ売却できる
+const NEW_SP_MS = 48*HOUR_MS, SELL_LOCK_MS = 12*HOUR_MS;
 const isNewSpecies = m => !!(m && m.added && gnow() < Date.parse(m.added+"T22:00:00+09:00")+NEW_SP_MS);
 const sellLockLeft = u => { const m=mon(u.m); return isNewSpecies(m) ? Math.max(0,(u.t||0)+SELL_LOCK_MS-gnow()) : 0; };
 const lockTxt = ms => { const h=Math.floor(ms/HOUR_MS), mm=Math.ceil(ms%HOUR_MS/60000); return h?`${h}時間${mm}分`:`${mm}分`; };
