@@ -947,7 +947,7 @@ html[lang=en] .ttl .ttl-kn span{font-size:30px}
 .kn-season .kn-prep{display:block;font-size:20px;color:#ffe9a8}
 .kn-isl{position:absolute;border:0;background:none;padding:0;border-radius:40%}
 .kn-isl:active{transform:scale(.97)}
-.kn-isl.closed{filter:grayscale(.85) brightness(.75)}
+.kn-isl.closed::before{content:"";position:absolute;inset:0;pointer-events:none;-webkit-backdrop-filter:brightness(.45) grayscale(.6);backdrop-filter:brightness(.45) grayscale(.6);-webkit-mask-image:radial-gradient(ellipse 52% 50% at 50% 50%,#000 72%,transparent 100%);mask-image:radial-gradient(ellipse 52% 50% at 50% 50%,#000 72%,transparent 100%)}
 .kn-closed{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);background:#000c;color:#fff;border-radius:999px;padding:6px 16px;font:900 24px/1.2 var(--f-body);white-space:nowrap}
 .kn-icnt{display:block;font:900 22px/1.2 var(--f-body);color:#b23a00;text-align:center;margin-top:2px}
 .kn-iname{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);background:#fff8e8;border:4px solid #3a2306;border-radius:18px;padding:4px 18px;font:900 26px/1.2 var(--f-body);color:#3a2306;white-space:nowrap;box-shadow:0 4px 0 #0005;text-align:center}
@@ -7173,7 +7173,9 @@ function knTx0(ref,ks,i,fn){
 const knAdj = k => { const C=KN.COLS, R=KN.CELLS/C, r=Math.floor(k/C), c=k%C, o=[]; if(r>0) o.push(k-C); if(r<R-1) o.push(k+C); if(c>0) o.push(k-1); if(c<C-1) o.push(k+1); return o; };
 const knIsFull = d => [...Array(KN.CELLS).keys()].every(k=>{ const c=(d.c||{})[k]; return c && ((c.n&&c.lv&&!c.mon) || c.own); });
 // 解放されている島の数：草原の島がうまったら砂漠、砂漠がうまったら火山、火山がうまったら氷
-const knOpenN = docs => { let u=1; while(u<4 && docs && docs[u-1] && docs[u-1].full) u++; return u; };
+const KN_ORDER = [0, 1, 3, 2];   // 解放の順番：草原 → 砂漠 → 雪原（氷） → 火山
+const knOpenN = docs => { let u=1; while(u<4 && docs && docs[KN_ORDER[u-1]] && docs[KN_ORDER[u-1]].full) u++; return u; };
+const knIsOpen = (i,n=KN_OPEN) => KN_ORDER.indexOf(i) < n;
 let KN_OPEN=1;
 const knMonCount = d => Object.values(d.c||{}).filter(c=>c.mon&&c.lv).length;
 function knMonSpawn(d,now){ const free=[...Array(KN.CELLS).keys()].filter(k=>!d.c[k]); if(!free.length||knMonCount(d)>=KN.MON.MAX) return false;
@@ -7468,9 +7470,9 @@ async function openKuni(){ if(!knOn()) return;
       <div class="kn-cand" id="knCand${i}" style="left:${s.cand[0]-60}px;top:${s.cand[1]-40}px" hidden></div><div class="kn-mine" id="knMine${i}" style="left:${(s.sel[0]+s.sel[2])/2-90}px;top:${s.sel[3]-112}px" hidden></div>`).join("")}
     <div class="kn-ad" id="knAd" style="left:${KN.AD[0]}px;top:${KN.AD[1]}px;width:${KN.AD[2]-KN.AD[0]}px;height:${KN.AD[3]-KN.AD[1]}px"></div>
     <button class="kn-help" type="button" id="knHelp">❓ ${K_("遊び方","How to play")}</button>`;
-  const lockIsl=()=>st.querySelectorAll(".kn-isl").forEach(b=>{ const i=+b.dataset.i, open=i<KN_OPEN; b.classList.toggle("closed",!open); b.querySelector(".kn-closed")?.remove();
+  const lockIsl=()=>st.querySelectorAll(".kn-isl").forEach(b=>{ const i=+b.dataset.i, open=knIsOpen(i), prev=KN_ORDER[KN_ORDER.indexOf(i)-1]; b.classList.toggle("closed",!open); b.querySelector(".kn-closed")?.remove();
     if(!open){ b.insertAdjacentHTML("beforeend",`<span class="kn-closed">🔒 ${K_("準備中","Locked")}</span>`); }
-    b.onclick=()=>{ if(!open) return knMsg(K_(`「${knIsl(i-1)}」のマスが国で全部うまると、「${knIsl(i)}」が解放されます`,`${knIsl(i)} opens once every spot on ${knIsl(i-1)} is filled by nations`)); try{ SFX.tap(); }catch(e){} openKuniIsland(i); }; });
+    b.onclick=()=>{ if(!open) return knMsg(knIsOpen(prev)?K_(`「${knIsl(prev)}」のマスが国で全部うまると、「${knIsl(i)}」が解放されます`,`${knIsl(i)} opens once every spot on ${knIsl(prev)} is filled by nations`):K_(`「${knIsl(prev)}」が解放されたあと、そのマスが国で全部うまると解放されます`,`Opens after ${knIsl(prev)} is unlocked and filled`)); try{ SFX.tap(); }catch(e){} openKuniIsland(i); }; });
   lockIsl(); KV.lockIsl=lockIsl;
   knMerge();
   st.querySelector("#knHelp").onclick=knHelp;
@@ -7486,10 +7488,10 @@ async function openKuni(){ if(!knOn()) return;
   if(KV.scr!=="sel") return; KV.docs=docs; knCheckDead(docs, ks);
   KN_OPEN=knOpenN(docs); KV.lockIsl&&KV.lockIsl();
   { const K=knS(), seen=(K.openSeen||{})[ks]||1; if(KN_OPEN>seen){ K.openSeen={...(K.openSeen||{}),[ks]:KN_OPEN}; save();
-      knDlg(`<div class="kn-big">🗺</div><h3>${K_(`「${knIsl(KN_OPEN-1)}」が解放された！`,`${knIsl(KN_OPEN-1)} is now open!`)}</h3><p>${K_(`「${knIsl(KN_OPEN-2)}」のマスが国で全部うまったので、新しい島で国を作れるようになりました！`,`Every spot on ${knIsl(KN_OPEN-2)} was filled, so you can now found nations on a new island!`)}</p>`,[[K_("OK","OK"),null]]); } }
+      knDlg(`<div class="kn-big">🗺</div><h3>${K_(`「${knIsl(KN_ORDER[KN_OPEN-1])}」が解放された！`,`${knIsl(KN_ORDER[KN_OPEN-1])} is now open!`)}</h3><p>${K_(`「${knIsl(KN_ORDER[KN_OPEN-2])}」のマスが国で全部うまったので、新しい島で国を作れるようになりました！`,`Every spot on ${knIsl(KN_ORDER[KN_OPEN-2])} was filled, so you can now found nations on a new island!`)}</p>`,[[K_("OK","OK"),null]]); } }
   const half=knNow()-knStart(ks)>=KN.HALF_MS;
   docs.forEach((d,i)=>{ const al=d?knAlive(d):[], ppl=al.reduce((a,[,n])=>a+Object.keys(n.m||{}).length,0), ce=document.getElementById("knCnt"+i);
-    if(ce) ce.textContent=i>=knOpenN(docs)?"":K_(`🏰${al.length}か国・👥${ppl}人`,`🏰${al.length} nations · 👥${ppl}`); });
+    if(ce) ce.textContent=!knIsOpen(i,knOpenN(docs))?"":K_(`🏰${al.length}か国・👥${ppl}人`,`🏰${al.length} nations · 👥${ppl}`); });
   docs.forEach((d,i)=>{ const r=d?knRanked(d):[]; const c=document.getElementById("knCand"+i);
     if(half && r.length && i===0){ c.hidden=false; c.classList.add("four"); c.innerHTML=`<div class="kn-c4">${r.slice(0,4).map(x=>knMarkHtml(x[1],"kn-mk")).join("")}</div><span>${K_("四天王候補","Candidates")}</span>`; }
     const mine=d&&knMine(d); const m=document.getElementById("knMine"+i); if(mine){ m.hidden=false; m.textContent=K_("🏯 あなたの国","🏯 Your nation"); } });
@@ -7512,7 +7514,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>⚔️ <b>攻撃</b>：国民（王も）は15分ごとに3回、武器で敵のお城を攻撃できる（同じお城に3回でもOK）。💣 大砲は王が国の資金50万コインで購入（お城ひとつに2つまで）。大砲1つにつき15分に2回撃てて、Lv1の大砲はLv1の武器の10倍の威力。使える武器と大砲は、自分がいるお城のもの。攻撃すると貢献度が上がる。お城の耐久力は1時間に3%ずつ回復する。王は国の資金で、お城をすぐに修復することもできる（耐久力1につき資金10）。</p>
   <p>💥 お城をこわすと、その国の資金を奪い、跡地は自分の国の領土になる（王が国の資金10万コインでお城を建てられる）。中にいた国民は倒れてしまう。<b>王がいたお城がこわれると、その国は敗北</b>（王がどのお城にいるかは、ほかの国からは見えない）（すべてのお城がこわれ、資金はすべて奪われる）。</p>
   <p>👹 <b>魔物の城</b>：シーズン中、島の空いている場所によく魔物の城があらわれる（1島に2つまで・冒険者が少ない島ほど出やすい）。島の国のお城の平均レベルの半分くらいのペースで強くなり、15分ごとに大砲で、まわりの国のお城を攻撃してくる！ 耐久力は低めで、国民が武器で5回くらい攻撃すればこわせる。こわすと国の資金に10万コイン入り、跡地が自分の国の領土になる。魔物の城があると、30分に1回50%でスライムが2体、空いているマスにあらわれる。スライムは上下左右のとなりのお城を15分に1回よわく攻撃してくるので、武器で3回攻撃すればたおせる。</p>
-  <p>🗺 はじめは草原の島だけ。シーズン中に島のマスが国（お城と領土）で<b>一度でも全部うまる</b>と、次の島（砂漠 → 火山 → 氷）が解放される。</p>
+  <p>🗺 はじめは草原の島だけ。シーズン中に島のマスが国（お城と領土）で<b>一度でも全部うまる</b>と、次の島（砂漠 → 雪原（氷の島） → 火山）が解放される。</p>
   <p>📋 国の詳細の<b>「国の掲示板」</b>で、王と国民どうしでメッセージを送り合える（匿名・その国の人だけが見られる）。</p>
   <p>🎭 王と国民はみんな<b>匿名</b>。ほかの国からも、同じ国の中でも、名前は出ない（「王」「国民1」…と表示）。</p>
   <p>🔰 シーズンが始まってから国を作ると、作った直後の1時間は🔰マークがついて、ほかの国から攻撃されない。</p>
@@ -7528,7 +7530,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>⚔️ <b>Attack</b>: every citizen (the King too) can hit enemy castles 3 times every 15 minutes with their weapon (all 3 on the same castle is fine). 💣 The King buys cannons with national funds (500,000 each, up to 2 per castle). Each cannon fires 2 shots every 15 minutes, and a Lv1 cannon hits 10× harder than a Lv1 weapon. You use the weapons and cannon of the castle you're in. Attacks raise your contribution. Castles regain 3% durability per hour. The King can also repair a castle right away with national funds (10 funds per HP).</p>
   <p>💥 Destroying a castle steals that nation's funds and the site becomes your territory (the King can build a castle there for 100,000 of national funds). Citizens inside fall. <b>If the King's castle is destroyed, that nation is defeated</b> (all its castles collapse and all its funds are taken).</p>
   <p>👹 <b>Monster Castles</b>: during a season they often appear on free spots (up to 2 per island, more often on islands with few adventurers). They grow at about half the average castle level of the island's nations, and every 15 min they fire cannons at nearby nations' castles! Their HP is low — about 5 weapon attacks by citizens will destroy one. Destroy one to add 100,000 to your national funds and claim the site as territory. While a Monster Castle stands, every 30 min there's a 50% chance 2 slimes appear on free spots. Slimes weakly attack castles right next to them every 15 min — 3 weapon attacks defeat one.</p>
-  <p>🗺 Only Grassland Isle is open at first. Once every spot on the newest island is filled by nations (castles and territory) even once during the season, the next island opens (Desert → Volcano → Ice).</p>
+  <p>🗺 Only Grassland Isle is open at first. Once every spot on the newest island is filled by nations (castles and territory) even once during the season, the next island opens (Desert → Ice → Volcano).</p>
   <p>📋 Use the <b>Nation board</b> in Nation details to message your King and fellow citizens (anonymous, only your nation can see it).</p>
   <p>🎭 Kings and citizens are all <b>anonymous</b> — no names are shown, even inside your own nation (shown as "King", "Citizen 1"…).</p>
   <p>🔰 A nation founded after the season starts gets a 🔰 mark for its first hour and can't be attacked by other nations.</p>
@@ -7538,7 +7540,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70% (100% if there are no citizens); citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. On top of that, the <b>top 3 nations of each island</b> split a prize among everyone including the King (#1: 1,000,000 · #2: 500,000 · #3: 300,000). Kings and citizens get a profile title, and the #1 nation's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
 
 /* ---------- 島の画面 ---------- */
-function openKuniIsland(i){ if(i>=KN_OPEN && !KN_TEST) i=0; const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
+function openKuniIsland(i){ if(!knIsOpen(i) && !KN_TEST) i=0; const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
   document.querySelector("#kno .kn-x").onclick=()=>{ knClose(); openKuni(); };
   const C=KN.COLS, cw=k=>I.xs[k%C+1]-I.xs[k%C], ch=k=>I.ys[Math.floor(k/C)+1]-I.ys[Math.floor(k/C)];
   const box=(b,cls,inner="")=>`<div class="${cls}" style="left:${b[0]}px;top:${b[1]}px;width:${b[2]-b[0]}px;height:${b[3]-b[1]}px">${inner}</div>`;
