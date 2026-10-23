@@ -4,14 +4,14 @@
    本体（index.html）のグローバル（S・save・DB・MYID・MONSTERS・gnow・seasonNow など）を使う
    ========================================================= */
 (()=>{
-const MC = { PLAY:2000, ARM:500, SALE:500, MAXARM:5, USES:20, LIST_MS:24*3600e3, COL:"arms" };
+const MC = { PLAY:2000, SWITCH:3000, ARM:500, SALE:500, MAXARM:5, USES:20, LIST_MS:24*3600e3, COL:"arms" };
 // 台に置くグッズ。null のときはガチャに出る魔物から自動でえらぶ。魔物の id を並べると、その魔物だけが置かれる（例：[5, 29, 48]）
 const MC_GOODS = null;
 // 台の種類（cost：1回のコイン・ランクの出やすさ）。ランクが上がるほど出にくい。いくつでも増やせる
 const MC_MACHINES = [
   { nm:"ノーマル台", en:"Normal", cost:2000, w:{ C:.4, B:.32, A:.2, S:.07, Z:.01 } },
-  { nm:"レア台", en:"Rare", cost:3000, w:{ C:.2, B:.3, A:.3, S:.16, Z:.04 } },
-  { nm:"スーパーレア台", en:"Super Rare", cost:3000, w:{ B:.2, A:.4, S:.3, Z:.1 } },
+  { nm:"レア台", en:"Rare", cost:2000, w:{ C:.2, B:.3, A:.3, S:.16, Z:.04 } },
+  { nm:"スーパーレア台", en:"Super Rare", cost:2000, w:{ B:.2, A:.4, S:.3, Z:.1 } },
 ];
 const RANK_GRIP = { C:1, B:.9, A:.75, S:.55, Z:.35, L:.3 };   // 重さ：レアなほどつかみにくい
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
@@ -217,7 +217,10 @@ function openGame(mi){ const s=shell(GAME.W,GAME.H,"mc/machine.jpg"), m=st(); mi
   drawItems(); drawArmBtn(); placeTrol();
   const g=id=>document.getElementById(id);
   g("mcBack").onclick=()=>{ if(V.busy) return; sfx("tap"); openMC(); };
-  g("mcNext").onclick=()=>{ if(V.busy) return; sfx("tap"); openGame(mi+1); };
+  // 次の台に切りかえるときは3000コイン
+  g("mcNext").onclick=()=>{ if(V.busy) return; sfx("tap"); const nx=MC_MACHINES[(mi+1)%MC_MACHINES.length];
+    dlg(`<h3>➡️ ${T("次の台へ","Next machine")}</h3><p>${T(`「${nx.nm}」に切りかえますか？<br>切りかえるのに <b>${fmt(MC.SWITCH)}コイン</b> かかります。`,`Switch to "${nx.en}"?<br>Switching costs <b>${fmt(MC.SWITCH)} coins</b>.`)}</p>`,[[T("やめる","Cancel"),null],[T(`${fmt(MC.SWITCH)}コインで切りかえ`,`Switch for ${fmt(MC.SWITCH)}`),()=>{
+      if((S.coins||0)<MC.SWITCH){ say(T("コインが足りません","Not enough coins")); return; } S.coins-=MC.SWITCH; save(); coinUpd(); openGame(mi+1); }]]); };
   g("mcArmB").onclick=()=>{ if(V.busy) return; sfx("tap"); pickArm(); };
   const hold=d=>e=>{ e.preventDefault(); if(V.busy) return; clearInterval(V.hold); const step=()=>{ V.x=Math.max(GAME.XMIN,Math.min(GAME.XMAX,V.x+d*9)); placeTrol(); }; step(); V.hold=setInterval(step,16); };
   const stop=()=>clearInterval(V.hold);
