@@ -623,6 +623,12 @@ html[lang=en] .ttl .ttl-mini span{font-size:36px}
 .mg-pick{display:flex;flex-direction:column;gap:10px;width:100%}
 .mg-pick button{display:flex;align-items:center;gap:12px;text-align:left;border:3px solid #3a2306;border-radius:16px;background:#fff3d6;padding:12px 14px;cursor:pointer;font-family:var(--f-body);color:#3a2306;box-shadow:0 4px 0 #0005}
 .mg-pick button:active{transform:translateY(2px);box-shadow:none}
+.mg-rk{border:3px solid #3a2306;border-radius:16px;background:#8a5a2b;color:#f6e6c4;padding:8px 10px;text-align:center}
+.mg-rkh{font:900 14px/1.3 var(--f-body);color:#ffe9a8}
+.mg-rkg{display:grid;grid-template-columns:1fr 1fr;margin-top:4px}.mg-rkg>div+div{border-left:3px solid #3a2306}
+.mg-rk .mg-rkg small{display:block;font-size:12px;color:#f6e6c4!important;opacity:1}.mg-rkg b{display:block;font:900 20px/1.3 var(--f-body);color:#fff}
+.mg-nx div{background:#fff8e8;color:#3a2306;border-radius:999px;padding:2px 10px;font:900 11px/1.4 var(--f-body);margin-top:5px}
+.mg-rt{margin-top:6px;font:800 12px/1.3 var(--f-body);display:flex;justify-content:center;gap:6px}.mg-rt span{display:inline!important}.mg-rt b{color:#ffd54f}
 .mg-pick i{font-style:normal;font-size:38px}.mg-pick b{display:block;font-size:19px}.mg-pick small{display:block;font-size:12px;color:#7a5a32;margin-top:2px}.mg-pick em{font-style:normal;color:#c62828;font-weight:900}
 .ttl-def{position:absolute;left:358px;top:890px;width:340px;height:112px;padding:0;border:0;background:none;cursor:pointer}
 .ttl-def img{position:absolute;inset:0;width:100%;height:100%}
@@ -922,6 +928,7 @@ html[lang=en] .ttl .ttl-kn span{font-size:30px}
 .ttl.kn-on .ttl-start{top:582px}
 .ttl.kn-on .ttl-kn{top:778px;height:132px}
 .ttl.kn-on .ttl-mini{top:946px;height:124px}
+.ttl .ttl-rk,.ttl .ttl-nx,.ttl .ttl-rt{display:none!important}   /* トトの冒険ランキングは「ミニゲーム」の中に表示 */
 .ttl.kn-on .ttl-rk{top:1140px}
 .ttl.kn-on .ttl-nx{top:1236px}
 .ttl.kn-on .ttl-rt{top:1324px}
@@ -8688,9 +8695,12 @@ async function titleRanks(){
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56; bg.setAttribute("translate","no");
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎮</div><p>${L?"Mini games":"ミニゲーム"}</p>
       <div class="mg-pick"><button type="button" id="mgDef"><i>🛡</i><span><b>${L?"Defense":"防衛作戦"}</b><small>${L?"An idle game — guard your base for 24 hours and earn coins":"放置ゲーム。24時間土台を守ってコインをかせごう"}</small>${st?`<small><em>${st}</em></small>`:""}</span></button>
-      <button type="button" id="mgAdv"><i>🗡</i><span><b>${L?"Toto's Adventure":"トトの冒険"}</b><small>${L?"Action — defeat monsters for 5 minutes and climb the ranking":"アクション。5分間魔物を倒してランキング上位をめざそう"}</small></span></button></div>
+      <button type="button" id="mgAdv"><i>🗡</i><span><b>${L?"Toto's Adventure":"トトの冒険"}</b><small>${L?"Action — defeat monsters for 5 minutes and climb the ranking":"アクション。5分間魔物を倒してランキング上位をめざそう"}</small></span></button>
+      <div class="mg-rk"><div class="mg-rkh">🏆 ${L?"Toto's Adventure Ranking":"トトの冒険ランキング"}</div><div class="mg-rkg"><div><small>${L?"Defeated":"倒した数"}</small><b id="mgR1">―</b></div><div><small>${L?"Best Lv":"最高レベル"}</small><b id="mgR2">―</b></div></div><div class="mg-nx" id="mgNx"></div><div class="mg-rt" id="mgRt"></div></div></div>
       <button class="btn ghost" type="button" id="mgX">${L?"Close":"閉じる"}</button></div>`;
-    document.body.appendChild(bg); const close=()=>bg.remove();
+    document.body.appendChild(bg);
+    const sync=()=>{ const g=id=>document.getElementById(id); if(!g("mgR1")) return; g("mgR1").textContent=g("ttlR1").textContent; g("mgR2").textContent=g("ttlR2").textContent; g("mgNx").innerHTML=g("ttlNx").innerHTML; g("mgRt").innerHTML=g("ttlRt").innerHTML; };
+    sync(); try{ titleRanks().then(sync); }catch(e){} const iv=setInterval(sync,1000); const close=()=>{ clearInterval(iv); bg.remove(); };
     bg.onclick=e=>{ if(e.target===bg) close(); }; bg.querySelector("#mgX").onclick=close;
     bg.querySelector("#mgDef").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} openDefense(); };
     bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); }; }); };
