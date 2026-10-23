@@ -7,11 +7,11 @@
 const MC = { PLAY:2000, ARM:500, SALE:500, MAXARM:5, USES:20, LIST_MS:24*3600e3, COL:"arms" };
 // 台に置くグッズ。null のときはガチャに出る魔物から自動でえらぶ。魔物の id を並べると、その魔物だけが置かれる（例：[5, 29, 48]）
 const MC_GOODS = null;
-// 台の種類（ランクの出やすさ）。ランクが上がるほど出にくい。いくつでも増やせる
+// 台の種類（cost：1回のコイン・ランクの出やすさ）。ランクが上がるほど出にくい。いくつでも増やせる
 const MC_MACHINES = [
-  { nm:"ノーマル台", en:"Normal", w:{ C:.4, B:.32, A:.2, S:.07, Z:.01 } },
-  { nm:"レア台", en:"Rare", w:{ C:.2, B:.3, A:.3, S:.16, Z:.04 } },
-  { nm:"スーパーレア台", en:"Super Rare", w:{ B:.2, A:.4, S:.3, Z:.1 } },
+  { nm:"ノーマル台", en:"Normal", cost:2000, w:{ C:.4, B:.32, A:.2, S:.07, Z:.01 } },
+  { nm:"レア台", en:"Rare", cost:3000, w:{ C:.2, B:.3, A:.3, S:.16, Z:.04 } },
+  { nm:"スーパーレア台", en:"Super Rare", cost:3000, w:{ B:.2, A:.4, S:.3, Z:.1 } },
 ];
 const RANK_GRIP = { C:1, B:.9, A:.75, S:.55, Z:.35, L:.3 };   // 重さ：レアなほどつかみにくい
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
@@ -188,7 +188,7 @@ async function checkSales(){ if(!DB||!MYID) return; try{ const q=await DB.collec
     if(add>0){ S.coins+=add; save(); coinUpd(); dlg(`<h3>🦾 ${T("アームが売れた！","Your arms sold!")}</h3><p>${T(`あなたのアームが <b>${cnt}本</b> 売れました！`,`<b>${cnt}</b> of your arms sold!`)}</p><p style="font-size:22px;font-weight:900;color:#2e7d32">+${fmt(add)} ${T("コイン","coins")}</p>`); sfx("coin"); } }catch(e){} }
 function openMC(){ closeAll(); const m=st(); sfx("tap");
   const bg=dlg(`<h3>🎯 ${T("魔物キャッチャー","Monster Catcher")}</h3><p style="font-size:12px;margin:0">${T(`持っているアーム：${m.arms.length}/${MC.MAXARM}本`,`Arms: ${m.arms.length}/${MC.MAXARM}`)}</p>
-    <div class="mc-pick"><button type="button" data-p="a"><i>🎮</i><span>${T("台を選ぶ","Choose a machine")}<small>${T(`1回${fmt(MC.PLAY)}コイン。アームで魔物をつかんで、手に入れよう！`,`${fmt(MC.PLAY)} coins a play. Grab monsters with your arm!`)}</small></span></button>
+    <div class="mc-pick"><button type="button" data-p="a"><i>🎮</i><span>${T("台を選ぶ","Choose a machine")}<small>${T(`1回${fmt(MC.PLAY)}コイン〜。アームで魔物をつかんで、手に入れよう！`,`From ${fmt(MC.PLAY)} coins a play. Grab monsters with your arm!`)}</small></span></button>
     <button type="button" data-p="b"><i>🏪</i><span>${T("アーム専門店","Arm Shop")}<small>${T(`みんなが作ったアームを買える（1本${fmt(MC.ARM)}コイン・${MC.USES}回使うとこわれる）`,`Buy arms made by others (${fmt(MC.ARM)} coins each, breaks after ${MC.USES} uses)`)}</small></span></button>
     <button type="button" data-p="c"><i>✏️</i><span>${T("アーム作家になる","Become an arm maker")}<small>${T(`指でアームを描いて出品。売れるたびに${fmt(MC.SALE)}コイン！`,`Draw an arm and sell it. ${fmt(MC.SALE)} coins every sale!`)}</small></span></button></div>`,[[T("閉じる","Close"),null]]);
   bg.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{ bg.remove(); sfx("tap"); ({a:()=>openGame(0), b:openShop, c:openWork})[b.dataset.p](); });
@@ -209,7 +209,7 @@ function openGame(mi){ const s=shell(GAME.W,GAME.H,"mc/machine.jpg"), m=st(); mi
   const M=MC_MACHINES[mi], hit=(id,x,y,w,h,lab)=>`<button type="button" class="hit" id="${id}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px" aria-label="${lab}"></button>`;
   s.innerHTML=`<div class="mc-name">${T(`台${mi+1}　${M.nm}`,`Machine ${mi+1} · ${M.en}`)}</div><div id="mcItems"></div>
     <div class="mc-trol" id="mcTrol"><div class="mc-mount"></div><div class="mc-rod" id="mcRod"></div><canvas class="mc-armc" id="mcArmC"></canvas></div>
-    <div class="mc-label">${T("1回","1 play")} ${fmt(MC.PLAY)}<small>${T("コイン","coins")}</small></div>
+    <div class="mc-label">${T("1回","1 play")} ${fmt(M.cost||MC.PLAY)}<small>${T("コイン","coins")}</small></div>
     <button type="button" class="mc-arm" id="mcArmB"></button>
     ${hit("mcNext",607,1308,218,72,T("次の台","Next"))}${hit("mcL",178,1404,132,92,"←")}${hit("mcR",312,1404,132,92,"→")}${hit("mcGo",490,1384,168,128,T("決定","Go"))}${hit("mcBack",703,1406,162,86,T("もどる","Back"))}
     <div class="mc-msg" hidden></div>`;
@@ -237,8 +237,9 @@ function placeTrol(held){ const t=document.getElementById("mcTrol"); if(!t) retu
   document.getElementById("mcRod").style.height=V.rod+"px"; const c=document.getElementById("mcArmC"); c.style.left=(-GAME.AW/2)+"px"; c.style.top=(38+V.rod-G.ringTop)+"px"; c.style.width=GAME.AW+"px";
   if(V.held){ const el=document.querySelector(`#mcItems img[data-i="${V.held.i}"]`), y=GAME.TOP+38+V.rod-G.ringTop+G.bot-30; if(el){ el.style.left=V.x+"px"; el.style.top=y+"px"; el.style.zIndex=2000; } const rk=document.querySelector(`#mcItems .mc-rk[data-r="${V.held.i}"]`); if(rk) rk.remove(); } }
 async function play(){ if(V.busy) return; const a=curArm(); if(!a) return noArm();
-  if((S.coins||0)<MC.PLAY) return say(T("コインが足りません","Not enough coins"));
-  V.busy=true; sfx("tap"); S.coins-=MC.PLAY; a.left=Math.max(0,(a.left??MC.USES)-1); save(); coinUpd(); drawArmBtn();
+  const cost=MC_MACHINES[V.mi].cost||MC.PLAY;   // 台ごとの1回の値段
+  if((S.coins||0)<cost) return say(T("コインが足りません","Not enough coins"));
+  V.busy=true; sfx("tap"); S.coins-=cost; a.left=Math.max(0,(a.left??MC.USES)-1); save(); coinUpd(); drawArmBtn();
   const G=armGeo();
   // ねらい：アームのはばの中で、いちばん真ん中に近い魔物
   const cx=V.x, half=Math.max(30,(G.rx-G.lx)/2*.9), mid=V.x-GAME.AW/2+(G.lx+G.rx)/2;
