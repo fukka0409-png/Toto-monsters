@@ -328,6 +328,13 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .inv-amt{width:100%;font:inherit;font-size:22px;font-weight:900;text-align:center;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--night);color:var(--mist)}
 .hm-btns{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
 .hm-btn{position:relative;padding:8px 8px;border-radius:12px;background:#fff;border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font:inherit;font-weight:900;font-size:11px;white-space:nowrap}
+.pb-list{display:flex;flex-direction:column;gap:8px}
+.pb-it{display:grid;grid-template-columns:40px 1fr auto;gap:8px;align-items:center;background:var(--card,#fff1);border:2px solid #0002;border-radius:12px;padding:8px;position:relative}
+.pb-ic{font-size:28px;text-align:center}
+.pb-b b{display:block;font-size:13px;line-height:1.3}.pb-b b small{color:#c77d00}
+.pb-c{font-size:12px;line-height:1.5;margin:2px 0}.pb-t{font-size:10px;opacity:.6}
+.pb-btn{display:flex;flex-direction:column;gap:4px}.pb-btn .btn{padding:6px 10px;font-size:12px;min-height:0}
+.pb-cf{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;background:#0002;border-radius:10px;padding:6px}.pb-cf span{flex:1 1 100%}.pb-cf .btn{flex:1;padding:6px;font-size:12px;min-height:0}
 .hm-btn.new{animation:rulesPulse 1.6s ease-in-out infinite}
 .hm-deco{position:absolute;bottom:38%;z-index:2;filter:drop-shadow(0 6px 6px #0005)}.hm-deco span{font-size:min(26vw,120px);line-height:1}.hm-deco img{width:min(28vw,130px)}
 .hm-deco.l{left:-2%}.hm-deco.r{right:-2%}
@@ -1177,7 +1184,7 @@ html[lang=en] .kn-bt span{font-size:38px}
   <div class="tabs"><nav role="tablist">
     <button role="tab" data-tab="home" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ホーム</button>
     <button role="tab" data-tab="box" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-4 9 4v9l-9 4-9-4z"/><path d="M3 8l9 4 9-4M12 12v9"/></svg>BOX</button>
-    <button role="tab" data-tab="mission" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span class="tab2"><small>プレゼント</small>ミッション</span></button>
+    <button role="tab" data-tab="mission" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span class="tab2"><small>呪文</small>QRコード</span></button>
     <button role="tab" data-tab="gacha" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M5 10h14M8 21h8M12 17v4"/></svg>ガチャ</button>
     <button role="tab" data-tab="rank" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg><span class="tab2"><small>ランキング</small>戦闘</span></button>
   </nav></div>
@@ -1210,6 +1217,7 @@ const I18N_EN = {
 "🏁 ランク戦が始まってから1時間は、アイテムを使えません（少し待ってね）": "🏁 Items can't be used for the first hour of a ranked match (please wait a bit)",
 "🎁 {0}位の限定キャラ：": "🎁 Limited character for #{0}: ",
 "（BOXに届きました）": " (sent to your BOX)",
+"（プレゼントBOXに届きました）": " (sent to your Present BOX)",
 "自分には投資できない。": "You can't invest in yourself.",
 "。自分には投資できない。": ". You can't invest in yourself.",
 "4位 1.5倍": "4th 1.5x",
@@ -1901,6 +1909,7 @@ const I18N_EN = {
 "🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。": "🔒 Locked monsters are never used as material or sold (they're listed at the top of your collection).",
 "ミッションタブの": "Enter a secret phrase in ",
 "呪文": "Spells",
+"QRコード": "QR code",
 "に合言葉を入れるとプレゼントがもらえることも…？": " on the Missions tab and you might get a present…?",
 "ログインすると、ほかの端末でも続きから遊べる。": "Log in to continue playing on other devices.",
 "最新ルール": "Latest Rules",
@@ -2561,6 +2570,7 @@ const I18N_EN = {
 "親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。": "Monster trading unlocks with friends once your affinity reaches 500 (coming soon).",
 "フレンド": "Friends",
 "🤝 フレンド": "🤝 Friends",
+"🎁 プレゼントBOX": "🎁 Present BOX",
 "フレンド機能": "Friend feature",
 "フレンド機能はオフです。新しいフレンド申請は届きません（今のフレンドはそのまま）。": "The friend feature is off. You won't receive new friend requests (your current friends stay).",
 "羽根つきハート石": "Winged Heart Stones",
@@ -3523,7 +3533,7 @@ async function checkRefs(){ if(!DB||!MYID) return;
   try{ const q=await withTO(DB.collection("refs").where("to","==",MYID).get()); const seen=S.refIds||{}; const names=[];
     for(const d of q.docs){ if(!seen[d.id]){ seen[d.id]=1; names.push((d.data()||{}).nm||"?"); } d.ref.delete().catch(()=>{}); }
     S.refIds=seen; if(!names.length) return;
-    S.coins+=REF_BONUS*names.length; capCoins(); save(); try{ renderCoins(); }catch(e){} queueProfile(true);
+    presentAdd({ic:"🤝", title:`紹介ボーナス（${names.join("・")}さん）`, en:`Referral bonus (${names.join(", ")})`, coins:REF_BONUS*names.length}); save(); return;
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎁</div><p>紹介ボーナス！</p>
       <div class="m-text">${names.map(n=>esc(n)+"さん").join("・")}が、あなたの紹介で登録しました！</div>
@@ -3641,8 +3651,8 @@ async function checkGifts(db){
     const q=await db.collection("gifts").where("to","in",[S.userNo,0]).get();
     S.gifts=S.gifts||[]; const got=[];
     q.docs.forEach(d=>{ const g=d.data(); if(!g || S.gifts.includes(d.id)) return;
-      const c=Math.max(0,Math.floor(Number(g.coins)||0)); S.gifts.push(d.id); S.coins+=c; got.push({c,msg:String(g.msg||"").slice(0,120)}); });
-    if(got.length){ save(); renderCoins(); showGifts(got); }
+      const c=Math.max(0,Math.floor(Number(g.coins)||0)); S.gifts.push(d.id); const msg=String(g.msg||"").slice(0,60); presentAdd({key:"gift:"+d.id, ic:"🎁", title:msg?`プレゼント「${msg}」`:"プレゼント", en:msg?`Present: "${msg}"`:"Present", coins:c}); got.push(c); });
+    if(got.length) save();
   }catch(e){}
   giftBusy=false;
 }
@@ -4139,7 +4149,7 @@ function renderCoins(){
   $("#coins").textContent=S.coins.toLocaleString();
   const ready = false;   // 毎日・15分ボーナスは終了
   const b=$("#bonusBtn"); b.classList.toggle("ready",ready); b.textContent= ready?"ボーナスあり":"ボーナス";
-  document.querySelector('.tabs button[data-tab="mission"]').classList.toggle("dot",ready||MISSIONS.some((_,i)=>missionLeft(i)===0)||DMS.some(m=>dmReady(m)));
+  document.querySelector('.tabs button[data-tab="mission"]').classList.toggle("dot",ready||MISSIONS.some((_,i)=>missionLeft(i)===0));
 }
 function claimDaily(){ if(!dailyReady()) return; S.lastDaily=today(); S.coins+=DAILY; save(); SFX.coin(); toast(`毎日ボーナス +${DAILY}コイン`); render(); }
 function claimHour1(){ if(hour1Left()>0) return; S.lastHour1=gnow(); S.coins+=HOUR_BONUS; save(); SFX.coin(); toast(`1時間ボーナス +${HOUR_BONUS.toLocaleString()}コイン`); render(); }
@@ -4378,7 +4388,7 @@ function openRules(){
   const n=v=>Number(v).toLocaleString();
   const secs=[
     ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>ランク戦終了時の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
-    ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：ミッションの「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）</li><li>${U("デイリーミッション：Cランクの魔物を500体集める（1日2回）／新しい魔物と出会う（1日2回）／冒険者に投資する（1日1回）","r")}</li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
+    ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：下のタブ「呪文・QRコード」の「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）</li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
     ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連・500連（BOXの魔物が500体以下のときだけ）もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span></li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b></li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
@@ -4758,7 +4768,7 @@ function renderMissionPage(){
   renderMission();
   const sec=document.createElement("div"); sec.id="shopSec";
   const h=$("#stage").querySelector("h2"); h.insertAdjacentElement("afterend",sec); renderBonus(sec);
-  const dm=document.createElement("div"); dm.id="dmSec"; sec.insertAdjacentElement("afterend",dm); renderDaily(dm);
+  // デイリーミッションは2026-10-24になくした
 }
 /* ---------- デイリーミッション（それぞれ1日2回まで） ----------
    ①Cランクの魔物をガチャで500体 ②ガチャで新しい魔物と出会う ③冒険者に投資する */
@@ -5167,6 +5177,7 @@ function renderHome(){
         <button class="hm-btn" type="button" id="hmStats">📊 自己記録確認</button>
         <button class="hm-btn" type="button" id="hmTitle">🏠 タイトル画面に戻る</button>
         <button class="hm-btn" type="button" id="hmFriend">🤝 フレンド${DB&&MYID&&frBadge()?`<span class="rules-new fr-badge">${frBadge()}</span>`:""}</button>
+        <button class="hm-btn ${pbox().length?"new":""}" type="button" id="hmPbox">🎁 プレゼントBOX${pbox().length?`<span class="rules-new fr-badge">${pbox().length}</span>`:""}</button>
       </div>
     </div>
     ${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
@@ -5181,6 +5192,7 @@ function renderHome(){
   $("#hmChange").onclick=()=>openHomeEdit("m");
 
   $("#hmFriend").onclick=()=>openFriends();
+  $("#hmPbox").onclick=()=>{ try{ SFX.tap(); }catch(e){} openPresentBox(); };
   $("#hmInvest").onclick=()=>{ homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); };
 }
 function openHomeEdit(mode){
@@ -5952,7 +5964,7 @@ async function checkSeason(){
     if(rank){ if(!S.best||rank<S.best) S.best=rank; if(rank===1) S.firsts=(S.firsts||0)+1; }
     // ランク戦ごとの限定キャラ（1〜3位に1体ずつ）
     let limGift=null; const lgId=SEASON_LIMITED[old];
-    if(lgId && rank && rank<=3 && eligible && !(S.limGot||{})[old]){ const m=mon(lgId); if(m){ S.limGot=S.limGot||{}; S.limGot[old]=1; S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:true,t:gnow()}); limGift=m; lines.push(`🎁 ${rank}位の限定キャラ：<span class="rk rk-L">限定</span> <b>「${esc(m.name)}」</b>（BOXに届きました）`); } }
+    if(lgId && rank && rank<=3 && eligible && !(S.limGot||{})[old]){ const m=mon(lgId); if(m){ S.limGot=S.limGot||{}; S.limGot[old]=1; presentAdd({key:"lim:"+old, ic:"👑", title:`ランク戦の${rank}位の限定キャラ`, en:`Limited character for #${rank} in the ranked match`, mons:[{m:m.id,k:true}], quiet:true}); limGift=m; lines.push(`🎁 ${rank}位の限定キャラ：<span class="rk rk-L">限定</span> <b>「${esc(m.name)}」</b>（プレゼントBOXに届きました）`); } }
     // 投資の精算（自分が投資した分・自分に投資された分）
     const iv=await settleInvest(old, rank, q, mine, coins); coins+=iv.delta; lines.push(...iv.lines);
     if(S!==S0 || (S.season??0)>=cur){ seasonBusy=false; return; }   // 途中で記録が入れかわったら何もしない
@@ -5978,6 +5990,66 @@ async function checkSeason(){
 /* ---------- バグのお詫び ----------
    バグを直すたびに、ここに1行たす（id は毎回ちがうものに）。全冒険者に1回だけ、お知らせといっしょにコインを付与する。
    まだ遊んだことのない新しいデータには付与しない（そのときまでのお詫びは受け取りずみにする） */
+/* ===== プレゼントBOX（2026-10-24）=====
+   外から届く報酬（お詫び・運営からのプレゼント・紹介ボーナス・ランキングの限定キャラ・ミニゲームのランキング報酬・国からの不労所得や報酬・アームの売上など）は、
+   いったんここに届く。受け取るか、受け取らないかを選べる。プレゼントが残っていたら、ゲームを開くたびにお知らせする */
+const pbox = () => (S.pbox = S.pbox || []);
+const PB_EN = t => LANG==="en";
+// p = { key（同じ報酬を2回入れないための名前）, ic, title, en, coins, lv, ticket, stone, mons:[{m:魔物id, k:鍵}], merge（同じ名前の未受け取りに足し合わせる） }
+function presentAdd(p){ const L=pbox(); S.pboxKeys=S.pboxKeys||[];
+  if(p.key){ if(S.pboxKeys.includes(p.key)) return false; S.pboxKeys.push(p.key); if(S.pboxKeys.length>600) S.pboxKeys=S.pboxKeys.slice(-600); }
+  if(p.merge){ const o=L.find(x=>x.merge===p.merge); if(o){ for(const k of ["coins","lv","ticket","stone"]) o[k]=(o[k]||0)+(p[k]||0); o.t=gnow(); o.n=(o.n||1)+1; save(); pboxUI(); return true; } }
+  L.push({ id:"p"+gnow().toString(36)+Math.random().toString(36).slice(2,6), t:gnow(), ic:p.ic||"🎁", title:p.title||"プレゼント", en:p.en||"", coins:Math.floor(p.coins||0), lv:Math.floor(p.lv||0), ticket:p.ticket||0, stone:p.stone||0, mons:p.mons||[], merge:p.merge||null, n:1 });
+  save(); pboxUI(); if(!p.quiet && pboxNoticed) setTimeout(()=>{ try{ toast(LANG==="en"?"🎁 A present arrived in your Present BOX":"🎁 プレゼントBOXにプレゼントが届きました"); }catch(e){} },800);
+  return true; }
+function presentTxt(p, L=LANG==="en"){ const a=[];
+  if(p.coins) a.push(`💰 ${p.coins.toLocaleString()}${L?" coins":"コイン"}`);
+  if(p.lv) a.push(`⭐ ${L?"Adventurer Lv":"冒険者Lv"}+${p.lv}`);
+  if(p.ticket) a.push(`🎫 ${L?"Gacha Ticket":"ガチャチケット"} ×${p.ticket}`);
+  if(p.stone) a.push(`💎 ${L?"Awakening Stone":"覚醒の石"} ×${p.stone}`);
+  (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(m) a.push(`<span class="rk rk-${m.rank}">${m.rank==="L"?(L?"LTD":"限定"):m.rank}</span> 「${esc(m.name)}」`); });
+  return a.join("<br>"); }
+function presentClaim(id){ const L=pbox(), i=L.findIndex(x=>x.id===id); if(i<0) return null; const p=L[i]; L.splice(i,1);
+  if(p.coins){ S.coins=(S.coins||0)+p.coins; capCoins(); }
+  if(p.lv){ S.plv=(S.plv||1)+p.lv; bumpMaxLv(); }
+  if(p.ticket) addItem("ticket",p.ticket); if(p.stone) addItem("stone",p.stone);
+  (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(!m) return; S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:!!x.k,t:gnow()}); });
+  save(); try{ renderCoins(); }catch(e){} if(p.lv) try{ queueProfile(true); }catch(e){} pboxUI(); return p; }
+function presentDrop(id){ const L=pbox(), i=L.findIndex(x=>x.id===id); if(i>=0){ L.splice(i,1); save(); pboxUI(); } }
+function pboxUI(){ const b=document.getElementById("hmPbox"); if(!b) return; const n=pbox().length;
+  b.classList.toggle("new",n>0); b.innerHTML=`🎁 ${LANG==="en"?"Present BOX":"プレゼントBOX"}${n?`<span class="rules-new fr-badge">${n}</span>`:""}`; }
+function pbAgo(t){ const m=Math.max(0,Math.floor((gnow()-(t||0))/60000)), L=LANG==="en"; return m<1?(L?"just now":"いま"):m<60?(L?`${m}m ago`:`${m}分前`):m<1440?(L?`${Math.floor(m/60)}h ago`:`${Math.floor(m/60)}時間前`):(L?`${Math.floor(m/1440)}d ago`:`${Math.floor(m/1440)}日前`); }
+function openPresentBox(){ const L=LANG==="en", list=pbox().slice().sort((a,b)=>(b.t||0)-(a.t||0));
+  const bg=sheet(`<div class="sheet-h"><h3>🎁 ${L?"Present BOX":"プレゼントBOX"}</h3><button class="x" type="button" aria-label="${L?"Close":"閉じる"}">✕</button></div>
+    <p class="sub" style="margin:0 0 8px">${L?"Rewards from outside arrive here. Choose whether to collect each one.":"外から届いた報酬は、ここに届きます。受け取るか、受け取らないかを選べます。"}</p>
+    ${list.length>1?`<button class="btn gold" type="button" id="pbAll" style="width:100%;margin-bottom:10px">${L?`Collect all (${list.length})`:`まとめて受け取る（${list.length}件）`}</button>`:""}
+    <div class="pb-list">${list.map(p=>`<div class="pb-it" data-id="${p.id}"><div class="pb-ic">${p.ic||"🎁"}</div><div class="pb-b"><b>${esc(L&&p.en?p.en:p.title)}${p.n>1?` <small>×${p.n}</small>`:""}</b><div class="pb-c">${presentTxt(p,L)}</div><small class="pb-t">${pbAgo(p.t)}</small></div>
+      <div class="pb-btn"><button class="btn gold" type="button" data-pbget="${p.id}">${L?"Collect":"受け取る"}</button><button class="btn ghost" type="button" data-pbno="${p.id}">${L?"Decline":"受け取らない"}</button></div></div>`).join("")||`<p class="note" style="text-align:center;margin:20px 0">${L?"No presents right now.":"いまは、プレゼントはありません。"}</p>`}</div>`);
+  bg.classList.add("pb-sheet");
+  const got=ps=>{ const mons=ps.flatMap(p=>p.mons||[]); const c=ps.reduce((a,p)=>a+(p.coins||0),0);
+    try{ mons.length?SFX.reveal("Z"):SFX.coin(); }catch(e){}
+    if(mons.length){ const m=mon(mons[0].m); const g=document.createElement("div"); g.className="reveal"; g.style.zIndex=200; g.setAttribute("translate","no");
+      g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"Collected!":"受け取りました！"}</h3>${m?`<img src="${cardURL(m.id,0)}" alt="" style="width:min(56vw,240px);height:auto">`:""}<p class="note" style="text-align:center">${ps.map(p=>presentTxt(p,L)).join("<br>")}<br>${L?"(monsters go to your BOX)":"（魔物はBOXに入りました）"}</p><button class="btn gold" type="button">OK</button>`;
+      document.body.appendChild(g); g.querySelector(".btn").onclick=()=>g.remove(); }
+    else toast(L?`🎁 Collected${c?` +${c.toLocaleString()} coins`:""}`:`🎁 受け取りました${c?` +${c.toLocaleString()}コイン`:""}`);
+    try{ render(); }catch(e){} openPresentBox(); };
+  bg.querySelectorAll("[data-pbget]").forEach(b=>b.onclick=()=>{ const p=presentClaim(b.dataset.pbget); if(p) got([p]); });
+  bg.querySelectorAll("[data-pbno]").forEach(b=>b.onclick=()=>{ const id=b.dataset.pbno, it=b.closest(".pb-it");
+    if(it.querySelector(".pb-cf")) return; const cf=document.createElement("div"); cf.className="pb-cf";
+    cf.innerHTML=`<span>${L?"Decline this present? It will disappear.":"受け取らないと、このプレゼントは消えます。よろしいですか？"}</span><button class="btn ghost" type="button" data-k="0">${L?"Cancel":"やめる"}</button><button class="btn" type="button" data-k="1">${L?"Decline":"受け取らない"}</button>`;
+    it.appendChild(cf); cf.querySelector('[data-k="0"]').onclick=()=>cf.remove(); cf.querySelector('[data-k="1"]').onclick=()=>{ presentDrop(id); try{ SFX.tap(); }catch(e){} openPresentBox(); }; });
+  const all=bg.querySelector("#pbAll"); if(all) all.onclick=()=>{ const ps=pbox().slice().map(p=>presentClaim(p.id)).filter(Boolean); if(ps.length) got(ps); };
+  return bg; }
+// ゲームを開くたびに、プレゼントが残っていればお知らせ（ホーム画面が出てから）
+let pboxNoticed=false;
+setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not([hidden])")) return; pboxNoticed=true; pboxUI(); if(!pbox().length) return;
+  const show=()=>{ if(document.querySelector(".reveal,.sheet-bg,.kn-dlg,#kno,#mco,#adv,#dfo")) return setTimeout(show,2000); const L=LANG==="en", n=pbox().length;
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60; bg.setAttribute("translate","no");
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎁</div><p>${L?"You have presents!":"プレゼントが届いています！"}</p><div class="m-text">${L?`There ${n>1?"are":"is"} <b>${n}</b> present${n>1?"s":""} in your Present BOX.`:`プレゼントBOXに <b>${n}件</b> のプレゼントが残っています。`}</div>
+      <button class="btn gold" type="button" id="pbGo">${L?"Open Present BOX":"プレゼントBOXを開く"}</button><button class="btn ghost" type="button" id="pbLater">${L?"Later":"あとで"}</button></div>`;
+    document.body.appendChild(bg); try{ SFX.coin(); }catch(e){}
+    bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
+  setTimeout(show,2500); },2000);
 const APOLOGIES = [
   { id:"fix-2026-10-23-mcstat", coins:1000 },   // 魔物キャッチャー：アーム作家の画面で「過去の作品」ボタンと所持コインが重なっていた
   { id:"fix-2026-10-23-ranktotal", coins:1000 },   // ランキングの参加人数が「/200人」で止まって、それ以上ふえなかった
@@ -6103,7 +6175,7 @@ function checkNamedGift(){
   const me=normName(myName()); let tk=0, cn=0, stn=0;
   NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; });
   if(!tk&&!cn&&!stn){ save(); return; }
-  if(tk) addItem("ticket",tk); if(stn) addItem("stone",stn); S.coins+=cn; save(); try{ renderCoins(); render(); }catch(e){}
+  presentAdd({ic:"🎁", title:"運営からのプレゼント", en:"A present from the team", coins:cn, ticket:tk, stone:stn}); return;
   const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
     const L=LANG==="en", g=document.createElement("div"); g.className="reveal"; g.setAttribute("translate","no");
     g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"A present for you!":"プレゼントが届きました！"}</h3><p class="note" style="text-align:center;max-width:320px">${(L?[tk&&`🎫 Gacha Ticket ×${tk}`, cn&&`💰 ${cn.toLocaleString()} coins`, stn&&`💎 Awakening Stone ×${stn}`]:[tk&&`🎫 ガチャチケット ×${tk}枚`, cn&&`💰 ${cn.toLocaleString()}コイン`, stn&&`💎 覚醒の石 ×${stn}個`]).filter(Boolean).join("<br>")}</p><button class="btn gold" type="button">OK</button>`;
@@ -6115,7 +6187,7 @@ function checkApology(){
   if(isFreshSave(S)){ APOLOGIES.forEach(a=>{ if(!S.apol.includes(a.id)) S.apol.push(a.id); }); return; }
   const fresh=APOLOGIES.filter(a=>!S.apol.includes(a.id)); if(!fresh.length) return;
   const total=fresh.reduce((t,a)=>t+a.coins,0);
-  fresh.forEach(a=>S.apol.push(a.id)); S.coins+=total; save(); try{ renderCoins(); }catch(e){}
+  fresh.forEach(a=>S.apol.push(a.id)); presentAdd({ic:"🙏", title:"お詫び：一部バグが起こっていたので修正しました🙏", en:"Apology: we fixed a bug 🙏", coins:total, merge:"apol"}); return;
   const show=()=>{ if(document.querySelector(".reveal")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
     const g=document.createElement("div"); g.className="reveal";
     g.innerHTML=`<div class="burst"></div><h3>🙏 お詫び</h3><p class="note" style="text-align:center;max-width:320px">一部バグが起こっていたので修正しました🙏<br>お詫びの${total.toLocaleString()}コインです🙏</p><button class="btn gold" type="button">OK</button>`;
@@ -6273,10 +6345,10 @@ async function checkLimRetro(SS, ID, flag, enName){
     const rank=effRank(mine, prizeOk(SS), others);
     if(S[flag]||(S.limGot||{})[SS]) return;
     S[flag]=1;
-    if(rank && rank<=3){ const m=mon(ID); S.limGot=S.limGot||{}; S.limGot[SS]=1; S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:true,t:gnow()}); save(); render();
+    if(rank && rank<=3){ const m=mon(ID); S.limGot=S.limGot||{}; S.limGot[SS]=1; presentAdd({key:"lim:"+SS, ic:"👑", title:`ランク戦の${rank}位の限定キャラ`, en:`Limited character for #${rank} in the ranked match`, mons:[{m:m.id,k:true}], quiet:true}); save();
       const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")) return setTimeout(show,1500);
         const L=LANG==="en", g=document.createElement("div"); g.className="reveal"; g.setAttribute("translate","no");
-        g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"Congratulations!":"おめでとうございます！"}</h3><img src="${cardURL(m.id,0)}" alt="" style="width:min(60vw,260px);height:auto"><p class="note" style="text-align:center;max-width:320px">${L?`You placed in the top 3 (<b>#${rank}</b>) in the last ranked match, so here's a limited character as a present! ✨<br><span class="rk rk-L">Limited</span> <b>"${enName}"</b>`:`前回のランク戦で<b>${rank}位</b>（3位内）にランクインしたので、限定キャラを1体プレゼントします！✨<br><span class="rk rk-L">限定</span> <b>「${esc(m.name)}」</b>`}</p><button class="btn gold" type="button">OK</button>`;
+        g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"Congratulations!":"おめでとうございます！"}</h3><img src="${cardURL(m.id,0)}" alt="" style="width:min(60vw,260px);height:auto"><p class="note" style="text-align:center;max-width:320px">${L?`You placed in the top 3 (<b>#${rank}</b>) in the last ranked match, so here's a limited character as a present! ✨ (sent to your Present BOX)<br><span class="rk rk-L">Limited</span> <b>"${enName}"</b>`:`前回のランク戦で<b>${rank}位</b>（3位内）にランクインしたので、限定キャラを1体プレゼントします！✨（プレゼントBOXに届きました）<br><span class="rk rk-L">限定</span> <b>「${esc(m.name)}」</b>`}</p><button class="btn gold" type="button">OK</button>`;
         document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
       show(); }
     else save();
@@ -6294,10 +6366,10 @@ async function checkPinkGift(){
     const rank=effRank(mine, prizeOk(PINK_SS), others);
     if(S.pinkChk||(S.limGot||{})[PINK_SS]) return;
     S.pinkChk=1;
-    if(rank && rank<=3){ const m=mon(PINK_ID); S.limGot=S.limGot||{}; S.limGot[PINK_SS]=1; S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:true,t:gnow()}); save(); render();
+    if(rank && rank<=3){ const m=mon(PINK_ID); S.limGot=S.limGot||{}; S.limGot[PINK_SS]=1; presentAdd({key:"lim:"+PINK_SS, ic:"👑", title:`ランク戦の${rank}位の限定キャラ`, en:`Limited character for #${rank} in the ranked match`, mons:[{m:m.id,k:true}], quiet:true}); save();
       const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")) return setTimeout(show,1500);
         const L=LANG==="en", g=document.createElement("div"); g.className="reveal"; g.setAttribute("translate","no");
-        g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"Congratulations!":"おめでとうございます！"}</h3><img src="${cardURL(m.id,0)}" alt="" style="width:min(60vw,260px);height:auto"><p class="note" style="text-align:center;max-width:320px">${L?`You placed in the top 3 (<b>#${rank}</b>) in the last ranked match, so here's a limited character as a present! ✨<br><span class="rk rk-L">Limited</span> <b>"Pink Stone Toto"</b>`:`前回のランク戦で<b>${rank}位</b>（3位内）にランクインしたので、限定キャラを1体プレゼントします！✨<br><span class="rk rk-L">限定</span> <b>「ピンクストーントト」</b>`}</p><button class="btn gold" type="button">OK</button>`;
+        g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"Congratulations!":"おめでとうございます！"}</h3><img src="${cardURL(m.id,0)}" alt="" style="width:min(60vw,260px);height:auto"><p class="note" style="text-align:center;max-width:320px">${L?`You placed in the top 3 (<b>#${rank}</b>) in the last ranked match, so here's a limited character as a present! ✨ (sent to your Present BOX)<br><span class="rk rk-L">Limited</span> <b>"Pink Stone Toto"</b>`:`前回のランク戦で<b>${rank}位</b>（3位内）にランクインしたので、限定キャラを1体プレゼントします！✨（プレゼントBOXに届きました）<br><span class="rk rk-L">限定</span> <b>「ピンクストーントト」</b>`}</p><button class="btn gold" type="button">OK</button>`;
         document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
       show(); }
     else save();
@@ -7003,10 +7075,10 @@ async function advSettle(){
     if(rt==null||rl==null) return;   // 通信できなかったら、あとでもう一度
     const gT=rt>=1&&rt<=3?ADV_PRIZE[rt-1]:0, gL=rl>=1&&rl<=3?ADV_PRIZE[rl-1]:0;
     const vT=rt>=1&&rt<=3?ADV_PRIZE_LV[rt-1]:0, vL=rl>=1&&rl<=3?ADV_PRIZE_LV[rl-1]:0;
-    S.advPaid=P; if(gT+gL) S.coins=(S.coins||0)+gT+gL; if(vT+vL){ S.plv=(S.plv||1)+vT+vL; try{ bumpMaxLv(); queueProfile(true); }catch(e){} } save();
+    S.advPaid=P; if(gT+gL||vT+vL) presentAdd({key:"adv:"+P, ic:"🗡", title:"トトの冒険 ランキング報酬", en:"Toto's Adventure ranking reward", coins:gT+gL, lv:vT+vL, quiet:true}); save();
     if(gT+gL){ try{ SFX.reveal("S"); }catch(e){} const L=LANG==="en", rk=n=>L?"#"+n:n+"位";
       const bg=document.createElement("div"); bg.className="sheet-bg center"+(document.querySelector("#title:not([hidden])")?" ttl-top":""); bg.style.zIndex=136; bg.setAttribute("translate","no");
-      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏆</div><p>${L?"Toto's Adventure ranking reward!":"トトの冒険 ランキング報酬！"}</p>
+      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏆</div><p>${L?"Toto's Adventure ranking reward!":"トトの冒険 ランキング報酬！"}</p><p class="note" style="margin:0">🎁 ${L?"Sent to your Present BOX":"プレゼントBOXに届きました"}</p>
         <div class="note" style="margin:0;text-align:center;line-height:1.7">${gT?`${pv.legacyT?(L?"Time survived":"生き延びたランキング"):(L?"Most defeated":"倒した数ランキング")} <b>${rk(rt)}</b> → <b>+${gT.toLocaleString()}</b>${vT?` ・ <b style="color:#5fd36a">${L?"Adventurer Lv":"冒険者Lv"}+${vT}</b>`:""}<br>`:""}${gL?`${L?"Best level":"最高レベルランキング"} <b>${rk(rl)}</b> → <b>+${gL.toLocaleString()}</b>${vL?` ・ <b style="color:#5fd36a">${L?"Adventurer Lv":"冒険者Lv"}+${vL}</b>`:""}<br>`:""}<small>${L?"Total":"合計"} +${(gT+gL).toLocaleString()} ${L?"coins":"コイン"}</small></div>
         <button class="btn gold" type="button">OK</button></div>`;
       document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); try{ render(); }catch(e){} }
@@ -7393,10 +7465,9 @@ async function knLvTick1(key){ const L=knLvs(), st=L[key]; if(!st) return; const
     const king=!!(n&&n.k===MYID), h=Math.max(0,Math.floor((stop-st.t)/3600e3)), up=n&&n.hm!=null?0:h*(king?KN.LV_KING:KN.LV_CIT);
     const per=n?knCastles(d,st.nid).reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0):0, coin=Math.floor(h*per*(king?knBestMul():1));   // お城からの収入
     st.t+=h*3600e3; if(fin){ if(L[st.i]===st) delete L[st.i]; del(); }
-    if(coin>0){ knAdd(coin); try{ renderCoins(); }catch(e){} }
+    if(coin>0||up>0) presentAdd({ic:"🏰", title:"国からの不労所得", en:"Passive income from your nation", coins:coin, lv:up, merge:"kn", quiet:true});   // プレゼントBOXに届く
     if(coin>0||up>0){ const E=S.knEarn&&S.knEarn.ks===st.ks?S.knEarn:{ks:st.ks,c:0,l:0}; E.c+=coin; E.l+=up; S.knEarn=E; }   // このシーズンにもらった不労所得の合計
-    if(up>0){ S.plv=(S.plv||1)+up; bumpMaxLv(); }
-    if(up>0||coin>0) setTimeout(()=>toast(K_(`🏰 国から：冒険者レベル+${up}${coin?`・お城の収入 +${knNum(coin)}コイン`:""}！`,`🏰 From your nation: Adventurer Level +${up}${coin?`, castle income +${knNum(coin)} coins`:""}!`)),1500);
+    if(up>0||coin>0) setTimeout(()=>toast(K_(`🏰 国からの不労所得（冒険者レベル+${up}${coin?`・+${knNum(coin)}コイン`:""}）がプレゼントBOXに届きました`,`🏰 Passive income (Adventurer Level +${up}${coin?`, +${knNum(coin)} coins`:""}) arrived in your Present BOX`)),1500);
     save(); if(up>0 && typeof queueProfile==="function") queueProfile();
   }catch(e){} finally{ knLvBusy=false; } }
 setTimeout(()=>{ try{ knLvTick(); }catch(e){} },8000);
@@ -7580,15 +7651,15 @@ async function knClaim(){ const ks=knSeason()-1; if(ks<0||!DB||!MYID) return; co
   K.claimed[ks]=1;
   // 島の1〜3位：王を含む全員で山分け
   const isls=[]; docs.forEach((d,i)=>{ if(!d) return; const r=knRanked(d); const j=r.findIndex(([nid])=>{ const M=knMerged(docs,nid); return M&&M.m[MYID]; }); if(j>=0&&j<3){ const n=knMerged(docs,r[j][0]), cnt=Math.max(1,Object.keys(n.m||{}).length); isls.push({place:j, amt:Math.floor(KN.ISL_PRIZE[j]/cnt*(n.k===MYID?knBestMul():1)), cnt, n, i}); } });
-  isls.forEach(isl=>{ knAdd(isl.amt); save(); setTimeout(()=>knDlg(`<div class="kn-big">🏆</div><h3>${K_(`${knIsl(isl.i)}で${isl.place+1}位！`,`#${isl.place+1} on ${knIsl(isl.i)}!`)}</h3>
+  isls.forEach(isl=>{ if(KN_TEST) knAdd(isl.amt); else presentAdd({ic:"🏆", title:`魔ノ国争奪戦：${knIsl(isl.i)}で${isl.place+1}位の賞金`, en:`Demon Nations War: #${isl.place+1} on ${knIsl(isl.i)}`, coins:isl.amt, quiet:true}); save(); setTimeout(()=>knDlg(`<div class="kn-big">🏆</div><h3>${K_(`${knIsl(isl.i)}で${isl.place+1}位！`,`#${isl.place+1} on ${knIsl(isl.i)}!`)}</h3>
       <div class="kn-res">${knMarkHtml(isl.n,"kn-mk")}<b>${esc(isl.n.nm)}</b></div>
       <p>${K_(`島${isl.place+1}位の賞金 ${knNum(KN.ISL_PRIZE[isl.place])}コインを、王を含む${isl.cnt}人で山分け！`,`The #${isl.place+1} island prize of ${knNum(KN.ISL_PRIZE[isl.place])} coins is split among all ${isl.cnt} members, King included!`)}</p>
-      <p class="kn-gain">+${knNum(isl.amt)} ${K_("コイン","coins")}</p>`,[[K_("うけとる","Collect"),null]],{stack:true}), gots.length?400:0); });
-  gots.forEach((got,gi)=>{ knAdd(got.amt); if(!KN_TEST){ if(got.king) K.w=(K.w||0)+1; else K.c=(K.c||0)+1; try{ queueProfile(true); }catch(e){} } else { if(got.king) K.w=(K.w||0)+1; else K.c=(K.c||0)+1; }
+      <p class="kn-gain">+${knNum(isl.amt)} ${K_("コイン","coins")}</p><p class="kn-sm">🎁 ${K_("プレゼントBOXに届きました","Sent to your Present BOX")}</p>`,[[K_("うけとる","Collect"),null]],{stack:true}), gots.length?400:0); });
+  gots.forEach((got,gi)=>{ if(KN_TEST||got.amt<0) knAdd(got.amt); else presentAdd({ic:"🏯", title:`魔ノ国争奪戦：四天王${got.place+1}位の報酬`, en:`Demon Nations War: Four Heavenly Kings #${got.place+1}`, coins:got.amt, quiet:true}); if(!KN_TEST){ if(got.king) K.w=(K.w||0)+1; else K.c=(K.c||0)+1; try{ queueProfile(true); }catch(e){} } else { if(got.king) K.w=(K.w||0)+1; else K.c=(K.c||0)+1; }
     save(); knDlg(`<div class="kn-big">🏯</div><h3>${K_(`四天王 ${got.place+1}位！`,`Four Heavenly Kings — #${got.place+1}!`)}</h3>
       <div class="kn-res">${knMarkHtml(got.n,"kn-mk")}<b>${esc(got.n.nm)}</b><small>${knIsl(got.i)}</small></div>
       <p>${got.king?K_("あなたは王として国を四天王に導きました！","As King, you led your nation into the Four Heavenly Kings!"):K_("あなたは国民として国を支えました！","As a citizen, you supported your nation!")}</p>
-      <p class="kn-gain ${got.amt<0?"neg":""}">${got.amt>=0?"+":""}${knNum(got.amt)} ${K_("コイン","coins")}</p>
+      <p class="kn-gain ${got.amt<0?"neg":""}">${got.amt>=0?"+":""}${knNum(got.amt)} ${K_("コイン","coins")}</p>${got.amt>=0&&!KN_TEST?`<p class="kn-sm">🎁 ${K_("プレゼントBOXに届きました","Sent to your Present BOX")}</p>`:""}
       <p class="kn-sm">${K_(`プロフィールに称号「${got.king?"四天王":"四天王国民"}」がつきました！`,`Your profile now has the title "${got.king?"Heavenly King":"Heavenly King's Citizen"}"!`)}</p>`,[[K_("うけとる","Collect"),null]],gi?{stack:true}:{}); });
   if(!gots.length) save(); }
 // 王の報酬の倍率：プロフィールの最高順位が高いほど多い
@@ -8969,5 +9040,5 @@ async function titleRanks(){
   }
 })();
 </script>
-<script src="mc/mc.js?v=6" defer></script>
+<script src="mc/mc.js?v=7" defer></script>
 </body></html>

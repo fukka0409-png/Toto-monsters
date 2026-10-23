@@ -185,7 +185,7 @@ function botArms(){ const d=day(), out=[];
 /* ---------- メニュー（A・B・C） ---------- */
 async function checkSales(){ if(!DB||!MYID) return; try{ const q=await DB.collection(MC.COL).where("uid","==",MYID).get(); const m=st(); let add=0, cnt=0;
     q.docs.forEach(x=>{ const d=x.data(), sold=Math.max(0,Math.floor(d.sold||0)), paid=m.paid[x.id]||0; if(sold>paid){ add+=(sold-paid)*MC.SALE; cnt+=sold-paid; m.paid[x.id]=sold; } });
-    if(add>0){ S.coins+=add; save(); coinUpd(); dlg(`<h3>🦾 ${T("アームが売れた！","Your arms sold!")}</h3><p>${T(`あなたのアームが <b>${cnt}本</b> 売れました！`,`<b>${cnt}</b> of your arms sold!`)}</p><p style="font-size:22px;font-weight:900;color:#2e7d32">+${fmt(add)} ${T("コイン","coins")}</p>`); sfx("coin"); } }catch(e){} }
+    if(add>0){ if(typeof presentAdd==="function"){ presentAdd({ic:"🦾", title:`魔物キャッチャー：アームが${cnt}本売れた`, en:`Monster Catcher: ${cnt} arm(s) sold`, coins:add}); save(); return; } S.coins+=add; save(); coinUpd(); dlg(`<h3>🦾 ${T("アームが売れた！","Your arms sold!")}</h3><p>${T(`あなたのアームが <b>${cnt}本</b> 売れました！`,`<b>${cnt}</b> of your arms sold!`)}</p><p style="font-size:22px;font-weight:900;color:#2e7d32">+${fmt(add)} ${T("コイン","coins")}</p>`); sfx("coin"); } }catch(e){} }
 function openMC(){ closeAll(); const m=st(); sfx("tap");
   const bg=dlg(`<h3>🎯 ${T("魔物キャッチャー","Monster Catcher")}</h3><p style="font-size:12px;margin:0">${T(`持っているアーム：${m.arms.length}/${MC.MAXARM}本`,`Arms: ${m.arms.length}/${MC.MAXARM}`)}</p>
     <div class="mc-pick"><button type="button" data-p="a"><i>🎮</i><span>${T("台を選ぶ","Choose a machine")}<small>${T(`1回${fmt(MC.PLAY)}コイン〜。アームで魔物をつかんで、手に入れよう！`,`From ${fmt(MC.PLAY)} coins a play. Grab monsters with your arm!`)}</small></span></button>
