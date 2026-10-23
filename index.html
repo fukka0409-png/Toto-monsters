@@ -7115,7 +7115,7 @@ const KN = {
   MAKE: 0, JOIN: 0, MAKE_GIFT: 50000, JOIN_GIFT: 20000, LV_KING: 3, LV_CIT: 1,
   // 2026-10-22：お城からの収入（1時間ごと・お城1つにつき・お城Lvで変わる）。お城が増えれば、その数だけもらえる
   INC_KING: [0, 200, 400, 1000, 2000, 3000, 5000], INC_CIT: [0, 100, 200, 500, 1000, 1500, 3000],
-  BUILD: 100000, DEATH: 50000, BAN_MS: 0,   // 2026-10-23：倒れても待ち時間なし（すぐ国を作れる・参加できる）
+  BUILD: 100000, EXPAND: 300000, DEATH: 50000, BAN_MS: 0,   // 2026-10-23：倒れても待ち時間なし（すぐ国を作れる・参加できる）
   SLOT_MS: 15*60e3, W_N: 3, C_N: 2,    // 15分ごとに：国民は3回・大砲はお城ごとに2回
   REGEN: 0.03, BEST: 10, MAX_N: 24, CELLS: 24, COLS: 6,   // 2026-10-22：島は草原の島ひとつ・24マス（横6×たて4）
   KING_PCT: 0.7, NEG: 1000, PLACE_MUL: [1, 0.8, 0.5, 0.2], CAP: 10000000,   // 振り分けられる資金の上限1000万
@@ -7177,7 +7177,20 @@ const knHpMax = c => c.mon ? KN.MON.HP[c.lv] : KN.HP[c.lv];
 const knMax = c => c.sl ? KN.SLIME.HP : knHpMax(c);
 const knHp = (c,now=knNow()) => c.sl ? Math.max(0,c.hp) : Math.max(0,Math.min(knHpMax(c), c.hp + knHpMax(c)*KN.REGEN*Math.max(0,now-(c.hpT||now))/3600e3));
 const knAlive = d => Object.entries(d.n||{}).filter(([,n])=>!n.x);
-const knRanked = d => knAlive(d).sort((a,b)=>(b[1].f||0)-(a[1].f||0) || (a[1].t||0)-(b[1].t||0));
+/* ---- 国がほかの島に広がる（進出）：同じ国ID・名前・マーク。資金は最初の島（hm）の国にまとめて持つ ---- */
+const KN_DC = {};   // シーズンごとの島のデータ（読みこんだもの）
+function knFundOf(d,nid){ const n=d&&d.n&&d.n[nid]; if(!n) return 0; if(n.hm!=null){ const h=(KN_DC[d.s]||[])[n.hm], hn=h&&h.n&&h.n[nid]; if(hn) return hn.f||0; } return n.f||0; }
+// 島をまたいだ1つの国としてまとめる（資金は共通・国民は全部の島の合計・王は最初の島の王）
+function knMerged(docs,nid){ let base=null; const m={}; let f=0, fd=false;
+  (docs||[]).forEach(d=>{ const n=d&&d.n&&d.n[nid]; if(!n) return; if(n.hm==null){ base=n; f=n.f||0; fd=true; } else if(!base) base=n;
+    if(n.x) return; for(const [u,x] of Object.entries(n.m||{})){ if(!m[u]) m[u]={...x, p:0}; m[u].p+=(x.p||0); } });
+  if(!base) return null; if(!fd){ const d=(docs||[]).find(d=>d&&d.n&&d.n[nid]); f=knFundOf(d,nid); }
+  return {...base, f, m}; }
+// 自分の国（どの島でも）。最初の島の国を優先
+function knMyNat(docs){ let best=null; (docs||[]).forEach((d,i)=>{ if(!d) return; for(const [nid,n] of knAlive(d)) if(n.m&&n.m[MYID]){ if(!best||(n.hm==null&&best.n.hm!=null)) best={i, nid, n, hm:n.hm==null?i:n.hm}; } }); return best; }
+// ほかの島に国を広げられる人：最初の島の王をのぞいて、国全体でいちばん貢献度が高い国民
+function knTopCit(docs,nid){ const M=knMerged(docs,nid); if(!M) return null; let top=null, tp=0; for(const [u,x] of Object.entries(M.m)){ if(u===M.k) continue; if((x.p||0)>tp){ tp=x.p||0; top=u; } } return top; }
+const knRanked = d => knAlive(d).sort((a,b)=>knFundOf(d,b[0])-knFundOf(d,a[0]) || (a[1].t||0)-(b[1].t||0));
 const knCastles = (d,nid) => Object.entries(d.c||{}).filter(([,c])=>c.n===nid&&c.lv).map(([k,c])=>[+k,c]);
 const knMine = d => { if(!MYID||!d) return null; for(const [nid,n] of knAlive(d)) if(n.m&&n.m[MYID]) return nid; return null; };
 const knRid = () => Math.random().toString(36).slice(2,10);
@@ -7199,14 +7212,15 @@ function knRewardsOf(n, place){
 }
 // 四天王：各島の1位の国を、資金の多い順に1〜4位
 // 四天王：島がひとつになったので、草原の島の資金が多い国の上位4か国（前のしくみのときの島の1位どうしもふくめて数える）
-function knShitenno(docs){ const L=[]; docs.forEach((d,i)=>{ if(!d) return; knRanked(d).forEach(([nid,n])=>L.push({i, nid, n})); });
+function knShitenno(docs){ const M=new Map(); (docs||[]).forEach((d,i)=>{ if(!d) return; knAlive(d).forEach(([nid,n])=>{ const c=M.get(nid); if(!c||(n.hm==null&&c.hb)) M.set(nid,{i, nid, hb:n.hm!=null}); }); });   // ほかの島に広がった国は1つとして数える
+  const L=[...M.values()].map(x=>({i:x.i, nid:x.nid, n:knMerged(docs,x.nid)})).filter(x=>x.n);
   L.sort((a,b)=>(b.n.f||0)-(a.n.f||0)||(a.n.t||0)-(b.n.t||0)); return L.slice(0,4); }
 /* ---- 読み書き ---- */
-async function knLoad(ks){ const out=[]; for(let i=0;i<4;i++){ try{ const s=await knRef(ks,i).get(); out.push(s.exists?s.data():null); }catch(e){ out.push(null); } } return out; }
-async function knTx(i, fn){ const ks=knSeason(); if(ks<0) return {err:K_("まだシーズンが始まっていません","The season hasn't started yet")};
+async function knLoad(ks){ const out=[]; for(let i=0;i<4;i++){ try{ const s=await knRef(ks,i).get(); out.push(s.exists?s.data():null); }catch(e){ out.push(null); } } KN_DC[ks]=out.slice(); return out; }
+async function knTx(i, fn, opt){ const ks=knSeason(); if(ks<0) return {err:K_("まだシーズンが始まっていません","The season hasn't started yet")};
   const ref=knRef(ks,i);
   // 一時的な混雑（resource-exhausted・aborted・unavailable）のときは、少し待って2回までやり直す
-  for(let k=0;;k++){ try{ return await knTx0(ref,ks,i,fn); }catch(e){ const c=(e&&e.code)||"";
+  for(let k=0;;k++){ try{ return await knTx0(ref,ks,i,fn,opt); }catch(e){ const c=(e&&e.code)||"";
       if(k<2 && /resource-exhausted|aborted|unavailable|deadline/.test(c)){ await new Promise(r=>setTimeout(r,1200*(k+1)+Math.random()*600)); continue; }
       return {err:knErrText(e)}; } } }
 // 失敗したときは、理由がわかるように表示する（ルールが公開されていない・電波が悪い など）
@@ -7233,12 +7247,19 @@ async function knMerge(){ if(knMergeBusy||!DB||!MYID) return; const ks=knSeason(
           d0.n[nid]=n; d0.log.unshift({t:knNow(), k:"move", b:n.nm}); }
         d.mv=1; d.n={}; d.c={}; tx.set(refs[i],JSON.parse(JSON.stringify(d))); }
       d0.v=(d0.v||0)+1; d0.log=d0.log.slice(0,40); tx.set(refs[0],JSON.parse(JSON.stringify(d0))); }); }catch(e){} finally{ knMergeBusy=false; } }
-function knTx0(ref,ks,i,fn){
+function knTx0(ref,ks,i,fn,opt){
   return DB.runTransaction(async tx=>{ const sn=await tx.get(ref); const d=sn.exists?sn.data():knBlank(ks,i); d.n=d.n||{}; d.c=d.c||{}; d.dead=d.dead||{}; d.log=d.log||[];
+    // ほかの島から広がってきた国は、資金を最初の島の国から読んで、変わった分だけ書きもどす
+    const H={}, pre={}, want=new Set(Object.values(d.n).filter(n=>n.hm!=null&&n.hm!==i&&!n.x).map(n=>n.hm)); if(opt&&opt.hm!=null&&opt.hm!==i) want.add(opt.hm);
+    for(const h of want){ const s2=await tx.get(knRef(ks,h)); H[h]=s2.exists?s2.data():null; }
+    for(const [nid,n] of Object.entries(d.n)){ if(n.hm==null||n.hm===i||n.x) continue; const hn=H[n.hm]&&H[n.hm].n&&H[n.hm].n[nid]; if(hn){ n.f=hn.f||0; pre[nid]=n.f; } }
+    const fundW=()=>{ for(const [nid,n] of Object.entries(d.n)){ if(n.hm==null||n.hm===i) continue; const hn=H[n.hm]&&H[n.hm].n&&H[n.hm].n[nid]; if(!hn) continue;
+        const dl=(n.f||0)-(pre[nid]??(hn.f||0)); if(dl){ const v=Math.max(0,(hn.f||0)+dl); n.f=v; tx.update(knRef(ks,n.hm),{[`n.${nid}.f`]:v}); } } };
     const rm=i===0?knRemap(d):false;
-    const ch=knMonTick(d, knNow()); const r=fn(d, knNow());
+    const ch=knMonTick(d, knNow()); const r=fn(d, knNow(), H);
     const fl=!(r&&r.err)&&!d.full&&knIsFull(d); if(fl){ d.full=1; knLog(d,{k:"full"}); }   // マスが国で全部うまった（1回でも）→ 次の島が解放される
     if((r&&(r.err||r.noop)) && !ch && !rm && !fl) return r;
+    fundW();
     if(r&&r.err){ d.v=(d.v||0)+1; d.log=d.log.slice(0,40); tx.set(ref,JSON.parse(JSON.stringify(d))); return r; }   // 失敗しても、魔物の城の動きだけは保存する
     d.v=(d.v||0)+1; d.log=d.log.slice(0,40); tx.set(ref,JSON.parse(JSON.stringify(d))); return r||{}; }); }
 /* ---- 魔物の城 ---- */
@@ -7319,7 +7340,7 @@ async function knLvTick1(key){ const L=knLvs(), st=L[key]; if(!st) return; const
     if(!n){ stop=st.t; fin=true; }
     else { if(n.x){ stop=Math.min(stop,n.x); fin=true; }
       if(!n.m||!n.m[MYID]){ const dt=d.dead&&d.dead[MYID]&&d.dead[MYID].t; stop=Math.min(stop, dt||st.t); fin=true; } }
-    const king=!!(n&&n.k===MYID), h=Math.max(0,Math.floor((stop-st.t)/3600e3)), up=h*(king?KN.LV_KING:KN.LV_CIT);
+    const king=!!(n&&n.k===MYID), h=Math.max(0,Math.floor((stop-st.t)/3600e3)), up=n&&n.hm!=null?0:h*(king?KN.LV_KING:KN.LV_CIT);
     const per=n?knCastles(d,st.nid).reduce((a,[,c])=>a+((king?KN.INC_KING:KN.INC_CIT)[c.lv]||0),0):0, coin=Math.floor(h*per*(king?knBestMul():1));   // お城からの収入
     st.t+=h*3600e3; if(fin){ if(L[st.i]===st) delete L[st.i]; del(); }
     if(coin>0){ knAdd(coin); try{ renderCoins(); }catch(e){} }
@@ -7365,6 +7386,28 @@ function knTip(){ if(knTipDone||!knOn()||!SIGNED||!MYID) return; knTipDone=true;
       <p>🙋 ${K_(`国に参加する：<b>無料</b>・${knNum(KN.JOIN_GIFT)}コインもらえる・国にいる間<b>1時間ごとに冒険者レベル+${KN.LV_CIT}</b>`,`Join a nation: <b>free</b>, get ${knNum(KN.JOIN_GIFT)} coins, and <b>Adventurer Level +${KN.LV_CIT} every hour</b> while in it`)}</p>`,
       [[K_("あとで","Later"),null],[K_("魔ノ国争奪戦へ","Go to the War"),()=>{ setTimeout(()=>openKuni(),0); }]]); };
   show(); }
+/* ---- ほかの島に国を広げる（進出）：国でいちばん貢献度が高い国民が、その島の王になる ---- */
+function knExpand(i, cell, nid, hm){
+  return knTx(i,(d,now,H)=>{ const h=H[hm], hn=h&&h.n&&h.n[nid];
+    if(!hn||hn.x) return {err:K_("その国はもうありません","That nation no longer exists")};
+    if(!hn.m||!hn.m[MYID]) return {err:K_("その国の国民ではありません","You're not a citizen of that nation")};
+    if(hn.k===MYID) return {err:K_("最初の島の王は進出できません","The founding King can't expand")};
+    if(d.n[nid]&&!d.n[nid].x) return {err:K_("この島にはもう進出しています","Already on this island")};
+    if(knMine(d)) return {err:K_("この島ではもう国に入っています","You're already in a nation on this island")};
+    if(d.c[cell]) return {err:K_("その場所はもう使われています","That spot is already taken")};
+    if(knAlive(d).length>=KN.MAX_N) return {err:K_("この島はいっぱいです","This island is full")};
+    if((hn.f||0)<KN.EXPAND) return {err:K_(`国の資金が足りません（${knNum(KN.EXPAND)}コイン必要）`,`Not enough national funds (${knNum(KN.EXPAND)} needed)`)};
+    d.n[nid]={nm:hn.nm, mk:hn.mk||"", k:MYID, kn:"", f:(hn.f||0)-KN.EXPAND, t:now, hm, m:{[MYID]:{nm:"", p:0, at:cell, j:now, ls:0}}};
+    if(!knPre(now)) d.n[nid].pr=now+KN.NEW_PROTECT;
+    d.c[cell]={n:nid, lv:1, g:[], eq:1, hp:KN.HP[1], hpT:now};
+    knLog(d,{k:"exp", a:"", b:hn.nm}); return {nid}; }, {hm}).then(r=>{ if(r&&!r.err) knLvStart(i,r.nid); return r; }); }
+// 自分の国がこの島にも広がっていたら、自動でこの島の国民になる
+function knAutoJoin(i, nid, show){
+  return knTx(i,(d,now,H)=>{ const n=d.n[nid]; if(!n||n.x) return {err:K_("その国はこの島にありません","That nation isn't on this island")}; if(n.m&&n.m[MYID]) return {noop:1};
+    const hn=n.hm!=null&&H[n.hm]&&H[n.hm].n&&H[n.hm].n[nid]; if(!(hn&&!hn.x&&hn.m&&hn.m[MYID])) return {err:K_("その国の国民ではありません","You're not a citizen of that nation")};
+    if(knMine(d)) return {noop:1};
+    const cs=knCastles(d,nid), at=(n.m[n.k]||{}).at ?? (cs[0]&&cs[0][0]); if(at==null) return {err:K_("この島にお城がありません","No castle on this island")};
+    n.m[MYID]={nm:"", p:0, at, j:now, ls:0}; return {nid}; }).then(r=>{ if(r&&r.nid){ knLvStart(i,nid); if(show) knMsg(K_("🗺 あなたの国はこの島にも広がっています。ここでも戦えます！","🗺 Your nation has spread here too — you can fight on this island!")); } else if(show&&r&&r.err) knMsg(r.err); return r; }); }
 /* ---- 国を作る ---- */
 function knMake(i, cell, nm, mk){ const best=S.best||0;
   if(false) return Promise.resolve({err:K_("国を作れるのは、ランク戦の最高順位が10位以内の冒険者だけです","Only adventurers whose best ranked placement is top 10 can found a nation")});
@@ -7468,7 +7511,7 @@ async function knClaim(){ const ks=knSeason()-1; if(ks<0||!DB||!MYID) return; co
   sh.forEach((x,place)=>{ if(x.n.m&&x.n.m[MYID]){ const r=knRewardsOf(x.n,place), king=x.n.k===MYID, a=r[MYID]||0; gots.push({place, amt:king&&a>0?Math.floor(a*knBestMul()):a, king, n:x.n, i:x.i}); } });
   K.claimed[ks]=1;
   // 島の1〜3位：王を含む全員で山分け
-  const isls=[]; docs.forEach((d,i)=>{ if(!d) return; const r=knRanked(d); const j=r.findIndex(([,n])=>n.m&&n.m[MYID]); if(j>=0&&j<3){ const n=r[j][1], cnt=Math.max(1,Object.keys(n.m||{}).length); isls.push({place:j, amt:Math.floor(KN.ISL_PRIZE[j]/cnt*(n.k===MYID?knBestMul():1)), cnt, n, i}); } });
+  const isls=[]; docs.forEach((d,i)=>{ if(!d) return; const r=knRanked(d); const j=r.findIndex(([nid])=>{ const M=knMerged(docs,nid); return M&&M.m[MYID]; }); if(j>=0&&j<3){ const n=knMerged(docs,r[j][0]), cnt=Math.max(1,Object.keys(n.m||{}).length); isls.push({place:j, amt:Math.floor(KN.ISL_PRIZE[j]/cnt*(n.k===MYID?knBestMul():1)), cnt, n, i}); } });
   isls.forEach(isl=>{ knAdd(isl.amt); save(); setTimeout(()=>knDlg(`<div class="kn-big">🏆</div><h3>${K_(`${knIsl(isl.i)}で${isl.place+1}位！`,`#${isl.place+1} on ${knIsl(isl.i)}!`)}</h3>
       <div class="kn-res">${knMarkHtml(isl.n,"kn-mk")}<b>${esc(isl.n.nm)}</b></div>
       <p>${K_(`島${isl.place+1}位の賞金 ${knNum(KN.ISL_PRIZE[isl.place])}コインを、王を含む${isl.cnt}人で山分け！`,`The #${isl.place+1} island prize of ${knNum(KN.ISL_PRIZE[isl.place])} coins is split among all ${isl.cnt} members, King included!`)}</p>
@@ -7499,7 +7542,7 @@ function knWaitLogin(){ if(DB&&MYID) return Promise.resolve(true);
   knMsg(K_("ログイン情報を読みこみ中…","Loading your sign-in…"));
   return new Promise(res=>{ const t0=Date.now(); const iv=setInterval(()=>{ if(DB&&MYID){ clearInterval(iv); return res(true); }
     const el=Date.now()-t0; if((!signedIn()&&el>4000)||el>20000){ clearInterval(iv); res(false); } },200); }); }
-function knClose(){ if(KV.unsub){ try{ KV.unsub(); }catch(e){} KV.unsub=null; } clearInterval(KV.tick); KV.tick=0; clearInterval(KV.adT); KV.adT=0;
+function knClose(){ if(KV.unsub){ try{ KV.unsub(); }catch(e){} KV.unsub=null; } if(KV.hmUn){ try{ KV.hmUn(); }catch(e){} KV.hmUn=null; } KV.aj=0; clearInterval(KV.tick); KV.tick=0; clearInterval(KV.adT); KV.adT=0;
   if(KV.fit) removeEventListener("resize",KV.fit); document.getElementById("kno")?.remove(); KV.scr=null; }
 function knDlg(html, btns, opt={}){ const root=document.getElementById("kno")||document.body; root.querySelectorAll(".kn-dlg").forEach(x=>{ if(!opt.stack) x.remove(); });
   const bg=document.createElement("div"); bg.className="kn-dlg"+(root===document.body?" ttl-top solo":""); bg.setAttribute("translate","no");
@@ -7620,7 +7663,7 @@ function knHelp(){ knDlg(`<h3>🏯 ${K_("魔ノ国争奪戦の遊び方","How to
   <p>💰 <b>Rewards</b>: up to 10,000,000 of the funds are shared out (anything above is lost). The King gets 70% (100% if there are no citizens); citizens split the rest by contribution (very low contributors get −1,000). #1 keeps it all, #2 80%, #3 50%, #4 20%. On top of that, the <b>top 3 nations of each island</b> split a prize among everyone including the King (#1: 1,000,000 · #2: 500,000 · #3: 300,000). Kings and citizens get a profile title, and the #1 nation's ad appears on the island screen all next season.</p>`)}</div>`,[[K_("閉じる","Close"),null]],{cls:"wide"}); }
 
 /* ---------- 島の画面 ---------- */
-function openKuniIsland(i){ if(!knIsOpen(i) && !KN_TEST) i=0; const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false;
+function openKuniIsland(i){ if(!knIsOpen(i) && !KN_TEST) i=0; const I=KN.ISL[i]; const st=knShell("kn-isl-st",1046,1504,I.bg); KV.scr="isl"; KV.i=i; KV.d=null; KV.pick=false; if(KV.hmUn){ try{ KV.hmUn(); }catch(e){} KV.hmUn=null; } KV.aj=0; if(!KN_DC[knSeason()]&&DB&&knSeason()>=0) knLoad(knSeason()).then(()=>{ if(KV.scr==="isl") knDraw(); });
   document.querySelector("#kno .kn-x").onclick=()=>{ knClose(); openKuni(); };
   const C=KN.COLS, cw=k=>I.xs[k%C+1]-I.xs[k%C], ch=k=>I.ys[Math.floor(k/C)+1]-I.ys[Math.floor(k/C)];
   const box=(b,cls,inner="")=>`<div class="${cls}" style="left:${b[0]}px;top:${b[1]}px;width:${b[2]-b[0]}px;height:${b[3]-b[1]}px">${inner}</div>`;
@@ -7643,8 +7686,10 @@ function openKuniIsland(i){ if(!knIsOpen(i) && !KN_TEST) i=0; const I=KN.ISL[i];
   if(!DB||!MYID){ knWaitLogin().then(ok=>{ if(KV.scr!=="isl"||KV.i!==i) return; if(ok){ knClose(); openKuniIsland(i); } else knMsg(K_("ログインすると遊べます","Sign in to play")); }); return; }
   const ks=knSeason(); if(ks<0) return;
   let first=true;
-  KV.unsub=knRef(ks,i).onSnapshot(s=>{ if(KV.scr!=="isl"||KV.i!==i) return; const d=s.exists?s.data():knBlank(ks,i); d.c=d.c||{}; if(!d.g24){ knRemap(d); knTx(i,()=>({noop:1})); } const old=KV.d; KV.d=d;
-    if(!first) knNotice(old,d); first=false; knCheckDead([0,1,2,3].map(j=>j===i?d:null), ks); knDraw(); }, ()=>{});
+  KV.unsub=knRef(ks,i).onSnapshot(s=>{ if(KV.scr!=="isl"||KV.i!==i) return; const d=s.exists?s.data():knBlank(ks,i); d.c=d.c||{}; if(!d.g24){ knRemap(d); knTx(i,()=>({noop:1})); } const old=KV.d; KV.d=d; (KN_DC[ks]=KN_DC[ks]||[])[i]=d;
+    if(!first) knNotice(old,d); first=false;
+    { const mine=knMine(d), mn=mine&&d.n[mine]; if(mn&&mn.hm!=null&&!KV.hmUn){ KV.hmUn=knRef(ks,mn.hm).onSnapshot(s2=>{ if(KV.i!==i) return; (KN_DC[ks]=KN_DC[ks]||[])[mn.hm]=s2.exists?s2.data():null; knDraw(); },()=>{}); }   // 資金は最初の島にあるので、そちらも見ておく
+      if(!mine&&!KV.aj){ const o=knOther(); if(o&&d.n[o.nid]&&!d.n[o.nid].x){ KV.aj=1; knAutoJoin(i,o.nid,true); } } } knCheckDead([0,1,2,3].map(j=>j===i?d:null), ks); knDraw(); }, ()=>{});
 }
 function knTimer(){ const el=document.getElementById("knTm"); if(!el) return; const ks=knSeason(), now=knNow();
   el.innerHTML = knPre() ? `${K_("開始まで","Starts in")}<b>${knH(knT0()-now)}</b>${K_("時間","h")}` : `${K_("残り","")}<b>${knH(knEnd(ks)-now)}</b>${K_("時間","h left")}`; }
@@ -7678,20 +7723,34 @@ function knDraw(){ const st=document.querySelector("#kno .kn-isl-st"); if(!st) r
   document.getElementById("knPick").hidden=!KV.pick;
   const b0=document.getElementById("knB0"), b1=document.getElementById("knB1");
   if(mine){ const n=d.n[mine], pct=knContrib(n)(MYID); if(!KN_TEST && knS().rf && (!knLvOf(KV.i)||knLvOf(KV.i).nid!==mine)) knLvStart(KV.i,mine); if(!KN_TEST && !knS().rf) knRefundOnce();
-    b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(n.f||0)}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
+    b0.innerHTML=`<span class="kn-in">${esc(K_(`${n.nm}に参加中`,`In ${n.nm}`))}</span><small>${n.k===MYID?"":`${K_("国への貢献度","Contribution")} <b>${pct.toFixed(1)}%</b>　`}${K_("国の資金","Funds")} <b>${knNum(knFundOf(d,mine))}</b></small><em>${K_("国の詳細","Nation details")} ▶</em>`;
     b1.innerHTML = n.k===MYID ? `<span>${K_("国の強化","Strengthen")}</span><small>${K_("国の資金を使う","Uses national funds")}</small>` : `<span>${K_("資金を追加","Add funds")}</span><small>${K_("自分のコインを振り込む","Send your coins")}</small>`; }
+  else if(knOther()){ const o=knOther(); b0.innerHTML=`<span>${K_("この島に進出する","Expand here")}</span><small>${esc(o.n.nm)}${K_(`・国の資金${knNum(KN.EXPAND)}`,` · ${knNum(KN.EXPAND)} funds`)}</small>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; }
   else { b0.innerHTML=`<span>${K_("国を作る","Found a nation")}</span>`; b1.innerHTML=`<span>${K_("国に参加する","Join a nation")}</span>`; } }
+// ほかの島にある自分の国（この島にはまだいない）
+function knOther(){ const docs=(KN_DC[knSeason()]||[]).map((d,k)=>k===KV.i?null:d); return knMyNat(docs); }
 function knBtn(j){ try{ SFX.tap(); }catch(e){} const d=KV.d, mine=d&&knMine(d);
   if(mine){ const n=d.n[mine]; if(j===0) return knDetail(mine); return n.k===MYID ? knUpPick() : knDepositDlg(); }
   const why=knCan(); if(why) return knMsg(why);
   if(knSeason()>=0 && knNow()>=knEnd(knSeason())) return knMsg(K_("シーズン終了","The season is over"));
-  knBtn2(j); }   // ほかの島に国があっても、この島で国を作る・参加することができる（1つの島では1つの国だけ。島をまたいだ攻撃はできない）
+  // ほかの島に自分の国があるときは、新しい国は作れない。その国をこの島に広げる（進出）だけ。島をまたいだ攻撃はできない
+  const ks=knSeason(); knLoad(ks).then(docs=>{ if(KV.d) docs[KV.i]=KV.d; KN_DC[ks]=docs; const my=knMyNat(docs.map((d,k)=>k===KV.i?null:d)); if(!my) return knBtn2(j);
+    const here=KV.d&&KV.d.n&&KV.d.n[my.nid]; if(here&&!here.x) return knAutoJoin(KV.i,my.nid,true);
+    if(j===1) return knMsg(K_(`あなたは「${my.n.nm}」の国民なので、ほかの国には入れません`,`You belong to "${my.n.nm}", so you can't join another nation`));
+    const M=knMerged(docs,my.nid), top=knTopCit(docs,my.nid), fund=M?M.f:0;
+    if(top!==MYID) return knDlg(`<div class="kn-big">🗺</div><h3>${K_("この島に進出する","Expand to this island")}</h3><p>${K_(`「${esc(my.n.nm)}」をほかの島に広げられるのは、<b>国でいちばん貢献度が高い国民</b>だけです。その人がこの島の「王」になって、国を背負って進出します。`,`Only the <b>citizen with the highest contribution</b> in "${esc(my.n.nm)}" can spread it to another island. They become its King here and lead the nation in.`)}</p><p class="kn-sm">${K_(`国の資金${knNum(KN.EXPAND)}コインを使います。資金はどの島でも共通です。`,`Costs ${knNum(KN.EXPAND)} of national funds. Funds are shared across islands.`)}</p>`,[[K_("OK","OK"),null]]);
+    if(fund<KN.EXPAND) return knMsg(K_(`国の資金が足りません（${knNum(KN.EXPAND)}コイン必要）`,`Not enough national funds (${knNum(KN.EXPAND)} needed)`));
+    if(![...Array(KN.CELLS).keys()].some(k=>!((KV.d||{}).c||{})[k])) return knMsg(K_("この島には空いている場所がありません","No free spots on this island"));
+    KV.pick="exp"; KV.exp={nid:my.nid, hm:my.hm, nm:my.n.nm}; knDraw(); knMsg(K_("お城を建てる場所をえらんでね","Pick a spot for your castle")); }); }
 function knBtn2(j){
   if(j===0){ const best=S.best||0; if(false) return knDlg(`<div class="kn-big">👑</div><h3>${K_("国を作れません","You can't found a nation")}</h3><p>${K_(`国を作れるのは、ランク戦の<b>過去最高順位が10位以内</b>の冒険者だけです。<br>あなたの最高順位：<b>${best?best+"位":"―"}</b>`,`Only adventurers whose <b>best ranked placement is top 10</b> can found a nation.<br>Your best: <b>${best?"#"+best:"―"}</b>`)}</p><p class="kn-sm">${K_("国に参加することはできます！","You can still join a nation!")}</p>`,[[K_("OK","OK"),null]]);
     if([...Array(KN.CELLS).keys()].some(k=>!((KV.d||{}).c||{})[k])){ KV.pick=true; knDraw(); } else knMsg(K_("この島には空いている場所がありません","No free spots on this island")); }
   else knJoinList(); }
 function knCellTap(k){ const d=KV.d||knBlank(0,KV.i), c=d.c[k], mine=knMine(d);
-  if(KV.pick){ if(c) return knMsg(K_("その場所は空いていません","That spot isn't free")); KV.pick=false; knDraw(); return knMakeForm(k); }
+  if(KV.pick){ if(c) return knMsg(K_("その場所は空いていません","That spot isn't free")); const ex=KV.pick==="exp"&&KV.exp; KV.pick=false; knDraw();
+    if(ex) return knDlg(`<div class="kn-big">🗺</div><h3>${K_(`「${esc(ex.nm)}」を${knIsl(KV.i)}に広げる`,`Spread "${esc(ex.nm)}" to ${knIsl(KV.i)}`)}</h3><p>${K_(`あなたがこの島の<b>王</b>になって、国を背負って進出します。国の名前・マーク・資金はそのまま。国民もみんなこの島で戦えます。`,`You become the <b>King</b> here and lead the nation in. Name, mark and funds stay the same, and every citizen can fight on this island too.`)}</p><p class="kn-sm">${K_(`国の資金 −${knNum(KN.EXPAND)}コイン`,`National funds −${knNum(KN.EXPAND)}`)}</p>`,
+      [[K_("やめる","Cancel"),null],[K_("進出する！","Expand!"),async()=>{ const r=await knExpand(KV.i,k,ex.nid,ex.hm); knMsg(r.err||K_("🗺 この島に国が広がった！","🗺 Your nation spread to this island!")); }]]);
+    return knMakeForm(k); }
   if(!c) return;
   if(c.own){ const n=d.n[c.own]||{}; const can=c.own===mine && d.n[mine].k===MYID;
     return knDlg(`<h3>🚩 ${esc(K_(`${n.nm||"?"}の領土`,`${n.nm||"?"} territory`))}</h3><p>${K_("こわしたお城の跡地です。この国の王は、国の資金10万コインでここにお城を建てられます。","The site of a destroyed castle. This nation's King can build a castle here for 100,000 of national funds.")}</p>`,
@@ -7797,14 +7856,14 @@ function knIncomeHtml(d,nid,n){ const king=n.k===MYID, cs=knCastles(d,nid);
 function knDetail(nid){ const d=KV.d, n=d&&d.n[nid]; if(!n) return; const cf=knContrib(n), cs=knCastles(d,nid), rk=knRanked(d).findIndex(x=>x[0]===nid)+1, mine=knMine(d)===nid;
   const mem=Object.entries(n.m||{}).sort((a,b)=>(a[0]===n.k?-1:b[0]===n.k?1:(b[1].p||0)-(a[1].p||0)));
   const logT=e=>({atk:K_(`💣「${e.a}」→「${e.b}」に${e.x}ダメージ`,`💣 "${e.a}" hit "${e.b}" for ${e.x}`),brk:K_(`💥「${e.a}」が「${e.b}」のお城をこわした（${knNum(e.x)}コイン奪取）`,`💥 "${e.a}" destroyed a castle of "${e.b}" (took ${knNum(e.x)})`),
-    fall:K_(`👑「${e.a}」が「${e.b}」を倒した！`,`👑 "${e.a}" defeated "${e.b}"!`),make:K_(`🏰「${e.b}」ができた`,`🏰 "${e.b}" was founded`),join:K_(`🙋「${e.b}」に新しい国民が参加`,`🙋 A new citizen joined "${e.b}"`),build:K_(`🏰「${e.a}」が新しいお城を建てた`,`🏰 "${e.a}" built a new castle`),full:K_("🗺 島のマスが国で全部うまった！ 次の島が解放された","🗺 Every spot is filled by nations! The next island is now open"),move:K_(`🚚「${e.b}」がほかの島から引っ越してきた`,`🚚 "${e.b}" moved here from another island`),rep:K_(`🧱「${e.a}」がお城を修復（+${knNum(e.x)}）`,`🧱 "${e.a}" repaired a castle (+${knNum(e.x)})`),gun:K_(`💣「${e.a}」が大砲を購入`,`💣 "${e.a}" bought a cannon`),
+    fall:K_(`👑「${e.a}」が「${e.b}」を倒した！`,`👑 "${e.a}" defeated "${e.b}"!`),make:K_(`🏰「${e.b}」ができた`,`🏰 "${e.b}" was founded`),exp:K_(`🗺「${e.b}」がほかの島から進出してきた`,`🗺 "${e.b}" spread here from another island`),join:K_(`🙋「${e.b}」に新しい国民が参加`,`🙋 A new citizen joined "${e.b}"`),build:K_(`🏰「${e.a}」が新しいお城を建てた`,`🏰 "${e.a}" built a new castle`),full:K_("🗺 島のマスが国で全部うまった！ 次の島が解放された","🗺 Every spot is filled by nations! The next island is now open"),move:K_(`🚚「${e.b}」がほかの島から引っ越してきた`,`🚚 "${e.b}" moved here from another island`),rep:K_(`🧱「${e.a}」がお城を修復（+${knNum(e.x)}）`,`🧱 "${e.a}" repaired a castle (+${knNum(e.x)})`),gun:K_(`💣「${e.a}」が大砲を購入`,`💣 "${e.a}" bought a cannon`),
     matk:e.sl?K_(`🟦 スライム→「${e.b}」に${e.x}ダメージ`,`🟦 A slime hit "${e.b}" for ${e.x}`):K_(`👹 魔物の城→「${e.b}」に${e.x}ダメージ`,`👹 Monster Castle hit "${e.b}" for ${e.x}`),
     skill:K_(`🟦「${e.a}」がスライムをたおした`,`🟦 "${e.a}" defeated a slime`),mbrk:K_(`👹 魔物の城が「${e.b}」のお城をこわした`,`👹 A Monster Castle destroyed a castle of "${e.b}"`),
     mfall:K_(`👹 魔物の城が「${e.b}」を倒した…`,`👹 A Monster Castle defeated "${e.b}"...`),mkill:K_(`⚔️「${e.a}」が魔物の城をこわした（+${knNum(e.x)}）`,`⚔️ "${e.a}" destroyed a Monster Castle (+${knNum(e.x)})`)})[e.k]||"";
   const logs=(d.log||[]).filter(e=>e.a===n.nm||e.b===n.nm).slice(0,12);
   knDlg(`<div class="kn-chead">${knMarkHtml(n,"kn-mk")}<div><h3>${esc(n.nm)}</h3><small>${knIsl(KV.i)}　${K_(`島で${rk}位`,`#${rk} on the island`)}</small></div></div>
     ${mine?knIncomeHtml(d,nid,n):""}
-    ${mine?`<div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(n.f||0)}</b><small>${K_("コイン","coins")}</small></div>`:`<p class="kn-sm">🔒 ${K_("国の資金・お城・大砲・武器のレベル・国民の名前は、この国の王と国民しか見られません","Only this nation's King and citizens can see its funds, levels and citizens' names")}</p>`}
+    ${mine?`<div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(knFundOf(d,nid))}</b><small>${K_("コイン","coins")}</small></div>`:`<p class="kn-sm">🔒 ${K_("国の資金・お城・大砲・武器のレベル・国民の名前は、この国の王と国民しか見られません","Only this nation's King and citizens can see its funds, levels and citizens' names")}</p>`}
     <h4>🏰 ${K_("お城","Castles")}（${cs.length}）</h4><div class="kn-clist">${cs.map(([k,c])=>{ const hc=Object.values(n.m||{}).filter(m=>m.at===k).length;
       return mine?`<div><img src="kuni/castle${c.lv}.png" alt=""><small>${K_("お城","Castle")}Lv${c.lv}・${K_("大砲","Cannons")} ${knGunTxt(c)}・${K_("武器","Weapons")}Lv${c.eq}</small><small>${K_("耐久力","HP")} ${knNum(knHp(c))}/${knNum(KN.HP[c.lv])}・${K_(`中に${hc}人`,`${hc} inside`)}</small></div>`
         :`<div><img src="kuni/castle${c.lv}.png" alt=""><small>${K_(`中に${hc}人`,`${hc} inside`)}</small></div>`; }).join("")}${mine?`<button type="button" class="kn-bdbtn" id="knBd"><b>📋</b><span>${K_("国の掲示板","Nation board")}</span><small id="knBdNew">${K_("王と国民で話そう","Talk with your nation")}</small></button>`:""}</div>
@@ -7820,17 +7879,17 @@ function knUpPick(){ const d=KV.d, nid=knMine(d), cs=knCastles(d,nid); if(cs.len
 function knUpDlg(cell){ const draw=()=>{ const d=KV.d, nid=knMine(d), n=d.n[nid], c=d.c[cell]; if(!c||!c.lv) return;
   const row=(kind,ic,nm,eff)=>{ const gi=kind[0]==="g"?+kind.slice(1):-1, lv=gi>=0?knGuns(c)[gi].lv:c[kind], mx=lv>=6, cost=KN.UP[gi>=0?"g":kind][lv+1];
     return `<div class="kn-up"><div class="kn-upic"><img src="${ic(lv)}" alt=""></div><div class="kn-upt"><b>${nm} Lv${lv}${mx?" (MAX)":` → Lv${lv+1}`}</b><small>${eff(lv)}${mx?"":` → ${eff(lv+1)}`}</small><span class="kn-stars">${"★".repeat(lv)}${"☆".repeat(6-lv)}</span></div>
-      <button type="button" class="kn-b" data-up="${kind}" ${mx||(n.f||0)<cost?"disabled":""}>${mx?"MAX":`${knNum(cost)}`}</button></div>`; };
+      <button type="button" class="kn-b" data-up="${kind}" ${mx||knFundOf(d,nid)<cost?"disabled":""}>${mx?"MAX":`${knNum(cost)}`}</button></div>`; };
   const bg=knDlg(`<h3>🔨 ${K_("国の強化","Strengthen the nation")}</h3><img class="kn-cimg sm" src="kuni/castle${c.lv}.png" alt="">
-    <div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(n.f||0)}</b><small>${K_("コイン","coins")}</small></div>
+    <div class="kn-fund"><small>${K_("国の資金","National funds")}</small><b>${knNum(knFundOf(d,nid))}</b><small>${K_("コイン","coins")}</small></div>
     ${(()=>{ const now=knNow(), hp=knHp(c,now), mx=KN.HP[c.lv], h=knRepairCost(c,0.5,now), f=knRepairCost(c,1,now);
       return `<div class="kn-up"><div class="kn-upic" style="font-size:34px">🧱</div><div class="kn-upt"><b>${K_("お城の修復","Repair castle")}</b><small>${K_("耐久力","HP")} ${knNum(hp)} / ${knNum(mx)}（${K_(`耐久力1につき資金${knNum(knRepairRate(c))}・修復${(c.rn||0)+1}回目`,`${knNum(knRepairRate(c))} funds per HP · repair #${(c.rn||0)+1}`)}）</small>
         <div class="kn-hpbig" style="margin-top:4px"><div><i style="width:${(hp/mx*100).toFixed(1)}%"></i></div></div></div>
-        <div style="display:flex;flex-direction:column;gap:5px"><button type="button" class="kn-b" data-rep="0.5" ${h.add<=0||(n.f||0)<h.cost?"disabled":""}>${K_("半分","Half")} ${knNum(h.cost)}</button><button type="button" class="kn-b" data-rep="1" ${f.add<=0||(n.f||0)<f.cost?"disabled":""}>${K_("全回復","Full")} ${knNum(f.cost)}</button></div></div>`; })()}
+        <div style="display:flex;flex-direction:column;gap:5px"><button type="button" class="kn-b" data-rep="0.5" ${h.add<=0||knFundOf(d,nid)<h.cost?"disabled":""}>${K_("半分","Half")} ${knNum(h.cost)}</button><button type="button" class="kn-b" data-rep="1" ${f.add<=0||knFundOf(d,nid)<f.cost?"disabled":""}>${K_("全回復","Full")} ${knNum(f.cost)}</button></div></div>`; })()}
     ${row("lv",l=>`kuni/castle${l}.png`,K_("お城","Castle"),l=>K_(`耐久力${knNum(KN.HP[l])}・守り${Math.round(KN.GUARD[l]*100)}%`,`HP ${knNum(KN.HP[l])}, guard ${Math.round(KN.GUARD[l]*100)}%`))}
     ${knGuns(c).map((g,j)=>row("g"+j,l=>`kuni/cannon${l}.png`,K_(`大砲${j+1}`,`Cannon ${j+1}`),l=>K_(`1発${knNum(KN.GUN[l])}（15分に${KN.C_N}発）`,`${knNum(KN.GUN[l])}/shot (${KN.C_N} per 15 min)`))).join("")}
     ${knGuns(c).length<KN.GUN_MAX?`<div class="kn-up"><div class="kn-upic"><img src="kuni/cannon1.png" alt="" style="opacity:.55"></div><div class="kn-upt"><b>${K_(`大砲を購入（${knGuns(c).length+1}つ目）`,`Buy a cannon (#${knGuns(c).length+1})`)}</b><small>${K_(`お城ひとつに${KN.GUN_MAX}つまで。買うと撃てるようになる（Lv1：1発${KN.GUN[1]}・15分に${KN.C_N}発）`,`Up to ${KN.GUN_MAX} per castle. Buy one to start firing (Lv1: ${KN.GUN[1]}/shot, ${KN.C_N} per 15 min)`)}</small><span class="kn-stars">☆☆☆☆☆☆</span></div>
-      <button type="button" class="kn-b" id="knBuyGun" ${(n.f||0)<KN.GUN_BUY?"disabled":""}>${knNum(KN.GUN_BUY)}</button></div>`:""}
+      <button type="button" class="kn-b" id="knBuyGun" ${knFundOf(d,nid)<KN.GUN_BUY?"disabled":""}>${knNum(KN.GUN_BUY)}</button></div>`:""}
     ${row("eq",l=>`kuni/weapon${l}.png`,K_("国民の装備（武器）","Citizen weapons"),l=>K_(`1回${knNum(KN.WEP[l])}（1人15分に${KN.W_N}回）`,`${knNum(KN.WEP[l])}/hit (${KN.W_N} per person per 15 min)`))}
     <p class="kn-sm">${K_("購入や強化ができるのは王だけ（国の資金を使う）。強化はお城ごとで、レベルが上がるほど必要な資金はどんどん増えます。国民の武器は、そのお城の中にいる国民が使います。国民が多い国は武器、少ない国は大砲、守りを固めるならお城…国の戦い方を考えよう！","Only the King can buy and upgrade (using national funds). Upgrades are per castle, and each level costs much more than the last. Citizens use the weapons of the castle they're in. Many citizens? Weapons. Few? Cannons. Turtle up? Castles. Find your nation's way to fight!")}</p>`,
     [[K_("閉じる","Close"),null],[K_("💰 資金を追加","💰 Add funds"),()=>{ setTimeout(knDepositDlg,0); }]],{cls:"wide"});
