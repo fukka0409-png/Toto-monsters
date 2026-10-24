@@ -13,14 +13,14 @@
 const MB_MONS = [
   { id:1, name:"スライム", en:"Slime", img:"mb/m1.png", back:"mb/m1b.png", atk:1, hp:3, magic:null },   // 2026-10-24 追加
   { id:2, name:"戦士トト", en:"Warrior Toto", img:"mb/m2.png", back:"mb/m2b.png", atk:5, hp:3, magic:{ name:"必殺の一撃", en:"Finishing Blow", desc:"2ターンに1度、敵1体に攻撃力の2倍の攻撃を与える", kind:"one", power:2, cd:2 } },   // 2026-10-24 追加
-  { id:3, name:"闇堕ちハム", en:"Fallen Ham", img:"mb/m3.png", back:"mb/m3b.png", atk:7, hp:5, magic:{ name:"いのちの一撃", en:"Life Strike", desc:"となりに並んでいる味方の魔物の体力を半分に減らす代わりに、敵1体に攻撃力×5のダメージ（1バトルに1度だけ）", kind:"sac", power:5, once:true } },   // 2026-10-24 追加
+  { id:3, name:"闇落ちハム", en:"Fallen Ham", img:"mb/m3.png", back:"mb/m3b.png", atk:7, hp:5, magic:{ name:"いのちの一撃", en:"Life Strike", desc:"となりに並んでいる味方の魔物の体力を半分に減らす代わりに、敵1体に攻撃力×5のダメージ（1バトルに1度だけ）", kind:"sac", power:5, once:true } },   // 2026-10-24 追加
 ];
 // 武器（装備）：atk・hp を足す。例：{ id:1, name:"木の剣", img:"mb/w1.png", atk:2, hp:0 }
 const MB_WEAPONS = [];
 // アイテム：price で買える。heal＝体力を回復。例：{ id:1, name:"やくそう", img:"mb/i1.png", price:500, heal:5 }
 const MB_ITEMS = [];
 // ガチャ：cost＝1回のコイン、pool＝[{id, w（出やすさ）}]。中身が空のあいだは「準備中」
-const MB_GACHA = { mon:{ cost:5000, pool:[ {id:1, w:38}, {id:2, w:2}, {id:3, w:1} ] }, weapon:{ cost:2000, pool:[] } };   // 魔物：スライム38・戦士トト2（約20分の1）・闇堕ちハム1（約40分の1）
+const MB_GACHA = { mon:{ cost:5000, pool:[ {id:1, w:38}, {id:2, w:2}, {id:3, w:1} ] }, weapon:{ cost:2000, pool:[] } };   // 魔物：スライム38・戦士トト2（約20分の1）・闇落ちハム1（約40分の1）
 
 const MB = { SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
