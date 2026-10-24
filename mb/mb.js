@@ -37,7 +37,7 @@ function mbPower(m){ if(!m) return 0; let mg=0; const g=m.magic;
   return m.atk + m.hp*0.6 + mg; }
 const mbTier = m => Math.max(1, Math.min(10, 1+Math.floor(Math.log(Math.max(1e-9,mbPower(m))/2.5)/Math.log(1.6))));
 const TIER_P = [40, 22, 13, 9, 6, 4, 3, 1.5, 1, 0.5];   // 段階1〜10の確率（%）
-const MB = { SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
+const MB = { RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
 const sfx = (k,a) => { try{ SFX[k](a); }catch(e){} };
 const fmt = n => Math.floor(n||0).toLocaleString();
@@ -66,10 +66,12 @@ css.textContent=`
 #mbo .hit:active{background:#0002}
 #mbo .mb-back{position:absolute;z-index:3;border:4px solid #3a2306;background:#fff3d6;color:#3a2306;border-radius:999px;padding:10px 22px;font:900 28px/1 var(--f-body,sans-serif)}
 #mbo .mb-coin{position:absolute;left:700px;top:96px;width:192px;height:56px;display:flex;align-items:center;justify-content:flex-end;font:900 42px/1 var(--f-pix,monospace);color:#3a2306}
+#mbo .mb-rlab{position:absolute;left:86px;top:1436px;width:240px;height:60px;background:#f3dcaa;display:flex;align-items:center;justify-content:center;white-space:nowrap;font:900 32px/1 var(--f-body,sans-serif);color:#3a2306;pointer-events:none;border-radius:6px}
+#mbo .mb-rwr{position:absolute;left:72px;top:1532px;width:266px;text-align:center;font:900 26px/1.25 var(--f-body,sans-serif);color:#fff;background:#000b;border:3px solid #ffd75e;border-radius:14px;padding:6px 4px;pointer-events:none}
 #mbo .mb-cnt{position:absolute;left:72px;top:1300px;width:266px;text-align:center;font:900 26px/1.1 var(--f-body,sans-serif);color:#3a2306}
 #mbo .mb-quest{position:absolute;left:338px;top:1290px;width:266px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#3a2306;pointer-events:none}
 #mbo .mb-quest i{font-style:normal;font-size:70px;line-height:1}
-#mbo .mb-quest b{font:900 34px/1 var(--f-body,sans-serif)}
+#mbo .mb-quest b{font:900 30px/1 var(--f-body,sans-serif)}
 #mbo .mb-quest small{font:900 22px/1 var(--f-body,sans-serif);color:#7a3b00}
 /* 編成 */
 #mbo .fm-cell{position:absolute;display:flex;align-items:center;justify-content:center}
@@ -175,9 +177,10 @@ function openMenu(){ const s=shell(941,1672,"mb/menu.jpg"); st(); sfx("tap");
   s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:24px;top:40px">← ${T("もどる","Back")}</button>
     <div class="mb-coin" id="mbCoin"></div>
     ${hit("mbForm",55,238,835,237,T("魔物編成","Formation"))}${hit("mbShop",55,492,835,235,T("アイテム購入","Items"))}${hit("mbGacha",55,748,835,237,T("ガチャ","Gacha"))}${hit("mbBox",55,1003,835,232,T("魔物BOX","Monster BOX"))}
-    <div class="mb-cnt" id="mbCnt">${T("（参加人数）","(players)")}</div>
+    <div class="mb-cnt" id="mbCnt">${T("参加者 1人","1 player")}</div><div class="mb-rlab">${T("ランクマッチ","Rank Match")}</div>
+    <div class="mb-rwr">${T("ランクマッチ勝率","Rank win rate")} ${rankRate()}<br><small>${T(`${st().rw||0}勝 ${st().rl||0}敗`,`${st().rw||0}W ${st().rl||0}L`)}</small></div>
     <div class="mb-quest"><i>⚔️</i><b>${T("クエストマッチ","Quest Match")}</b><small>${T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`)}</small></div>
-    ${hit("mbRand",72,1265,266,260,T("ランダムマッチ","Random Match"))}${hit("mbQuest",338,1265,266,260,T("クエストマッチ","Quest Match"))}${hit("mbFriend",604,1265,266,260,T("フレンドマッチ","Friend Match"))}`;
+    ${hit("mbRand",72,1265,266,260,T("ランクマッチ","Rank Match"))}${hit("mbQuest",338,1265,266,260,T("クエストマッチ","Quest Match"))}${hit("mbFriend",604,1265,266,260,T("フレンドマッチ","Friend Match"))}`;
   coinUpd(); const g=id=>document.getElementById(id);
   g("mbX").onclick=()=>{ sfx("tap"); closeAll(); };
   g("mbForm").onclick=()=>openForm(); g("mbShop").onclick=()=>openShop(); g("mbGacha").onclick=()=>openGacha(); g("mbBox").onclick=()=>openBox();
@@ -185,7 +188,8 @@ function openMenu(){ const s=shell(941,1672,"mb/menu.jpg"); st(); sfx("tap");
   countPlayers(); }
 window.openMB = openMenu;
 async function countPlayers(){ const el=document.getElementById("mbCnt"); if(!el||!DB) return;
-  try{ const q=await DB.collection("mbq").where("at",">",now()-25000).get(); if(document.getElementById("mbCnt")) el.textContent=T(`待っている人 ${q.size}人`,`${q.size} waiting`); }catch(e){} }
+  try{ const q=await DB.collection("mbq").where("at",">",now()-25000).get(); if(document.getElementById("mbCnt")) el.textContent=T(`参加者 ${Math.max(1,q.size)}人`,`${Math.max(1,q.size)} player(s)`); }catch(e){} }   // いつも1人以上の表示
+const rankRate = () => { const b=st(), t=(b.rw||0)+(b.rl||0); return t?`${(Math.round((b.rw||0)/t*1000)/10)}%`:"―"; };
 
 /* ---------- 2：魔物編成 ---------- */
 const FROWS=[200,385,570,885,1070,1255];
@@ -239,8 +243,10 @@ function openGacha(){ const box=page(`🎰 ${T("ガチャ","Gacha")}`, ""); cons
   box.innerHTML=`<button type="button" class="bigbtn" id="gcM" ${MB_MONS.length?"":"disabled"}>🥚 ${T("魔物ガチャ","Monster Gacha")}<small>${MB_MONS.length?T(`1回 ${fmt(G.mon.cost)}コイン`,`${fmt(G.mon.cost)} coins`):T("準備中","Coming soon")}</small></button>
     <button type="button" class="bigbtn" id="gcW" ${G.weapon.pool.length?"":"disabled"}>🗡 ${T("装備ガチャ","Equipment Gacha")}<small>${G.weapon.pool.length?T(`1回 ${fmt(G.weapon.cost)}コイン`,`${fmt(G.weapon.cost)} coins`):T("準備中","Coming soon")}</small></button>
     <p class="note">${T(`魔物BOXの枠：${st().units.length}/${st().slots}`,`BOX: ${st().units.length}/${st().slots}`)}</p>
-    <div class="card" style="max-width:520px;margin:10px auto;align-items:stretch;text-align:left;font-size:13px"><b style="text-align:center">📊 ${T("魔物ガチャの出る確率（強さ10段階）","Monster gacha rates (10 power tiers)")}</b><small style="text-align:center;opacity:.8">${T("段階ごとの確率：","Tier rates: ")}${TIER_P.map((v,i)=>`Lv${i+1} ${v}%`).join("・")}</small>${(()=>{ const P=monPool(), tot=P.reduce((a,x)=>a+x.w,0); return MB_MONS.slice().sort((a,b)=>mbTier(a)-mbTier(b)).map(m=>`<div style="display:flex;align-items:center;gap:6px;border-top:1px solid #0002;padding:3px 0"><img src="${m.img}" alt="" style="width:34px;height:34px"><span style="flex:1">${esc2(mname(m))}<br><small>${T("強さ","Power")} ${tierStars(mbTier(m))}</small></span><b>${(P.find(x=>x.id===m.id).w/tot*100).toFixed(1)}%</b></div>`).join(""); })()}</div>`;
+    <div class="card" style="max-width:520px;margin:10px auto;align-items:stretch;text-align:left;font-size:13px"><b style="text-align:center">📊 ${T("魔物ガチャの出る確率（強さ10段階）","Monster gacha rates (10 power tiers)")}</b><small style="text-align:center;opacity:.8">${T("段階ごとの確率：","Tier rates: ")}${TIER_P.map((v,i)=>`Lv${i+1} ${v}%`).join("・")}</small>${(()=>{ const P=monPool(), tot=P.reduce((a,x)=>a+x.w,0); return MB_MONS.slice().sort((a,b)=>mbTier(a)-mbTier(b)).map(m=>`<div style="display:flex;align-items:center;gap:6px;border-top:1px solid #0002;padding:3px 0"><img src="${m.img}" alt="" style="width:34px;height:34px;${gotMon(m.id)?"":"filter:brightness(0);opacity:.85"}"><span style="flex:1">${esc2(mname(m))}<br><small>${T("強さ","Power")} ${tierStars(mbTier(m))}</small></span><b>${(P.find(x=>x.id===m.id).w/tot*100).toFixed(1)}%</b></div>`).join(""); })()}</div>`;
   box.querySelector("#gcM").onclick=()=>pull("mon"); box.querySelector("#gcW").onclick=()=>pull("weapon"); }
+// 1度でも手に入れた魔物（手に入れていない魔物は、黒いシルエットで表示）
+const gotMon = id => { const b=st(); return !!((b.seen||{})[id] || b.units.some(u=>u.id===id)); };
 function monPool(){ const cnt={}; MB_MONS.forEach(m=>{ const t=mbTier(m); cnt[t]=(cnt[t]||0)+1; });
   const low=Math.min(...Object.keys(cnt).map(Number)), rest=TIER_P.reduce((a,v,i)=>a+(cnt[i+1]?0:v),0);
   return MB_MONS.map(m=>{ const t=mbTier(m); return {id:m.id, t, w:(TIER_P[t-1]+(t===low?rest:0))/cnt[t]}; }); }
@@ -248,7 +254,7 @@ function pick(pool){ const tot=pool.reduce((a,x)=>a+(x.w||1),0); let r=Math.rand
 function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); if(!G.pool.length) return; if((S.coins||0)<G.cost) return dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`);
   S.coins-=G.cost; coinUpd(); const b=st(); const id=pick(G.pool); sfx("reveal","S");
   if(kind==="weapon"){ const w=wOf(id); b.weap[id]=(b.weap[id]||0)+1; save(); return dlg(`<h3>🗡 ${T("ゲット！","Got it!")}</h3>${w?`<img src="${w.img}" alt="" style="width:140px;height:140px;object-fit:contain"><p><b>${esc2(w.name)}</b><br>⚔+${w.atk||0} ❤+${w.hp||0}</p>`:""}`,[[T("OK","OK"),()=>openGacha()]]); }
-  const m=monOf(id), nu={u:b.nu++, id}; save();
+  const m=monOf(id), nu={u:b.nu++, id}; b.seen=b.seen||{}; b.seen[id]=1; save();
   const add=()=>{ b.units.push(nu); save(); openGacha(); };
   const show=`<img src="${m?m.img:""}" alt="" style="width:140px;height:140px;object-fit:contain;image-rendering:pixelated"><p><b>${esc2(mname(m))}</b><br>⚔ ${m?m.atk:0}　❤ ${m?m.hp:0}${m&&m.magic?`<br>✨ ${esc2(m.magic.name)}`:""}</p>`;
   // かぶったとき：レベルアップか、BOXへ入れるかをえらべる
@@ -322,9 +328,14 @@ function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[
   const da=sideDead(B.a), db=sideDead(B.b); if(da||db) B.end = da&&db ? "draw" : da ? "b" : "a";
   return {ev, hits, outs}; }
 // ボットの作戦
-function botActs(B, s, R){ const sd=s?B.b:B.a, o=s?B.a:B.b; const lt=[0,1,2].filter(p=>alive(o.us[o.field[p]]));
+function botActs(B, s, R, sty){ const sd=s?B.b:B.a, o=s?B.a:B.b; const lt=[0,1,2].filter(p=>alive(o.us[o.field[p]]));
   const used=new Set(); return [0,1,2].map(p=>{ let u=sd.us[sd.field[p]];
     if(!alive(u)){ const r=reserves(sd).find(i=>alive(sd.us[i])&&!used.has(i)); if(r==null) return null; used.add(r); u=sd.us[r]; return {t:"atk", tg:lt[Math.floor(R()*lt.length)], in:r}; }
+    if(sty){ const tot=Object.values(sty).reduce((a,v)=>a+v,0)||1, x=R()*tot, g=(sty.guard||0), m=(sty.magic||0), l=(sty.lvup||0);   // 過去のデータの冒険者：その人の戦略の割合で動く
+      if(x<g && u.g>0) return {t:"guard"};
+      if(x<g+m && magicReady(u,B)){ const mg=(monOf(u.id)||{}).magic; if(mg&&mg.kind==="healone"){ const al=[0,1,2].filter(q=>alive(sd.us[sd.field[q]])).sort((x2,y2)=>sd.us[sd.field[x2]].hp/sd.us[sd.field[x2]].max-sd.us[sd.field[y2]].hp/sd.us[sd.field[y2]].max); return {t:"magic", ally:al[0]}; } return {t:"magic", tg:lt[Math.floor(R()*lt.length)]}; }
+      if(x<g+m+l) return {t:"lvup"};
+      return {t:"atk", tg:lt[Math.floor(R()*lt.length)]}; }
     if(u.hp<u.max*.35 && u.g>0 && R()<.45) return {t:"guard"};
     const mg=(monOf(u.id)||{}).magic;
     if(mg && mg.kind==="healone" && magicReady(u,B)){ const al=[0,1,2].filter(q=>alive(sd.us[sd.field[q]])).sort((x,y)=>sd.us[sd.field[x]].hp/sd.us[sd.field[x]].max-sd.us[sd.field[y]].hp/sd.us[sd.field[y]].max); const q=al[0]; if(q!=null&&sd.us[sd.field[q]].hp<sd.us[sd.field[q]].max) return {t:"magic", ally:q}; }
@@ -411,6 +422,7 @@ function ready(auto){ if(V.submitted||V.anim||V.B.end) return; const me=mySide()
   // レベルアップのコインは、決めたときに払う
   const lv=acts.filter(a=>a&&a.t==="lvup").length; if(lv){ if((S.coins||0)<lv*MB.LVUP){ return dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`); } S.coins-=lv*MB.LVUP; save(); coinUpd(); }
   acts.forEach(a=>{ if(a&&a.t==="item"){ const b=st(); b.items[a.i]=Math.max(0,(b.items[a.i]||0)-1); } }); save();
+  { const sty=st().style=st().style||{}; acts.forEach(a=>{ if(a&&a.t) sty[a.t]=(sty[a.t]||0)+1; }); }   // 戦い方の記録（過去のデータの相手に使う）
   V.submitted=true; sfx("tap"); drawBattle(); V.cfg.send(withIn(acts)); }
 // 両方の作戦がそろったら、結果を見せる
 async function playTurn(actsA, actsB){ if(V.anim) return; V.anim=true; const B=V.B, before=JSON.parse(JSON.stringify(B));
@@ -439,8 +451,10 @@ function finish(endSide, giveup, silent){ const B=V.B; if(B.end&&B._done) return
   if(res==="win"){ // レベルは持ちこし
     mySide().us.forEach(u=>{ if(b.form[u.slot]) b.form[u.slot].lv=u.lv; });
   } else if(res==="lose"){ b.form.forEach(f=>{ if(f) f.lv=1; }); }
-  let coin=0; if(res==="win"){ coin=V.cfg.mode==="quest"?questPrize(V.cfg.qlv):MB.WIN_COIN; S.coins+=coin; if(V.cfg.mode==="quest") b.qlv=(b.qlv||1)+1; b.w=(b.w||0)+1; } else if(res==="lose") b.l=(b.l||0)+1;
-  save(); coinUpd(); V.cfg.onEnd&&V.cfg.onEnd(res);
+  const rank=V.cfg.mode==="rank"||V.cfg.mode==="ghost";   // ランクマッチ（リアルタイムの相手・過去のデータの相手）：勝率に入るのは自分だけ
+  if(rank){ if(res==="win") b.rw=(b.rw||0)+1; else if(res==="lose") b.rl=(b.rl||0)+1; }
+  let coin=0; if(res==="win"){ coin=V.cfg.mode==="quest"?questPrize(V.cfg.qlv):rank?MB.RANK_COIN:MB.WIN_COIN; S.coins+=coin; if(V.cfg.mode==="quest") b.qlv=(b.qlv||1)+1; b.w=(b.w||0)+1; } else if(res==="lose") b.l=(b.l||0)+1;
+  save(); coinUpd(); V.cfg.onEnd&&V.cfg.onEnd(res); publishMe();
   if(silent) return;
   sfx(res==="win"?"reveal":"ng", "S");
   dlg(`<div style="font-size:60px">${res==="win"?"🏆":res==="draw"?"🤝":"💀"}</div><h3>${res==="win"?T("勝利！","Victory!"):res==="draw"?T("引き分け","Draw"):T("敗北…","Defeat...")}</h3>
@@ -464,18 +478,34 @@ function needLogin(){ if(!DB||!MYID){ dlg(`<p>${T("ログインすると対戦�
 function waitDlg(txt, onCancel){ const bg=dlg(`<div style="font-size:50px">⏳</div><h3>${txt}</h3><p id="mbWt" style="font-size:12px"></p>`,[[T("やめる","Cancel"),()=>{ onCancel(); }]],{modal:true}); return bg; }
 async function startRandom(){ if(!needTeam()||!needLogin()) return; const team=myTeam(), ref=DB.collection("mbq").doc(MYID); let done=false;
   const stop=()=>{ done=true; clearInterval(V.hb); (V.unsubs||[]).forEach(u=>{ try{ u(); }catch(e){} }); V.unsubs=[]; ref.delete().catch(()=>{}); };
-  const bg=waitDlg(T("対戦相手をさがしています…","Looking for an opponent..."), stop);
+  const bg=waitDlg(T("ランクマッチの対戦相手をさがしています…","Looking for a Rank Match opponent..."), stop);
+  publishMe();
+  // しばらく待ってもリアルタイムの相手がいなければ、ほかの冒険者の過去のデータ（いちばん勝率が高い編成）と戦う
+  setTimeout(async()=>{ if(done) return; stop(); try{ await ghostGo(team); bg.remove(); }catch(e){ bg.remove(); dlg(`<p>${T("相手が見つかりませんでした","No opponent found")}</p>`); } }, MB.GHOST_WAIT);
   try{ await ref.set({uid:MYID, at:now(), team, m:null}); }catch(e){ bg.remove(); return dlg(`<p>${T("つながりませんでした","Couldn't connect")} ${esc2(e.code||"")}</p>`); }
   V.hb=setInterval(()=>{ if(!done) ref.update({at:now()}).catch(()=>{}); },8000);
-  V.unsubs=[ref.onSnapshot(s=>{ const d=s.data(); if(!done&&d&&d.m){ stop(); bg.remove(); joinMatch(d.m); } },()=>{})];
+  V.unsubs=[ref.onSnapshot(s=>{ const d=s.data(); if(!done&&d&&d.m){ stop(); bg.remove(); joinMatch(d.m,"rank"); } },()=>{})];
   // 自分からも相手をさがす
   const seek=async()=>{ if(done) return; try{ const q=await DB.collection("mbq").where("at",">",now()-25000).limit(30).get();
       const c=q.docs.map(x=>x.data()).filter(x=>x.uid!==MYID&&!x.m).sort((a,b)=>a.at-b.at)[0];
       if(c){ const id=await DB.runTransaction(async tx=>{ const r2=DB.collection("mbq").doc(c.uid), s2=await tx.get(r2), s1=await tx.get(ref); if(!s2.exists||s2.data().m||!s1.exists||s1.data().m) return null;
           const mref=DB.collection("mbm").doc(); tx.set(mref,{a:c.uid, b:MYID, ta:s2.data().team, tb:team, seed:Math.floor(Math.random()*4e9), at:now()}); tx.update(r2,{m:mref.id}); tx.update(ref,{m:mref.id}); return mref.id; });
-        if(id) return; } }catch(e){}
+        if(id){ if(!done){ stop(); bg.remove(); joinMatch(id,"rank"); } return; } } }catch(e){}
     if(!done) setTimeout(seek, 3000+Math.random()*2000); };
   seek(); }
+// 自分の編成・ランクマッチの勝敗・戦い方を公開（過去のデータの相手として使われる）。使われても、本人の勝率は変わらない
+function publishMe(){ if(!DB||!MYID) return; const b=st(), team=myTeam(); if(!team.some(Boolean)) return;
+  let nm=""; try{ nm=myName(); }catch(e){}
+  DB.collection("mbp").doc(MYID).set({uid:MYID, nm:String(nm||"").slice(0,24), team, w:b.rw||0, l:b.rl||0, st:b.style||{}, at:now()}).catch(()=>{}); }
+async function ghostGo(myteam){ const q=await DB.collection("mbp").limit(300).get();
+  const L=q.docs.map(x=>x.data()).filter(x=>x&&x.uid!==MYID&&Array.isArray(x.team)&&x.team.some(t=>t&&monOf(t.id)));
+  if(!L.length) throw 0;
+  const rate=x=>{ const t=(x.w||0)+(x.l||0); return t?(x.w||0)/t:0; };
+  L.sort((a,b)=>rate(b)-rate(a)||(b.w||0)-(a.w||0)||(b.at||0)-(a.at||0)); const g=L[0];
+  const team=g.team.map(t=>t&&monOf(t.id)?{id:t.id, lv:Math.max(1,t.lv||1), w:wOf(t.w)?t.w:null}:null);
+  const B={a:mkSide(myteam), b:mkSide(team), turn:0, seed:Math.floor(Math.random()*4e9)};
+  openBattle({mode:"ghost", B, me:0, send:acts=>{ const ba=botActs(V.B,1,rng((V.B.seed+V.B.turn*31)>>>0), g.st&&Object.keys(g.st).length?g.st:null); setTimeout(()=>playTurn(acts,ba),900); } });
+  setTimeout(()=>say(T(`🏆 ${esc2(g.nm||"冒険者")}さんの編成（勝率 ${Math.round(rate(g)*1000)/10}%）と対戦！`,`🏆 Battling ${esc2(g.nm||"an adventurer")}'s team (win rate ${Math.round(rate(g)*1000)/10}%)!`),2600),1700); }
 function passKey(p){ let h=5381; const s=String(p).trim(); for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return "k"+(h>>>0).toString(36)+"_"+s.length; }
 function startFriend(){ if(!needTeam()||!needLogin()) return;
   const bg=dlg(`<h3>🤝 ${T("フレンドマッチ","Friend Match")}</h3><p>${T("おたがい同じあいことばを入れると対戦できます。","Enter the same passphrase as your friend.")}</p><input id="mbPass" maxlength="20" placeholder="${T("あいことば","Passphrase")}">`,[[T("やめる","Cancel"),null],[T("さがす","Search"),b=>{ const p=(b.querySelector("#mbPass").value||"").trim(); if(p.length<2){ return true; } b.remove(); friendGo(p); }]]);
@@ -490,10 +520,10 @@ async function friendGo(pass){ const team=myTeam(), ref=DB.collection("mbf").doc
   }catch(e){ bg.remove(); return dlg(`<p>${T("つながりませんでした","Couldn't connect")} ${esc2(e.code||"")}</p>`); }
   V.hb=setInterval(()=>{ if(!done) ref.update({at:now()}).catch(()=>{}); },8000);
   V.unsubs=[ref.onSnapshot(s=>{ const d=s.data(); if(!done&&d&&d.m&&d.uid===MYID){ stop(); bg.remove(); joinMatch(d.m); } },()=>{})]; }
-async function joinMatch(id){ const ref=DB.collection("mbm").doc(id); let d; try{ d=(await ref.get()).data(); }catch(e){} if(!d) return dlg(`<p>${T("対戦が見つかりませんでした","Match not found")}</p>`);
+async function joinMatch(id, mode){ const ref=DB.collection("mbm").doc(id); let d; try{ d=(await ref.get()).data(); }catch(e){} if(!d) return dlg(`<p>${T("対戦が見つかりませんでした","Match not found")}</p>`);
   const meIdx=d.a===MYID?0:1, my=meIdx?"b":"a", op=meIdx?"a":"b";
   const B={a:mkSide(d.ta), b:mkSide(d.tb), turn:0, seed:d.seed>>>0}; let pending=null, missed=0;
-  const cfg={mode:"pvp", B, me:meIdx,
+  const cfg={mode:mode||"pvp", B, me:meIdx,
     send:acts=>{ ref.update({[my+B.turn]:JSON.stringify(acts)}).catch(()=>{}); },
     giveup:()=>{ ref.update({fo:my}).catch(()=>{}); },
     tick:()=>{ // 相手が時間内に作戦を出さなかったら、相手の分をガードで出す（3回続いたら相手の負け）
