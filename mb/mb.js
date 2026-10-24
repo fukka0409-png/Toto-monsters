@@ -97,6 +97,8 @@ css.textContent=`
 #mbo .hit:active{background:#0002}
 #mbo .mb-back{position:absolute;z-index:3;border:4px solid #3a2306;background:#fff3d6;color:#3a2306;border-radius:999px;padding:10px 22px;font:900 28px/1 var(--f-body,sans-serif)}
 #mbo .mb-coin{position:absolute;left:700px;top:96px;width:192px;height:56px;display:flex;align-items:center;justify-content:flex-end;font:900 42px/1 var(--f-pix,monospace);color:#3a2306}
+#mbo .mb-lb{position:absolute;left:88px;width:768px;height:172px;display:flex;align-items:center;justify-content:center;gap:22px;color:#3a2306;pointer-events:none;white-space:nowrap;font:900 64px/1 var(--f-body,sans-serif);letter-spacing:.04em;text-shadow:0 2px 0 #fff8}
+#mbo .mb-lb i{font-style:normal;font-size:58px}
 #mbo .mb-pt{position:absolute;width:266px;text-align:center;color:#3a2306;pointer-events:none;white-space:nowrap;font-family:var(--f-body,sans-serif)}
 #mbo .mb-pt.h{font-weight:900;font-size:24px;line-height:1}
 #mbo .mb-pt.l{font-weight:900;font-size:27px;line-height:1;letter-spacing:-.02em}
@@ -205,9 +207,10 @@ const tw=(ms,f)=>new Promise(res=>{ const t0=performance.now(); const step=t=>{ 
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
 /* ---------- 1：メニュー ---------- */
-function openMenu(){ const s=shell(941,1672,"mb/menu.jpg"); st(); sfx("tap");
+function openMenu(){ const s=shell(941,1672,"mb/menu2.jpg");   // 2026-10-25：4つの大きいボタンの中のイラストをなくしてシンプルに（文字はHTML） st(); sfx("tap");
   s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:24px;top:40px">← ${T("もどる","Back")}</button>
     <div class="mb-coin" id="mbCoin"></div>
+    ${[["⚔️",T("魔物編成","Formation")],["🧪",T("アイテム購入","Items")],["🥚",T("ガチャ","Gacha")],["📦",T("魔物BOX","Monster BOX")]].map(([ic,l],i)=>`<div class="mb-lb" style="top:${[274,528,784,1039][i]}px"><i>${ic}</i>${l}</div>`).join("")}
     ${hit("mbForm",55,238,835,237,T("魔物編成","Formation"))}${hit("mbShop",55,492,835,235,T("アイテム購入","Items"))}${hit("mbGacha",55,748,835,237,T("ガチャ","Gacha"))}${hit("mbBox",55,1003,835,232,T("魔物BOX","Monster BOX"))}
     ${[72,338,604].map((x,i)=>`<div class="mb-pt h" ${i===0?'id="mbCnt"':""} style="left:${x}px;top:1306px">${["",T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`),T("あいことばで","With a passphrase")][i]}</div><div class="mb-pt l" style="left:${x}px;top:1450px">${[T("ランクマッチ","Rank Match"),T("クエストマッチ","Quest Match"),T("フレンドマッチ","Friend Match")][i]}</div>`).join("")}
     <div class="mb-pt i" style="left:338px;top:1352px">⚔️</div>
