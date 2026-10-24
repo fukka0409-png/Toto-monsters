@@ -183,7 +183,7 @@ function openMenu(){ const s=shell(941,1672,"mb/menu.jpg"); st(); sfx("tap");
   s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:24px;top:40px">← ${T("もどる","Back")}</button>
     <div class="mb-coin" id="mbCoin"></div>
     ${hit("mbForm",55,238,835,237,T("魔物編成","Formation"))}${hit("mbShop",55,492,835,235,T("アイテム購入","Items"))}${hit("mbGacha",55,748,835,237,T("ガチャ","Gacha"))}${hit("mbBox",55,1003,835,232,T("魔物BOX","Monster BOX"))}
-    ${[72,338,604].map((x,i)=>`<div class="mb-pt h" ${i===0?'id="mbCnt"':""} style="left:${x}px;top:1306px">${[T("参加者 1人","1 player"),T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`),T("あいことばで","With a passphrase")][i]}</div><div class="mb-pt l" style="left:${x}px;top:1450px">${[T("ランクマッチ","Rank Match"),T("クエストマッチ","Quest Match"),T("フレンドマッチ","Friend Match")][i]}</div>`).join("")}
+    ${[72,338,604].map((x,i)=>`<div class="mb-pt h" ${i===0?'id="mbCnt"':""} style="left:${x}px;top:1306px">${["",T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`),T("あいことばで","With a passphrase")][i]}</div><div class="mb-pt l" style="left:${x}px;top:1450px">${[T("ランクマッチ","Rank Match"),T("クエストマッチ","Quest Match"),T("フレンドマッチ","Friend Match")][i]}</div>`).join("")}
     <div class="mb-pt i" style="left:338px;top:1352px">⚔️</div>
     <button type="button" class="mb-rk" id="mbRk">🏆 ${T("ランキング","Ranking")}<br><small id="mbMyRk">${T("勝率の順位","by win rate")}</small></button>
     <div class="mb-rwr">${T("ランクマッチ勝率","Rank win rate")} ${rankRate()}<br><small>${T(`${st().rw||0}勝 ${st().rl||0}敗`,`${st().rw||0}W ${st().rl||0}L`)}</small></div>
@@ -192,7 +192,7 @@ function openMenu(){ const s=shell(941,1672,"mb/menu.jpg"); st(); sfx("tap");
   g("mbX").onclick=()=>{ sfx("tap"); closeAll(); };
   g("mbForm").onclick=()=>openForm(); g("mbShop").onclick=()=>openShop(); g("mbGacha").onclick=()=>openGacha(); g("mbBox").onclick=()=>openBox();
   g("mbRand").onclick=()=>startRandom(); g("mbRk").onclick=()=>openRank(); g("mbQuest").onclick=()=>startQuest(); g("mbFriend").onclick=()=>startFriend();
-  countPlayers(); myRankTag(); }
+  myRankTag(); }   // 参加人数の表示はなくした
 window.openMB = openMenu;
 async function countPlayers(){ const el=document.getElementById("mbCnt"); if(!el||!DB) return;
   try{ const q=await DB.collection("mbq").where("at",">",now()-25000).get(); if(document.getElementById("mbCnt")) el.textContent=T(`参加者 ${Math.max(1,q.size)}人`,`${Math.max(1,q.size)} player(s)`); }catch(e){} }   // いつも1人以上の表示
