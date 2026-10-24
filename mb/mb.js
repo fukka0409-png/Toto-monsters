@@ -7,9 +7,11 @@
 (()=>{
 /* ---------- 中身（魔物・武器・アイテム・ガチャ）：追加するときはここに足す ---------- */
 // 魔物：img＝正面（編成・BOX）、back＝後ろ姿（バトルの自分の魔物）。magic＝魔法（なければ null）
+//   cd＝何ターンに1度使えるか（例：cd:2 なら2ターンに1度）
 //   magic の例：{ name:"ファイア", desc:"敵3体に攻撃力×1.2のダメージ", kind:"all", power:1.2 }   kind: all（敵全体）/ one（1体）/ heal（味方全体を回復）
 const MB_MONS = [
   { id:1, name:"スライム", en:"Slime", img:"mb/m1.png", back:"mb/m1b.png", atk:1, hp:3, magic:null },   // 2026-10-24 追加
+  { id:2, name:"戦士トト", en:"Warrior Toto", img:"mb/m2.png", back:"mb/m2b.png", atk:5, hp:3, magic:{ name:"必殺の一撃", en:"Finishing Blow", desc:"2ターンに1度、敵1体に攻撃力の2倍の攻撃を与える", kind:"one", power:2, cd:2 } },   // 2026-10-24 追加
 ];
 // 武器（装備）：atk・hp を足す。例：{ id:1, name:"木の剣", img:"mb/w1.png", atk:2, hp:0 }
 const MB_WEAPONS = [];
@@ -181,7 +183,7 @@ function openForm(){ const s=shell(1024,1536,"mb/form.jpg"); const b=st(); sfx("
     g("fmM"+i).onclick=()=>pickMon(i); g("fmW"+i).onclick=()=>pickWeap(i);
     g("fmA"+i).onclick=()=>{ const t=teamOf()[i], m=t&&monOf(t.id); if(!m) return dlg(`<p>${T("魔物がいません","No monster")}</p>`);
       const sv=statOf(t.id,t.lv,t.w);
-      dlg(`<img src="${m.img}" alt="" style="width:120px;height:120px;object-fit:contain;image-rendering:pixelated"><h3>${esc2(mname(m))}　Lv.${t.lv}</h3><p>⚔ ${T("攻撃力","ATK")} ${nf(sv.atk)}　❤ ${T("体力","HP")} ${nf(sv.hp)}</p><p><b>✨ ${T("能力","Ability")}</b><br>${m.magic?`${esc2(m.magic.name)}：${esc2(m.magic.desc||"")}`:T("なし（魔法は使えない）","None (can't use magic)")}</p>${t.w?`<p>🗡 ${esc2(wOf(t.w).name)}（⚔+${wOf(t.w).atk||0} ❤+${wOf(t.w).hp||0}）</p>`:""}<p style="font-size:11px">${T("バトルに勝つとレベルは持ちこし、負けると全員Lv1にもどります。","Win and levels carry over; lose and everyone returns to Lv1.")}</p>`); }; }); }
+      dlg(`<img src="${m.img}" alt="" style="width:120px;height:120px;object-fit:contain;image-rendering:pixelated"><h3>${esc2(mname(m))}　Lv.${t.lv}</h3><p>⚔ ${T("攻撃力","ATK")} ${nf(sv.atk)}　❤ ${T("体力","HP")} ${nf(sv.hp)}</p><p><b>✨ ${T("能力","Ability")}</b><br>${m.magic?`${esc2(T(m.magic.name,m.magic.en||m.magic.name))}：${esc2(m.magic.desc||"")}`:T("なし（魔法は使えない）","None (can't use magic)")}</p>${t.w?`<p>🗡 ${esc2(wOf(t.w).name)}（⚔+${wOf(t.w).atk||0} ❤+${wOf(t.w).hp||0}）</p>`:""}<p style="font-size:11px">${T("バトルに勝つとレベルは持ちこし、負けると全員Lv1にもどります。","Win and levels carry over; lose and everyone returns to Lv1.")}</p>`); }; }); }
 function pickMon(i){ const b=st(); if(!b.units.length) return dlg(`<h3>${T("魔物がいません","No monsters")}</h3><p>${T("ガチャで魔物を手に入れよう！","Get monsters from the gacha!")}</p>`,[[T("閉じる","Close"),null],[T("ガチャへ","Gacha"),()=>openGacha()]]);
   const cur=b.form[i];
   const bg=dlg(`<h3>${T(`${i<3?"前半":"後半"}編成 ${i%3+1}番目`,`${i<3?"Front":"Back"} slot ${i%3+1}`)}</h3><p style="font-size:12px">${T("同じ魔物を何回入れてもOK","The same monster can be used more than once")}</p><div class="al">${b.units.map(u=>{ const m=monOf(u.id); return m?`<button type="button" data-u="${u.u}"><img src="${m.img}" alt=""><span>${esc2(mname(m))}</span><small>⚔${m.atk} ❤${m.hp}${m.magic?" ✨":""}</small></button>`:""; }).join("")}</div>`,
@@ -241,6 +243,9 @@ function mkSide(team){ const us=[]; (team||[]).forEach((t,slot)=>{ if(!t||!monOf
   for(const i of order){ if(k<3 && !field.includes(i)){ field[k++]=i; } }
   return {us, field}; }
 const alive = u => u && u.hp>0;
+// 魔法：cd ターンに1度（使ったターンから cd ターンたつと、また使える）
+const magicReady = (u,B) => { const mg=(monOf(u.id)||{}).magic; if(!mg) return false; return u.mt==null || B.turn-u.mt>=(mg.cd||1); };
+const magicWait = (u,B) => { const mg=(monOf(u.id)||{}).magic; return !mg||u.mt==null ? 0 : Math.max(0,(mg.cd||1)-(B.turn-u.mt)); };
 const reserves = sd => sd.us.map((u,i)=>i).filter(i=>!sd.field.includes(i));
 const sideDead = sd => sd.us.every(u=>u.hp<=0);
 // 1ターンの結果（両方の行動から、同じ結果になるように計算する）
@@ -260,7 +265,7 @@ function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[
   const liveTargets = s => [0,1,2].filter(p=>alive(sides[s].us[sides[s].field[p]]));
   sides.forEach((sd,s)=>A[s].forEach((a,p)=>{ if(!a||open[s].has(p)) return; const u=sd.us[sd.field[p]]; if(!alive(u)) return; const o=1-s, lt=liveTargets(o);
     if(a.t==="atk"){ if(!lt.length) return; let t=a.tg; if(!lt.includes(t)) t=lt[Math.floor(R()*lt.length)]; const v=u.atk*(0.9+R()*0.2); dmg[o][t]+=v; ev.push({k:"atk",s,p,t,v}); }
-    if(a.t==="magic"){ const mg=(monOf(u.id)||{}).magic; if(!mg) return; const v=u.atk*(mg.power||1)*(0.9+R()*0.2);
+    if(a.t==="magic"){ const mg=(monOf(u.id)||{}).magic; if(!mg||!magicReady(u,B)) return; u.mt=B.turn; const v=u.atk*(mg.power||1)*(0.9+R()*0.2);
       if(mg.kind==="heal"){ [0,1,2].forEach(q=>{ if(alive(sd.us[sd.field[q]])) heal[s][q]+=v; }); ev.push({k:"magic",s,p,heal:1}); }
       else if(mg.kind==="one"){ if(!lt.length) return; let t=a.tg; if(!lt.includes(t)) t=lt[Math.floor(R()*lt.length)]; dmg[o][t]+=v; ev.push({k:"magic",s,p,t}); }
       else { lt.forEach(t=>dmg[o][t]+=v); ev.push({k:"magic",s,p,all:1}); } } }));
@@ -278,7 +283,7 @@ function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[
 function botActs(B, s, R){ const sd=s?B.b:B.a, o=s?B.a:B.b; const lt=[0,1,2].filter(p=>alive(o.us[o.field[p]]));
   return [0,1,2].map(p=>{ const u=sd.us[sd.field[p]]; if(!alive(u)) return null;
     if(u.hp<u.max*.35 && u.g>0 && R()<.45) return {t:"guard"};
-    const mg=(monOf(u.id)||{}).magic; if(mg && R()<.4) return {t:"magic", tg:lt[Math.floor(R()*lt.length)]};
+    const mg=(monOf(u.id)||{}).magic; if(mg && magicReady(u,B) && R()<.6) return {t:"magic", tg:lt[Math.floor(R()*lt.length)]};
     return {t:"atk", tg:lt[Math.floor(R()*lt.length)]}; }); }
 const defaultActs = (sd) => [0,1,2].map(p=>{ const u=sd.us[sd.field[p]]; if(!alive(u)) return null; return u.g>0?{t:"guard"}:null; });
 
@@ -328,7 +333,7 @@ function planUnit(p){ if(V.submitted||V.anim||V.B.end) return; const me=mySide()
   const bg=dlg(`<h3>${esc2(mname(m))}　Lv.${u.lv}</h3><p style="margin:0">⚔ ${nf(u.atk)}　❤ ${nf(Math.ceil(u.hp*10)/10)}/${nf(u.max)}</p>
     <div class="acts"><button type="button" data-a="atk">⚔ ${T("攻撃","Attack")}<small>${T("敵をえらぶ","Choose a target")}</small></button>
     <button type="button" data-a="guard" ${u.g>0?"":"disabled"}>🛡 ${T("ガード","Guard")}<small>${T(`ダメージ半分・のこり${u.g}回`,`Half damage · ${u.g} left`)}</small></button>
-    <button type="button" data-a="magic" ${m.magic?"":"disabled"}>✨ ${T("魔法","Magic")}<small>${m.magic?esc2(m.magic.name):T("使えない魔物","Can't use magic")}</small></button>
+    <button type="button" data-a="magic" ${m.magic&&magicReady(u,V.B)?"":"disabled"}>✨ ${T("魔法","Magic")}<small>${m.magic?(magicReady(u,V.B)?T(m.magic.name,m.magic.en||m.magic.name):T(`あと${magicWait(u,V.B)}ターン`,`${magicWait(u,V.B)} turn(s) left`)):T("使えない魔物","Can't use magic")}</small></button>
     <button type="button" data-a="lvup" ${(S.coins||0)>=lvCost?"":"disabled"}>⬆ ${T("レベルアップ","Level up")}<small>${T(`${fmt(MB.LVUP)}コイン・全ステータス1.5倍`,`${fmt(MB.LVUP)} coins · all stats ×1.5`)}</small></button>
     <button type="button" data-a="item" ${items.length?"":"disabled"} style="grid-column:1/-1">🧪 ${T("アイテム使用","Use item")}<small>${items.length?T(`${items.length}種類`,`${items.length} kinds`):T("持っていない","None")}</small></button></div>`,
     V.sel[p]?[[T("閉じる","Close"),null],[T("戦略を取り消す","Clear"),()=>{ V.sel[p]=null; drawBattle(); }]]:[[T("閉じる","Close"),null]]);
