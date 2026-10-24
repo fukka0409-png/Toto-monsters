@@ -39,7 +39,7 @@ function mbPower(m){ if(!m) return 0; let mg=0; const g=m.magic;
   return m.atk + m.hp*0.6 + mg; }
 const mbTier = m => Math.max(1, Math.min(10, 1+Math.floor(Math.log(Math.max(1e-9,mbPower(m))/2.5)/Math.log(1.6))));
 const TIER_P = [40, 22, 13, 9, 6, 4, 3, 1.5, 1, 0.5];   // 段階1〜10の確率（%）
-const MB = { MAX_LV:100, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
+const MB = { MAX_LV:100, SAME_MAX:3, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
 const sfx = (k,a) => { try{ SFX[k](a); }catch(e){} };
 const fmt = n => Math.floor(n||0).toLocaleString();
@@ -273,6 +273,9 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
     const u=dupU;
     u.lv=(u.lv||1)+1; save(); sfx("level");
     return dlg(`<h3>⬆ ${T("かぶった！ レベルアップ！","Duplicate! Level up!")}</h3>${show}<p>${T(`${inF(u)?"編成に入っている":"BOXの"}「${esc2(mname(m))}」が <b>Lv.${u.lv}</b> になった！（全ステータス1.5倍）`,`Your ${inF(u)?"team's":"BOX"} "${esc2(mname(m))}" is now <b>Lv.${u.lv}</b>! (all stats ×1.5)`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
+  // 同じ魔物は3体まで（全部Lv100で合成もできないときは、ガチャのコインを返す）
+  if(b.units.filter(x=>x.id===id).length>=MB.SAME_MAX){ S.coins+=G.cost; save(); coinUpd();
+    return dlg(`<h3>📦 ${T("これ以上持てません","You can't hold more")}</h3>${show}<p>${T(`同じ魔物は${MB.SAME_MAX}体までしか持てません（全部Lv100なので合成もできません）。<br>ガチャの${fmt(G.cost)}コインを返しました。`,`You can only hold ${MB.SAME_MAX} of the same monster (all are Lv100, so it can't merge).<br>Your ${fmt(G.cost)} coins were refunded.`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
   if(b.units.length<b.slots) return dlg(`<h3>🥚 ${T("ゲット！","Got it!")}</h3>${show}`,[[T("OK","OK"),()=>{ add(); }]],{modal:true});
   boxFull();
   function boxFull(){
