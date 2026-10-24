@@ -39,7 +39,7 @@ function mbPower(m){ if(!m) return 0; let mg=0; const g=m.magic;
   return m.atk + m.hp*0.6 + mg; }
 const mbTier = m => Math.max(1, Math.min(10, 1+Math.floor(Math.log(Math.max(1e-9,mbPower(m))/2.5)/Math.log(1.6))));
 const TIER_P = [40, 22, 13, 9, 6, 4, 3, 1.5, 1, 0.5];   // 段階1〜10の確率（%）
-const MB = { MAX_LV:100, SAME_MAX:3, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
+const MB = { MAX_LV:100, SAME_MAX:2, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
 const sfx = (k,a) => { try{ SFX[k](a); }catch(e){} };
 const fmt = n => Math.floor(n||0).toLocaleString();
@@ -52,10 +52,15 @@ const tierStars = t => `<span style="color:#c77d00">Lv${t}</span>`;
 const mname = m => m ? (T(m.name, m.en||m.name)) : "?";
 function rng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.units=b.units||[]; b.nu=b.nu||1; b.form=b.form||[null,null,null,null,null,null]; b.weap=b.weap||{}; b.items=b.items||{}; b.qlv=b.qlv||1;
-  // はじめから持っている魔物：Lv3のスライム3体（1人1回・空いている編成の場所に入れる。空いていなければBOXへ）
+  // はじめから持っている魔物：Lv3のスライム2体（同じ魔物は2体までなので）（1人1回・空いている編成の場所に入れる。空いていなければBOXへ）
   // レベルは魔物（BOXの1体ずつ）が持つ（2026-10-24〜）。前は編成の場所が持っていたので移す
   if(!b.ulv){ b.ulv=1; b.form.forEach(f=>{ if(!f) return; const u=b.units.find(x=>x.u===f.u); if(u) u.lv=Math.max(u.lv||1, f.lv||1); }); }
-  if(!b.starter){ b.starter=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<3;k++){ const u={u:b.nu++, id:1, lv:3}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, w:null}; } try{ save(); }catch(e){} }
+  // 同じ魔物は2体まで（2026-10-24）：多い分は消す（レベルが高い魔物・編成に入っている魔物を残す）
+  if(b.same2!==1 && b.starter){ b.same2=1; const keep=new Set(), byId={};
+    b.units.forEach(u=>(byId[u.id]=byId[u.id]||[]).push(u));
+    Object.values(byId).forEach(L=>{ L.sort((a,c)=>((c.lv||1)-(a.lv||1))||(b.form.some(f=>f&&f.u===c.u)-b.form.some(f=>f&&f.u===a.u))).slice(0,2).forEach(u=>keep.add(u.u)); });
+    b.units=b.units.filter(u=>keep.has(u.u)); b.form=b.form.map(f=>f&&keep.has(f.u)?f:null); try{ save(); }catch(e){} }
+  if(!b.starter){ b.starter=1; b.same2=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<MB.SAME_MAX;k++){ const u={u:b.nu++, id:1, lv:3}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, w:null}; } try{ save(); }catch(e){} }
   return b; };
 const coinUpd = () => { const el=document.getElementById("mbCoin"); if(el) el.textContent=fmt(S.coins); try{ renderCoins(); }catch(e){} };
 // レベルの強さ：1レベル上がるごとに全ステータス1.5倍
