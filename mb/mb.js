@@ -39,7 +39,7 @@ function mbPower(m){ if(!m) return 0; let mg=0; const g=m.magic;
   return m.atk + m.hp*0.6 + mg; }
 const mbTier = m => Math.max(1, Math.min(10, 1+Math.floor(Math.log(Math.max(1e-9,mbPower(m))/2.5)/Math.log(1.6))));
 const TIER_P = [40, 22, 13, 9, 6, 4, 3, 1.5, 1, 0.5];   // 段階1〜10の確率（%）
-const MB = { RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
+const MB = { MAX_LV:100, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
 const sfx = (k,a) => { try{ SFX[k](a); }catch(e){} };
 const fmt = n => Math.floor(n||0).toLocaleString();
@@ -265,9 +265,10 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
   const add=()=>{ b.units.push(nu); save(); openGacha(); };
   const show=`<img src="${m?m.img:""}" alt="" style="width:140px;height:140px;object-fit:contain;image-rendering:pixelated"><p><b>${esc2(mname(m))}</b><br>⚔ ${m?m.atk:0}　❤ ${m?m.hp:0}${m&&m.magic?`<br>✨ ${esc2(m.magic.name)}`:""}</p>`;
   // かぶったとき：レベルアップか、BOXへ入れるかをえらべる
-  // かぶったとき：持っている同じ魔物が自動でレベルアップ（編成に入っている魔物を先に・その中でいちばんレベルが高い魔物）
-  if(b.units.some(x=>x.id===id)){ const inF=u=>b.form.some(f=>f&&f.u===u.u);
-    const u=b.units.filter(x=>x.id===id).sort((a,c)=>(inF(c)-inF(a))||((c.lv||1)-(a.lv||1)))[0];
+  // かぶったとき：持っている同じ魔物のうち、いちばんレベルが高い魔物に自動で合成（レベル+1・上限Lv100。全部Lv100ならBOXへ）
+  const dupU=b.units.filter(x=>x.id===id&&(x.lv||1)<MB.MAX_LV).sort((a,c)=>(c.lv||1)-(a.lv||1))[0];
+  if(dupU){ const inF=u=>b.form.some(f=>f&&f.u===u.u);
+    const u=dupU;
     u.lv=(u.lv||1)+1; save(); sfx("level");
     return dlg(`<h3>⬆ ${T("かぶった！ レベルアップ！","Duplicate! Level up!")}</h3>${show}<p>${T(`${inF(u)?"編成に入っている":"BOXの"}「${esc2(mname(m))}」が <b>Lv.${u.lv}</b> になった！（全ステータス1.5倍）`,`Your ${inF(u)?"team's":"BOX"} "${esc2(mname(m))}" is now <b>Lv.${u.lv}</b>! (all stats ×1.5)`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
   if(b.units.length<b.slots) return dlg(`<h3>🥚 ${T("ゲット！","Got it!")}</h3>${show}`,[[T("OK","OK"),()=>{ add(); }]],{modal:true});
@@ -305,7 +306,7 @@ function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[
   sides.forEach((sd,s)=>A[s].forEach((a,p)=>{ if(!a||a.t!=="swap") return; const cur=sd.field[p], r=a.r; if(r==null||!alive(sd.us[r])||sd.field.includes(r)) return; sd.field[p]=r; open[s].add(p); ev.push({k:"swap",s,p,from:cur,to:r}); }));
   // 2) レベルアップ・アイテム
   sides.forEach((sd,s)=>A[s].forEach((a,p)=>{ if(!a||open[s].has(p)) return; const ui=sd.field[p], u=sd.us[ui]; if(!alive(u)) return;
-    if(a.t==="lvup"){ u.lv++; u.atk*=MB.GROW; u.hp*=MB.GROW; u.max*=MB.GROW; ev.push({k:"lvup",s,p}); }
+    if(a.t==="lvup"){ if(u.lv>=MB.MAX_LV) return; u.lv++; u.atk*=MB.GROW; u.hp*=MB.GROW; u.max*=MB.GROW; ev.push({k:"lvup",s,p}); }
     if(a.t==="item"){ const it=iOf(a.i); if(it&&it.heal){ const h=Math.min(it.heal, u.max-u.hp); u.hp+=h; ev.push({k:"heal",s,p,v:h,item:a.i}); } else ev.push({k:"item",s,p,item:a.i}); } }));
   // 3) ガード（そのターンのダメージ半分・3回まで）
   sides.forEach((sd,s)=>A[s].forEach((a,p)=>{ if(!a||a.t!=="guard"||open[s].has(p)) return; const u=sd.us[sd.field[p]]; if(!alive(u)||u.g<=0) return; u.g--; guard[s].add(p); ev.push({k:"guard",s,p}); }));
@@ -399,7 +400,7 @@ function planUnit(p){ if(V.submitted||V.anim||V.B.end) return; const me=mySide()
     <div class="acts"><button type="button" data-a="atk">⚔ ${T("攻撃","Attack")}<small>${T("敵をえらぶ","Choose a target")}</small></button>
     <button type="button" data-a="guard" ${u.g>0?"":"disabled"}>🛡 ${T("ガード","Guard")}<small>${T(`ダメージ半分・のこり${u.g}回`,`Half damage · ${u.g} left`)}</small></button>
     <button type="button" data-a="magic" ${m.magic&&magicReady(u,V.B)?"":"disabled"}>✨ ${T("魔法","Magic")}<small>${m.magic?(magicReady(u,V.B)?T(m.magic.name,m.magic.en||m.magic.name):(m.magic.once?T("もう使った","Already used"):T(`あと${magicWait(u,V.B)}ターン`,`${magicWait(u,V.B)} turn(s) left`))):T("使えない魔物","Can't use magic")}</small></button>
-    <button type="button" data-a="lvup">⬆ ${T("レベルアップ","Level up")}<small>${T("無料・全ステータス1.5倍","Free · all stats ×1.5")}</small></button>
+    <button type="button" data-a="lvup" ${u.lv>=MB.MAX_LV?"disabled":""}>⬆ ${T("レベルアップ","Level up")}<small>${u.lv>=MB.MAX_LV?T("Lv100（上限）","Lv100 (max)"):T("無料・全ステータス1.5倍","Free · all stats ×1.5")}</small></button>
     <button type="button" data-a="item" ${items.length?"":"disabled"} style="grid-column:1/-1">🧪 ${T("アイテム使用","Use item")}<small>${items.length?T(`${items.length}種類`,`${items.length} kinds`):T("持っていない","None")}</small></button></div>`,
     V.sel[p]?[[T("閉じる","Close"),null],[T("戦略を取り消す","Clear"),()=>{ V.sel[p]=null; drawBattle(); }]]:[[T("閉じる","Close"),null]]);
   bg.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{ const a=x.dataset.a; bg.remove();
