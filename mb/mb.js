@@ -39,7 +39,7 @@ function mbPower(m){ if(!m) return 0; let mg=0; const g=m.magic;
   return m.atk + m.hp*0.6 + mg; }
 const mbTier = m => Math.max(1, Math.min(10, 1+Math.floor(Math.log(Math.max(1e-9,mbPower(m))/2.5)/Math.log(1.6))));
 const TIER_P = [40, 22, 13, 9, 6, 4, 3, 1.5, 1, 0.5];   // 段階1〜10の確率（%）
-const MB = { MAX_LV:100, SAME_MAX:2, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
+const MB = { MAX_LV:100, RANK_LOSE_LV:3, SAME_MAX:2, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
 const sfx = (k,a) => { try{ SFX[k](a); }catch(e){} };
 const fmt = n => Math.floor(n||0).toLocaleString();
@@ -375,7 +375,7 @@ function openBattle(cfg){ // cfg: {mode:"quest"|"pvp", B, me:0|1, qlv, send(acts
   [0,1,2].forEach(i=>{ document.getElementById("btRH"+i).onclick=()=>planUnit(i); });
   document.getElementById("btSwap").onclick=()=>planSwap();
   document.getElementById("btOk").onclick=()=>ready();
-  document.getElementById("btGiveup").onclick=()=>{ if(V.B.end) return; dlg(`<p>${T("降参しますか？（負けになり、編成の魔物は全員Lv1にもどります）","Give up? (You lose and all formation monsters go back to Lv1)")}</p>`,[[T("やめる","Cancel"),null],[T("降参する","Give up"),()=>{ cfg.giveup&&cfg.giveup(); finish(cfg.me?"a":"b", true); }]]); };
+  document.getElementById("btGiveup").onclick=()=>{ if(V.B.end) return; dlg(`<p>${(V.cfg.mode==="rank"||V.cfg.mode==="ghost"?T(`降参しますか？（負けになり、編成の魔物のレベルが${MB.RANK_LOSE_LV}ずつ下がります）`,`Give up? (You lose and formation monsters lose ${MB.RANK_LOSE_LV} levels)`):T("降参しますか？（負けになり、編成の魔物は全員Lv1にもどります）","Give up? (You lose and all formation monsters go back to Lv1)"))}</p>`,[[T("やめる","Cancel"),null],[T("降参する","Give up"),()=>{ cfg.giveup&&cfg.giveup(); finish(cfg.me?"a":"b", true); }]]); };
   V.leave=()=>{ if(V.B&&!V.B.end){ cfg.giveup&&cfg.giveup(); finish(cfg.me?"a":"b", true, true); } };
   drawBattle(); say(cfg.mode==="quest"?T(`クエスト Lv.${cfg.qlv}`,`Quest Lv.${cfg.qlv}`):T("バトル開始！","Battle start!"),1600);
   V.tick=setInterval(()=>{ const left=Math.max(0, MB.TURN_MS-(Date.now()-V.turnAt)); const el=document.getElementById("btTime"); if(el) el.textContent=V.B.end?"":T(`ターン${V.B.turn+1}　のこり ${Math.ceil(left/1000)}秒`,`Turn ${V.B.turn+1} · ${Math.ceil(left/1000)}s`);
@@ -472,15 +472,17 @@ function finish(endSide, giveup, silent){ const B=V.B; if(B.end&&B._done) return
   clearInterval(V.tick); V.leave=null;
   if(res==="win"){ // レベルは持ちこし
     mySide().us.forEach(u=>{ const f=b.form[u.slot], x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv=Math.max(x.lv||1,u.lv); });
-  } else if(res==="lose"){ b.form.forEach(f=>{ const x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv=1; }); }
-  const rank=V.cfg.mode==="rank"||V.cfg.mode==="ghost";   // ランクマッチ（リアルタイムの相手・過去のデータの相手）：勝率に入るのは自分だけ
+  }
+  const rank=V.cfg.mode==="rank"||V.cfg.mode==="ghost";
+  // 負けたとき：ランクマッチはレベル−3（Lv1より下にはならない）、それ以外のバトルは全員Lv1にもどる
+  if(res==="lose") b.form.forEach(f=>{ const x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv = rank ? Math.max(1,(x.lv||1)-MB.RANK_LOSE_LV) : 1; });   // ランクマッチ（リアルタイムの相手・過去のデータの相手）：勝率に入るのは自分だけ
   if(rank){ if(res==="win") b.rw=(b.rw||0)+1; else if(res==="lose") b.rl=(b.rl||0)+1; }
   let coin=0; if(res==="win"){ coin=V.cfg.mode==="quest"?questPrize(V.cfg.qlv):rank?MB.RANK_COIN:MB.WIN_COIN; S.coins+=coin; if(V.cfg.mode==="quest") b.qlv=(b.qlv||1)+1; b.w=(b.w||0)+1; } else if(res==="lose") b.l=(b.l||0)+1;
   save(); coinUpd(); V.cfg.onEnd&&V.cfg.onEnd(res); publishMe();
   if(silent) return;
   sfx(res==="win"?"reveal":"ng", "S");
   dlg(`<div style="font-size:60px">${res==="win"?"🏆":res==="draw"?"🤝":"💀"}</div><h3>${res==="win"?T("勝利！","Victory!"):res==="draw"?T("引き分け","Draw"):T("敗北…","Defeat...")}</h3>
-    <p>${res==="win"?T(`+${fmt(coin)}コイン！<br>編成の魔物のレベルは、次のバトルに持ちこせます。`,`+${fmt(coin)} coins!<br>Your monsters keep their levels for the next battle.`):res==="draw"?T("おたがい全滅しました。レベルはそのままです。","Both sides fell. Levels stay as they are."):T("編成の魔物のレベルが、全員Lv1にもどりました。","All formation monsters went back to Lv1.")}</p>`,[[T("メニューへ","Menu"),()=>openMenu()]],{modal:true}); }
+    <p>${res==="win"?T(`+${fmt(coin)}コイン！<br>編成の魔物のレベルは、次のバトルに持ちこせます。`,`+${fmt(coin)} coins!<br>Your monsters keep their levels for the next battle.`):res==="draw"?T("おたがい全滅しました。レベルはそのままです。","Both sides fell. Levels stay as they are."):(rank?T(`編成の魔物のレベルが、${MB.RANK_LOSE_LV}ずつ下がりました（Lv1より下にはなりません）。`,`Formation monsters lost ${MB.RANK_LOSE_LV} levels each (not below Lv1).`):T("編成の魔物のレベルが、全員Lv1にもどりました。","All formation monsters went back to Lv1."))}</p>`,[[T("メニューへ","Menu"),()=>openMenu()]],{modal:true}); }
 const questPrize = lv => Math.max(1, Math.floor(Math.pow(1.5, (lv||1)-1)));   // Lv1は1コイン。レベルが上がるほど増える
 
 /* ---------- クエストマッチ（ボット） ---------- */
