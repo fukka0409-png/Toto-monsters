@@ -39,7 +39,7 @@ function mbPower(m){ if(!m) return 0; let mg=0; const g=m.magic;
   return m.atk + m.hp*0.6 + mg; }
 const mbTier = m => Math.max(1, Math.min(10, 1+Math.floor(Math.log(Math.max(1e-9,mbPower(m))/2.5)/Math.log(1.6))));
 const TIER_P = [40, 22, 13, 9, 6, 4, 3, 1.5, 1, 0.5];   // 段階1〜10の確率（%）
-const MB = { MAX_LV:100, RANK_LOSE_LV:3, SAME_MAX:2, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
+const MB = { MAX_LV:100, RANK_LOSE_LV:3, SAME_MAX:1, RANK_COIN:5000, GHOST_WAIT:8000, SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
 const sfx = (k,a) => { try{ SFX[k](a); }catch(e){} };
 const fmt = n => Math.floor(n||0).toLocaleString();
@@ -52,7 +52,7 @@ const tierStars = t => `<span style="color:#c77d00">Lv${t}</span>`;
 const mname = m => m ? (T(m.name, m.en||m.name)) : "?";
 function rng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.units=b.units||[]; b.nu=b.nu||1; b.form=b.form||[null,null,null,null,null,null]; b.weap=b.weap||{}; b.items=b.items||{}; b.qlv=b.qlv||1;
-  // はじめから持っている魔物：Lv3のスライム2体（同じ魔物は2体までなので）（1人1回・空いている編成の場所に入れる。空いていなければBOXへ）
+  // はじめから持っている魔物：Lv3のスライム1体（同じ魔物は1体までなので）（1人1回・空いている編成の場所に入れる。空いていなければBOXへ）
   // レベルは魔物（BOXの1体ずつ）が持つ（2026-10-24〜）。前は編成の場所が持っていたので移す
   if(!b.ulv){ b.ulv=1; b.form.forEach(f=>{ if(!f) return; const u=b.units.find(x=>x.u===f.u); if(u) u.lv=Math.max(u.lv||1, f.lv||1); }); }
   // 同じ魔物は2体まで（2026-10-24）：多い分は消す（レベルが高い魔物・編成に入っている魔物を残す）
@@ -60,11 +60,20 @@ const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.un
     b.units.forEach(u=>(byId[u.id]=byId[u.id]||[]).push(u));
     Object.values(byId).forEach(L=>{ L.sort((a,c)=>((c.lv||1)-(a.lv||1))||(b.form.some(f=>f&&f.u===c.u)-b.form.some(f=>f&&f.u===a.u))).slice(0,2).forEach(u=>keep.add(u.u)); });
     b.units=b.units.filter(u=>keep.has(u.u)); b.form=b.form.map(f=>f&&keep.has(f.u)?f:null); try{ save(); }catch(e){} }
+  // 同じ魔物は1体まで（2026-10-24）：かぶっている魔物は、レベルがいちばん高い1体だけ残す（同じレベルなら編成に入っている方）
+  if(b.same1!==1 && b.starter){ b.same1=1; const keep=new Set(), byId={};
+    b.units.forEach(u=>(byId[u.id]=byId[u.id]||[]).push(u));
+    Object.values(byId).forEach(L=>{ L.sort((a,c)=>((c.lv||1)-(a.lv||1))||(b.form.some(f=>f&&f.u===c.u)-b.form.some(f=>f&&f.u===a.u))).slice(0,MB.SAME_MAX).forEach(u=>keep.add(u.u)); });
+    const idOf={}; b.units.forEach(u=>idOf[u.u]=u.id); b.units=b.units.filter(u=>keep.has(u.u));
+    // 消えた魔物が編成に入っていたら、残した同じ魔物をその場所に入れる（まだ編成に入っていなければ）
+    b.form=b.form.map(f=>{ if(!f||keep.has(f.u)) return f; const k=b.units.find(u=>u.id===idOf[f.u]); if(k && !b.form.some(z=>z&&z.u===k.u)) return {u:k.u, w:f.w||null}; return null; });
+    { const seen=new Set(); b.form=b.form.map(f=>{ if(!f) return f; if(seen.has(f.u)) return null; seen.add(f.u); return f; }); }
+    try{ save(); }catch(e){} }
   // ランクマッチの勝ち負けは「ガチャ・育成」のランク戦ごと（ランク戦が切りかわるとリセット）
   { let ss=0; try{ ss=seasonNow(); }catch(e){} if(b.rss!==ss){ b.rss=ss; b.rw=0; b.rl=0; try{ save(); }catch(e){} } }
   // 同じ1体が編成の2か所に入っていたら、あとの方を外す（同じ1体を2か所に入れると、レベルもいっしょに上がってしまっていた）
   { const seen=new Set(); let ch=false; b.form=b.form.map(f=>{ if(!f) return f; if(seen.has(f.u)){ ch=true; return null; } seen.add(f.u); return f; }); if(ch) try{ save(); }catch(e){} }
-  if(!b.starter){ b.starter=1; b.same2=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<MB.SAME_MAX;k++){ const u={u:b.nu++, id:1, lv:3}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, w:null}; } try{ save(); }catch(e){} }
+  if(!b.starter){ b.starter=1; b.same2=1; b.same1=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<MB.SAME_MAX;k++){ const u={u:b.nu++, id:1, lv:3}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, w:null}; } try{ save(); }catch(e){} }
   return b; };
 const coinUpd = () => { const el=document.getElementById("mbCoin"); if(el) el.textContent=fmt(S.coins); try{ renderCoins(); }catch(e){} };
 // レベルの強さ：下の growV（Lv1→Lv100で atk100・hp100 まで上がる）
@@ -232,7 +241,7 @@ function openForm(){ const s=shell(1024,1536,"mb/form.jpg?v=2"); const b=st(); s
       dlg(`<img src="${m.img}" alt="" style="width:120px;height:120px;object-fit:contain;image-rendering:pixelated"><h3>${esc2(mname(m))}　Lv.${t.lv}</h3><p>⚔ ${T("攻撃力","ATK")} ${nf(sv.atk)}　❤ ${T("体力","HP")} ${nf(sv.hp)}</p><p><b>✨ ${T("能力","Ability")}</b><br>${m.magic?`${esc2(T(m.magic.name,m.magic.en||m.magic.name))}：${esc2(m.magic.desc||"")}`:T("なし（魔法は使えない）","None (can't use magic)")}</p>${t.w?`<p>🗡 ${esc2(wOf(t.w).name)}（⚔+${wOf(t.w).atk||0} ❤+${wOf(t.w).hp||0}）</p>`:""}<p style="font-size:11px">${T("バトルに勝つとレベルは持ちこし、負けると全員Lv1にもどります。","Win and levels carry over; lose and everyone returns to Lv1.")}</p>`); }; }); }
 function pickMon(i){ const b=st(); if(!b.units.length) return dlg(`<h3>${T("魔物がいません","No monsters")}</h3><p>${T("ガチャで魔物を手に入れよう！","Get monsters from the gacha!")}</p>`,[[T("閉じる","Close"),null],[T("ガチャへ","Gacha"),()=>openGacha()]]);
   const cur=b.form[i];
-  const bg=dlg(`<h3>${T(`${i<3?"前半":"待機"}編成 ${i%3+1}番目`,`${i<3?"Front":"Bench"} slot ${i%3+1}`)}</h3><p style="font-size:12px">${T("同じ種類の魔物も入れられます（1体の魔物は1か所だけ。編成中の魔物をえらぶと、前の場所から移動します）","Same species is OK (each monster can be in one spot only — picking one already in the team moves it)")}</p><div class="al">${b.units.map(u=>{ const m=monOf(u.id); return m?`<button type="button" data-u="${u.u}"><img src="${m.img}" alt=""><b style="font-size:13px">Lv.${u.lv||1}</b><span>${esc2(mname(m))}</span><small>⚔${nf(statOf(u.id,u.lv).atk)} ❤${nf(statOf(u.id,u.lv).hp)}${m.magic?" ✨":""}</small>${b.form.some(f=>f&&f.u===u.u)?`<small style="color:#2f6fe0">${T("編成中","In team")}</small>`:""}</button>`:""; }).join("")}</div>`,
+  const bg=dlg(`<h3>${T(`${i<3?"前半":"待機"}編成 ${i%3+1}番目`,`${i<3?"Front":"Bench"} slot ${i%3+1}`)}</h3><p style="font-size:12px">${T("1体の魔物は1か所だけ。編成中の魔物をえらぶと、前の場所から移動します","Each monster can be in one spot only — picking one already in the team moves it")}</p><div class="al">${b.units.map(u=>{ const m=monOf(u.id); return m?`<button type="button" data-u="${u.u}"><img src="${m.img}" alt=""><b style="font-size:13px">Lv.${u.lv||1}</b><span>${esc2(mname(m))}</span><small>⚔${nf(statOf(u.id,u.lv).atk)} ❤${nf(statOf(u.id,u.lv).hp)}${m.magic?" ✨":""}</small>${b.form.some(f=>f&&f.u===u.u)?`<small style="color:#2f6fe0">${T("編成中","In team")}</small>`:""}</button>`:""; }).join("")}</div>`,
     cur?[[T("閉じる","Close"),null],[T("はずす","Remove"),()=>{ b.form[i]=null; save(); openForm(); }]]:[[T("閉じる","Close"),null]]);
   bg.querySelectorAll("[data-u]").forEach(x=>x.onclick=()=>{ const u=+x.dataset.u; const keepW=cur&&cur.w; b.form=b.form.map((f,j)=>f&&f.u===u&&j!==i?null:f); b.form[i]={u, w:keepW||null}; save(); /* 1体の魔物は、編成の1か所にだけ入れられる（ほかの場所からは外す） */ bg.remove(); sfx("tap"); openForm(); }); }
 function pickWeap(i){ const b=st(); if(!b.form[i]) return dlg(`<p>${T("先に魔物をえらんでね","Pick a monster first")}</p>`);
@@ -288,9 +297,9 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
     const u=dupU;
     u.lv=(u.lv||1)+1; save(); sfx("level");
     return dlg(`<h3>⬆ ${T("かぶった！ レベルアップ！","Duplicate! Level up!")}</h3>${show}<p>${T(`${inF(u)?"編成に入っている":"BOXの"}「${esc2(mname(m))}」が <b>Lv.${u.lv}</b> になった！（攻撃力と体力が上がった）`,`Your ${inF(u)?"team's":"BOX"} "${esc2(mname(m))}" is now <b>Lv.${u.lv}</b>! (ATK and HP went up)`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
-  // 同じ魔物は3体まで（全部Lv100で合成もできないときは、ガチャのコインを返す）
+  // 同じ魔物は1体まで（Lv100で合成もできないときは、ガチャのコインを返す）
   if(b.units.filter(x=>x.id===id).length>=MB.SAME_MAX){ S.coins+=G.cost; save(); coinUpd();
-    return dlg(`<h3>📦 ${T("これ以上持てません","You can't hold more")}</h3>${show}<p>${T(`同じ魔物は${MB.SAME_MAX}体までしか持てません（全部Lv100なので合成もできません）。<br>ガチャの${fmt(G.cost)}コインを返しました。`,`You can only hold ${MB.SAME_MAX} of the same monster (all are Lv100, so it can't merge).<br>Your ${fmt(G.cost)} coins were refunded.`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
+    return dlg(`<h3>📦 ${T("これ以上持てません","You can't hold more")}</h3>${show}<p>${T(`同じ魔物は${MB.SAME_MAX}体までしか持てません（もうLv100なので合成もできません）。<br>ガチャの${fmt(G.cost)}コインを返しました。`,`You can only hold ${MB.SAME_MAX} of the same monster (it's already Lv100, so it can't merge).<br>Your ${fmt(G.cost)} coins were refunded.`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
   if(b.units.length<b.slots) return dlg(`<h3>🥚 ${T("ゲット！","Got it!")}</h3>${show}`,[[T("OK","OK"),()=>{ add(); }]],{modal:true});
   boxFull();
   function boxFull(){
@@ -610,7 +619,7 @@ async function rankNote(){ if(noteBusy||!S.mb||S.mb.note1024||!DB||!MYID) return
           <li>💰 ランクマッチで勝つと <b>5,000コイン</b>。</li>
           <li>📉 ランクマッチで負けると、編成の魔物のレベルが<b>3ずつ下がる</b>（Lv1より下にはならない）。</li>
           <li>🥚 ガチャで持っている魔物が出たら、<b>いちばんレベルが高い同じ魔物に自動で合成</b>（レベル+1）。</li>
-          <li>👾 同じ魔物は<b>2体まで</b>。レベルの上限は<b>Lv100</b>。</li>
+          <li>👾 同じ魔物は<b>1体まで</b>。レベルの上限は<b>Lv100</b>。</li>
           <li>⬆ バトル中のレベルアップは<b>無料</b>。</li>
           <li>🔒 1体の魔物は、編成の<b>1か所だけ</b>に入れられます。</li></ul>`,`<ul style="margin:0;padding-left:18px">
           <li>🏆 A Rank Match <b>ranking</b> (by win rate) has been added.</li>
@@ -618,7 +627,7 @@ async function rankNote(){ if(noteBusy||!S.mb||S.mb.note1024||!DB||!MYID) return
           <li>💰 Win a Rank Match for <b>5,000 coins</b>.</li>
           <li>📉 Lose a Rank Match and formation monsters <b>lose 3 levels</b> (not below Lv1).</li>
           <li>🥚 Duplicate gacha monsters <b>auto-merge into your highest-level one</b> (+1 level).</li>
-          <li>👾 Up to <b>2 of the same monster</b>. Max level is <b>Lv100</b>.</li>
+          <li>👾 Only <b>1 of each monster</b>. Max level is <b>Lv100</b>.</li>
           <li>⬆ Leveling up in battle is <b>free</b>.</li>
           <li>🔒 Each monster can be in <b>only one</b> formation spot.</li></ul>`)}</div>
         <button class="btn gold" type="button">OK</button></div>`;
