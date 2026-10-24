@@ -22,8 +22,21 @@ const MB_WEAPONS = [];
 // アイテム：price で買える。heal＝体力を回復。例：{ id:1, name:"やくそう", img:"mb/i1.png", price:500, heal:5 }
 const MB_ITEMS = [];
 // ガチャ：cost＝1回のコイン、pool＝[{id, w（出やすさ）}]。中身が空のあいだは「準備中」
-const MB_GACHA = { mon:{ cost:5000, pool:[ {id:1, w:38}, {id:4, w:3}, {id:2, w:2}, {id:3, w:1} ] }, weapon:{ cost:2000, pool:[] } };   // 魔物：スライム38・戦士トト2（約20分の1）・闇落ちハム1（約40分の1）・ピンククラゲトト3
+// 魔物ガチャの中身は、MB_MONS の全部の魔物から自動で作る（強さで10段階に分けて、強いほど出にくい）
+const MB_GACHA = { mon:{ cost:5000, pool:[] }, weapon:{ cost:2000, pool:[] } };
 
+/* ---------- 強さの10段階（ガチャの出やすさ） ----------
+   強さの点数 ＝ 攻撃力 ＋ 体力×0.6 ＋ 能力（魔法）の強さ
+   能力の強さ：1度に出せる最大の量を、何ターンに1度か（1度きりは半分）で割って計算
+   段階 ＝ 点数が1.6倍になるごとに1つ上がる（1〜10）
+   ガチャの確率は段階ごとに決まっている（TIER_P・合計100%）。同じ段階に魔物が何体かいるときは、その確率を等分。
+   魔物がいない段階の確率は、いちばん弱い段階（いちばん出やすい魔物）に足す（強い魔物が出やすくならないように） */
+function mbPower(m){ if(!m) return 0; let mg=0; const g=m.magic;
+  if(g){ const per = g.kind==="healone" ? (g.amt||1)*1.5 : g.kind==="heal" ? m.atk*(g.power||1)*3*1.2 : g.kind==="all" ? m.atk*(g.power||1)*3 : m.atk*(g.power||1);
+    mg = g.once ? per*0.5 : per/(g.cd||1); }
+  return m.atk + m.hp*0.6 + mg; }
+const mbTier = m => Math.max(1, Math.min(10, 1+Math.floor(Math.log(Math.max(1e-9,mbPower(m))/2.5)/Math.log(1.6))));
+const TIER_P = [40, 22, 13, 9, 6, 4, 3, 1.5, 1, 0.5];   // 段階1〜10の確率（%）
 const MB = { SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
 const sfx = (k,a) => { try{ SFX[k](a); }catch(e){} };
@@ -33,6 +46,7 @@ const esc2 = t => String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;","
 const monOf = id => MB_MONS.find(m=>m.id===id);
 const wOf = id => MB_WEAPONS.find(w=>w.id===id);
 const iOf = id => MB_ITEMS.find(x=>x.id===id);
+const tierStars = t => `<span style="color:#c77d00">Lv${t}</span>`;
 const mname = m => m ? (T(m.name, m.en||m.name)) : "?";
 function rng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.units=b.units||[]; b.nu=b.nu||1; b.form=b.form||[null,null,null,null,null,null]; b.weap=b.weap||{}; b.items=b.items||{}; b.qlv=b.qlv||1; return b; };
@@ -220,12 +234,16 @@ function openShop(){ const box=page(`🧪 ${T("アイテム購入","Item Shop")}
 
 /* ---------- ガチャ ---------- */
 function openGacha(){ const box=page(`🎰 ${T("ガチャ","Gacha")}`, ""); const G=MB_GACHA;
-  box.innerHTML=`<button type="button" class="bigbtn" id="gcM" ${G.mon.pool.length?"":"disabled"}>🥚 ${T("魔物ガチャ","Monster Gacha")}<small>${G.mon.pool.length?T(`1回 ${fmt(G.mon.cost)}コイン`,`${fmt(G.mon.cost)} coins`):T("準備中","Coming soon")}</small></button>
+  box.innerHTML=`<button type="button" class="bigbtn" id="gcM" ${MB_MONS.length?"":"disabled"}>🥚 ${T("魔物ガチャ","Monster Gacha")}<small>${MB_MONS.length?T(`1回 ${fmt(G.mon.cost)}コイン`,`${fmt(G.mon.cost)} coins`):T("準備中","Coming soon")}</small></button>
     <button type="button" class="bigbtn" id="gcW" ${G.weapon.pool.length?"":"disabled"}>🗡 ${T("装備ガチャ","Equipment Gacha")}<small>${G.weapon.pool.length?T(`1回 ${fmt(G.weapon.cost)}コイン`,`${fmt(G.weapon.cost)} coins`):T("準備中","Coming soon")}</small></button>
-    <p class="note">${T(`魔物BOXの枠：${st().units.length}/${st().slots}`,`BOX: ${st().units.length}/${st().slots}`)}</p>`;
+    <p class="note">${T(`魔物BOXの枠：${st().units.length}/${st().slots}`,`BOX: ${st().units.length}/${st().slots}`)}</p>
+    <div class="card" style="max-width:520px;margin:10px auto;align-items:stretch;text-align:left;font-size:13px"><b style="text-align:center">📊 ${T("魔物ガチャの出る確率（強さ10段階）","Monster gacha rates (10 power tiers)")}</b><small style="text-align:center;opacity:.8">${T("段階ごとの確率：","Tier rates: ")}${TIER_P.map((v,i)=>`Lv${i+1} ${v}%`).join("・")}</small>${(()=>{ const P=monPool(), tot=P.reduce((a,x)=>a+x.w,0); return MB_MONS.slice().sort((a,b)=>mbTier(a)-mbTier(b)).map(m=>`<div style="display:flex;align-items:center;gap:6px;border-top:1px solid #0002;padding:3px 0"><img src="${m.img}" alt="" style="width:34px;height:34px"><span style="flex:1">${esc2(mname(m))}<br><small>${T("強さ","Power")} ${tierStars(mbTier(m))}</small></span><b>${(P.find(x=>x.id===m.id).w/tot*100).toFixed(1)}%</b></div>`).join(""); })()}</div>`;
   box.querySelector("#gcM").onclick=()=>pull("mon"); box.querySelector("#gcW").onclick=()=>pull("weapon"); }
+function monPool(){ const cnt={}; MB_MONS.forEach(m=>{ const t=mbTier(m); cnt[t]=(cnt[t]||0)+1; });
+  const low=Math.min(...Object.keys(cnt).map(Number)), rest=TIER_P.reduce((a,v,i)=>a+(cnt[i+1]?0:v),0);
+  return MB_MONS.map(m=>{ const t=mbTier(m); return {id:m.id, t, w:(TIER_P[t-1]+(t===low?rest:0))/cnt[t]}; }); }
 function pick(pool){ const tot=pool.reduce((a,x)=>a+(x.w||1),0); let r=Math.random()*tot; for(const x of pool){ if((r-=(x.w||1))<0) return x.id; } return pool[pool.length-1].id; }
-function pull(kind){ const G=MB_GACHA[kind]; if(!G.pool.length) return; if((S.coins||0)<G.cost) return dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`);
+function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); if(!G.pool.length) return; if((S.coins||0)<G.cost) return dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`);
   S.coins-=G.cost; coinUpd(); const b=st(); const id=pick(G.pool); sfx("reveal","S");
   if(kind==="weapon"){ const w=wOf(id); b.weap[id]=(b.weap[id]||0)+1; save(); return dlg(`<h3>🗡 ${T("ゲット！","Got it!")}</h3>${w?`<img src="${w.img}" alt="" style="width:140px;height:140px;object-fit:contain"><p><b>${esc2(w.name)}</b><br>⚔+${w.atk||0} ❤+${w.hp||0}</p>`:""}`,[[T("OK","OK"),()=>openGacha()]]); }
   const m=monOf(id), nu={u:b.nu++, id}; save();
