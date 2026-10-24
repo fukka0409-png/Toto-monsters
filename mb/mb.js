@@ -265,13 +265,11 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
   const add=()=>{ b.units.push(nu); save(); openGacha(); };
   const show=`<img src="${m?m.img:""}" alt="" style="width:140px;height:140px;object-fit:contain;image-rendering:pixelated"><p><b>${esc2(mname(m))}</b><br>⚔ ${m?m.atk:0}　❤ ${m?m.hp:0}${m&&m.magic?`<br>✨ ${esc2(m.magic.name)}`:""}</p>`;
   // かぶったとき：レベルアップか、BOXへ入れるかをえらべる
-  if(b.units.some(x=>x.id===id)){ const own=b.units.filter(x=>x.id===id);
-    const toBox=()=>{ if(b.units.length<b.slots) add(); else boxFull(); };
-    const lvUp=()=>{ const go=u=>{ u.lv=(u.lv||1)+1; save(); sfx("level"); dlg(`<h3>⬆ ${T("レベルアップ！","Level up!")}</h3><p>${T(`「${esc2(mname(m))}」が Lv.${u.lv} になった！`,`"${esc2(mname(m))}" is now Lv.${u.lv}!`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); };
-      if(own.length===1) return go(own[0]);
-      const bg2=dlg(`<h3>⬆ ${T("どの魔物をレベルアップ？","Which one levels up?")}</h3><div class="al">${own.map(u=>`<button type="button" data-u="${u.u}"><img src="${m.img}" alt=""><span>${b.form.some(f=>f&&f.u===u.u)?T("編成中","In team"):"BOX"}</span><small>Lv.${u.lv||1} → ${(u.lv||1)+1}</small></button>`).join("")}</div>`,[],{modal:true});
-      bg2.querySelectorAll("[data-u]").forEach(x=>x.onclick=()=>{ bg2.remove(); go(own.find(u=>u.u===+x.dataset.u)); }); };
-    return dlg(`<h3>🥚 ${T("かぶった！","Duplicate!")}</h3>${show}<p>${T("持っている同じ魔物をレベルアップ（全ステータス1.5倍）するか、BOXに入れるかをえらんでね。","Level up the same monster you own (all stats ×1.5), or put it in your BOX.")}</p>`,[[T("BOXへ入れる","Put in BOX"),()=>toBox()],[T("⬆ レベルアップ","⬆ Level up"),()=>lvUp()]],{modal:true}); }
+  // かぶったとき：持っている同じ魔物が自動でレベルアップ（編成に入っている魔物を先に・その中でいちばんレベルが高い魔物）
+  if(b.units.some(x=>x.id===id)){ const inF=u=>b.form.some(f=>f&&f.u===u.u);
+    const u=b.units.filter(x=>x.id===id).sort((a,c)=>(inF(c)-inF(a))||((c.lv||1)-(a.lv||1)))[0];
+    u.lv=(u.lv||1)+1; save(); sfx("level");
+    return dlg(`<h3>⬆ ${T("かぶった！ レベルアップ！","Duplicate! Level up!")}</h3>${show}<p>${T(`${inF(u)?"編成に入っている":"BOXの"}「${esc2(mname(m))}」が <b>Lv.${u.lv}</b> になった！（全ステータス1.5倍）`,`Your ${inF(u)?"team's":"BOX"} "${esc2(mname(m))}" is now <b>Lv.${u.lv}</b>! (all stats ×1.5)`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
   if(b.units.length<b.slots) return dlg(`<h3>🥚 ${T("ゲット！","Got it!")}</h3>${show}`,[[T("OK","OK"),()=>{ add(); }]],{modal:true});
   boxFull();
   function boxFull(){
