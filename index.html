@@ -5797,12 +5797,13 @@ let botItemQueue = [];
 function genBotEvents(){
   const out=[];
   if(!DB||!MYID||S.plv<SAFE_LV) return out;
+  if(itemRest()||noAct()) return out;   // ランク戦が始まって1時間は、CPUもアイテム・攻撃をしない（その日の分は1時間たってから）
   const day=todayN(); S.botDay=S.botDay||{};
   BOTS.forEach((bt,i)=>{
     if(S.botDay[i]===day) return; S.botDay[i]=day;
     if(Math.random()>=BOT_RATE) return;
     const attP=Math.max(1,Math.round(S.plv*bt.p*(0.85+Math.random()*0.3)));
-    const at=gnow()-Math.floor(Math.random()*3*HOUR_MS);
+    const at=Math.max(gnow()-Math.floor(Math.random()*3*HOUR_MS), seasonEnd(seasonNow()-1)+HOUR_MS);   // 休み時間の中の時刻にはしない
     const g=guardUnit(), x=Math.random();
     if(g && x<0.6){
       // バトル：魔物レベル→ランク→図鑑No.で決着（ふつうのバトルと同じ）
@@ -6104,6 +6105,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-24-itemrest", coins:1000 },   // ランク戦が始まって1時間はアイテムを使えないはずなのに、CPUの冒険者がアイテムを使ってきて「留守中にアイテムを使われました」が出ていた
   { id:"fix-2026-10-24-mbslot", coins:1000 },   // 魔物バトル：同じ1体の魔物を編成の2か所に入れられて、ガチャでかぶると2か所とも同時にレベルアップしていた
   { id:"fix-2026-10-24-mbmenu", coins:1000 },   // 魔物バトルのメニューで、下の3つのボタンの文字が欠けたり枠からはみ出したりしていた
   { id:"fix-2026-10-23-mcstat", coins:1000 },   // 魔物キャッチャー：アーム作家の画面で「過去の作品」ボタンと所持コインが重なっていた
@@ -6877,6 +6879,7 @@ async function checkItems(){
           gifts.push(who); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="blocked"){ res.push(`🛡 盾によりアイテムが無効化されました(泣)<br>　（${esc(b.defName||"相手")}さんへの${itemOf(b.what)?.name||"アイテム"}）`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="loot"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; res.push(`🧲 コインマグネットが命中！ ${c?`+${c.toLocaleString()}コインをうばった`:"でも相手はコインを持っていなかった"}`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
+        if(["magnet","fire","bomb","shbomb"].includes(b.item) && (b.at||0) < seasonEnd(seasonOf(b.at||0)-1)+HOUR_MS){ if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at); continue; }   // ランク戦が始まって1時間のあいだに使われた攻撃アイテムは無効（古いアプリから使われても効かない）
         if(["magnet","fire","bomb","shbomb"].includes(b.item)) shPurge(seasonOf(b.at||0));   // その攻撃のときのランク戦の盾だけが使える
         if(b.item==="shbomb"){   // 対盾爆弾：盾では防げない。装備中の盾から順に3つこわす
           let n=0; for(let k=0;k<SHBOMB_BREAK;k++){ const eq=shEquipped()||shAutoEquip(); if(!eq) break; S.shieldList=S.shieldList.filter(x=>x.id!==eq.id); S.shieldEq=null; shAutoEquip(); n++; }
