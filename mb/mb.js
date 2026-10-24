@@ -366,16 +366,42 @@ function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[
 function botActs(B, s, R, sty){ const sd=s?B.b:B.a, o=s?B.a:B.b; const lt=[0,1,2].filter(p=>alive(o.us[o.field[p]]));
   const used=new Set(); return [0,1,2].map(p=>{ let u=sd.us[sd.field[p]];
     if(!alive(u)){ const r=reserves(sd).find(i=>alive(sd.us[i])&&!used.has(i)); if(r==null) return null; used.add(r); u=sd.us[r]; return {t:"atk", tg:lt[Math.floor(R()*lt.length)], in:r}; }
-    if(sty){ const tot=Object.values(sty).reduce((a,v)=>a+v,0)||1, x=R()*tot, g=(sty.guard||0), m=(sty.magic||0), l=(sty.lvup||0);   // 過去のデータの冒険者：その人の戦略の割合で動く
-      if(x<g && u.g>0) return {t:"guard"};
-      if(x<g+m && magicReady(u,B)){ const mg=(monOf(u.id)||{}).magic; if(mg&&mg.kind==="healone"){ const al=[0,1,2].filter(q=>alive(sd.us[sd.field[q]])).sort((x2,y2)=>sd.us[sd.field[x2]].hp/sd.us[sd.field[x2]].max-sd.us[sd.field[y2]].hp/sd.us[sd.field[y2]].max); return {t:"magic", ally:al[0]}; } return {t:"magic", tg:lt[Math.floor(R()*lt.length)]}; }
-      if(x<g+m+l) return {t:"lvup"};
-      return {t:"atk", tg:lt[Math.floor(R()*lt.length)]}; }
+    if(sty){   // 過去のデータの冒険者：その人の記録（体力ごとの行動・ねらう敵・回復する味方）の割合で、同じように動く
+      const AK=["atk","guard","magic","lvup"], hb=sty.h&&sty.h[hpB(u)];
+      const can=k=> k==="guard"?u.g>0 : k==="magic"?magicReady(u,B) : k==="lvup"?u.lv<MB.MAX_LV : true;
+      const src=(hb&&AK.some(k=>hb[k]))?hb:sty, ok={}; AK.forEach(k=>{ if(can(k)) ok[k]=src[k]||0; });
+      const t=wpick(ok,AK,R)||"atk";
+      const tgOf=()=>{ const w=sty.tg?wpick(sty.tg,["low","hi","oth"],R):null; if(!lt.length) return 0;
+        if(w==="low") return lt.reduce((a,q)=>o.us[o.field[q]].hp<o.us[o.field[a]].hp?q:a);
+        if(w==="hi") return lt.reduce((a,q)=>o.us[o.field[q]].atk>o.us[o.field[a]].atk?q:a);
+        return lt[Math.floor(R()*lt.length)]; };
+      if(t==="guard") return {t:"guard"};
+      if(t==="lvup") return {t:"lvup"};
+      if(t==="magic"){ const mg=(monOf(u.id)||{}).magic;
+        if(mg&&mg.kind==="healone"){ const al=[0,1,2].filter(q=>alive(sd.us[sd.field[q]])).sort((x2,y2)=>sd.us[sd.field[x2]].hp/sd.us[sd.field[x2]].max-sd.us[sd.field[y2]].hp/sd.us[sd.field[y2]].max);
+          const w=sty.hl?wpick(sty.hl,["low","oth"],R):"low"; return {t:"magic", ally:(w==="oth"&&al.length>1)?al[1+Math.floor(R()*(al.length-1))]:al[0]}; }
+        return {t:"magic", tg:tgOf()}; }
+      return {t:"atk", tg:tgOf()}; }
     if(u.hp<u.max*.35 && u.g>0 && R()<.45) return {t:"guard"};
     const mg=(monOf(u.id)||{}).magic;
     if(mg && mg.kind==="healone" && magicReady(u,B)){ const al=[0,1,2].filter(q=>alive(sd.us[sd.field[q]])).sort((x,y)=>sd.us[sd.field[x]].hp/sd.us[sd.field[x]].max-sd.us[sd.field[y]].hp/sd.us[sd.field[y]].max); const q=al[0]; if(q!=null&&sd.us[sd.field[q]].hp<sd.us[sd.field[q]].max) return {t:"magic", ally:q}; }
     else if(mg && magicReady(u,B) && R()<.6) return {t:"magic", tg:lt[Math.floor(R()*lt.length)]};
     return {t:"atk", tg:lt[Math.floor(R()*lt.length)]}; }); }
+/* 戦い方の記録（2026-10-24〜くわしく）
+   ・全体の回数：atk / guard / magic / lvup（前からの形）
+   ・魔物の体力ごと（h.hi＝60%より多い・h.mid＝30〜60%・h.lo＝30%以下）に、何をえらんだか
+   ・攻撃・魔法でねらった敵（tg.low＝体力がいちばん少ない敵・tg.hi＝攻撃力がいちばん高い敵・tg.oth＝それ以外）
+   ・回復でえらんだ味方（hl.low＝体力の割合がいちばん少ない味方・hl.oth＝それ以外） */
+const hpB = u => { const r=u.hp/u.max; return r>0.6?"hi":r>0.3?"mid":"lo"; };
+function recStyle(me, en, acts){ const sty=st().style=st().style||{}; sty.h=sty.h||{}; sty.tg=sty.tg||{}; sty.hl=sty.hl||{};
+  const ens=[0,1,2].map(q=>en.us[en.field[q]]).map((u,q)=>alive(u)?{u,q}:null).filter(Boolean);
+  const low=ens.length?ens.reduce((a,b)=>b.u.hp<a.u.hp?b:a).q:null, hi=ens.length?ens.reduce((a,b)=>b.u.atk>a.u.atk?b:a).q:null;
+  acts.forEach((a,p)=>{ if(!a||!a.t||!["atk","guard","magic","lvup"].includes(a.t)) return; const u=me.us[me.field[p]]; if(!alive(u)) return;
+    sty[a.t]=(sty[a.t]||0)+1; const k=hpB(u); sty.h[k]=sty.h[k]||{}; sty.h[k][a.t]=(sty.h[k][a.t]||0)+1;
+    if(a.tg!=null && (a.t==="atk"||a.t==="magic")){ const w=a.tg===low?"low":a.tg===hi?"hi":"oth"; sty.tg[w]=(sty.tg[w]||0)+1; }
+    if(a.ally!=null){ const al=[0,1,2].filter(q=>alive(me.us[me.field[q]])).sort((x,y)=>me.us[me.field[x]].hp/me.us[me.field[x]].max-me.us[me.field[y]].hp/me.us[me.field[y]].max); const w=a.ally===al[0]?"low":"oth"; sty.hl[w]=(sty.hl[w]||0)+1; } }); }
+// 記録の割合で1つえらぶ
+const wpick = (obj, keys, R) => { const t=keys.reduce((a,k)=>a+(obj[k]||0),0); if(!t) return null; let x=R()*t; for(const k of keys){ x-=(obj[k]||0); if(x<0) return k; } return keys[keys.length-1]; };
 const defaultActs = (sd) => [0,1,2].map(p=>{ const u=sd.us[sd.field[p]]; if(!alive(u)) return null; return u.g>0?{t:"guard"}:null; });
 
 /* ---------- バトル画面 ---------- */
@@ -461,7 +487,7 @@ function ready(auto){ if(V.submitted||V.anim||V.B.end) return; const me=mySide()
   // レベルアップのコインは、決めたときに払う
   // バトル中のレベルアップはコイン不要（2026-10-24〜）
   acts.forEach(a=>{ if(a&&a.t==="item"){ const b=st(); b.items[a.i]=Math.max(0,(b.items[a.i]||0)-1); } }); save();
-  { const sty=st().style=st().style||{}; acts.forEach(a=>{ if(a&&a.t) sty[a.t]=(sty[a.t]||0)+1; }); }   // 戦い方の記録（過去のデータの相手に使う）
+  if(!auto) recStyle(me, enSide(), acts);   // 戦い方の記録（過去のデータの相手に使う）。時間切れの自動ガードは記録しない
   V.submitted=true; sfx("tap"); drawBattle(); V.cfg.send(withIn(acts)); }
 // 両方の作戦がそろったら、結果を見せる
 async function playTurn(actsA, actsB){ if(V.anim) return; V.anim=true; const B=V.B, before=JSON.parse(JSON.stringify(B));
@@ -570,7 +596,9 @@ async function ghostGo(myteam){ let L=[]; try{ const q=await DB.collection("mbp"
   const rate=x=>{ const t=(x.w||0)+(x.l||0); return t?(x.w||0)/t:0; }, played=x=>(x.w||0)+(x.l||0)>0;
   L.sort((a,b)=>(played(b)-played(a))||rate(b)-rate(a)||(b.w||0)-(a.w||0)||(b.q||1)-(a.q||1)||(b.at||0)-(a.at||0)); let g=L[0];
   if(!g){ const lv=Math.max(1,...myteam.filter(Boolean).map(t=>t.lv||1)), R=rng(Date.now()>>>0); g={nm:T("さすらいの魔物使い","Wandering Tamer"), team:Array.from({length:6},()=>({id:MB_MONS[Math.floor(R()*MB_MONS.length)].id, lv})), w:0, l:0, st:null, bot:1}; }
-  const team=g.team.map(t=>t&&monOf(t.id)?{id:t.id, lv:Math.max(1,t.lv||1), w:wOf(t.w)?t.w:null}:null);
+  // 相手のレベルが高すぎるときは、自分の編成でいちばん高いレベルより少し上（+10%・最低+2）までに下げる
+  const myTop=Math.max(1,...myteam.filter(Boolean).map(t=>t.lv||1)), capLv=Math.min(MB.MAX_LV, myTop+Math.max(2,Math.ceil(myTop*0.1)));
+  const team=g.team.map(t=>t&&monOf(t.id)?{id:t.id, lv:Math.min(capLv,Math.max(1,t.lv||1)), w:wOf(t.w)?t.w:null}:null);
   const B={a:mkSide(myteam), b:mkSide(team), turn:0, seed:Math.floor(Math.random()*4e9)};
   openBattle({mode:"ghost", B, me:0, send:acts=>{ const ba=botActs(V.B,1,rng((V.B.seed+V.B.turn*31)>>>0), g.st&&Object.keys(g.st).length?g.st:null); setTimeout(()=>playTurn(acts,ba),900); } });
   const info = g.bot ? T("（ボット）","(bot)") : played(g) ? T(`（勝率 ${Math.round(rate(g)*1000)/10}%）`,`(win rate ${Math.round(rate(g)*1000)/10}%)`) : T(`（クエスト Lv.${g.q||1} の記録）`,`(Quest Lv.${g.q||1} record)`);
@@ -634,5 +662,5 @@ async function rankNote(){ if(noteBusy||!S.mb||S.mb.note1024||!DB||!MYID) return
       document.body.appendChild(bg); sfx("coin"); bg.querySelector(".btn").onclick=()=>bg.remove(); };
     show(); }catch(e){} finally{ noteBusy=false; } }
 setInterval(()=>{ try{ rankNote(); }catch(e){} },6000);
-window.__mb={ openForm, openBox, openGacha, openShop, startQuest, resolve, mkSide, MB_MONS, MB_WEAPONS, MB_ITEMS, MB_GACHA, playTurn };
+window.__mb={ ghostGo, botActs, recStyle, openForm, openBox, openGacha, openShop, startQuest, resolve, mkSide, MB_MONS, MB_WEAPONS, MB_ITEMS, MB_GACHA, playTurn };
 })();
