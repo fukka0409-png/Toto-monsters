@@ -1944,6 +1944,7 @@ const I18N_EN = {
 "レベル": "Level",
 "素材にした時の経験値": "EXP as material",
 "💎 覚醒の石を合成（{0}個）": "💎 Fuse Awakening Stones ({0})",
+"覚醒の石は1個で1レベル上がります（Lv100の上限も突破）。": "Each Awakening Stone raises 1 level (even past Lv100).",
 "売却する（+{0}コイン）": "Sell (+{0} coins)",
 "保護した魔物は合成の素材に選ばれず、売却もできません。素材の経験値はレベルが高いほど増え、同じ魔物なら2倍。合成1回に50コイン必要で、合成1回で10コイン、Lvが10上がるごとに100コイン。最大Lv100（覚醒の石を合成すると、さらに上げられます）。ランクが高い魔物ほど、レベルアップに多くの経験値が必要です。": "Protected monsters aren't picked as fusion material and can't be sold. Material EXP grows with level, and is doubled for the same monster. Each fusion costs 50 coins; selling gives 10 coins, plus 100 coins per 10 levels. Max Lv100 (fusing Awakening Stones can raise it further). Higher-rank monsters need more EXP to level up.",
 "覚醒+{0}": "Awakened +{0}",
@@ -4473,7 +4474,7 @@ function pullItems(n, ticket){
   document.body.appendChild(el); el.querySelector(".btn").focus(); SFX.reveal("A");
 }
 // 覚醒の石：Lv100以上の魔物に使うと1個につき1レベル上がる
-function openAwaken(uid){
+function openAwaken(uid, back){   // back：合成の画面から開いたときは、終わったら合成の画面にもどる
   const x=S.units.find(z=>z.u===uid); if(!x) return; const m=mon(x.m);
   const have=inv("stone"); let n=Math.min(1,have);
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
@@ -4490,7 +4491,7 @@ function openAwaken(uid){
   bg.querySelector("#awNo").onclick=()=>bg.remove();
   bg.onclick=e=>{ if(e.target===bg) bg.remove(); };
   bg.querySelector("#awGo").onclick=()=>{ if(!n||inv("stone")<n) return;
-    addItem("stone",-n); x.l+=n; x.a=(x.a||0)+n; if(x.l>=MAX_LV) x.e=0; else x.e=Math.min(x.e,needFor(x)-1); save(); bg.remove(); SFX.level(); render(); openUnit(uid); queueProfile();
+    addItem("stone",-n); x.l+=n; x.a=(x.a||0)+n; if(x.l>=MAX_LV) x.e=0; else x.e=Math.min(x.e,needFor(x)-1); save(); bg.remove(); SFX.level(); render(); back?back():openUnit(uid); queueProfile();
     toast(`覚醒！ ${m.name}が Lv${x.l} になった！`); };
   upd();
 }
@@ -4652,7 +4653,10 @@ function openFuse(uid){
     ${mats.some(x=>x.m===base.m&&!x.k)?`<button class="btn gold" id="fuseSame" type="button" style="width:100%;margin-bottom:10px">同じ魔物をまとめて合成（${mats.filter(x=>x.m===base.m&&!x.k).length}体・経験値2倍）</button>`:""}
     <div class="toolbar"><button class="chip" id="selAll" type="button">保護以外をすべて選ぶ</button><button class="chip" id="selNone" type="button">選択を解除</button></div>
     ${mats.length?`<div class="grid" id="mats">${mats.map(x=>unitCard(x,(x.k?"dim":"")+(x.m===base.m?" same-m":""))).join("")}</div>`:`<div class="empty">素材にできる魔物がいません。ガチャで仲間を増やそう</div>`}
-    <div class="row"><button class="btn gold" id="doFuse" type="button" disabled>合成する（${fuseCost(base)}コイン）</button></div>`);
+    <div class="row"><button class="btn gold" id="doFuse" type="button" disabled>合成する（${fuseCost(base)}コイン）</button></div>
+    <div class="row"><button class="btn" id="fuseAw" type="button" ${inv("stone")?"":"disabled"}>💎 覚醒の石を合成（${inv("stone").toLocaleString()}個）</button></div>
+    <p class="note" style="margin:0">覚醒の石は1個で1レベル上がります（Lv100の上限も突破）。</p>`);
+  bg.querySelector("#fuseAw").onclick=()=>openAwaken(uid,()=>openFuse(uid));
   const upd=()=>{
     const total=[...sel].reduce((s,u)=>s+matExp(base,S.units.find(z=>z.u===u)),0);
     const {u,ev}=previewExp(base,total);
