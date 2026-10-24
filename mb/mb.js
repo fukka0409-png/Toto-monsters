@@ -66,13 +66,11 @@ css.textContent=`
 #mbo .hit:active{background:#0002}
 #mbo .mb-back{position:absolute;z-index:3;border:4px solid #3a2306;background:#fff3d6;color:#3a2306;border-radius:999px;padding:10px 22px;font:900 28px/1 var(--f-body,sans-serif)}
 #mbo .mb-coin{position:absolute;left:700px;top:96px;width:192px;height:56px;display:flex;align-items:center;justify-content:flex-end;font:900 42px/1 var(--f-pix,monospace);color:#3a2306}
-#mbo .mb-rlab{position:absolute;left:86px;top:1436px;width:240px;height:60px;background:#f3dcaa;display:flex;align-items:center;justify-content:center;white-space:nowrap;font:900 32px/1 var(--f-body,sans-serif);color:#3a2306;pointer-events:none;border-radius:6px}
+#mbo .mb-pt{position:absolute;width:266px;text-align:center;color:#3a2306;pointer-events:none;white-space:nowrap;font-family:var(--f-body,sans-serif)}
+#mbo .mb-pt.h{font-weight:900;font-size:24px;line-height:1}
+#mbo .mb-pt.l{font-weight:900;font-size:27px;line-height:1;letter-spacing:-.02em}
+#mbo .mb-pt.i{font-size:64px;line-height:1}
 #mbo .mb-rwr{position:absolute;left:72px;top:1532px;width:266px;text-align:center;font:900 26px/1.25 var(--f-body,sans-serif);color:#fff;background:#000b;border:3px solid #ffd75e;border-radius:14px;padding:6px 4px;pointer-events:none}
-#mbo .mb-cnt{position:absolute;left:72px;top:1300px;width:266px;text-align:center;font:900 26px/1.1 var(--f-body,sans-serif);color:#3a2306}
-#mbo .mb-quest{position:absolute;left:338px;top:1290px;width:266px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#3a2306;pointer-events:none}
-#mbo .mb-quest i{font-style:normal;font-size:70px;line-height:1}
-#mbo .mb-quest b{font:900 30px/1 var(--f-body,sans-serif)}
-#mbo .mb-quest small{font:900 22px/1 var(--f-body,sans-serif);color:#7a3b00}
 /* 編成 */
 #mbo .fm-cell{position:absolute;display:flex;align-items:center;justify-content:center}
 #mbo .fm-cell img{max-width:92%;max-height:92%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 3px 2px #0008)}
@@ -177,9 +175,9 @@ function openMenu(){ const s=shell(941,1672,"mb/menu.jpg"); st(); sfx("tap");
   s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:24px;top:40px">← ${T("もどる","Back")}</button>
     <div class="mb-coin" id="mbCoin"></div>
     ${hit("mbForm",55,238,835,237,T("魔物編成","Formation"))}${hit("mbShop",55,492,835,235,T("アイテム購入","Items"))}${hit("mbGacha",55,748,835,237,T("ガチャ","Gacha"))}${hit("mbBox",55,1003,835,232,T("魔物BOX","Monster BOX"))}
-    <div class="mb-cnt" id="mbCnt">${T("参加者 1人","1 player")}</div><div class="mb-rlab">${T("ランクマッチ","Rank Match")}</div>
+    ${[72,338,604].map((x,i)=>`<div class="mb-pt h" ${i===0?'id="mbCnt"':""} style="left:${x}px;top:1306px">${[T("参加者 1人","1 player"),T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`),T("あいことばで","With a passphrase")][i]}</div><div class="mb-pt l" style="left:${x}px;top:1450px">${[T("ランクマッチ","Rank Match"),T("クエストマッチ","Quest Match"),T("フレンドマッチ","Friend Match")][i]}</div>`).join("")}
+    <div class="mb-pt i" style="left:338px;top:1352px">⚔️</div>
     <div class="mb-rwr">${T("ランクマッチ勝率","Rank win rate")} ${rankRate()}<br><small>${T(`${st().rw||0}勝 ${st().rl||0}敗`,`${st().rw||0}W ${st().rl||0}L`)}</small></div>
-    <div class="mb-quest"><i>⚔️</i><b>${T("クエストマッチ","Quest Match")}</b><small>${T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`)}</small></div>
     ${hit("mbRand",72,1265,266,260,T("ランクマッチ","Rank Match"))}${hit("mbQuest",338,1265,266,260,T("クエストマッチ","Quest Match"))}${hit("mbFriend",604,1265,266,260,T("フレンドマッチ","Friend Match"))}`;
   coinUpd(); const g=id=>document.getElementById(id);
   g("mbX").onclick=()=>{ sfx("tap"); closeAll(); };

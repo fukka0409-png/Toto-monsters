@@ -6067,6 +6067,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-24-mbmenu", coins:1000 },   // 魔物バトルのメニューで、下の3つのボタンの文字が欠けたり枠からはみ出したりしていた
   { id:"fix-2026-10-23-mcstat", coins:1000 },   // 魔物キャッチャー：アーム作家の画面で「過去の作品」ボタンと所持コインが重なっていた
   { id:"fix-2026-10-23-ranktotal", coins:1000 },   // ランキングの参加人数が「/200人」で止まって、それ以上ふえなかった
   { id:"fix-2026-10-22-readquota", coins:1000 },   // ランキングなどの読みこみが多すぎて、サーバーの1日の上限に達し通信できないことがあった
@@ -9162,5 +9163,5 @@ async function titleRanks(){
 })();
 </script>
 <script src="mc/mc.js?v=7" defer></script>
-<script src="mb/mb.js?v=13" defer></script>
+<script src="mb/mb.js?v=14" defer></script>
 </body></html>
