@@ -6105,6 +6105,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-24-mbstat", coins:1000 },   // 魔物バトル：レベルが上がると攻撃力と体力が1.5倍ずつ増えて、ものすごく大きな数になっていた
   { id:"fix-2026-10-24-itemrest", coins:1000 },   // ランク戦が始まって1時間はアイテムを使えないはずなのに、CPUの冒険者がアイテムを使ってきて「留守中にアイテムを使われました」が出ていた
   { id:"fix-2026-10-24-mbslot", coins:1000 },   // 魔物バトル：同じ1体の魔物を編成の2か所に入れられて、ガチャでかぶると2か所とも同時にレベルアップしていた
   { id:"fix-2026-10-24-mbmenu", coins:1000 },   // 魔物バトルのメニューで、下の3つのボタンの文字が欠けたり枠からはみ出したりしていた
@@ -9208,5 +9209,5 @@ async function titleRanks(){
 })();
 </script>
 <script src="mc/mc.js?v=7" defer></script>
-<script src="mb/mb.js?v=35" defer></script>
+<script src="mb/mb.js?v=36" defer></script>
 </body></html>

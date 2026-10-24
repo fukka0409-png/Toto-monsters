@@ -7,17 +7,17 @@
 (()=>{
 /* ---------- 中身（魔物・武器・アイテム・ガチャ）：追加するときはここに足す ---------- */
 // 魔物：img＝正面（編成・BOX）、back＝後ろ姿（バトルの自分の魔物）。magic＝魔法（なければ null）
-//   kind:"healone"＝えらんだ味方1体の体力を amt 回復（レベルで1.5倍ずつ）
+//   kind:"healone"＝えらんだ味方1体の体力を amt 回復（レベルが上がると体力と同じだけ増える）
 //   kind:"two"＝えらんだ敵2体を同時に攻撃（それぞれ攻撃力×power）
 //   kind:"sac"＝場にいるほかの味方の体力を半分にして、敵1体に大ダメージ。once:true＝1バトルに1度だけ
 //   cd＝何ターンに1度使えるか（例：cd:2 なら2ターンに1度）
 //   magic の例：{ name:"ファイア", desc:"敵3体に攻撃力×1.2のダメージ", kind:"all", power:1.2 }   kind: all（敵全体）/ one（1体）/ heal（味方全体を回復）
 const MB_MONS = [
-  { id:1, name:"スライム", en:"Slime", img:"mb/m1.png", back:"mb/m1b.png", atk:1, hp:3, magic:null },   // 2026-10-24 追加
-  { id:2, name:"戦士トト", en:"Warrior Toto", img:"mb/m2.png", back:"mb/m2b.png", atk:5, hp:3, magic:{ name:"必殺の一撃", en:"Finishing Blow", desc:"2ターンに1度、敵1体に攻撃力の2倍の攻撃を与える", kind:"one", power:2, cd:2 } },   // 2026-10-24 追加
-  { id:3, name:"闇落ちハム", en:"Fallen Ham", img:"mb/m3.png", back:"mb/m3b.png", atk:7, hp:5, magic:{ name:"いのちの一撃", en:"Life Strike", desc:"となりに並んでいる味方の魔物の体力を半分に減らす代わりに、敵1体に攻撃力×5のダメージ（1バトルに1度だけ）", kind:"sac", power:5, once:true } },   // 2026-10-24 追加
-  { id:4, name:"ピンククラゲトト", en:"Pink Jellyfish Toto", img:"mb/m4.png", back:"mb/m4b.png", atk:2, hp:7, magic:{ name:"いやしの触手", en:"Healing Tentacles", desc:"2ターンに1度、えらんだ味方1体の体力を2回復する（レベルが上がると回復量も1.5倍ずつ増える）", kind:"healone", amt:2, cd:2 } },   // 2026-10-24 追加
-  { id:5, name:"魔術師ウルフールーパー", en:"Wizard Wolf-Looper", img:"mb/m5.png", back:"mb/m5b.png", atk:5, hp:6, magic:{ name:"ふたまた魔法", en:"Twin Spell", desc:"2ターンに1度、えらんだ敵2体を同時に攻撃する（それぞれ攻撃力ぶんのダメージ）", kind:"two", power:1, cd:2 } },   // 2026-10-24 追加
+  { id:1, name:"スライム", en:"Slime", img:"mb/m1.png", back:"mb/m1b.png", atk:1, hp:3, atk100:8000, hp100:20000, magic:null },   // 2026-10-24 追加
+  { id:2, name:"戦士トト", en:"Warrior Toto", img:"mb/m2.png", back:"mb/m2b.png", atk:5, hp:3, atk100:35000, hp100:22000, magic:{ name:"必殺の一撃", en:"Finishing Blow", desc:"2ターンに1度、敵1体に攻撃力の2倍の攻撃を与える", kind:"one", power:2, cd:2 } },   // 2026-10-24 追加
+  { id:3, name:"闇落ちハム", en:"Fallen Ham", img:"mb/m3.png", back:"mb/m3b.png", atk:7, hp:5, atk100:45000, hp100:30000, magic:{ name:"いのちの一撃", en:"Life Strike", desc:"となりに並んでいる味方の魔物の体力を半分に減らす代わりに、敵1体に攻撃力×5のダメージ（1バトルに1度だけ）", kind:"sac", power:5, once:true } },   // 2026-10-24 追加
+  { id:4, name:"ピンククラゲトト", en:"Pink Jellyfish Toto", img:"mb/m4.png", back:"mb/m4b.png", atk:2, hp:7, atk100:12000, hp100:50000, magic:{ name:"いやしの触手", en:"Healing Tentacles", desc:"2ターンに1度、えらんだ味方1体の体力を回復する（Lv1で2回復。レベルが上がると、体力と同じだけ回復量も増える）", kind:"healone", amt:2, cd:2 } },   // 2026-10-24 追加
+  { id:5, name:"魔術師ウルフールーパー", en:"Wizard Wolf-Looper", img:"mb/m5.png", back:"mb/m5b.png", atk:5, hp:6, atk100:32000, hp100:40000, magic:{ name:"ふたまた魔法", en:"Twin Spell", desc:"2ターンに1度、えらんだ敵2体を同時に攻撃する（それぞれ攻撃力ぶんのダメージ）", kind:"two", power:1, cd:2 } },   // 2026-10-24 追加
 ];
 // 武器（装備）：atk・hp を足す。例：{ id:1, name:"木の剣", img:"mb/w1.png", atk:2, hp:0 }
 const MB_WEAPONS = [];
@@ -67,9 +67,15 @@ const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.un
   if(!b.starter){ b.starter=1; b.same2=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<MB.SAME_MAX;k++){ const u={u:b.nu++, id:1, lv:3}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, w:null}; } try{ save(); }catch(e){} }
   return b; };
 const coinUpd = () => { const el=document.getElementById("mbCoin"); if(el) el.textContent=fmt(S.coins); try{ renderCoins(); }catch(e){} };
-// レベルの強さ：1レベル上がるごとに全ステータス1.5倍
-const statOf = (id, lv, w) => { const m=monOf(id), k=Math.pow(MB.GROW, Math.min(1500, Math.max(0,(lv||1)-1))), W=wOf(w); if(!m) return {atk:0,hp:0};
-  return { atk: m.atk*k + (W?W.atk||0:0), hp: m.hp*k + (W?W.hp||0:0) }; };
+// レベルの強さ：下の growV（Lv1→Lv100で atk100・hp100 まで上がる）
+/* 強さの上がり方（2026-10-24 変更）：Lv1は atk・hp、Lv100で atk100・hp100 になる（はじめはゆっくり、あとで大きく上がる）。
+   Lv100の強さの目安：ふつうは平均3万くらい、ものすごく強い魔物で10万くらい。魔物ごとに atk100・hp100 を決める（なければ自動）。
+   クエストの敵などLv100をこえる魔物は、同じ曲線のまま上がりつづける */
+const growV = (b, top, lv) => b + (top-b)*Math.pow(Math.max(0,(lv||1)-1)/99, 2);
+const top100 = m => ({ atk: m.atk100 || m.atk*4000, hp: m.hp100 || m.hp*4000 });
+const statOf = (id, lv, w) => { const m=monOf(id), W=wOf(w); if(!m) return {atk:0,hp:0}; const T=top100(m);
+  return { atk: growV(m.atk,T.atk,lv) + (W?W.atk||0:0), hp: growV(m.hp,T.hp,lv) + (W?W.hp||0:0) }; };
+const hpRate = (id, lv) => { const m=monOf(id); if(!m) return 1; return growV(m.hp,top100(m).hp,lv)/m.hp; };   // 回復量の伸び（体力と同じ）
 const nf = v => { const r=Math.round(v*10)/10; return Number.isInteger(r)?fmt(r):r.toFixed(1); };
 
 /* ---------- 見た目 ---------- */
@@ -281,7 +287,7 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
   if(dupU){ const inF=u=>b.form.some(f=>f&&f.u===u.u);
     const u=dupU;
     u.lv=(u.lv||1)+1; save(); sfx("level");
-    return dlg(`<h3>⬆ ${T("かぶった！ レベルアップ！","Duplicate! Level up!")}</h3>${show}<p>${T(`${inF(u)?"編成に入っている":"BOXの"}「${esc2(mname(m))}」が <b>Lv.${u.lv}</b> になった！（全ステータス1.5倍）`,`Your ${inF(u)?"team's":"BOX"} "${esc2(mname(m))}" is now <b>Lv.${u.lv}</b>! (all stats ×1.5)`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
+    return dlg(`<h3>⬆ ${T("かぶった！ レベルアップ！","Duplicate! Level up!")}</h3>${show}<p>${T(`${inF(u)?"編成に入っている":"BOXの"}「${esc2(mname(m))}」が <b>Lv.${u.lv}</b> になった！（攻撃力と体力が上がった）`,`Your ${inF(u)?"team's":"BOX"} "${esc2(mname(m))}" is now <b>Lv.${u.lv}</b>! (ATK and HP went up)`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
   // 同じ魔物は3体まで（全部Lv100で合成もできないときは、ガチャのコインを返す）
   if(b.units.filter(x=>x.id===id).length>=MB.SAME_MAX){ S.coins+=G.cost; save(); coinUpd();
     return dlg(`<h3>📦 ${T("これ以上持てません","You can't hold more")}</h3>${show}<p>${T(`同じ魔物は${MB.SAME_MAX}体までしか持てません（全部Lv100なので合成もできません）。<br>ガチャの${fmt(G.cost)}コインを返しました。`,`You can only hold ${MB.SAME_MAX} of the same monster (all are Lv100, so it can't merge).<br>Your ${fmt(G.cost)} coins were refunded.`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
@@ -320,7 +326,7 @@ function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[
   sides.forEach((sd,s)=>A[s].forEach((a,p)=>{ if(!a||a.t!=="swap") return; const cur=sd.field[p], r=a.r; if(r==null||!alive(sd.us[r])||sd.field.includes(r)) return; sd.field[p]=r; open[s].add(p); ev.push({k:"swap",s,p,from:cur,to:r}); }));
   // 2) レベルアップ・アイテム
   sides.forEach((sd,s)=>A[s].forEach((a,p)=>{ if(!a||open[s].has(p)) return; const ui=sd.field[p], u=sd.us[ui]; if(!alive(u)) return;
-    if(a.t==="lvup"){ if(u.lv>=MB.MAX_LV) return; u.lv++; u.atk*=MB.GROW; u.hp*=MB.GROW; u.max*=MB.GROW; ev.push({k:"lvup",s,p}); }
+    if(a.t==="lvup"){ if(u.lv>=MB.MAX_LV) return; const o=statOf(u.id,u.lv,u.w), n=statOf(u.id,u.lv+1,u.w); u.lv++; u.atk+=n.atk-o.atk; u.hp+=n.hp-o.hp; u.max+=n.hp-o.hp; ev.push({k:"lvup",s,p}); }
     if(a.t==="item"){ const it=iOf(a.i); if(it&&it.heal){ const h=Math.min(it.heal, u.max-u.hp); u.hp+=h; ev.push({k:"heal",s,p,v:h,item:a.i}); } else ev.push({k:"item",s,p,item:a.i}); } }));
   // 3) ガード（そのターンのダメージ半分・3回まで）
   sides.forEach((sd,s)=>A[s].forEach((a,p)=>{ if(!a||a.t!=="guard"||open[s].has(p)) return; const u=sd.us[sd.field[p]]; if(!alive(u)||u.g<=0) return; u.g--; guard[s].add(p); ev.push({k:"guard",s,p}); }));
@@ -331,7 +337,7 @@ function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[
     if(a.t==="atk"){ if(!lt.length) return; let t=a.tg; if(!lt.includes(t)) t=lt[Math.floor(R()*lt.length)]; const v=u.atk*(0.9+R()*0.2); dmg[o][t]+=v; ev.push({k:"atk",s,p,t,v}); }
     if(a.t==="magic"){ const mg=(monOf(u.id)||{}).magic; if(!mg||!magicReady(u,B)) return; u.mt=B.turn; const v=u.atk*(mg.power||1)*(0.9+R()*0.2);
       if(mg.kind==="heal"){ [0,1,2].forEach(q=>{ if(alive(sd.us[sd.field[q]])) heal[s][q]+=v; }); ev.push({k:"magic",s,p,heal:1}); }
-      else if(mg.kind==="healone"){ let q=a.ally; if(q==null||!alive(sd.us[sd.field[q]])) q=p; heal[s][q]+=(mg.amt||1)*Math.pow(MB.GROW,Math.max(0,u.lv-1)); ev.push({k:"magic",s,p,heal:1}); }
+      else if(mg.kind==="healone"){ let q=a.ally; if(q==null||!alive(sd.us[sd.field[q]])) q=p; heal[s][q]+=(mg.amt||1)*hpRate(u.id,u.lv); ev.push({k:"magic",s,p,heal:1}); }
       else if(mg.kind==="two"){ if(!lt.length) return; const ts=[...new Set([a.tg,a.tg2].filter(t=>lt.includes(t)))]; while(ts.length<Math.min(2,lt.length)){ const r2=lt.filter(t=>!ts.includes(t)); ts.push(r2[Math.floor(R()*r2.length)]); } ts.forEach(t=>dmg[o][t]+=v); ev.push({k:"magic",s,p,t:ts[0]}); }
       else if(mg.kind==="sac"){ if(!lt.length) return; let t=a.tg; if(!lt.includes(t)) t=lt[Math.floor(R()*lt.length)]; dmg[o][t]+=v;
         [0,1,2].forEach(q=>{ if(q===p) return; const w=sd.us[sd.field[q]]; if(alive(w)){ const h=w.hp/2; w.hp-=h; ev.push({k:"sac",s,p:q,v:h}); } }); ev.push({k:"magic",s,p,t}); }
@@ -414,7 +420,7 @@ function planUnit(p){ if(V.submitted||V.anim||V.B.end) return; const me=mySide()
     <div class="acts"><button type="button" data-a="atk">⚔ ${T("攻撃","Attack")}<small>${T("敵をえらぶ","Choose a target")}</small></button>
     <button type="button" data-a="guard" ${u.g>0?"":"disabled"}>🛡 ${T("ガード","Guard")}<small>${T(`ダメージ半分・のこり${u.g}回`,`Half damage · ${u.g} left`)}</small></button>
     <button type="button" data-a="magic" ${m.magic&&magicReady(u,V.B)?"":"disabled"}>✨ ${T("魔法","Magic")}<small>${m.magic?(magicReady(u,V.B)?T(m.magic.name,m.magic.en||m.magic.name):(m.magic.once?T("もう使った","Already used"):T(`あと${magicWait(u,V.B)}ターン`,`${magicWait(u,V.B)} turn(s) left`))):T("使えない魔物","Can't use magic")}</small></button>
-    <button type="button" data-a="lvup" ${u.lv>=MB.MAX_LV?"disabled":""}>⬆ ${T("レベルアップ","Level up")}<small>${u.lv>=MB.MAX_LV?T("Lv100（上限）","Lv100 (max)"):T("無料・全ステータス1.5倍","Free · all stats ×1.5")}</small></button>
+    <button type="button" data-a="lvup" ${u.lv>=MB.MAX_LV?"disabled":""}>⬆ ${T("レベルアップ","Level up")}<small>${u.lv>=MB.MAX_LV?T("Lv100（上限）","Lv100 (max)"):T("無料・攻撃力と体力が上がる","Free · ATK & HP up")}</small></button>
     <button type="button" data-a="item" ${items.length?"":"disabled"} style="grid-column:1/-1">🧪 ${T("アイテム使用","Use item")}<small>${items.length?T(`${items.length}種類`,`${items.length} kinds`):T("持っていない","None")}</small></button></div>`,
     V.sel[p]?[[T("閉じる","Close"),null],[T("戦略を取り消す","Clear"),()=>{ V.sel[p]=null; drawBattle(); }]]:[[T("閉じる","Close"),null]]);
   bg.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{ const a=x.dataset.a; bg.remove();
