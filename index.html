@@ -503,6 +503,12 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .rk-name em{font-style:normal;font-size:11px;background:var(--moss);color:#1b2a0c;border-radius:6px;padding:0 5px;margin-left:4px}
 .rk-sub{font-size:11px;color:var(--mist-dim)}
 .rk-cmt{font-size:12px;margin-top:2px;overflow-wrap:anywhere}
+.rk-rep{margin-top:4px;border:2px solid var(--line);background:transparent;color:var(--mist);border-radius:999px;padding:3px 10px;font:inherit;font-size:11px;font-weight:900}
+.rep-top{background:#0003;border-radius:12px;padding:8px 10px;margin-bottom:8px}.rep-top small{font-size:11px;opacity:.75}
+.rep-list{max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.rep-it{position:relative;background:#ffffff12;border-radius:12px;padding:6px 30px 6px 10px;font-size:14px;overflow-wrap:anywhere}
+.rep-it b{font-size:11px;margin-right:6px;opacity:.8}.rep-it small{font-size:10px;opacity:.6}
+.rep-del{position:absolute;right:6px;top:6px;border:0;background:#0004;color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px}
 .rk-lv{font-family:var(--f-pix);font-size:20px;color:var(--moss);text-align:center;flex:0 0 auto}
 .rk-lv small{display:block;font-size:10px;color:var(--mist-dim)}
 .login-box{display:flex;flex-direction:column;gap:10px;align-items:stretch;text-align:center;background:var(--bark);border:2px solid var(--staff);border-radius:16px;padding:16px}
@@ -5559,7 +5565,7 @@ function renderMe(segHtml){
   </div>`;
   $("#pName").textContent=myName();
   const ci=$("#cmtIn"); if(ci) ci.value=S.comment||"";
-  const cf=$("#cmtForm"); if(cf) cf.onsubmit=e=>{ e.preventDefault(); S.comment=ci.value.trim().slice(0,40); save(); toast("コメントを保存しました"); };
+  const cf=$("#cmtForm"); if(cf) cf.onsubmit=e=>{ e.preventDefault(); S.comment=ci.value.trim().slice(0,40); save(); toast("コメントを保存しました"); setTimeout(()=>repClean(true),4000); };
   const en=$("#editName"); if(en) en.onclick=editName;
   const lo=$("#logoutBtn"); if(lo) lo.onclick=logout;
   $("#toDress").onclick=()=>{ tab="rank"; profMode="dress"; render(); };
@@ -5610,7 +5616,7 @@ function renderRanking(segHtml){
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
         ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${INV_CNT[r.id]}人ついています</div>`:""}
-        ${(cmtOpen()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div>`:""}</div>
+        ${(cmtOpen()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div><button type="button" class="rk-rep" data-rep="${i}">💬 ${LANG==="en"?"Reply":"返信"}</button>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
@@ -5631,6 +5637,7 @@ function renderRanking(segHtml){
     const open=()=>openOtherProfile(RANK[+li.dataset.ri], rankless()?null:+li.dataset.ri+1);
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } };
   });
+  document.querySelectorAll(".rank .rk-rep[data-rep]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); try{ SFX.tap(); }catch(e2){} openReplies(RANK[+b.dataset.rep]); });
 }
 // 名前検索：読み込んだランキングの中は打つたびに絞り込み、見つからなければランキング外も探せる
 function filterRank(){
@@ -6863,6 +6870,42 @@ async function checkItems(){
   }catch(e){}
   itemBusy=false; shItemsDone=true; shExpireNow();
 }
+/* ===== ひとことコメントへの返信（2026-10-24）：だれでも匿名で返信できる。コメントが変わる・消えると、そのコメントへの返信も消える ===== */
+const REP_COL="creplies", REP_MAX=40;
+const repKey = t => { let h=5381; const s=String(t||""); for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return "c"+(h>>>0).toString(36)+"_"+s.length; };
+// ランキングにのっている自分のコメント（順位で消えているときは空）
+const myPubComment = () => (cmtOpen()||myRank==null||myRank<=50) ? (S.comment||"").slice(0,40) : "";
+let repLast=0;
+async function openReplies(r){ const L=LANG==="en";
+  if(!DB||!MYID){ return toast(L?"Sign in to see replies":"ログインすると返信を見られます"); }
+  const ck=repKey(r.comment||"");
+  const bg=sheet(`<div class="sheet-h"><h3>💬 ${L?"Replies":"返信"}</h3><button class="x" type="button" aria-label="${L?"Close":"閉じる"}">✕</button></div>
+    <div class="rep-top"><small>${uname(r.name)}${L?"'s comment":"さんのひとこと"}</small><div class="rk-cmt" translate="no" style="font-size:15px">「${esc(r.comment||"")}」</div></div>
+    <div class="rep-list" id="repList"><p class="note">${L?"Loading...":"読みこみ中…"}</p></div>
+    <form class="cmt-row" id="repForm" style="margin-top:10px"><input id="repIn" maxlength="${REP_MAX}" placeholder="${L?"Reply anonymously (40 chars)":"匿名で返信（40文字まで）"}" aria-label="${L?"Reply":"返信"}"><button class="btn gold" type="submit" style="width:auto;padding:0 16px">${L?"Send":"送る"}</button></form>
+    <p class="note" style="margin:6px 0 0;font-size:11px">${L?"Replies are anonymous. If the comment changes or disappears, its replies disappear too.":"返信は匿名です（名前は出ません）。ひとことコメントが変わったり消えたりすると、返信も消えます。"}</p>`);
+  bg.classList.add("rep-sheet");
+  const draw=async()=>{ const box=bg.querySelector("#repList"); if(!box) return;
+    try{ const q=await withTO(DB.collection(REP_COL).where("to","==",r.id).where("ck","==",ck).get());
+      const list=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.at||0)-(b.at||0)).slice(-80);
+      box.innerHTML=list.length?list.map(x=>`<div class="rep-it"><b>${L?"Anonymous":"名無しさん"}</b><small>${pbAgo(x.at)}</small>${r.id===MYID?`<button type="button" class="rep-del" data-del="${x.id}" aria-label="${L?"Delete":"消す"}">✕</button>`:""}<div translate="no">${esc(x.txt||"")}</div></div>`).join("")
+        :`<p class="note" style="text-align:center">${L?"No replies yet. Be the first!":"まだ返信はありません。最初の返信をしてみよう！"}</p>`;
+      box.scrollTop=box.scrollHeight;
+      box.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ try{ await DB.collection(REP_COL).doc(b.dataset.del).delete(); draw(); }catch(e){ toast(L?"Couldn't delete":"消せませんでした"); } });
+    }catch(e){ box.innerHTML=`<p class="note">${L?"Couldn't load.":"読みこめませんでした。"}</p>`; } };
+  draw();
+  bg.querySelector("#repForm").onsubmit=async e=>{ e.preventDefault(); const inp=bg.querySelector("#repIn"), t=(inp.value||"").trim().slice(0,REP_MAX); if(!t) return;
+    if(Date.now()-repLast<8000) return toast(L?"Please wait a little before sending again":"少し待ってから送ってね");
+    repLast=Date.now(); const btn=bg.querySelector("#repForm button"); btn.disabled=true;
+    try{ await withTO(DB.collection(REP_COL).add({to:r.id, ck, txt:t, at:gnow()})); inp.value=""; try{ SFX.tap(); }catch(e2){} draw(); }
+    catch(err){ toast((L?"Couldn't send ":"送れませんでした ")+((err&&err.code)||"")); }
+    btn.disabled=false; }; }
+// 自分のコメントが変わった・消えたら、前のコメントへの返信を消す（ログイン中・ときどき）
+let repCleanAt=0;
+async function repClean(force){ if(!DB||!MYID) return; if(!force && Date.now()-repCleanAt<10*60000) return; repCleanAt=Date.now();
+  try{ const ck=repKey(myPubComment()); const q=await withTO(DB.collection(REP_COL).where("to","==",MYID).get());
+    for(const d of q.docs){ if((d.data()||{}).ck!==ck || !myPubComment()) d.ref.delete().catch(()=>{}); } }catch(e){} }
+setInterval(()=>{ try{ repClean(false); }catch(e){} }, 60000);
 let LAST_PROF=null;
 function openOtherProfile(r,rank){
   if(!r) return; LAST_PROF=[r,rank];
@@ -6879,7 +6922,7 @@ function openOtherProfile(r,rank){
       ${r.gm&&mon(r.gm)?`<b>${esc(mon(r.gm).name)}</b><div class="note" style="margin:0">レベルは ？？？</div>`:`<div class="note" style="margin:0">配置なし（戦えません）</div>`}
       ${fightButton(r)}</div></div>${itemBox(r)}${friendBox(r)}`}
     ${r.id===MYID?itemBox(r):""}
-    ${(rank==null||rank<=50)&&r.comment?`<div class="rk-cmt" translate="no" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div>`:""}
+    ${(rank==null||rank<=50)&&r.comment?`<div class="rk-cmt" translate="no" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div><button type="button" class="rk-rep" id="profRep">💬 ${LANG==="en"?"See / write replies":"返信を見る・書く"}</button>`:""}
     ${radarHtml(r)}
     ${profDexHtml(r)}
     <div class="def-rec" id="defRec"></div>
@@ -6894,6 +6937,7 @@ function openOtherProfile(r,rank){
     </div>
   </div>`);
   try{ defRecInto(bg.querySelector("#defRec"),r); }catch(e){}
+  const pr=bg.querySelector("#profRep"); if(pr) pr.onclick=()=>openReplies(r);
 }
 // レーダーチャート：ガチャ回数・合成回数・魔物コンプ率・手持ちの魔物を、ランキングの平均と重ねて表示
 // 回数は人によって差が大きいので、ランキング内の最大値を外側として平方根でならす（コンプ率は0〜100%そのまま）
