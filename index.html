@@ -1364,6 +1364,7 @@ const I18N_EN = {
 "チェックポイントのおかげで、冒険者レベルは下がりませんでした！": "Thanks to your checkpoint, your Adventurer Level didn't drop!",
 "{0}に負けて、{1}のレベルが下がった…{2}": "Lost to {0} — {1}'s level dropped…{2}",
 "{0}と引き分けた…{1}のレベルが下がった": "Drew with {0} — {1}'s level dropped",
+"{0}からも攻撃されたけど、{1}はもうBOXにもどっていたので、レベルは下がらなかった": "{0} attacked too, but {1} was already back in the BOX, so its level didn't drop",
 "レベルが高い方の勝ち（同じならランク、それも同じなら図鑑No.が古い方）。勝つと {0}コイン＋相手の冒険者Lv分のコイン、冒険者Lv+{1}！負けると魔物のレベルが区切りまで下がり（22→20など）、冒険者Lv−{2}（チェックポイントより下には下がらない）。引き分けはおたがい魔物のレベルが下がり、冒険者Lv−{3}。": "Higher level wins (then rank, then the older Index No.). Win: {0} coins + the opponent's Adventurer Lv in coins, Adventurer Lv+{1}! Lose: your monster drops to the previous milestone (22→20 etc.), Adventurer Lv −{2} (never below your checkpoint). Draw: both monsters drop, Adventurer Lv −{3}.",
 "冒険者レベル+{0}！": "Adventurer Level +{0}!",
 "防衛作戦": "Defense",
@@ -6125,6 +6126,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-25-dblloss", coins:1000 },   // 留守中に続けて攻撃されると、もうBOXにもどった魔物のレベルが何回も下がっていた（2002→2000→1000）
   { id:"fix-2026-10-24-mbstat", coins:1000 },   // 魔物バトル：レベルが上がると攻撃力と体力が1.5倍ずつ増えて、ものすごく大きな数になっていた
   { id:"fix-2026-10-24-itemrest", coins:1000 },   // ランク戦が始まって1時間はアイテムを使えないはずなのに、CPUの冒険者がアイテムを使ってきて「留守中にアイテムを使われました」が出ていた
   { id:"fix-2026-10-24-mbslot", coins:1000 },   // 魔物バトル：同じ1体の魔物を編成の2か所に入れられて、ガチャでかぶると2か所とも同時にレベルアップしていた
@@ -6470,9 +6472,13 @@ async function checkBattles(){
     const lim=settleLim(), bots=isFinite(lim)?[]:genBotEvents(); botItemQueue.push(...bots.filter(e=>e.kind==="item"));
     const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastBattle||0)&&b.at<=lim).concat(bots.filter(e=>e.kind==="battle")).sort((a,b)=>a.at-b.at);
     if(list.length){
-      const msgs=[]; let lostLv=0, coinDiff=0;
+      const msgs=[]; let lostLv=0, coinDiff=0; const downed=new Set();
       for(const b of list){
-        if(b.result==="att"){
+        // 負けた魔物はその時点でBOXにもどる。留守中に何人かに続けて攻撃されたとき、2回目からは古いプロフィール（配置中のまま）への攻撃なので、レベルは下げない
+        //（前は 2002→2000→1000 のように、1回の留守で何回も下がっていた）
+        if(b.result!=="def" && downed.has(b.defU)){ msgs.push(`${anonWho(b)}からも攻撃されたけど、${esc(mon(b.defM)?.name||"魔物")}はもうBOXにもどっていたので、レベルは下がらなかった`);
+          if(!b.bot) S.lastBattle=Math.max(S.lastBattle||0,b.at); continue; }
+        if(b.result==="att"){ downed.add(b.defU);
           const {x,repl}=defeatUnit(b.defU);
           lostLv+=dropPlayerLv(LOSE_LV);
           msgs.push(`${anonWho(b)}に負けて、${esc(mon(b.defM)?.name||"魔物")}のレベルが下がった…${x?`（Lv${x.l}）`:""}`);
