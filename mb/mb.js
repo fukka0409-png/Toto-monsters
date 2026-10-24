@@ -53,7 +53,9 @@ const mname = m => m ? (T(m.name, m.en||m.name)) : "?";
 function rng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.units=b.units||[]; b.nu=b.nu||1; b.form=b.form||[null,null,null,null,null,null]; b.weap=b.weap||{}; b.items=b.items||{}; b.qlv=b.qlv||1;
   // はじめから持っている魔物：Lv3のスライム3体（1人1回・空いている編成の場所に入れる。空いていなければBOXへ）
-  if(!b.starter){ b.starter=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<3;k++){ const u={u:b.nu++, id:1}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, lv:3, w:null}; } try{ save(); }catch(e){} }
+  // レベルは魔物（BOXの1体ずつ）が持つ（2026-10-24〜）。前は編成の場所が持っていたので移す
+  if(!b.ulv){ b.ulv=1; b.form.forEach(f=>{ if(!f) return; const u=b.units.find(x=>x.u===f.u); if(u) u.lv=Math.max(u.lv||1, f.lv||1); }); }
+  if(!b.starter){ b.starter=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<3;k++){ const u={u:b.nu++, id:1, lv:3}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, w:null}; } try{ save(); }catch(e){} }
   return b; };
 const coinUpd = () => { const el=document.getElementById("mbCoin"); if(el) el.textContent=fmt(S.coins); try{ renderCoins(); }catch(e){} };
 // レベルの強さ：1レベル上がるごとに全ステータス1.5倍
@@ -198,7 +200,7 @@ const rankRate = () => { const b=st(), t=(b.rw||0)+(b.rl||0); return t?`${(Math.
 
 /* ---------- 2：魔物編成 ---------- */
 const FROWS=[200,385,570,885,1070,1255];
-function teamOf(){ const b=st(); return b.form.map(f=>{ if(!f) return null; const u=b.units.find(x=>x.u===f.u); if(!u||!monOf(u.id)) return null; return {id:u.id, lv:f.lv||1, w:f.w||null, u:f.u}; }); }
+function teamOf(){ const b=st(); return b.form.map(f=>{ if(!f) return null; const u=b.units.find(x=>x.u===f.u); if(!u||!monOf(u.id)) return null; return {id:u.id, lv:u.lv||1, w:f.w||null, u:f.u}; }); }
 function weapFree(id, exceptSlot){ const b=st(); const used=b.form.filter((f,i)=>f&&f.w===id&&i!==exceptSlot).length; return (b.weap[id]||0)-used; }
 function openForm(){ const s=shell(1024,1536,"mb/form.jpg?v=2"); const b=st(); sfx("tap");
   const tm=teamOf();
@@ -217,7 +219,7 @@ function pickMon(i){ const b=st(); if(!b.units.length) return dlg(`<h3>${T("魔�
   const cur=b.form[i];
   const bg=dlg(`<h3>${T(`${i<3?"前半":"待機"}編成 ${i%3+1}番目`,`${i<3?"Front":"Bench"} slot ${i%3+1}`)}</h3><p style="font-size:12px">${T("同じ魔物を何回入れてもOK","The same monster can be used more than once")}</p><div class="al">${b.units.map(u=>{ const m=monOf(u.id); return m?`<button type="button" data-u="${u.u}"><img src="${m.img}" alt=""><span>${esc2(mname(m))}</span><small>⚔${m.atk} ❤${m.hp}${m.magic?" ✨":""}</small></button>`:""; }).join("")}</div>`,
     cur?[[T("閉じる","Close"),null],[T("はずす","Remove"),()=>{ b.form[i]=null; save(); openForm(); }]]:[[T("閉じる","Close"),null]]);
-  bg.querySelectorAll("[data-u]").forEach(x=>x.onclick=()=>{ const u=+x.dataset.u; const keepW=cur&&cur.w; b.form[i]={u, lv:1, w:keepW||null}; save(); bg.remove(); sfx("tap"); openForm(); }); }
+  bg.querySelectorAll("[data-u]").forEach(x=>x.onclick=()=>{ const u=+x.dataset.u; const keepW=cur&&cur.w; b.form[i]={u, w:keepW||null}; save(); bg.remove(); sfx("tap"); openForm(); }); }
 function pickWeap(i){ const b=st(); if(!b.form[i]) return dlg(`<p>${T("先に魔物をえらんでね","Pick a monster first")}</p>`);
   const own=MB_WEAPONS.filter(w=>(b.weap[w.id]||0)>0);
   if(!own.length) return dlg(`<h3>🗡 ${T("装備がありません","No equipment")}</h3><p>${T("装備ガチャで手に入れよう！","Get equipment from the equipment gacha!")}</p>`,b.form[i].w?[[T("閉じる","Close"),null],[T("はずす","Remove"),()=>{ b.form[i].w=null; save(); openForm(); }]]:[[T("閉じる","Close"),null]]);
@@ -228,13 +230,13 @@ function pickWeap(i){ const b=st(); if(!b.form[i]) return dlg(`<p>${T("先に魔
 /* ---------- 魔物BOX ---------- */
 function openBox(){ const box=page(`📦 ${T("魔物BOX","Monster BOX")}`, T(`枠 ${st().units.length}/${st().slots}（1枠1万コインで増やせる・最大${MB.SLOT_MAX}枠）`,`${st().units.length}/${st().slots} slots (+1 slot for 10,000 coins, max ${MB.SLOT_MAX})`)); const b=st();
   box.innerHTML=`<button type="button" class="bigbtn" id="bxAdd" ${b.slots>=MB.SLOT_MAX?"disabled":""}>➕ ${T("枠を1つ増やす","Add 1 slot")}<small>${b.slots>=MB.SLOT_MAX?T("これ以上増やせません","Max reached"):T(`${fmt(MB.SLOT_COST)}コイン（いま ${b.slots}枠）`,`${fmt(MB.SLOT_COST)} coins (now ${b.slots})`)}</small></button>
-    <div class="grid">${b.units.map(u=>{ const m=monOf(u.id); return `<button type="button" class="card" data-u="${u.u}">${m?`<img src="${m.img}" alt=""><b>${esc2(mname(m))}</b><small>⚔${m.atk} ❤${m.hp}${m.magic?" ✨":""}</small>`:"?"}</button>`; }).join("")}${Array.from({length:Math.max(0,Math.min(b.slots,b.units.length+30)-b.units.length)},()=>`<div class="card empty">＋</div>`).join("")}</div>`;
+    <div class="grid">${b.units.map(u=>{ const m=monOf(u.id); return `<button type="button" class="card" data-u="${u.u}">${m?`<img src="${m.img}" alt=""><b>Lv.${u.lv||1} ${esc2(mname(m))}</b><small>⚔${nf(statOf(u.id,u.lv).atk)} ❤${nf(statOf(u.id,u.lv).hp)}${m.magic?" ✨":""}</small>`:"?"}</button>`; }).join("")}${Array.from({length:Math.max(0,Math.min(b.slots,b.units.length+30)-b.units.length)},()=>`<div class="card empty">＋</div>`).join("")}</div>`;
   box.querySelector("#bxAdd").onclick=()=>{ if(b.slots>=MB.SLOT_MAX) return; if((S.coins||0)<MB.SLOT_COST) return dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`);
     dlg(`<p>${T(`${fmt(MB.SLOT_COST)}コインで、BOXの枠を1つ増やしますか？`,`Add 1 BOX slot for ${fmt(MB.SLOT_COST)} coins?`)}</p>`,[[T("やめる","Cancel"),null],[T("増やす","Add"),()=>{ if((S.coins||0)<MB.SLOT_COST) return; S.coins-=MB.SLOT_COST; b.slots=Math.min(MB.SLOT_MAX,b.slots+1); save(); coinUpd(); sfx("coin"); openBox(); }]]); };
   box.querySelectorAll("[data-u]").forEach(c=>c.onclick=()=>{ const u=b.units.find(x=>x.u===+c.dataset.u), m=u&&monOf(u.id); if(!u) return;
     const inForm=b.form.some(f=>f&&f.u===u.u);
-    dlg(`${m?`<img src="${m.img}" alt="" style="width:140px;height:140px;object-fit:contain;image-rendering:pixelated"><h3>${esc2(mname(m))}</h3><p>⚔ ${T("攻撃力","ATK")} ${m.atk}　❤ ${T("体力","HP")} ${m.hp}<br>✨ ${T("能力","Ability")}：${m.magic?esc2(m.magic.name):T("なし","None")}</p>`:""}${inForm?`<p style="font-size:12px">${T("編成に入っています","In your formation")}</p>`:""}`,
-      [[T("閉じる","Close"),null],[T("お別れする","Release"),()=>{ dlg(`<p>${T("この魔物とお別れしますか？（もどせません）","Release this monster? (can't undo)")}</p>`,[[T("やめる","Cancel"),null],[T("お別れする","Release"),()=>{ releaseUnit(u.u); openBox(); }]]); }]]); }); }
+    dlg(`${m?`<img src="${m.img}" alt="" style="width:140px;height:140px;object-fit:contain;image-rendering:pixelated"><h3>Lv.${u.lv||1}　${esc2(mname(m))}</h3><p>⚔ ${T("攻撃力","ATK")} ${nf(statOf(u.id,u.lv).atk)}　❤ ${T("体力","HP")} ${nf(statOf(u.id,u.lv).hp)}<br>✨ ${T("能力","Ability")}：${m.magic?esc2(m.magic.name):T("なし","None")}</p>`:""}${inForm?`<p style="font-size:12px">${T("編成に入っています","In your formation")}</p>`:""}`,
+      [[T("閉じる","Close"),null],[T(`⬆ レベルアップ（${fmt(MB.LVUP)}コイン）`,`⬆ Level up (${fmt(MB.LVUP)})`),()=>{ if((S.coins||0)<MB.LVUP){ dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`); return; } S.coins-=MB.LVUP; u.lv=(u.lv||1)+1; save(); coinUpd(); sfx("level"); openBox(); dlg(`<h3>⬆ ${T("レベルアップ！","Level up!")}</h3><p>${T(`「${esc2(mname(m))}」が Lv.${u.lv} になった！<br>全ステータス1.5倍`,`"${esc2(mname(m))}" is now Lv.${u.lv}! All stats ×1.5`)}</p>`); }],[T("お別れする","Release"),()=>{ dlg(`<p>${T("この魔物とお別れしますか？（もどせません）","Release this monster? (can't undo)")}</p>`,[[T("やめる","Cancel"),null],[T("お別れする","Release"),()=>{ releaseUnit(u.u); openBox(); }]]); }]]); }); }
 function releaseUnit(uu){ const b=st(); b.units=b.units.filter(x=>x.u!==uu); b.form=b.form.map(f=>f&&f.u===uu?null:f); save(); }
 
 /* ---------- アイテム購入 ---------- */
@@ -263,14 +265,13 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
   const add=()=>{ b.units.push(nu); save(); openGacha(); };
   const show=`<img src="${m?m.img:""}" alt="" style="width:140px;height:140px;object-fit:contain;image-rendering:pixelated"><p><b>${esc2(mname(m))}</b><br>⚔ ${m?m.atk:0}　❤ ${m?m.hp:0}${m&&m.magic?`<br>✨ ${esc2(m.magic.name)}`:""}</p>`;
   // かぶったとき：レベルアップか、BOXへ入れるかをえらべる
-  if(b.units.some(x=>x.id===id)){ const slots=b.form.map((f,i)=>({f,i})).filter(o=>o.f&&(b.units.find(x=>x.u===o.f.u)||{}).id===id);
+  if(b.units.some(x=>x.id===id)){ const own=b.units.filter(x=>x.id===id);
     const toBox=()=>{ if(b.units.length<b.slots) add(); else boxFull(); };
-    const lvUp=()=>{ if(!slots.length){ dlg(`<p>${T("この魔物は編成に入っていないので、レベルアップできません。魔物編成に入れてからだとレベルアップを選べます。","This monster isn't in your formation, so it can't level up.")}</p>`,[[T("BOXへ","To BOX"),()=>toBox()]],{modal:true}); return; }
-      const go=i=>{ b.form[i].lv=(b.form[i].lv||1)+1; save(); sfx("level"); dlg(`<h3>⬆ ${T("レベルアップ！","Level up!")}</h3><p>${T(`${i<3?"前半":"待機"}編成${i%3+1}番目の「${esc2(mname(m))}」が Lv.${b.form[i].lv} になった！`,`"${esc2(mname(m))}" in slot ${i+1} is now Lv.${b.form[i].lv}!`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); };
-      if(slots.length===1) return go(slots[0].i);
-      const bg2=dlg(`<h3>⬆ ${T("どの魔物をレベルアップ？","Which one levels up?")}</h3><div class="al">${slots.map(o=>`<button type="button" data-i="${o.i}"><img src="${m.img}" alt=""><span>${o.i<3?T("前半","Front"):T("待機","Bench")}${o.i%3+1}</span><small>Lv.${o.f.lv||1} → ${(o.f.lv||1)+1}</small></button>`).join("")}</div>`,[],{modal:true});
-      bg2.querySelectorAll("[data-i]").forEach(x=>x.onclick=()=>{ bg2.remove(); go(+x.dataset.i); }); };
-    return dlg(`<h3>🥚 ${T("かぶった！","Duplicate!")}</h3>${show}<p>${T("編成の魔物をレベルアップ（全ステータス1.5倍）するか、BOXに入れるかをえらんでね。","Level up that monster in your formation (all stats ×1.5), or put it in your BOX.")}</p>`,[[T("BOXへ入れる","Put in BOX"),()=>toBox()],[T("⬆ レベルアップ","⬆ Level up"),()=>lvUp()]],{modal:true}); }
+    const lvUp=()=>{ const go=u=>{ u.lv=(u.lv||1)+1; save(); sfx("level"); dlg(`<h3>⬆ ${T("レベルアップ！","Level up!")}</h3><p>${T(`「${esc2(mname(m))}」が Lv.${u.lv} になった！`,`"${esc2(mname(m))}" is now Lv.${u.lv}!`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); };
+      if(own.length===1) return go(own[0]);
+      const bg2=dlg(`<h3>⬆ ${T("どの魔物をレベルアップ？","Which one levels up?")}</h3><div class="al">${own.map(u=>`<button type="button" data-u="${u.u}"><img src="${m.img}" alt=""><span>${b.form.some(f=>f&&f.u===u.u)?T("編成中","In team"):"BOX"}</span><small>Lv.${u.lv||1} → ${(u.lv||1)+1}</small></button>`).join("")}</div>`,[],{modal:true});
+      bg2.querySelectorAll("[data-u]").forEach(x=>x.onclick=()=>{ bg2.remove(); go(own.find(u=>u.u===+x.dataset.u)); }); };
+    return dlg(`<h3>🥚 ${T("かぶった！","Duplicate!")}</h3>${show}<p>${T("持っている同じ魔物をレベルアップ（全ステータス1.5倍）するか、BOXに入れるかをえらんでね。","Level up the same monster you own (all stats ×1.5), or put it in your BOX.")}</p>`,[[T("BOXへ入れる","Put in BOX"),()=>toBox()],[T("⬆ レベルアップ","⬆ Level up"),()=>lvUp()]],{modal:true}); }
   if(b.units.length<b.slots) return dlg(`<h3>🥚 ${T("ゲット！","Got it!")}</h3>${show}`,[[T("OK","OK"),()=>{ add(); }]],{modal:true});
   boxFull();
   function boxFull(){
@@ -460,8 +461,8 @@ function finish(endSide, giveup, silent){ const B=V.B; if(B.end&&B._done) return
   const res = endSide==="draw" ? "draw" : (endSide==="a")===(meIdx===0) ? "win" : "lose"; const b=st();
   clearInterval(V.tick); V.leave=null;
   if(res==="win"){ // レベルは持ちこし
-    mySide().us.forEach(u=>{ if(b.form[u.slot]) b.form[u.slot].lv=u.lv; });
-  } else if(res==="lose"){ b.form.forEach(f=>{ if(f) f.lv=1; }); }
+    mySide().us.forEach(u=>{ const f=b.form[u.slot], x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv=Math.max(x.lv||1,u.lv); });
+  } else if(res==="lose"){ b.form.forEach(f=>{ const x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv=1; }); }
   const rank=V.cfg.mode==="rank"||V.cfg.mode==="ghost";   // ランクマッチ（リアルタイムの相手・過去のデータの相手）：勝率に入るのは自分だけ
   if(rank){ if(res==="win") b.rw=(b.rw||0)+1; else if(res==="lose") b.rl=(b.rl||0)+1; }
   let coin=0; if(res==="win"){ coin=V.cfg.mode==="quest"?questPrize(V.cfg.qlv):rank?MB.RANK_COIN:MB.WIN_COIN; S.coins+=coin; if(V.cfg.mode==="quest") b.qlv=(b.qlv||1)+1; b.w=(b.w||0)+1; } else if(res==="lose") b.l=(b.l||0)+1;
