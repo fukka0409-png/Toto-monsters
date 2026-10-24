@@ -266,7 +266,9 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
   const show=`<img src="${m?m.img:""}" alt="" style="width:140px;height:140px;object-fit:contain;image-rendering:pixelated"><p><b>${esc2(mname(m))}</b><br>⚔ ${m?m.atk:0}　❤ ${m?m.hp:0}${m&&m.magic?`<br>✨ ${esc2(m.magic.name)}`:""}</p>`;
   // かぶったとき：レベルアップか、BOXへ入れるかをえらべる
   // かぶったとき：持っている同じ魔物のうち、いちばんレベルが高い魔物に自動で合成（レベル+1・上限Lv100。全部Lv100ならBOXへ）
-  const dupU=b.units.filter(x=>x.id===id&&(x.lv||1)<MB.MAX_LV).sort((a,c)=>(c.lv||1)-(a.lv||1))[0];
+  // 同じレベルが2体以上なら、編成に入っている魔物を先に。それでも何体かいればランダムで1体
+  const dupU=(()=>{ const c=b.units.filter(x=>x.id===id&&(x.lv||1)<MB.MAX_LV); if(!c.length) return null; const top=Math.max(...c.map(x=>x.lv||1));
+    let t=c.filter(x=>(x.lv||1)===top); const f=t.filter(x=>b.form.some(z=>z&&z.u===x.u)); if(f.length) t=f; return t[Math.floor(Math.random()*t.length)]; })();
   if(dupU){ const inF=u=>b.form.some(f=>f&&f.u===u.u);
     const u=dupU;
     u.lv=(u.lv||1)+1; save(); sfx("level");
