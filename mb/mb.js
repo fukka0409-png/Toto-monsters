@@ -481,7 +481,7 @@ async function startRandom(){ if(!needTeam()||!needLogin()) return; const team=m
   const bg=waitDlg(T("ランクマッチの対戦相手をさがしています…","Looking for a Rank Match opponent..."), stop);
   publishMe();
   // しばらく待ってもリアルタイムの相手がいなければ、ほかの冒険者の過去のデータ（いちばん勝率が高い編成）と戦う
-  setTimeout(async()=>{ if(done) return; stop(); try{ await ghostGo(team); bg.remove(); }catch(e){ bg.remove(); dlg(`<p>${T("相手が見つかりませんでした","No opponent found")}</p>`); } }, MB.GHOST_WAIT);
+  setTimeout(async()=>{ if(done) return; stop(); bg.remove(); await ghostGo(team); }, MB.GHOST_WAIT);
   try{ await ref.set({uid:MYID, at:now(), team, m:null}); }catch(e){ bg.remove(); return dlg(`<p>${T("つながりませんでした","Couldn't connect")} ${esc2(e.code||"")}</p>`); }
   V.hb=setInterval(()=>{ if(!done) ref.update({at:now()}).catch(()=>{}); },8000);
   V.unsubs=[ref.onSnapshot(s=>{ const d=s.data(); if(!done&&d&&d.m){ stop(); bg.remove(); joinMatch(d.m,"rank"); } },()=>{})];
@@ -496,16 +496,18 @@ async function startRandom(){ if(!needTeam()||!needLogin()) return; const team=m
 // 自分の編成・ランクマッチの勝敗・戦い方を公開（過去のデータの相手として使われる）。使われても、本人の勝率は変わらない
 function publishMe(){ if(!DB||!MYID) return; const b=st(), team=myTeam(); if(!team.some(Boolean)) return;
   let nm=""; try{ nm=myName(); }catch(e){}
-  DB.collection("mbp").doc(MYID).set({uid:MYID, nm:String(nm||"").slice(0,24), team, w:b.rw||0, l:b.rl||0, st:b.style||{}, at:now()}).catch(()=>{}); }
-async function ghostGo(myteam){ const q=await DB.collection("mbp").limit(300).get();
-  const L=q.docs.map(x=>x.data()).filter(x=>x&&x.uid!==MYID&&Array.isArray(x.team)&&x.team.some(t=>t&&monOf(t.id)));
-  if(!L.length) throw 0;
-  const rate=x=>{ const t=(x.w||0)+(x.l||0); return t?(x.w||0)/t:0; };
-  L.sort((a,b)=>rate(b)-rate(a)||(b.w||0)-(a.w||0)||(b.at||0)-(a.at||0)); const g=L[0];
+  DB.collection("mbp").doc(MYID).set({uid:MYID, nm:String(nm||"").slice(0,24), team, w:b.rw||0, l:b.rl||0, q:b.qlv||1, st:b.style||{}, at:now()}).catch(()=>{}); }
+// 相手のえらび方：①ランクマッチをしたことがある冒険者で、いちばん勝率が高い人 ②いなければ、クエストで戦った冒険者（クエストのレベルがいちばん高い人） ③だれもいなければ、クエストと同じボットの編成
+async function ghostGo(myteam){ let L=[]; try{ const q=await DB.collection("mbp").limit(300).get();
+  L=q.docs.map(x=>x.data()).filter(x=>x&&x.uid!==MYID&&Array.isArray(x.team)&&x.team.some(t=>t&&monOf(t.id))); }catch(e){}
+  const rate=x=>{ const t=(x.w||0)+(x.l||0); return t?(x.w||0)/t:0; }, played=x=>(x.w||0)+(x.l||0)>0;
+  L.sort((a,b)=>(played(b)-played(a))||rate(b)-rate(a)||(b.w||0)-(a.w||0)||(b.q||1)-(a.q||1)||(b.at||0)-(a.at||0)); let g=L[0];
+  if(!g){ const lv=Math.max(1,...myteam.filter(Boolean).map(t=>t.lv||1)), R=rng(Date.now()>>>0); g={nm:T("さすらいの魔物使い","Wandering Tamer"), team:Array.from({length:6},()=>({id:MB_MONS[Math.floor(R()*MB_MONS.length)].id, lv})), w:0, l:0, st:null, bot:1}; }
   const team=g.team.map(t=>t&&monOf(t.id)?{id:t.id, lv:Math.max(1,t.lv||1), w:wOf(t.w)?t.w:null}:null);
   const B={a:mkSide(myteam), b:mkSide(team), turn:0, seed:Math.floor(Math.random()*4e9)};
   openBattle({mode:"ghost", B, me:0, send:acts=>{ const ba=botActs(V.B,1,rng((V.B.seed+V.B.turn*31)>>>0), g.st&&Object.keys(g.st).length?g.st:null); setTimeout(()=>playTurn(acts,ba),900); } });
-  setTimeout(()=>say(T(`🏆 ${esc2(g.nm||"冒険者")}さんの編成（勝率 ${Math.round(rate(g)*1000)/10}%）と対戦！`,`🏆 Battling ${esc2(g.nm||"an adventurer")}'s team (win rate ${Math.round(rate(g)*1000)/10}%)!`),2600),1700); }
+  const info = g.bot ? T("（ボット）","(bot)") : played(g) ? T(`（勝率 ${Math.round(rate(g)*1000)/10}%）`,`(win rate ${Math.round(rate(g)*1000)/10}%)`) : T(`（クエスト Lv.${g.q||1} の記録）`,`(Quest Lv.${g.q||1} record)`);
+  setTimeout(()=>say(T(`🏆 ${esc2(g.nm||"冒険者")}${g.bot?"":"さん"}の編成${info}と対戦！`,`🏆 Battling ${esc2(g.nm||"an adventurer")}'s team ${info}!`),2600),1700); }
 function passKey(p){ let h=5381; const s=String(p).trim(); for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return "k"+(h>>>0).toString(36)+"_"+s.length; }
 function startFriend(){ if(!needTeam()||!needLogin()) return;
   const bg=dlg(`<h3>🤝 ${T("フレンドマッチ","Friend Match")}</h3><p>${T("おたがい同じあいことばを入れると対戦できます。","Enter the same passphrase as your friend.")}</p><input id="mbPass" maxlength="20" placeholder="${T("あいことば","Passphrase")}">`,[[T("やめる","Cancel"),null],[T("さがす","Search"),b=>{ const p=(b.querySelector("#mbPass").value||"").trim(); if(p.length<2){ return true; } b.remove(); friendGo(p); }]]);
