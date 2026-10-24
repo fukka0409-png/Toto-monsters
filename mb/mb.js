@@ -397,12 +397,11 @@ function say(t,ms=1500){ const el=document.getElementById("btMsg"); if(!el) retu
 // 戦略を立てる
 function planUnit(p){ if(V.submitted||V.anim||V.B.end) return; const me=mySide(), u=me.us[me.field[p]]; if(!alive(u)) return; const m=monOf(u.id), b=st(); sfx("tap");
   const items=MB_ITEMS.filter(x=>(b.items[x.id]||0)-V.sel.filter(a=>a&&a.t==="item"&&a.i===x.id).length>0);
-  const lvCost=MB.LVUP*(1+V.sel.filter((a,q)=>a&&a.t==="lvup"&&q!==p).length);
   const bg=dlg(`<h3>${esc2(mname(m))}　Lv.${u.lv}</h3><p style="margin:0">⚔ ${nf(u.atk)}　❤ ${nf(Math.min(u.max,Math.ceil(u.hp*10)/10))}/${nf(u.max)}</p>
     <div class="acts"><button type="button" data-a="atk">⚔ ${T("攻撃","Attack")}<small>${T("敵をえらぶ","Choose a target")}</small></button>
     <button type="button" data-a="guard" ${u.g>0?"":"disabled"}>🛡 ${T("ガード","Guard")}<small>${T(`ダメージ半分・のこり${u.g}回`,`Half damage · ${u.g} left`)}</small></button>
     <button type="button" data-a="magic" ${m.magic&&magicReady(u,V.B)?"":"disabled"}>✨ ${T("魔法","Magic")}<small>${m.magic?(magicReady(u,V.B)?T(m.magic.name,m.magic.en||m.magic.name):(m.magic.once?T("もう使った","Already used"):T(`あと${magicWait(u,V.B)}ターン`,`${magicWait(u,V.B)} turn(s) left`))):T("使えない魔物","Can't use magic")}</small></button>
-    <button type="button" data-a="lvup" ${(S.coins||0)>=lvCost?"":"disabled"}>⬆ ${T("レベルアップ","Level up")}<small>${T(`${fmt(MB.LVUP)}コイン・全ステータス1.5倍`,`${fmt(MB.LVUP)} coins · all stats ×1.5`)}</small></button>
+    <button type="button" data-a="lvup">⬆ ${T("レベルアップ","Level up")}<small>${T("無料・全ステータス1.5倍","Free · all stats ×1.5")}</small></button>
     <button type="button" data-a="item" ${items.length?"":"disabled"} style="grid-column:1/-1">🧪 ${T("アイテム使用","Use item")}<small>${items.length?T(`${items.length}種類`,`${items.length} kinds`):T("持っていない","None")}</small></button></div>`,
     V.sel[p]?[[T("閉じる","Close"),null],[T("戦略を取り消す","Clear"),()=>{ V.sel[p]=null; drawBattle(); }]]:[[T("閉じる","Close"),null]]);
   bg.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{ const a=x.dataset.a; bg.remove();
@@ -432,7 +431,7 @@ function ready(auto){ if(V.submitted||V.anim||V.B.end) return; const me=mySide()
   const withIn = list => list.map((a,p)=>V.ins[p]==null?a:Object.assign({t:"none"},a||{},{in:V.ins[p]}));
   if(!auto && acts.some((a,p)=>!a && alive(me.us[me.field[p]]))){ return dlg(`<p>${T("戦略を立てていない魔物は「ガード」になります（のこりがなければ何もしない）。いいですか？","Monsters without a plan will Guard (or do nothing if no guards left). OK?")}</p>`,[[T("やめる","Cancel"),null],[T("準備OK","Ready"),()=>{ V.sel=acts.map((a,p)=>a||(alive(me.us[me.field[p]])&&me.us[me.field[p]].g>0?{t:"guard"}:null)); ready(true); }]]); }
   // レベルアップのコインは、決めたときに払う
-  const lv=acts.filter(a=>a&&a.t==="lvup").length; if(lv){ if((S.coins||0)<lv*MB.LVUP){ return dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`); } S.coins-=lv*MB.LVUP; save(); coinUpd(); }
+  // バトル中のレベルアップはコイン不要（2026-10-24〜）
   acts.forEach(a=>{ if(a&&a.t==="item"){ const b=st(); b.items[a.i]=Math.max(0,(b.items[a.i]||0)-1); } }); save();
   { const sty=st().style=st().style||{}; acts.forEach(a=>{ if(a&&a.t) sty[a.t]=(sty[a.t]||0)+1; }); }   // 戦い方の記録（過去のデータの相手に使う）
   V.submitted=true; sfx("tap"); drawBattle(); V.cfg.send(withIn(acts)); }
