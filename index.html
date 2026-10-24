@@ -8162,7 +8162,11 @@ function knUpDlg(cell){ const draw=()=>{ const d=KV.d, nid=knMine(d), n=d.n[nid]
   bg.querySelectorAll("[data-up]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const r=await knUpgrade(KV.i,cell,b.dataset.up); if(r.err){ b.disabled=false; return knMsg(r.err); } knMsg(K_(`✨ Lv${r.lv}になった！`,`✨ Now Lv${r.lv}!`)); setTimeout(draw,150); }); };
   draw(); }
 // タイトルのボタン（テスト版の人だけ）
-function knTitleBtn(){ const T=document.getElementById("title"), b=document.getElementById("ttlKn"); if(!T||!b) return; const on=knOn(); b.hidden=!on; T.classList.toggle("kn-on",on); const bg=T.querySelector(".ttl-bg"); if(bg) bg.src=on?"title/bg_kn.jpg":"title/bg.jpg"; }
+function knTitleBtn(){ const T=document.getElementById("title"), b=document.getElementById("ttlKn"); if(!T||!b) return;
+  // 魔ノ国争奪戦の休止中は、同じ場所に「魔物バトル」のボタンを出す
+  const mb=KN_PAUSED&&!KN_TEST, sp=b.querySelector("span"); if(sp) sp.textContent=mb?(LANG==="en"?"⚔️ Monster Battle":"⚔️ 魔物バトル"):(LANG==="en"?"Demon Nations War":"魔ノ国争奪戦");
+  b.onclick=()=>{ try{ SFX.tap(); }catch(e){} if(mb){ if(window.openMB) openMB(); } else openKuni(); };
+  const on=knOn()||mb; b.hidden=!on; T.classList.toggle("kn-on",on); const bg=T.querySelector(".ttl-bg"); if(bg) bg.src=on?"title/bg_kn.jpg":"title/bg.jpg"; }
 
 /* ===== 防衛作戦：画面 ===== */
 const DEF_TEST = !!window.__DEFTEST;   // 試し遊び用（自分だけのテスト版）
