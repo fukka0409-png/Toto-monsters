@@ -3213,7 +3213,7 @@ fixPlayer();
 // 冒険者EXPの増え方の倍率：コンプ率0%で1倍 → 100%で1.5倍 → 200%で2倍（だんだん上がる）
 const COMP_EXP_MUL = 2, SOUL_MAX = 100;
 const compDone = () => DEX_MONS.every(m=>S.got[m.id]);
-const soulOf = id => Math.min(SOUL_MAX, Math.floor(((S.soul||{})[id])||0));
+const soulOf = id => { const m=mon(id); if(m&&m.rank==="L") return 0; return Math.min(SOUL_MAX, Math.floor(((S.soul||{})[id])||0)); };   // 限定ランクには魂はない
 const soulPct = () => Math.round(DEX_MONS.reduce((a,m)=>a+soulOf(m.id),0)/DEX_MONS.length/SOUL_MAX*1000)/10;
 const compMul = c => 1 + 0.5*Math.max(0,Math.min(200,c))/100;
 const mulTxt = c => (Math.round(compMul(c)*100)/100).toString();
@@ -4623,7 +4623,7 @@ function openFuse(uid){
     const total=[...sel].reduce((s,u)=>s+matExp(base,S.units.find(z=>z.u===u)),0);
     const {u,ev}=previewExp(base,total);
     const pct = u.l>=capOf(u)?100:Math.min(100,u.e/needFor(u)*100);
-    bg.querySelector("#fsum").innerHTML=`素材 ${sel.size}体 ・ 獲得 <b>${total.toLocaleString()}</b> EXP${[...sel].some(u=>S.units.find(z=>z.u===u).m===base.m)?` <span class="same">同じ魔物 経験値2倍</span>`:""}${(()=>{ const n=[...sel].filter(u=>(S.units.find(z=>z.u===u)||{}).m===base.m).length; return n?`<br>🔥 魂 ${soulOf(base.m)}% → <b>${Math.min(SOUL_MAX,soulOf(base.m)+n)}%</b>`:""; })()}<br>
+    bg.querySelector("#fsum").innerHTML=`素材 ${sel.size}体 ・ 獲得 <b>${total.toLocaleString()}</b> EXP${[...sel].some(u=>S.units.find(z=>z.u===u).m===base.m)?` <span class="same">同じ魔物 経験値2倍</span>`:""}${(()=>{ const n=mon(base.m).rank==="L"?0:[...sel].filter(u=>(S.units.find(z=>z.u===u)||{}).m===base.m).length; return n?`<br>🔥 魂 ${soulOf(base.m)}% → <b>${Math.min(SOUL_MAX,soulOf(base.m)+n)}%</b>`:""; })()}<br>
       Lv${base.l} → <b>Lv${u.l}</b>${ev.evo?` ・ 枠が <b>${STAGES[u.s].name}</b> に進化！`:""}・ <b>+${ev.coins+FUSE_COIN}</b>コイン
       <div class="xp preview"><b style="width:${pct}%"></b></div>`;
     bg.querySelector("#doFuse").disabled=!sel.size || S.coins<fuseCost(base);
@@ -4640,7 +4640,7 @@ function openFuse(uid){
   bg.querySelector("#doFuse").onclick=()=>{
     const total=[...sel].reduce((s,u)=>s+matExp(base,S.units.find(z=>z.u===u)),0);
     const cost=fuseCost(base); if(!sel.size || S.coins<cost) return toast("コインが足りません"); S.coins-=cost;
-    const same=[...sel].filter(u=>(S.units.find(z=>z.u===u)||{}).m===base.m).length, soul0=soulOf(base.m);   // 同じ魔物どうしの合成で「魂」が上がる（100体で100%）
+    const same=mon(base.m).rank==="L"?0:[...sel].filter(u=>(S.units.find(z=>z.u===u)||{}).m===base.m).length, soul0=soulOf(base.m);   // 限定ランクには魂はない   // 同じ魔物どうしの合成で「魂」が上がる（100体で100%）
     if(same){ S.soul=S.soul||{}; S.soul[base.m]=Math.min(SOUL_MAX,(S.soul[base.m]||0)+same); }
     S.units=S.units.filter(z=>!sel.has(z.u));
     if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=base.m;
