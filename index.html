@@ -3569,56 +3569,6 @@ async function checkRefs(){ if(!DB||!MYID) return;
 const nameKey=async n=>(await sha256(n.normalize("NFKC").trim().toLowerCase())).slice(0,40);
 const authEmail=k=>`u${k.slice(0,32)}@toto-monsters.app`;
 const authPass=pin=>`toto-${pin}-monsters`;
-/* ---------- 4桁を忘れたとき（2026-10-24）：好きな食べ物を合言葉に登録しておくと、名前＋好きな食べ物で4桁がわかってログインできる ----------
-   recov/{名前のキー} に、4桁を「好きな食べ物」から作った鍵で暗号にして保存（合言葉と4桁はだれにも見えない） */
-const recovNorm = t => String(t||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"").replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));   // カタカナ・ひらがな・大文字小文字・空白のちがいは同じあつかい
-async function recovKey(ans, salt){ const base=await crypto.subtle.importKey("raw", new TextEncoder().encode(recovNorm(ans)), "PBKDF2", false, ["deriveKey"]);
-  return crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:150000, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]); }
-const b64e = u => btoa(String.fromCharCode(...new Uint8Array(u))), b64d = t => Uint8Array.from(atob(t), c=>c.charCodeAt(0));
-async function recovSave(name, pin, ans){ const k=await nameKey(name), salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
-  const c=await crypto.subtle.encrypt({name:"AES-GCM", iv}, await recovKey(ans,salt), new TextEncoder().encode("pin:"+pin));
-  await FDB.doc("recov/"+k).set({c:b64e(c), s:b64e(salt), iv:b64e(iv), at:gnow()}); S.recovSet=1; save(); }
-async function recovOpen(name, ans){ const k=await nameKey(name); const d=await FDB.doc("recov/"+k).get(); if(!d.exists) return {err:"none"};
-  const x=d.data(); try{ const p=new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM", iv:b64d(x.iv)}, await recovKey(ans,b64d(x.s)), b64d(x.c))); if(!p.startsWith("pin:")) return {err:"bad"}; return {pin:p.slice(4)}; }catch(e){ return {err:"bad"}; } }
-let LAST_PIN=null;
-// 合言葉の登録画面（pin：ログインした直後ならわかっている。わからなければ入力してもらう）
-function openRecovSet(pin){ if(!FBA||!FBA.currentUser) return toast("ログインすると登録できます");
-  const name=S.name||LOGIN_NAME||""; const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=140;
-  bg.innerHTML=`<form class="swear" role="dialog" aria-modal="true" autocomplete="off"><div class="swear-face">🍙</div><p>4桁を忘れたときの合言葉</p>
-    <div class="m-text" style="font-size:13px">あなたの<b>好きな食べ物</b>を登録しておくと、ログインのとき4桁の数字のかわりに使えます（「名前＋好きな食べ物」でログイン）。<br><small>ひらがな・カタカナのちがいは同じあつかい。ほかの人に教えないでね。</small></div>
-    ${pin?"":`<input id="rcPin" class="nm-in" inputmode="numeric" maxlength="4" placeholder="今の4桁の数字" aria-label="今の4桁の数字">`}
-    <input id="rcAns" class="nm-in" maxlength="20" placeholder="好きな食べ物（例：からあげ）" aria-label="好きな食べ物">
-    <div class="code-msg" id="rcMsg" role="status"></div>
-    <button class="btn gold" type="submit" id="rcGo">登録する</button><button class="btn ghost" type="button" id="rcX">あとで</button></form>`;
-  document.body.appendChild(bg); const say=t=>{ const m=bg.querySelector("#rcMsg"); m.textContent=t; m.className="code-msg ng"; };
-  bg.querySelector("#rcX").onclick=()=>bg.remove();
-  bg.querySelector("form").onsubmit=async e=>{ e.preventDefault(); const go=bg.querySelector("#rcGo"); const ans=bg.querySelector("#rcAns").value.trim(); let p=pin||(bg.querySelector("#rcPin")||{}).value||"";
-    if(!/^[0-9]{4}$/.test(p)) return say("今の4桁の数字を入れてください"); if(recovNorm(ans).length<2) return say("好きな食べ物を2文字以上で入れてください");
-    go.disabled=true; go.textContent="確認中…";
-    try{ if(!pin){ const k=await nameKey(name); let email=authEmail(k); try{ const nd=await FDB.doc("names/"+k).get(); if(nd.exists&&nd.data().email) email=nd.data().email; }catch(e2){}
-        await FBA.signInWithEmailAndPassword(email,authPass(p)); }   // 4桁が合っているか確かめる
-      await recovSave(name,p,ans); bg.remove(); toast("🍙 合言葉を登録しました"); }
-    catch(err){ go.disabled=false; go.textContent="登録する"; const c=(err&&err.code)||""; say(c.includes("wrong-password")||c.includes("invalid")?"4桁の数字がちがいます":c.includes("permission")?"登録できませんでした（サーバーの設定の準備中です）":"登録できませんでした。もう一度ためしてください"); } }; }
-// ログイン画面の「4桁を忘れた」
-function openForgot(){ const bg=document.createElement("div"); bg.className="sheet-bg center login-sheet"; bg.style.zIndex=141;
-  bg.innerHTML=`<form class="swear" role="dialog" aria-modal="true" autocomplete="off"><div class="swear-face">🍙</div><p>4桁を忘れたとき</p>
-    <div class="m-text" style="font-size:13px">名前と、登録した<b>好きな食べ物</b>を入れてね。</div>
-    <input id="fgName" class="nm-in" maxlength="12" placeholder="名前" aria-label="名前"><input id="fgAns" class="nm-in" maxlength="20" placeholder="好きな食べ物" aria-label="好きな食べ物">
-    <div class="code-msg" id="fgMsg" role="status"></div>
-    <button class="btn gold" type="submit" id="fgGo">ログインする</button><button class="btn ghost" type="button" id="fgX">もどる</button>
-    <div class="note" style="margin:6px 0 0;font-size:11px">合言葉を登録していない人は、ゲームの作り手に相談してください。</div></form>`;
-  document.body.appendChild(bg); const say=(t,ok)=>{ const m=bg.querySelector("#fgMsg"); m.innerHTML=t; m.className="code-msg "+(ok?"ok":"ng"); };
-  bg.querySelector("#fgX").onclick=()=>{ bg.remove(); openLogin("login"); };
-  let tries=0;
-  bg.querySelector("form").onsubmit=async e=>{ e.preventDefault(); const go=bg.querySelector("#fgGo"), name=bg.querySelector("#fgName").value.replace(/\s+/g," ").trim().slice(0,12), ans=bg.querySelector("#fgAns").value.trim();
-    if(!name||!ans) return say("名前と好きな食べ物を入れてください"); if(++tries>5) return say("何回も間違えたので、しばらくしてからもう一度ためしてください");
-    go.disabled=true; go.textContent="確認中…";
-    try{ const r=await recovOpen(name,ans); if(r.err){ go.disabled=false; go.textContent="ログインする"; return say(r.err==="none"?"この名前では、合言葉が登録されていません":"名前か好きな食べ物がちがいます"); }
-      const k=await nameKey(name); let email=authEmail(k); try{ const nd=await FDB.doc("names/"+k).get(); if(nd.exists&&nd.data().email) email=nd.data().email; }catch(e2){}
-      LOGIN_NAME=name; await FBA.signInWithEmailAndPassword(email,authPass(r.pin)); LAST_PIN=r.pin;
-      bg.innerHTML=`<div class="swear"><div class="swear-face">🔓</div><p>ログインできました！</p><div class="m-text">あなたの4桁の数字は<br><b style="font-size:32px;letter-spacing:.2em">${r.pin}</b><br>今度は忘れないようにメモしてね。</div><button class="btn gold" type="button">OK</button></div>`;
-      bg.querySelector(".btn").onclick=()=>bg.remove(); toast(`おかえりなさい、${name}さん！`); }
-    catch(err){ go.disabled=false; go.textContent="ログインする"; say("ログインできませんでした。もう一度ためしてください"); } }; }
 function openLogin(mode){
   if(!FBA) return toast("サーバーにつながりません。通信を確認してください");
   document.querySelectorAll(".login-sheet").forEach(x=>x.remove());
@@ -3626,29 +3576,24 @@ function openLogin(mode){
   const bg=document.createElement("div"); bg.className="sheet-bg center login-sheet";
   const draw=()=>{ bg.innerHTML=`<form class="swear" role="dialog" aria-modal="true" aria-labelledby="lgT" autocomplete="off">
     <div class="seg" style="margin:0">${[["login","ログイン"],["new","はじめて"]].map(([k,l])=>`<button type="button" data-k="${k}" aria-pressed="${k===m}">${l}</button>`).join("")}</div>
-    <p id="lgT">${m==="new"?"名前と4桁の数字を決めよう":"名前と4桁の数字（または好きな食べ物）でログイン"}</p>
+    <p id="lgT">${m==="new"?"名前と4桁の数字を決めよう":"名前と4桁の数字でログイン"}</p>
     <input id="lgName" class="nm-in" maxlength="12" placeholder="名前（12文字まで）" aria-label="名前">
-    ${m==="login"?`<input id="lgPin" class="nm-in" maxlength="20" placeholder="4桁の数字 または 好きな食べ物" aria-label="4桁の数字 または 好きな食べ物">`:`<input id="lgPin" class="nm-in" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4桁の数字" aria-label="4桁の数字">`}
+    <input id="lgPin" class="nm-in" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4桁の数字" aria-label="4桁の数字">
     ${m==="new"?`<input id="lgRef" class="nm-in" maxlength="12" placeholder="紹介者の名前（いなければ空欄）" aria-label="紹介者の名前">
     <div class="note" style="margin:0;color:var(--staff)">🎁 紹介者（ランキングにいる冒険者の名前）を入れて登録すると、あなたと紹介者にそれぞれ${REF_BONUS.toLocaleString()}コインをプレゼント！</div>`:""}
     <div class="note" style="margin:0">${m==="new"?"名前と4桁の数字は、別の端末で続きから遊ぶときに使います。忘れないようにメモしてね。":"別の端末で遊んでいた記録も、ここから引き継げます。"}</div>
     <div class="code-msg" id="lgMsg" role="status"></div>
     <button class="btn gold" type="submit" id="lgGo">${m==="new"?"登録してはじめる":"ログイン"}</button>
-    <button class="btn ghost" id="lgSkip" type="button">あとで</button>
-    ${m==="login"?`<div class="note" style="margin:2px 0 0;font-size:11px">🍙 4桁を忘れたときは、登録した「好きな食べ物」でもログインできます（設定から登録）</div>`:""}</form>`;
+    <button class="btn ghost" id="lgSkip" type="button">あとで</button></form>`;
     bg.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ m=b.dataset.k; draw(); });
     bg.querySelector("#lgSkip").onclick=()=>{ try{localStorage.setItem("toto-login-skip","1")}catch(e){} bg.remove(); };
     bg.querySelector("form").onsubmit=async e=>{ e.preventDefault();
       const msg=bg.querySelector("#lgMsg"), go=bg.querySelector("#lgGo");
       const say=t=>{ msg.textContent=t; msg.className="code-msg ng"; };
       const name=bg.querySelector("#lgName").value.replace(/\s+/g," ").trim().slice(0,12);
-      let pin=bg.querySelector("#lgPin").value.trim().normalize("NFKC");
+      const pin=bg.querySelector("#lgPin").value.trim();
       if(!name) return say("名前を入力してください");
-      // ログイン：4桁の数字のかわりに、登録した「好きな食べ物」でもログインできる
-      if(m==="login" && !/^[0-9]{4}$/.test(pin) && pin){ go.disabled=true; go.textContent="確認中…";
-        try{ const r=await recovOpen(name,pin); if(r.err){ go.disabled=false; go.textContent="ログイン"; return say(r.err==="none"?"名前か4桁の数字がちがいます（この名前では好きな食べ物が登録されていません）":"名前か好きな食べ物がちがいます"); } pin=r.pin; }
-        catch(e2){ go.disabled=false; go.textContent="ログイン"; return say("確認できませんでした。もう一度ためしてください"); } }
-      if(!/^[0-9]{4}$/.test(pin)) return say(m==="login"?"4桁の数字か、好きな食べ物を入力してください":"数字を4桁で入力してください");
+      if(!/^[0-9]{4}$/.test(pin)) return say("数字を4桁で入力してください");
       const refName=m==="new"?((bg.querySelector("#lgRef")||{}).value||"").replace(/\s+/g," ").trim().slice(0,12):"";
       go.disabled=true; go.textContent="確認中…";
       try{
@@ -3676,8 +3621,7 @@ function openLogin(mode){
           await FBA.signInWithEmailAndPassword(email,authPass(pin));
           toast(`おかえりなさい、${name}さん！`);
         }
-        LAST_PIN=pin; bg.remove();
-        setTimeout(async()=>{ try{ if(S.recovSet) return; const d=await FDB.doc("recov/"+k).get(); if(d.exists){ S.recovSet=1; save(); return; } openRecovSet(pin); }catch(e){} },2500);
+        bg.remove();
       }catch(err){
         go.disabled=false; go.textContent=m==="new"?"登録してはじめる":"ログイン"; LOGIN_NAME=null;
         const c=err&&err.code||"";
@@ -9187,13 +9131,11 @@ async function titleRanks(){
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56;
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="tsT"><div class="swear-face">⚙️</div><p id="tsT">設定</p>
       <button class="btn gold" type="button" id="tsSnd">🔊 サウンド設定（BGM・効果音）</button>
-      <button class="btn ghost" type="button" id="tsRc">🍙 4桁を忘れたときの合言葉${S.recovSet?"（登録ずみ・変更）":"を登録"}</button>
       <div class="snd-row"><b>🌐 言語</b><div class="seg" style="flex:1;margin:0" translate="no">${[["ja","日本語"],["en","English"]].map(([k,l])=>`<button type="button" data-tsl="${k}" aria-pressed="${k===LANG}">${l}</button>`).join("")}</div></div>
       <button class="btn ghost" type="button" id="tsX">閉じる</button></div>`;
     document.body.appendChild(bg);
     bg.querySelector("#tsX").onclick=()=>bg.remove(); bg.onclick=e=>{ if(e.target===bg) bg.remove(); };
     bg.querySelector("#tsSnd").onclick=()=>{ bg.remove(); onTop(openSound); };
-    bg.querySelector("#tsRc").onclick=()=>{ bg.remove(); onTop(()=>openRecovSet(LAST_PIN)); };
     bg.querySelectorAll("[data-tsl]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.tsl!==LANG) setLang(b.dataset.tsl); });
   });
   upd.onclick=()=>onTop(()=>openRules());
