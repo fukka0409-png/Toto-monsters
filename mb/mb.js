@@ -236,7 +236,7 @@ function openBox(){ const box=page(`📦 ${T("魔物BOX","Monster BOX")}`, T(`�
   box.querySelectorAll("[data-u]").forEach(c=>c.onclick=()=>{ const u=b.units.find(x=>x.u===+c.dataset.u), m=u&&monOf(u.id); if(!u) return;
     const inForm=b.form.some(f=>f&&f.u===u.u);
     dlg(`${m?`<img src="${m.img}" alt="" style="width:140px;height:140px;object-fit:contain;image-rendering:pixelated"><h3>Lv.${u.lv||1}　${esc2(mname(m))}</h3><p>⚔ ${T("攻撃力","ATK")} ${nf(statOf(u.id,u.lv).atk)}　❤ ${T("体力","HP")} ${nf(statOf(u.id,u.lv).hp)}<br>✨ ${T("能力","Ability")}：${m.magic?esc2(m.magic.name):T("なし","None")}</p>`:""}${inForm?`<p style="font-size:12px">${T("編成に入っています","In your formation")}</p>`:""}`,
-      [[T("閉じる","Close"),null],[T(`⬆ レベルアップ（${fmt(MB.LVUP)}コイン）`,`⬆ Level up (${fmt(MB.LVUP)})`),()=>{ if((S.coins||0)<MB.LVUP){ dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`); return; } S.coins-=MB.LVUP; u.lv=(u.lv||1)+1; save(); coinUpd(); sfx("level"); openBox(); dlg(`<h3>⬆ ${T("レベルアップ！","Level up!")}</h3><p>${T(`「${esc2(mname(m))}」が Lv.${u.lv} になった！<br>全ステータス1.5倍`,`"${esc2(mname(m))}" is now Lv.${u.lv}! All stats ×1.5`)}</p>`); }],[T("お別れする","Release"),()=>{ dlg(`<p>${T("この魔物とお別れしますか？（もどせません）","Release this monster? (can't undo)")}</p>`,[[T("やめる","Cancel"),null],[T("お別れする","Release"),()=>{ releaseUnit(u.u); openBox(); }]]); }]]); }); }
+      [[T("閉じる","Close"),null],[T("お別れする","Release"),()=>{ dlg(`<p>${T("この魔物とお別れしますか？（もどせません）","Release this monster? (can't undo)")}</p>`,[[T("やめる","Cancel"),null],[T("お別れする","Release"),()=>{ releaseUnit(u.u); openBox(); }]]); }]]); }); }
 function releaseUnit(uu){ const b=st(); b.units=b.units.filter(x=>x.u!==uu); b.form=b.form.map(f=>f&&f.u===uu?null:f); save(); }
 
 /* ---------- アイテム購入 ---------- */
