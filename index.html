@@ -7307,7 +7307,8 @@ try{ KN_TEST = localStorage.getItem("kn-test2")==="1"; }catch(e){}
   const h=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(q)))).map(b=>b.toString(16).padStart(2,"0")).join("");
   if(h==="c55cde67d3dff1b6dbc49478775c109d8844b4d27a25dd8dfea4b218413fbbec"){ localStorage.setItem("kn-test2","1"); KN_TEST=true; knTitleBtn(); }
 }catch(e){} })();
-const knOn = () => KN.ORIGIN>0 || KN_TEST;
+const KN_PAUSED = true;   // 2026-10-24：魔ノ国争奪戦は休止（テスト版だけ開ける）
+const knOn = () => (KN.ORIGIN>0 && !KN_PAUSED) || KN_TEST;
 const knT0 = () => KN_TEST ? seasonEnd(4) : KN.ORIGIN;        // テスト版はランク戦シーズン5のはじまりから数える
 const knS  = () => { const k=KN_TEST?"knt":"kn"; if(!S[k]) S[k]={off:0,tc:10000000,pen:{},died:{},ban:0,claimed:{},w:0,c:0,ign:0,nocd:0}; return S[k]; };
 const knSlot = (t=knNow()) => Math.floor((t-knT0())/KN.SLOT_MS);
@@ -7498,7 +7499,7 @@ function knLvs(){ S.knLvs=S.knLvs||{}; if(S.knLv){ const o=S.knLv; delete S.knLv
 const knLvOf = i => knLvs()[i] || null;
 function knLvStart(i,nid){ if(KN_TEST) return; knLvs()[i]={ks:knSeason(), i, nid, t:knNow()}; save(); }
 let knLvBusy=false;
-async function knLvTick(){ if(KN_TEST||knLvBusy||!DB||!MYID) return; const L=knLvs();
+async function knLvTick(){ if(KN_PAUSED||KN_TEST||knLvBusy||!DB||!MYID) return; const L=knLvs();
   for(const key of Object.keys(L)){ try{ await knLvTick1(key); }catch(e){} } }
 async function knLvTick1(key){ const L=knLvs(), st=L[key]; if(!st) return; const del=()=>{ if(L[key]===st) delete L[key]; };
   const now=knNow(), end=knT0()+(st.ks+1)*KN.SEASON_MS, lim=Math.min(now,end);
@@ -7522,7 +7523,7 @@ setInterval(()=>{ try{ knLvTick(); }catch(e){} },60*1000);
 /* ---- 返金とプレゼント（2026-10-22）：無料になる前に国を作った・参加した人へ。1人1回だけ ---- */
 const KN_FREE_T = 1792675176000;   // 国を作る・参加するが無料になった時刻
 let knRfBusy=false;
-async function knRefundOnce(){ if(KN_TEST||!DB||!MYID||knRfBusy) return; const K=knS(); if(K.rf) return;
+async function knRefundOnce(){ if(KN_PAUSED||KN_TEST||!DB||!MYID||knRfBusy) return; const K=knS(); if(K.rf) return;
   const ks=knSeason(); let docs; knRfBusy=true; try{ docs=await knLoad(ks); }catch(e){ knRfBusy=false; return; } knRfBusy=false; if(K.rf) return;
   if(docs.every(x=>x==null) && !navigator.onLine) return;
   let got=null;
@@ -7541,6 +7542,40 @@ async function knRefundOnce(){ if(KN_TEST||!DB||!MYID||knRfBusy) return; const K
   save(); }
 setTimeout(()=>{ try{ knRefundOnce(); }catch(e){} },6000);
 setTimeout(()=>{ try{ knRefundOnce(); }catch(e){} },30000);
+/* ---- 休止のお知らせと報酬（2026-10-24）：1度でも参加した人に。王100万・国民の貢献度上位3人50万・それ以外の国民20万（1人1回・いちばん高いもの） ---- */
+const KN_END = { KING:1000000, TOP:500000, CIT:200000 };
+let knEndBusy=false;
+async function knEndList(){ const out={}, give=(u,amt,role)=>{ if(!u||u==="__m") return; if(!out[u]||out[u].amt<amt) out[u]={amt,role}; };
+  const last=Math.max(0,knSeason());
+  for(let ks=0; ks<=last; ks++){ const docs=[]; for(let i=0;i<4;i++){ try{ const s2=await DB.collection("kuni").doc(`${ks}_${i}`).get(); docs.push(s2.exists?s2.data():null); }catch(e){ throw e; } }
+    const nat={};   // 国ID → {kings:Set, p:{uid:貢献}}
+    docs.forEach(d=>{ if(!d) return; for(const [nid,n] of Object.entries(d.n||{})){ const N=nat[nid]=nat[nid]||{kings:new Set(), p:{}}; if(n.k) N.kings.add(n.k); if(n.fk) N.kings.add(n.fk);
+        for(const [u,m] of Object.entries(n.m||{})) N.p[u]=(N.p[u]||0)+((m&&m.p)||0); }
+      for(const u of Object.keys(d.dead||{})) give(u,KN_END.CIT,"cit"); });
+    for(const N of Object.values(nat)){ N.kings.forEach(u=>give(u,KN_END.KING,"king"));
+      const cit=Object.entries(N.p).filter(([u])=>!N.kings.has(u)).sort((a,b)=>b[1]-a[1]);
+      cit.forEach(([u],j)=>give(u, j<3?KN_END.TOP:KN_END.CIT, j<3?"top":"cit")); } }
+  return out; }
+async function knEndRun(){ if(knEndBusy||!DB||!MYID||S.knEndDone) return; knEndBusy=true;
+  try{ const list=await knEndList(); const mine=list[MYID];
+    if(mine) presentAdd({key:"kn-end", ic:"🏰", title:`魔ノ国争奪戦の参加報酬（${mine.role==="king"?"王":mine.role==="top"?"貢献度上位3人の国民":"国民"}）`, en:`Demon Nations War reward (${mine.role==="king"?"King":mine.role==="top"?"Top-3 citizen":"Citizen"})`, coins:mine.amt, quiet:true});
+    S.knEndDone=1; save();
+    // 名前を読む（だれがどのくらいもらったか）
+    const rows=[]; for(const [u,x] of Object.entries(list)){ let nm="?"; try{ const p=await withTO(DB.collection("profiles").doc(u).get()); nm=(p.exists&&p.data().name)||"名無しの召喚士"; }catch(e){} rows.push({u,nm,...x}); }
+    rows.sort((a,b)=>b.amt-a.amt||a.nm.localeCompare(b.nm));
+    const L=LANG==="en", role=r=>r==="king"?(L?"👑 King":"👑 王"):r==="top"?(L?"🥇 Top-3 citizen":"🥇 貢献度上位の国民"):(L?"🙋 Citizen":"🙋 国民");
+    const show=()=>{ if(document.querySelector(".reveal,.sheet-bg,#kno,#mco,#mbo,#adv,#dfo")) return setTimeout(show,2500);
+      const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=136; bg.setAttribute("translate","no");
+      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" style="max-height:88vh;overflow:auto"><div class="swear-face">🏰</div><p>${L?"The Demon Nations War is on break 🥲":"魔ノ国争奪戦、休止します🥲"}</p>
+        <div class="m-text" style="text-align:left">${L?"Thank you to every adventurer who took on such a complex game so eagerly — here are your rewards! ✨<br>It may come back once it's been reworked, so stay tuned! 🔥 Also, a new game has been added to Mini games — please check it out!":"かなり複雑なゲームなのに意欲的に取り組んでくれた冒険者には報酬を与えます！✨<br>また修正し直したら解放されるかもなのでお楽しみに！🔥　それからまた新しいゲームがミニゲームに追加されたので是非見てみてね！"}</div>
+        ${mine?`<div class="m-text" style="color:var(--staff);font-family:var(--f-pix);font-size:18px">${L?"Your reward":"あなたの報酬"}：+${mine.amt.toLocaleString()}${L?" coins":"コイン"}<br><small style="font-family:inherit;font-size:12px">${L?"(sent to your Present BOX)":"（プレゼントBOXに届きました）"}</small></div>`:""}
+        <div class="note" style="margin:6px 0 2px;font-weight:900">🎁 ${L?`Rewards (${rows.length} adventurers)`:`報酬をもらった冒険者（${rows.length}人）`}</div>
+        <div style="text-align:left;font-size:13px;max-height:34vh;overflow:auto;border-radius:10px;background:#0002;padding:6px 10px">${rows.map(r=>`<div style="display:flex;gap:6px;justify-content:space-between;border-bottom:1px solid #fff1;padding:3px 0"><span>${esc(r.nm)}${r.u===MYID?(L?" (you)":"（あなた）"):""}<br><small style="opacity:.75">${role(r.role)}</small></span><b>${r.amt.toLocaleString()}</b></div>`).join("")||(L?"No one":"なし")}</div>
+        <button class="btn gold" type="button">OK</button></div>`;
+      document.body.appendChild(bg); try{ SFX.reveal("S"); }catch(e){} bg.querySelector(".btn").onclick=()=>{ bg.remove(); if(mine&&typeof openPresentBox==="function") openPresentBox(); }; };
+    show();
+  }catch(e){} finally{ knEndBusy=false; } }
+setInterval(()=>{ try{ if(KN_PAUSED && !document.querySelector("#title:not([hidden])")) knEndRun(); }catch(e){} },5000);
 /* ---- 「ガチャ・育成」に入ったとき、ログイン3回に1回、魔ノ国争奪戦をおすすめする ---- */
 let knTipDone=false;
 function knTip(){ if(knTipDone||!knOn()||!SIGNED||!MYID) return; knTipDone=true;
