@@ -60,6 +60,8 @@ const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.un
     b.units.forEach(u=>(byId[u.id]=byId[u.id]||[]).push(u));
     Object.values(byId).forEach(L=>{ L.sort((a,c)=>((c.lv||1)-(a.lv||1))||(b.form.some(f=>f&&f.u===c.u)-b.form.some(f=>f&&f.u===a.u))).slice(0,2).forEach(u=>keep.add(u.u)); });
     b.units=b.units.filter(u=>keep.has(u.u)); b.form=b.form.map(f=>f&&keep.has(f.u)?f:null); try{ save(); }catch(e){} }
+  // ランクマッチの勝ち負けは「ガチャ・育成」のランク戦ごと（ランク戦が切りかわるとリセット）
+  { let ss=0; try{ ss=seasonNow(); }catch(e){} if(b.rss!==ss){ b.rss=ss; b.rw=0; b.rl=0; try{ save(); }catch(e){} } }
   // 同じ1体が編成の2か所に入っていたら、あとの方を外す（同じ1体を2か所に入れると、レベルもいっしょに上がってしまっていた）
   { const seen=new Set(); let ch=false; b.form=b.form.map(f=>{ if(!f) return f; if(seen.has(f.u)){ ch=true; return null; } seen.add(f.u); return f; }); if(ch) try{ save(); }catch(e){} }
   if(!b.starter){ b.starter=1; b.same2=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<MB.SAME_MAX;k++){ const u={u:b.nu++, id:1, lv:3}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, w:null}; } try{ save(); }catch(e){} }
@@ -193,13 +195,13 @@ function openMenu(){ const s=shell(941,1672,"mb/menu.jpg"); st(); sfx("tap");
     ${[72,338,604].map((x,i)=>`<div class="mb-pt h" ${i===0?'id="mbCnt"':""} style="left:${x}px;top:1306px">${["",T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`),T("あいことばで","With a passphrase")][i]}</div><div class="mb-pt l" style="left:${x}px;top:1450px">${[T("ランクマッチ","Rank Match"),T("クエストマッチ","Quest Match"),T("フレンドマッチ","Friend Match")][i]}</div>`).join("")}
     <div class="mb-pt i" style="left:338px;top:1352px">⚔️</div>
     <button type="button" class="mb-rk" id="mbRk">🏆 ${T("ランキング","Ranking")}<br><small id="mbMyRk">${T("勝率の順位","by win rate")}</small></button>
-    <div class="mb-rwr">${T("ランクマッチ勝率","Rank win rate")} ${rankRate()}<br><small>${T(`${st().rw||0}勝 ${st().rl||0}敗`,`${st().rw||0}W ${st().rl||0}L`)}</small></div>
+    <div class="mb-rwr">${T("ランクマッチ勝率","Rank win rate")} ${rankRate()}<br><small>${T(`${st().rw||0}勝 ${st().rl||0}敗`,`${st().rw||0}W ${st().rl||0}L`)}</small><br><small style="font-size:18px;opacity:.85">⏱ ${T("リセットまで","Resets in")} <span id="mbRst">${resetLeft()}</span></small></div>
     ${hit("mbRand",72,1265,266,260,T("ランクマッチ","Rank Match"))}${hit("mbQuest",338,1265,266,260,T("クエストマッチ","Quest Match"))}${hit("mbFriend",604,1265,266,260,T("フレンドマッチ","Friend Match"))}`;
   coinUpd(); const g=id=>document.getElementById(id);
   g("mbX").onclick=()=>{ sfx("tap"); closeAll(); };
   g("mbForm").onclick=()=>openForm(); g("mbShop").onclick=()=>openShop(); g("mbGacha").onclick=()=>openGacha(); g("mbBox").onclick=()=>openBox();
   g("mbRand").onclick=()=>startRandom(); g("mbRk").onclick=()=>openRank(); g("mbQuest").onclick=()=>startQuest(); g("mbFriend").onclick=()=>startFriend();
-  myRankTag(); }   // 参加人数の表示はなくした
+  myRankTag(); clearInterval(V.tick); V.tick=setInterval(()=>{ const e=document.getElementById("mbRst"); if(e) e.textContent=resetLeft(); },1000); }   // 参加人数の表示はなくした
 window.openMB = openMenu;
 async function countPlayers(){ const el=document.getElementById("mbCnt"); if(!el||!DB) return;
   try{ const q=await DB.collection("mbq").where("at",">",now()-25000).get(); if(document.getElementById("mbCnt")) el.textContent=T(`参加者 ${Math.max(1,q.size)}人`,`${Math.max(1,q.size)} player(s)`); }catch(e){} }   // いつも1人以上の表示
@@ -519,9 +521,11 @@ async function startRandom(){ if(!needTeam()||!needLogin()) return; const team=m
   seek(); }
 /* ---------- ランキング（ランクマッチの勝率の順位） ---------- */
 // 勝率が高い順。同じ勝率なら勝った数が多い順。ランクマッチを1回もしていない人は入らない
+const curSS = () => { try{ return seasonNow(); }catch(e){ return 0; } };
+const resetLeft = () => { try{ return fmtDays(seasonEnd(seasonNow())-gnow()); }catch(e){ return "―"; } };
 const rateOf = x => { const t=(x.w||0)+(x.l||0); return t?(x.w||0)/t:0; };
 async function loadRank(){ const q=await DB.collection("mbp").limit(1000).get();
-  const L=q.docs.map(x=>x.data()).filter(x=>x&&((x.w||0)+(x.l||0))>0);
+  const L=q.docs.map(x=>x.data()).filter(x=>x&&x.ss===curSS()&&((x.w||0)+(x.l||0))>0);   // 今のランク戦の記録だけ
   if(MYID){ const b=st(), i=L.findIndex(x=>x.uid===MYID), me={uid:MYID, nm:(()=>{ try{ return myName(); }catch(e){ return ""; } })(), w:b.rw||0, l:b.rl||0, team:myTeam()};
     if(i>=0) L[i]={...L[i],...me}; else if(me.w+me.l>0) L.push(me); }
   L.sort((a,b)=>rateOf(b)-rateOf(a)||(b.w||0)-(a.w||0)||(a.l||0)-(b.l||0)); return L; }
@@ -530,8 +534,9 @@ async function openRank(){ const box=page(`🏆 ${T("ランキング","Ranking")
   box.innerHTML=`<p class="note">${T("読みこみ中…","Loading...")}</p>`; let L=[];
   try{ L=await loadRank(); }catch(e){ box.innerHTML=`<p class="note">${T("読みこめませんでした","Couldn't load")}</p>`; return; }
   if(!document.getElementById("mbo")) return;
+  clearInterval(V.tick); V.tick=setInterval(()=>{ const e=document.getElementById("mbRkT"); if(e) e.textContent=resetLeft(); },1000);
   const mi=L.findIndex(x=>x.uid===MYID), medal=i=>i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}`;
-  box.innerHTML=`<p class="note" style="font-size:15px;font-weight:900;margin-top:6px">${mi>=0?T(`あなたは ${mi+1}位 ／ ${L.length}人`,`You're #${mi+1} of ${L.length}`):T("ランクマッチで戦うと、ランキングにのります","Play a Rank Match to join the ranking")}</p>
+  box.innerHTML=`<p class="note" style="margin:6px auto 0;font-size:13px">⏱ ${T("ランキングリセットまで","Resets in")} <b id="mbRkT" style="font-size:16px">${resetLeft()}</b><br><small>${T("「ガチャ・育成」のランク戦と同じタイミングでリセット","Resets with the Gacha & Raising ranked match")}</small></p><p class="note" style="font-size:15px;font-weight:900;margin-top:6px">${mi>=0?T(`あなたは ${mi+1}位 ／ ${L.length}人`,`You're #${mi+1} of ${L.length}`):T("ランクマッチで戦うと、ランキングにのります","Play a Rank Match to join the ranking")}</p>
     <div style="max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:6px">${L.slice(0,100).map((x,i)=>`<div class="card" style="flex-direction:row;justify-content:flex-start;gap:8px;text-align:left;${x.uid===MYID?"border-color:#2f6fe0;background:#e6efff":""}">
       <b style="width:42px;text-align:center;font-size:${i<3?24:16}px">${medal(i)}</b>
       <span style="flex:1;min-width:0"><b style="font-size:14px">${esc2(x.nm||T("名無しの召喚士","Nameless"))}${x.uid===MYID?T("（あなた）"," (you)"):""}</b><br><span style="display:inline-flex;gap:2px">${(x.team||[]).filter(t=>t&&monOf(t.id)).slice(0,6).map(t=>`<img src="${monOf(t.id).img}" alt="" style="width:24px;height:24px">`).join("")}</span></span>
@@ -540,10 +545,11 @@ async function myRankTag(){ const el=document.getElementById("mbMyRk"); if(!el||
 // 自分の編成・ランクマッチの勝敗・戦い方を公開（過去のデータの相手として使われる）。使われても、本人の勝率は変わらない
 function publishMe(){ if(!DB||!MYID) return; const b=st(), team=myTeam(); if(!team.some(Boolean)) return;
   let nm=""; try{ nm=myName(); }catch(e){}
-  DB.collection("mbp").doc(MYID).set({uid:MYID, nm:String(nm||"").slice(0,24), team, w:b.rw||0, l:b.rl||0, q:b.qlv||1, st:b.style||{}, at:now()}).catch(()=>{}); }
+  DB.collection("mbp").doc(MYID).set({uid:MYID, nm:String(nm||"").slice(0,24), team, w:b.rw||0, l:b.rl||0, ss:curSS(), q:b.qlv||1, st:b.style||{}, at:now()}).catch(()=>{}); }
 // 相手のえらび方：①ランクマッチをしたことがある冒険者で、いちばん勝率が高い人 ②いなければ、クエストで戦った冒険者（クエストのレベルがいちばん高い人） ③だれもいなければ、クエストと同じボットの編成
 async function ghostGo(myteam){ let L=[]; try{ const q=await DB.collection("mbp").limit(300).get();
   L=q.docs.map(x=>x.data()).filter(x=>x&&x.uid!==MYID&&Array.isArray(x.team)&&x.team.some(t=>t&&monOf(t.id))); }catch(e){}
+  L.forEach(x=>{ if(x.ss!==curSS()){ x.w=0; x.l=0; } });   // 前のランク戦の勝ち負けは数えない
   const rate=x=>{ const t=(x.w||0)+(x.l||0); return t?(x.w||0)/t:0; }, played=x=>(x.w||0)+(x.l||0)>0;
   L.sort((a,b)=>(played(b)-played(a))||rate(b)-rate(a)||(b.w||0)-(a.w||0)||(b.q||1)-(a.q||1)||(b.at||0)-(a.at||0)); let g=L[0];
   if(!g){ const lv=Math.max(1,...myteam.filter(Boolean).map(t=>t.lv||1)), R=rng(Date.now()>>>0); g={nm:T("さすらいの魔物使い","Wandering Tamer"), team:Array.from({length:6},()=>({id:MB_MONS[Math.floor(R()*MB_MONS.length)].id, lv})), w:0, l:0, st:null, bot:1}; }
