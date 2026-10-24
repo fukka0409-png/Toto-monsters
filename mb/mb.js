@@ -68,7 +68,7 @@ const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.un
   return b; };
 const coinUpd = () => { const el=document.getElementById("mbCoin"); if(el) el.textContent=fmt(S.coins); try{ renderCoins(); }catch(e){} };
 // レベルの強さ：1レベル上がるごとに全ステータス1.5倍
-const statOf = (id, lv, w) => { const m=monOf(id), k=Math.pow(MB.GROW, Math.max(0,(lv||1)-1)), W=wOf(w); if(!m) return {atk:0,hp:0};
+const statOf = (id, lv, w) => { const m=monOf(id), k=Math.pow(MB.GROW, Math.min(1500, Math.max(0,(lv||1)-1))), W=wOf(w); if(!m) return {atk:0,hp:0};
   return { atk: m.atk*k + (W?W.atk||0:0), hp: m.hp*k + (W?W.hp||0:0) }; };
 const nf = v => { const r=Math.round(v*10)/10; return Number.isInteger(r)?fmt(r):r.toFixed(1); };
 
@@ -485,13 +485,15 @@ function finish(endSide, giveup, silent){ const B=V.B; if(B.end&&B._done) return
   sfx(res==="win"?"reveal":"ng", "S");
   dlg(`<div style="font-size:60px">${res==="win"?"🏆":res==="draw"?"🤝":"💀"}</div><h3>${res==="win"?T("勝利！","Victory!"):res==="draw"?T("引き分け","Draw"):T("敗北…","Defeat...")}</h3>
     <p>${res==="win"?T(`+${fmt(coin)}コイン！<br>編成の魔物のレベルは、次のバトルに持ちこせます。`,`+${fmt(coin)} coins!<br>Your monsters keep their levels for the next battle.`):res==="draw"?T("おたがい全滅しました。レベルはそのままです。","Both sides fell. Levels stay as they are."):(rank?T(`編成の魔物のレベルが、${MB.RANK_LOSE_LV}ずつ下がりました（Lv1より下にはなりません）。`,`Formation monsters lost ${MB.RANK_LOSE_LV} levels each (not below Lv1).`):T("編成の魔物のレベルが、全員Lv1にもどりました。","All formation monsters went back to Lv1."))}</p>`,[[T("メニューへ","Menu"),()=>openMenu()]],{modal:true}); }
-const questPrize = lv => Math.max(1, Math.floor(Math.pow(lv||1, 5/3)));   // Lv1は1コイン・Lv100で約2,000・Lv1000で約10万コイン（2026-10-24：1.5倍ずつ増えて多すぎたので変更）
+const questPrize = lv => Math.min(100000, Math.max(1, Math.floor(Math.pow(lv||1, 5/3))));   // Lv1は1コイン・Lv100で約2,000・Lv1000で10万コイン。Lv1000より上はずっと10万コイン
+// クエストの敵に出てくるのは、初期の魔物（No.1〜5）だけ。敵のレベルはクエストのレベルと同じ（Lv100をこえる）
+const QUEST_POOL = () => { const L=MB_MONS.filter(m=>m.id>=1&&m.id<=5); return L.length?L:MB_MONS; };
 
 /* ---------- クエストマッチ（ボット） ---------- */
 function myTeam(){ const t=teamOf(); return t.map(x=>x?{id:x.id, lv:x.lv, w:x.w}:null); }
 function needTeam(){ if(!myTeam().some(Boolean)){ dlg(`<h3>${T("編成に魔物がいません","No monsters in your formation")}</h3><p>${T("「魔物編成」で魔物を入れてね。","Add monsters in Formation.")}</p>`,[[T("閉じる","Close"),null],[T("魔物編成へ","Formation"),()=>openForm()]]); return false; } return true; }
 function startQuest(){ if(!needTeam()) return; if(!MB_MONS.length) return; const lv=st().qlv||1, R=rng((Date.now()^lv*7919)>>>0);
-  const enemy=Array.from({length:6},()=>({id:MB_MONS[Math.floor(R()*MB_MONS.length)].id, lv, w:null}));
+  const QP=QUEST_POOL(); const enemy=Array.from({length:6},()=>({id:QP[Math.floor(R()*QP.length)].id, lv, w:null}));
   dlg(`<div style="font-size:50px">⚔️</div><h3>${T(`クエスト Lv.${lv}`,`Quest Lv.${lv}`)}</h3><p>${T(`敵はLv.${lv}の魔物6体。勝つと <b>${fmt(questPrize(lv))}コイン</b>！<br>負けると編成の魔物は全員Lv1にもどります。`,`6 enemies at Lv.${lv}. Win for <b>${fmt(questPrize(lv))} coins</b>!<br>Lose and your monsters return to Lv1.`)}</p>`,[[T("やめる","Cancel"),null],[T("戦う！","Fight!"),()=>{
     const B={a:mkSide(myTeam()), b:mkSide(enemy), turn:0, seed:Math.floor(R()*4e9)};
     openBattle({mode:"quest", B, me:0, qlv:lv, send:acts=>{ const ba=botActs(V.B,1,rng((V.B.seed+V.B.turn*31)>>>0)); setTimeout(()=>playTurn(acts,ba),400); } }); }]]); }
