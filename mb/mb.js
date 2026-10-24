@@ -193,7 +193,7 @@ const rankRate = () => { const b=st(), t=(b.rw||0)+(b.rl||0); return t?`${(Math.
 const FROWS=[200,385,570,885,1070,1255];
 function teamOf(){ const b=st(); return b.form.map(f=>{ if(!f) return null; const u=b.units.find(x=>x.u===f.u); if(!u||!monOf(u.id)) return null; return {id:u.id, lv:f.lv||1, w:f.w||null, u:f.u}; }); }
 function weapFree(id, exceptSlot){ const b=st(); const used=b.form.filter((f,i)=>f&&f.w===id&&i!==exceptSlot).length; return (b.weap[id]||0)-used; }
-function openForm(){ const s=shell(1024,1536,"mb/form.jpg"); const b=st(); sfx("tap");
+function openForm(){ const s=shell(1024,1536,"mb/form.jpg?v=2"); const b=st(); sfx("tap");
   const tm=teamOf();
   s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:20px;top:22px">← ${T("もどる","Back")}</button>`+FROWS.map((top,i)=>{ const t=tm[i], m=t&&monOf(t.id), sv=t&&statOf(t.id,t.lv,t.w), W=t&&wOf(t.w);
       return `<div class="fm-cell" style="left:112px;top:${top+12}px;width:172px;height:156px">${m?`<img src="${m.img}" alt="">`:""}</div>
@@ -208,7 +208,7 @@ function openForm(){ const s=shell(1024,1536,"mb/form.jpg"); const b=st(); sfx("
       dlg(`<img src="${m.img}" alt="" style="width:120px;height:120px;object-fit:contain;image-rendering:pixelated"><h3>${esc2(mname(m))}　Lv.${t.lv}</h3><p>⚔ ${T("攻撃力","ATK")} ${nf(sv.atk)}　❤ ${T("体力","HP")} ${nf(sv.hp)}</p><p><b>✨ ${T("能力","Ability")}</b><br>${m.magic?`${esc2(T(m.magic.name,m.magic.en||m.magic.name))}：${esc2(m.magic.desc||"")}`:T("なし（魔法は使えない）","None (can't use magic)")}</p>${t.w?`<p>🗡 ${esc2(wOf(t.w).name)}（⚔+${wOf(t.w).atk||0} ❤+${wOf(t.w).hp||0}）</p>`:""}<p style="font-size:11px">${T("バトルに勝つとレベルは持ちこし、負けると全員Lv1にもどります。","Win and levels carry over; lose and everyone returns to Lv1.")}</p>`); }; }); }
 function pickMon(i){ const b=st(); if(!b.units.length) return dlg(`<h3>${T("魔物がいません","No monsters")}</h3><p>${T("ガチャで魔物を手に入れよう！","Get monsters from the gacha!")}</p>`,[[T("閉じる","Close"),null],[T("ガチャへ","Gacha"),()=>openGacha()]]);
   const cur=b.form[i];
-  const bg=dlg(`<h3>${T(`${i<3?"前半":"後半"}編成 ${i%3+1}番目`,`${i<3?"Front":"Back"} slot ${i%3+1}`)}</h3><p style="font-size:12px">${T("同じ魔物を何回入れてもOK","The same monster can be used more than once")}</p><div class="al">${b.units.map(u=>{ const m=monOf(u.id); return m?`<button type="button" data-u="${u.u}"><img src="${m.img}" alt=""><span>${esc2(mname(m))}</span><small>⚔${m.atk} ❤${m.hp}${m.magic?" ✨":""}</small></button>`:""; }).join("")}</div>`,
+  const bg=dlg(`<h3>${T(`${i<3?"前半":"待機"}編成 ${i%3+1}番目`,`${i<3?"Front":"Bench"} slot ${i%3+1}`)}</h3><p style="font-size:12px">${T("同じ魔物を何回入れてもOK","The same monster can be used more than once")}</p><div class="al">${b.units.map(u=>{ const m=monOf(u.id); return m?`<button type="button" data-u="${u.u}"><img src="${m.img}" alt=""><span>${esc2(mname(m))}</span><small>⚔${m.atk} ❤${m.hp}${m.magic?" ✨":""}</small></button>`:""; }).join("")}</div>`,
     cur?[[T("閉じる","Close"),null],[T("はずす","Remove"),()=>{ b.form[i]=null; save(); openForm(); }]]:[[T("閉じる","Close"),null]]);
   bg.querySelectorAll("[data-u]").forEach(x=>x.onclick=()=>{ const u=+x.dataset.u; const keepW=cur&&cur.w; b.form[i]={u, lv:1, w:keepW||null}; save(); bg.remove(); sfx("tap"); openForm(); }); }
 function pickWeap(i){ const b=st(); if(!b.form[i]) return dlg(`<p>${T("先に魔物をえらんでね","Pick a monster first")}</p>`);
@@ -259,9 +259,9 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
   if(b.units.some(x=>x.id===id)){ const slots=b.form.map((f,i)=>({f,i})).filter(o=>o.f&&(b.units.find(x=>x.u===o.f.u)||{}).id===id);
     const toBox=()=>{ if(b.units.length<b.slots) add(); else boxFull(); };
     const lvUp=()=>{ if(!slots.length){ dlg(`<p>${T("この魔物は編成に入っていないので、レベルアップできません。魔物編成に入れてからだとレベルアップを選べます。","This monster isn't in your formation, so it can't level up.")}</p>`,[[T("BOXへ","To BOX"),()=>toBox()]],{modal:true}); return; }
-      const go=i=>{ b.form[i].lv=(b.form[i].lv||1)+1; save(); sfx("level"); dlg(`<h3>⬆ ${T("レベルアップ！","Level up!")}</h3><p>${T(`${i<3?"前半":"後半"}編成${i%3+1}番目の「${esc2(mname(m))}」が Lv.${b.form[i].lv} になった！`,`"${esc2(mname(m))}" in slot ${i+1} is now Lv.${b.form[i].lv}!`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); };
+      const go=i=>{ b.form[i].lv=(b.form[i].lv||1)+1; save(); sfx("level"); dlg(`<h3>⬆ ${T("レベルアップ！","Level up!")}</h3><p>${T(`${i<3?"前半":"待機"}編成${i%3+1}番目の「${esc2(mname(m))}」が Lv.${b.form[i].lv} になった！`,`"${esc2(mname(m))}" in slot ${i+1} is now Lv.${b.form[i].lv}!`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); };
       if(slots.length===1) return go(slots[0].i);
-      const bg2=dlg(`<h3>⬆ ${T("どの魔物をレベルアップ？","Which one levels up?")}</h3><div class="al">${slots.map(o=>`<button type="button" data-i="${o.i}"><img src="${m.img}" alt=""><span>${o.i<3?T("前半","Front"):T("後半","Back")}${o.i%3+1}</span><small>Lv.${o.f.lv||1} → ${(o.f.lv||1)+1}</small></button>`).join("")}</div>`,[],{modal:true});
+      const bg2=dlg(`<h3>⬆ ${T("どの魔物をレベルアップ？","Which one levels up?")}</h3><div class="al">${slots.map(o=>`<button type="button" data-i="${o.i}"><img src="${m.img}" alt=""><span>${o.i<3?T("前半","Front"):T("待機","Bench")}${o.i%3+1}</span><small>Lv.${o.f.lv||1} → ${(o.f.lv||1)+1}</small></button>`).join("")}</div>`,[],{modal:true});
       bg2.querySelectorAll("[data-i]").forEach(x=>x.onclick=()=>{ bg2.remove(); go(+x.dataset.i); }); };
     return dlg(`<h3>🥚 ${T("かぶった！","Duplicate!")}</h3>${show}<p>${T("編成の魔物をレベルアップ（全ステータス1.5倍）するか、BOXに入れるかをえらんでね。","Level up that monster in your formation (all stats ×1.5), or put it in your BOX.")}</p>`,[[T("BOXへ入れる","Put in BOX"),()=>toBox()],[T("⬆ レベルアップ","⬆ Level up"),()=>lvUp()]],{modal:true}); }
   if(b.units.length<b.slots) return dlg(`<h3>🥚 ${T("ゲット！","Got it!")}</h3>${show}`,[[T("OK","OK"),()=>{ add(); }]],{modal:true});
