@@ -51,7 +51,10 @@ const iOf = id => MB_ITEMS.find(x=>x.id===id);
 const tierStars = t => `<span style="color:#c77d00">Lv${t}</span>`;
 const mname = m => m ? (T(m.name, m.en||m.name)) : "?";
 function rng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.units=b.units||[]; b.nu=b.nu||1; b.form=b.form||[null,null,null,null,null,null]; b.weap=b.weap||{}; b.items=b.items||{}; b.qlv=b.qlv||1; return b; };
+const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.units=b.units||[]; b.nu=b.nu||1; b.form=b.form||[null,null,null,null,null,null]; b.weap=b.weap||{}; b.items=b.items||{}; b.qlv=b.qlv||1;
+  // はじめから持っている魔物：Lv3のスライム3体（1人1回・空いている編成の場所に入れる。空いていなければBOXへ）
+  if(!b.starter){ b.starter=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<3;k++){ const u={u:b.nu++, id:1}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, lv:3, w:null}; } try{ save(); }catch(e){} }
+  return b; };
 const coinUpd = () => { const el=document.getElementById("mbCoin"); if(el) el.textContent=fmt(S.coins); try{ renderCoins(); }catch(e){} };
 // レベルの強さ：1レベル上がるごとに全ステータス1.5倍
 const statOf = (id, lv, w) => { const m=monOf(id), k=Math.pow(MB.GROW, Math.max(0,(lv||1)-1)), W=wOf(w); if(!m) return {atk:0,hp:0};
