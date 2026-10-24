@@ -3215,13 +3215,12 @@ function fixPlayer(){ S.plv=S.plv||1; S.pexp=S.pexp||0;
   if(S.giftReset!==1){ S.items=S.items||{}; S.items.gift=0; S.giftReset=1; }   /* 2026-10-18：神からの贈り物の所持数を全員0にリセット（1回だけ） */
   Object.values(S.sv||{}).forEach(v=>{ const l=Math.floor((v||0)/1e6); if(l>(S.maxPlv||0)) S.maxPlv=l; });   /* 過去のランク戦の最終レベルも最高記録に入れる */ S.stats=S.stats||{pulls:0,fuses:0}; if(S.name==null) S.name=""; }
 fixPlayer();
-// コンプ率（2026-10-24）：図鑑の魔物を持っている割合（0〜100%）＋魂（同じ魔物どうしを合成した数・1種100体で100%）の平均（0〜100%）＝ 最大200%
-// 冒険者EXPの増え方の倍率：コンプ率0%で1倍 → 100%で1.5倍 → 200%で2倍（だんだん上がる）
+// コンプ率：図鑑の魔物を持っている割合（0〜100%）。冒険者EXPの増え方の倍率：0%で1倍 → 100%で1.5倍（だんだん上がる）。魂と200%は2026-10-24になくした
 const COMP_EXP_MUL = 2, SOUL_MAX = 100;
 const compDone = () => DEX_MONS.every(m=>S.got[m.id]);
 const soulOf = id => { const m=mon(id); if(m&&m.rank==="L") return 0; return Math.min(SOUL_MAX, Math.floor(((S.soul||{})[id])||0)); };   // 限定ランクには魂はない
-const soulPct = () => Math.round(DEX_MONS.reduce((a,m)=>a+soulOf(m.id),0)/DEX_MONS.length/SOUL_MAX*1000)/10;
-const compMul = c => 1 + 0.5*Math.max(0,Math.min(200,c))/100;
+const soulPct = () => 0;   // 魂はなくした
+const compMul = c => 1 + 0.5*Math.max(0,Math.min(100,c))/100;
 const mulTxt = c => (Math.round(compMul(c)*100)/100).toString();
 function gainPExp(n){
   n=Math.round(n*compMul(compPct()));
@@ -4415,7 +4414,7 @@ function openRules(){
     ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("<b>ランク戦タイマー</b>が0になると終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前まで</b>）。自分には投資できない。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位 1.5倍</b>／<b>5位以下 10倍を失う</b>（0コインまで）。</li><li>👑 自分がランク戦終了時に<b>3位以内</b>なら、投資先が<b>4位以内</b>で順位に関係なく<b>2倍</b>。3位以内の冒険者も投資できる。</li><li>投資した時点でコインが減る。5位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>${invPct()}%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
-    ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+"+WIN_LV)}</li><li>${U(`📖 魔物のコンプ率が上がるほど、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが増える</b>（コンプ率0%で1倍→100%で<b>1.5倍</b>）。同じ魔物どうしを合成すると「🔥魂」が上がり（1種100体で100%）、図鑑の全種の魂が100%になるとコンプ率<b>200%</b>・冒険者EXP<b>2倍</b>`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}（バトル・爆弾ではチェックポイントより下に下がらない）／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（チェックポイント関係なし）","j")}</li></ul>`],
+    ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+"+WIN_LV)}</li><li>${U(`📖 魔物のコンプ率が上がるほど、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが増える</b>（コンプ率0%で1倍→100%で<b>1.5倍</b>）`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}（バトル・爆弾ではチェックポイントより下に下がらない）／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（チェックポイント関係なし）","j")}</li></ul>`],
     ["🔒","そのほか",`<ul><li>🏠 <b>ホーム</b>で、好きな魔物・背景・床・装飾を選んで部屋を着せ替えできる。プロフィールもホームの左上から見られる</li><li>${U("🎨 <b>装飾ガチャ</b>（1パック"+COST+"コイン）で背景・床・装飾が集まる。持っているものが出たら<b>80%で10コイン、20%で覚醒の石1個</b>に変わる","l")}</li><li>${U("ガチャとチケット購入は<b>ガチャ</b>タブ、ボーナス・呪文・ショップのバナーは<b>ミッション</b>タブ、ランキングとアイコン作りは<b>ランキング</b>タブ","k")}</li>${U("<li>💰 Sランクの魔物を売却すると、コインに加えて<b>冒険者Lv+1</b>、Zランクは<b>冒険者Lv+5</b>上がる（A・B・Cランクはコインのみ）。</li>","x")}<li>🔒 鍵をかけた魔物は、素材にも売却にもならない（手持ちの上の方に並ぶ）。</li><li>ミッションタブの<b>呪文</b>に合言葉を入れるとプレゼントがもらえることも…？</li><li>ログインすると、ほかの端末でも続きから遊べる。</li></ul>`],
   ];
   const el=document.createElement("div"); el.className="rules-stage"+(fresh?" fresh":""); el.setAttribute("role","dialog"); el.setAttribute("aria-label","最新ルール");
@@ -4629,7 +4628,7 @@ function openFuse(uid){
     const total=[...sel].reduce((s,u)=>s+matExp(base,S.units.find(z=>z.u===u)),0);
     const {u,ev}=previewExp(base,total);
     const pct = u.l>=capOf(u)?100:Math.min(100,u.e/needFor(u)*100);
-    bg.querySelector("#fsum").innerHTML=`素材 ${sel.size}体 ・ 獲得 <b>${total.toLocaleString()}</b> EXP${[...sel].some(u=>S.units.find(z=>z.u===u).m===base.m)?` <span class="same">同じ魔物 経験値2倍</span>`:""}${(()=>{ const n=mon(base.m).rank==="L"?0:[...sel].filter(u=>(S.units.find(z=>z.u===u)||{}).m===base.m).length; return n?`<br>🔥 魂 ${soulOf(base.m)}% → <b>${Math.min(SOUL_MAX,soulOf(base.m)+n)}%</b>`:""; })()}<br>
+    bg.querySelector("#fsum").innerHTML=`素材 ${sel.size}体 ・ 獲得 <b>${total.toLocaleString()}</b> EXP${[...sel].some(u=>S.units.find(z=>z.u===u).m===base.m)?` <span class="same">同じ魔物 経験値2倍</span>`:""}<br>
       Lv${base.l} → <b>Lv${u.l}</b>${ev.evo?` ・ 枠が <b>${STAGES[u.s].name}</b> に進化！`:""}・ <b>+${ev.coins+FUSE_COIN}</b>コイン
       <div class="xp preview"><b style="width:${pct}%"></b></div>`;
     bg.querySelector("#doFuse").disabled=!sel.size || S.coins<fuseCost(base);
@@ -4647,7 +4646,6 @@ function openFuse(uid){
     const total=[...sel].reduce((s,u)=>s+matExp(base,S.units.find(z=>z.u===u)),0);
     const cost=fuseCost(base); if(!sel.size || S.coins<cost) return toast("コインが足りません"); S.coins-=cost;
     const same=mon(base.m).rank==="L"?0:[...sel].filter(u=>(S.units.find(z=>z.u===u)||{}).m===base.m).length, soul0=soulOf(base.m);   // 限定ランクには魂はない   // 同じ魔物どうしの合成で「魂」が上がる（100体で100%）
-    if(same){ S.soul=S.soul||{}; S.soul[base.m]=Math.min(SOUL_MAX,(S.soul[base.m]||0)+same); }
     S.units=S.units.filter(z=>!sel.has(z.u));
     if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=base.m;
     S.stats.fuses++; gainPExp(PXP.fuse);
@@ -4664,7 +4662,7 @@ function renderDex(){
   let body="";
   if(isMon){
     const cell=m=>{const h=S.got[m.id];return `<div class="cell ${h?"has":"unk"}" data-dexm="${m.id}" role="button" tabindex="0">
-      <img src="${h?cardURL(m.id,0,160):silhouette(m.id)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${h?m.name:"？？？"}</div>${h?byLine(m):""}${h&&m.rank!=="L"?`<div class="soul"><i style="width:${soulOf(m.id)}%"></i><span>🔥${soulOf(m.id)}%</span></div>`:""}</div>`};
+      <img src="${h?cardURL(m.id,0,160):silhouette(m.id)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${h?m.name:"？？？"}</div>${h?byLine(m):""}</div>`};
     // 限定ランクは図鑑には公開しない。手に入れた冒険者の図鑑にだけ、別の欄で載っていく
     const lim=MONSTERS.filter(m=>m.rank==="L"&&S.got[m.id]);
     const sortBar=`<div class="dex-sort" translate="no">${[["no","No.順"],["rank","ランク別"]].map(([k,l])=>`<button type="button" data-ds="${k}" aria-pressed="${dexSort===k}">${LANG==="en"?(k==="no"?"By No.":"By rank"):l}</button>`).join("")}</div>`;
@@ -4680,7 +4678,7 @@ function renderDex(){
   }
   $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}
     <div class="progress"><div class="bar"><b style="width:${pct}%"></b></div><span class="pct">${have}/${all}</span></div>
-    <p class="sub" style="margin:0 0 8px;${compPct()>=100?"color:var(--staff)":""}">📖 コンプ率 <b>${compPct()}%</b>（持っている ${ownPct()}% ＋ 🔥魂 ${soulPct()}%）・ 冒険者EXP <b>×${mulTxt(compPct())}</b><br><small>コンプ率が上がるほど冒険者EXPの増え方が上がる（100%で1.5倍・200%で2倍）。同じ魔物どうしを合成すると「魂」が上がり、1種100体で100%。図鑑の全種の魂が100%でコンプ率200%！</small></p>${body}`;
+    <p class="sub" style="margin:0 0 8px;${compPct()>=100?"color:var(--staff)":""}">📖 コンプ率 <b>${compPct()}%</b>・ 冒険者EXP <b>×${mulTxt(compPct())}</b><br><small>コンプ率が上がるほど冒険者EXPの増え方が上がる（100%で1.5倍）</small></p>${body}`;
   if(isMon) document.querySelectorAll("[data-dexm]").forEach(c=>c.onclick=()=>openDexMon(+c.dataset.dexm));
   bindSeg(k=>{boxMode=k;render();$("#stage").scrollTop=0});
   document.querySelectorAll("[data-ds]").forEach(b=>b.onclick=()=>{ dexSort=b.dataset.ds; try{ localStorage.setItem("toto-dex-sort",dexSort); }catch(e){} render(); });
@@ -4942,14 +4940,14 @@ document.addEventListener("click",e=>{ if(e.target.closest("[data-login]")) open
 const uname=n=>n?`<span translate="no">${esc(n)}</span>`:"名無しの召喚士";
 const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ownPct=()=>Math.round(DEX_MONS.filter(m=>S.got[m.id]).length/DEX_MONS.length*1000)/10;
-const compPct=()=>Math.round((ownPct()+soulPct())*10)/10;   // 最大200%
+const compPct=()=>ownPct();
 const myName=()=>S.name||"名無しの召喚士";
 function profilePayload(){
   try{ if(typeof advSync==="function") advSync(); }catch(e){}
   return { name:myName().slice(0,12), no:S.userNo||0, lv:S.plv, exp:S.pexp, score:S.plv*1e6+S.pexp,
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
     comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
-    ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, soul:soulPct(), frames:FRAMES.filter(f=>S.frames[f.id]).length,
+    ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0),
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
@@ -4996,7 +4994,7 @@ async function loadRanking(force){
 // ランキング表示用に、ランク戦や空枠の状態を反映する
 function normRank(r,now=gnow()){
       // コンプ率は、持っている魔物の数（owned）と今の図鑑の数から計算しなおす（新しい魔物が増えても全員の%が今の基準になる）
-      if(r.id===MYID) r.comp=compPct(); else if(r.owned!=null) r.comp=Math.round((Math.min(r.owned,DEX_MONS.length)/DEX_MONS.length*100+Math.min(100,Number(r.soul)||0))*10)/10;
+      if(r.id===MYID) r.comp=compPct(); else if(r.owned!=null) r.comp=Math.round(Math.min(r.owned,DEX_MONS.length)/DEX_MONS.length*1000)/10;
       if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
       else if((r.ss??0)<seasonNow()){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新しいランク戦を開いていない人はリセット後の状態で表示
       else if(!r.gm && r.ge && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-emptyDropFor(now-r.pub)); r.exp=0; r.tr=r.tr==="up"||r.tr==="mix"?"mix":"down"; } }
