@@ -91,6 +91,8 @@ css.textContent=`
 #mbo .bt-unit .gd{position:absolute;top:0;right:10px;font-size:44px}
 #mbo .bt-unit.hit1{animation:btHit .45s}
 @keyframes btHit{20%{transform:translateX(-14px)}40%{transform:translateX(14px)}60%{transform:translateX(-8px)}100%{transform:none}}
+#mbo .bt-grave{position:absolute;z-index:6;width:110px;height:124px;margin-left:-55px;image-rendering:pixelated;pointer-events:none;animation:btGrave 1.3s ease-out forwards}
+@keyframes btGrave{0%{transform:translateY(-40px) scale(.6);opacity:0}20%{transform:none;opacity:1}80%{opacity:1}100%{opacity:0}}
 #mbo .bt-dmg{position:absolute;z-index:6;font:900 52px/1 var(--f-pix,monospace);color:#fff;text-shadow:0 0 4px #000,0 3px 0 #c00;pointer-events:none;animation:btDmg 1.1s ease-out forwards}
 #mbo .bt-dmg.heal{text-shadow:0 0 4px #000,0 3px 0 #090;color:#bfffb0}
 @keyframes btDmg{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-90px);opacity:0}}
@@ -285,6 +287,10 @@ const sideDead = sd => sd.us.every(u=>u.hp<=0);
 function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[B.a,B.b];
   const A=[acts[0]||[],acts[1]||[]];
   const guard=[new Set(),new Set()], open=[new Set(),new Set()];
+  // 0) たおれた場所に、えらんだ待機中の魔物を出す（えらんでいなければ、いちばん前の待機中の魔物）
+  sides.forEach((sd,s)=>[0,1,2].forEach(p=>{ const a=A[s][p], cur=sd.us[sd.field[p]]; if(alive(cur) && !(a&&a.in!=null&&sd.field[p]===a.in)) return;
+    let r=a&&a.in; if(r==null||!alive(sd.us[r])||(sd.field.includes(r)&&sd.field[p]!==r)) r=reserves(sd).find(i=>alive(sd.us[i]));
+    if(r!=null&&sd.field[p]!==r){ sd.field[p]=r; ev.push({k:"in",s,p,to:r}); } }));
   // 1) 交代（交代したターンは何もできず、無防備）
   sides.forEach((sd,s)=>A[s].forEach((a,p)=>{ if(!a||a.t!=="swap") return; const cur=sd.field[p], r=a.r; if(r==null||!alive(sd.us[r])||sd.field.includes(r)) return; sd.field[p]=r; open[s].add(p); ev.push({k:"swap",s,p,from:cur,to:r}); }));
   // 2) レベルアップ・アイテム
@@ -309,15 +315,16 @@ function resolve(B, acts, turnSeed){ const R=rng(turnSeed), ev=[]; const sides=[
   sides.forEach((sd,s)=>[0,1,2].forEach(p=>{ const u=sd.us[sd.field[p]]; if(!u) return;
     if(heal[s][p]>0&&alive(u)){ const h=Math.min(heal[s][p],u.max-u.hp); u.hp+=h; hits.push({s,p,v:h,heal:1}); }
     if(dmg[s][p]>0){ const v=guard[s].has(p)?dmg[s][p]/2:dmg[s][p]; u.hp=Math.max(0,u.hp-v); hits.push({s,p,v,gd:guard[s].has(p)}); } }));
-  // 5) 倒れた魔物は、待機している魔物と自動で入れかわる
+  // 5) このターンに倒れた魔物（お墓を出す）。入れかえは、次のターンのはじめに持ち主がえらぶ
   const outs=[];
-  sides.forEach((sd,s)=>[0,1,2].forEach(p=>{ const u=sd.us[sd.field[p]]; if(u&&u.hp<=0){ outs.push({s,p,id:u.id}); const r=reserves(sd).find(i=>alive(sd.us[i])); sd.field[p]=r!=null?r:sd.field[p]; if(r!=null) ev.push({k:"in",s,p,to:r}); } }));
+  sides.forEach((sd,s)=>[0,1,2].forEach(p=>{ const u=sd.us[sd.field[p]]; if(u&&u.hp<=0&&!u.gone){ u.gone=1; outs.push({s,p,id:u.id}); } }));
   B.turn++;
   const da=sideDead(B.a), db=sideDead(B.b); if(da||db) B.end = da&&db ? "draw" : da ? "b" : "a";
   return {ev, hits, outs}; }
 // ボットの作戦
 function botActs(B, s, R){ const sd=s?B.b:B.a, o=s?B.a:B.b; const lt=[0,1,2].filter(p=>alive(o.us[o.field[p]]));
-  return [0,1,2].map(p=>{ const u=sd.us[sd.field[p]]; if(!alive(u)) return null;
+  const used=new Set(); return [0,1,2].map(p=>{ let u=sd.us[sd.field[p]];
+    if(!alive(u)){ const r=reserves(sd).find(i=>alive(sd.us[i])&&!used.has(i)); if(r==null) return null; used.add(r); u=sd.us[r]; return {t:"atk", tg:lt[Math.floor(R()*lt.length)], in:r}; }
     if(u.hp<u.max*.35 && u.g>0 && R()<.45) return {t:"guard"};
     const mg=(monOf(u.id)||{}).magic;
     if(mg && mg.kind==="healone" && magicReady(u,B)){ const al=[0,1,2].filter(q=>alive(sd.us[sd.field[q]])).sort((x,y)=>sd.us[sd.field[x]].hp/sd.us[sd.field[x]].max-sd.us[sd.field[y]].hp/sd.us[sd.field[y]].max); const q=al[0]; if(q!=null&&sd.us[sd.field[q]].hp<sd.us[sd.field[q]].max) return {t:"magic", ally:q}; }
@@ -329,7 +336,7 @@ const defaultActs = (sd) => [0,1,2].map(p=>{ const u=sd.us[sd.field[p]]; if(!ali
 const FIELD={ en:[[282,612],[468,612],[654,612]], me:[[212,948],[468,948],[724,948]] };
 const TOPX=[42,342,632], ROWY=[1010,1165,1320];
 function openBattle(cfg){ // cfg: {mode:"quest"|"pvp", B, me:0|1, qlv, send(acts), onEnd}
-  const s=shell(937,1678,"mb/battle.jpg"); V.B=cfg.B; V.cfg=cfg; V.sel=[null,null,null]; V.submitted=false; V.anim=false; V.turnAt=Date.now();
+  const s=shell(937,1678,"mb/battle.jpg"); V.B=cfg.B; V.cfg=cfg; V.sel=[null,null,null]; V.ins=[null,null,null]; V.submitted=false; V.anim=false; V.turnAt=Date.now();
   s.innerHTML=`<div class="bt-time" id="btTime"></div>${TOPX.map((x,i)=>`<div class="bt-top" id="btT${i}" style="left:${x}px"></div>`).join("")}
     <div id="btField"></div>${ROWY.map((y,i)=>`<div class="bt-row" id="btR${i}" style="top:${y+20}px"></div>${hit("btRH"+i,75,y+20,620,140,T("戦略を立てる","Plan"))}`).join("")}
     <div class="bt-rs" id="btRs"></div>${hit("btSwap",715,1015,180,470,T("待機してる魔物と交代","Swap"))}
@@ -351,7 +358,7 @@ function actTxt(a){ if(!a) return T("戦略を立てる","Make a plan");
   return a.t==="atk"?T(`⚔ 攻撃 → 敵${a.tg+1}`,`⚔ Attack → Enemy ${a.tg+1}`):a.t==="guard"?T("🛡 ガード","🛡 Guard"):a.t==="magic"?(a.ally!=null?T(`💗 回復 → 味方${a.ally+1}`,`💗 Heal → ally ${a.ally+1}`):T("✨ 魔法","✨ Magic")):a.t==="lvup"?T("⬆ レベルアップ","⬆ Level up"):a.t==="item"?T(`🧪 ${(iOf(a.i)||{}).name||"アイテム"}`,`🧪 ${(iOf(a.i)||{}).name||"Item"}`):a.t==="swap"?T("🔄 交代","🔄 Swap"):""; }
 function drawBattle(){ const me=mySide(), en=enSide();
   TOPX.forEach((x,i)=>{ const el=document.getElementById("btT"+i); if(!el) return; const u=en.us[en.field[i]], m=u&&monOf(u.id);
-    el.innerHTML=alive(u)?`<img src="${m.img}" alt=""><div class="tx">Lv.${u.lv}　<small style="font-size:22px">${T("敵","Enemy")}${i+1}</small>${barHtml(u)}<small style="font-size:20px">❤ ${nf(Math.ceil(u.hp*10)/10)}/${nf(u.max)}</small></div>`:`<div class="tx" style="text-align:center;opacity:.6">—</div>`; });
+    el.innerHTML=alive(u)?`<img src="${m.img}" alt=""><div class="tx">Lv.${u.lv}　<small style="font-size:22px">${T("敵","Enemy")}${i+1}</small>${barHtml(u)}<small style="font-size:20px">❤ ${nf(Math.min(u.max,Math.ceil(u.hp*10)/10))}/${nf(u.max)}</small></div>`:`<div class="tx" style="text-align:center;opacity:.6">—</div>`; });
   const f=document.getElementById("btField"); if(f) f.innerHTML=[0,1,2].map(p=>{ const u=en.us[en.field[p]], m=u&&monOf(u.id); const [x,y]=FIELD.en[p];
       return alive(u)?`<div class="bt-unit" id="btE${p}" data-p="${p}" style="left:${x}px;top:${y}px;width:160px;height:160px;margin:-160px 0 0 -80px"><img src="${m.img}" alt=""></div>`:""; }).join("")
     +[0,1,2].map(p=>{ const u=me.us[me.field[p]], m=u&&monOf(u.id); const [x,y]=FIELD.me[p];
@@ -362,13 +369,18 @@ function drawBattle(){ const me=mySide(), en=enSide();
   const rs=document.getElementById("btRs"); if(rs) rs.innerHTML=reserves(me).map(i=>{ const u=me.us[i], m=monOf(u.id); return `<img src="${m.img}" class="${alive(u)?"":"dead"}" alt="">`; }).join("");
   const lab=document.getElementById("btOkLab"), ok=document.getElementById("btOk"); if(lab) lab.textContent=V.submitted?T("相手を待っています…","Waiting for opponent..."):"";
   coinUpd(); }
+// 自分の魔物がたおれたら、どの待機中の魔物と入れかえるかえらぶ
+function pickIns(){ const me=mySide(); const p=[0,1,2].find(q=>!alive(me.us[me.field[q]])&&V.ins[q]==null); if(p==null) return;
+  const rs=reserves(me).filter(i=>alive(me.us[i])&&!V.ins.includes(i)); if(!rs.length) return;
+  const bg=dlg(`<img src="mb/grave.png" alt="" style="width:64px;height:72px;image-rendering:pixelated"><h3>${T(`${p+1}番目の魔物がたおれた！`,`Your monster in spot ${p+1} fell!`)}</h3><p style="font-size:12px">${T("入れかわりに出す、待機中の魔物をえらんでね。","Choose a waiting monster to send out.")}</p><div class="al">${rs.map(i=>{ const u=me.us[i], m=monOf(u.id); return `<button type="button" data-r="${i}"><img src="${m.img}" alt=""><span>${esc2(mname(m))}</span><small>Lv.${u.lv} ❤ ${nf(Math.min(u.max,Math.ceil(u.hp*10)/10))}/${nf(u.max)}</small></button>`; }).join("")}</div>`,[],{modal:true});
+  bg.querySelectorAll("[data-r]").forEach(x=>x.onclick=()=>{ const r=+x.dataset.r; V.ins[p]=r; me.field[p]=r; bg.remove(); sfx("tap"); drawBattle(); pickIns(); }); }
 const msgT={};
 function say(t,ms=1500){ const el=document.getElementById("btMsg"); if(!el) return; el.innerHTML=t; el.hidden=false; clearTimeout(msgT.t); msgT.t=setTimeout(()=>{ el.hidden=true; },ms); }
 // 戦略を立てる
 function planUnit(p){ if(V.submitted||V.anim||V.B.end) return; const me=mySide(), u=me.us[me.field[p]]; if(!alive(u)) return; const m=monOf(u.id), b=st(); sfx("tap");
   const items=MB_ITEMS.filter(x=>(b.items[x.id]||0)-V.sel.filter(a=>a&&a.t==="item"&&a.i===x.id).length>0);
   const lvCost=MB.LVUP*(1+V.sel.filter((a,q)=>a&&a.t==="lvup"&&q!==p).length);
-  const bg=dlg(`<h3>${esc2(mname(m))}　Lv.${u.lv}</h3><p style="margin:0">⚔ ${nf(u.atk)}　❤ ${nf(Math.ceil(u.hp*10)/10)}/${nf(u.max)}</p>
+  const bg=dlg(`<h3>${esc2(mname(m))}　Lv.${u.lv}</h3><p style="margin:0">⚔ ${nf(u.atk)}　❤ ${nf(Math.min(u.max,Math.ceil(u.hp*10)/10))}/${nf(u.max)}</p>
     <div class="acts"><button type="button" data-a="atk">⚔ ${T("攻撃","Attack")}<small>${T("敵をえらぶ","Choose a target")}</small></button>
     <button type="button" data-a="guard" ${u.g>0?"":"disabled"}>🛡 ${T("ガード","Guard")}<small>${T(`ダメージ半分・のこり${u.g}回`,`Half damage · ${u.g} left`)}</small></button>
     <button type="button" data-a="magic" ${m.magic&&magicReady(u,V.B)?"":"disabled"}>✨ ${T("魔法","Magic")}<small>${m.magic?(magicReady(u,V.B)?T(m.magic.name,m.magic.en||m.magic.name):(m.magic.once?T("もう使った","Already used"):T(`あと${magicWait(u,V.B)}ターン`,`${magicWait(u,V.B)} turn(s) left`))):T("使えない魔物","Can't use magic")}</small></button>
@@ -378,7 +390,7 @@ function planUnit(p){ if(V.submitted||V.anim||V.B.end) return; const me=mySide()
   bg.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{ const a=x.dataset.a; bg.remove();
     if(a==="guard"||a==="lvup"){ V.sel[p]={t:a}; drawBattle(); return; }
     if(a==="atk"||(a==="magic"&&m.magic&&(m.magic.kind==="one"||m.magic.kind==="sac"))) return pickTarget(p,a);
-    if(a==="magic"&&m.magic&&m.magic.kind==="healone"){ const me2=mySide(); const ab=dlg(`<h3>💗 ${T("回復する味方をえらぶ","Choose an ally to heal")}</h3><div class="al">${[0,1,2].map(q=>{ const w=me2.us[me2.field[q]]; return alive(w)?`<button type="button" data-q="${q}"><img src="${monOf(w.id).img}" alt=""><span>Lv.${w.lv}</span><small>❤ ${nf(Math.ceil(w.hp*10)/10)}/${nf(w.max)}</small></button>`:""; }).join("")}</div>`);
+    if(a==="magic"&&m.magic&&m.magic.kind==="healone"){ const me2=mySide(); const ab=dlg(`<h3>💗 ${T("回復する味方をえらぶ","Choose an ally to heal")}</h3><div class="al">${[0,1,2].map(q=>{ const w=me2.us[me2.field[q]]; return alive(w)?`<button type="button" data-q="${q}"><img src="${monOf(w.id).img}" alt=""><span>Lv.${w.lv}</span><small>❤ ${nf(Math.min(w.max,Math.ceil(w.hp*10)/10))}/${nf(w.max)}</small></button>`:""; }).join("")}</div>`);
       ab.querySelectorAll("[data-q]").forEach(y=>y.onclick=()=>{ V.sel[p]={t:"magic", ally:+y.dataset.q}; ab.remove(); drawBattle(); }); return; }
     if(a==="magic"){ V.sel[p]={t:"magic"}; drawBattle(); return; }
     if(a==="item"){ const ib=dlg(`<h3>🧪 ${T("アイテムをえらぶ","Choose an item")}</h3><div class="al">${items.map(x=>`<button type="button" data-i="${x.id}"><img src="${x.img}" alt=""><span>${esc2(x.name)}</span><small>×${(b.items[x.id]||0)}</small></button>`).join("")}</div>`);
@@ -391,14 +403,15 @@ function planSwap(){ if(V.submitted||V.anim||V.B.end) return; const me=mySide();
   const bg=dlg(`<h3>🔄 ${T("待機してる魔物と交代","Swap with a waiting monster")}</h3><p style="font-size:12px">${T("交代したターンは、その場所の魔物は攻撃・ガード・魔法ができず、無防備になります。","On the swap turn, that spot can't attack, guard or use magic, and is defenseless.")}</p>
     <p><b>① ${T("下がる魔物","Who goes out")}</b></p><div class="al">${[0,1,2].map(p=>{ const u=me.us[me.field[p]]; return u?`<button type="button" data-p="${p}"><img src="${monOf(u.id).img}" alt=""><span>Lv.${u.lv}</span></button>`:""; }).join("")}</div>`,[[T("やめる","Cancel"),null]]);
   bg.querySelectorAll("[data-p]").forEach(x=>x.onclick=()=>{ const p=+x.dataset.p; bg.remove();
-    const b2=dlg(`<h3>🔄 ${T("出てくる魔物","Who comes in")}</h3><div class="al">${rs.map(i=>{ const u=me.us[i]; return `<button type="button" data-r="${i}"><img src="${monOf(u.id).img}" alt=""><span>Lv.${u.lv}</span><small>❤ ${nf(Math.ceil(u.hp*10)/10)}</small></button>`; }).join("")}</div>`,[[T("やめる","Cancel"),null]]);
+    const b2=dlg(`<h3>🔄 ${T("出てくる魔物","Who comes in")}</h3><div class="al">${rs.map(i=>{ const u=me.us[i]; return `<button type="button" data-r="${i}"><img src="${monOf(u.id).img}" alt=""><span>Lv.${u.lv}</span><small>❤ ${nf(Math.min(u.max,Math.ceil(u.hp*10)/10))}</small></button>`; }).join("")}</div>`,[[T("やめる","Cancel"),null]]);
     b2.querySelectorAll("[data-r]").forEach(y=>y.onclick=()=>{ V.sel[p]={t:"swap", r:+y.dataset.r}; b2.remove(); drawBattle(); }); }); }
 function ready(auto){ if(V.submitted||V.anim||V.B.end) return; const me=mySide(); const acts=[0,1,2].map(p=>{ const u=me.us[me.field[p]]; if(!alive(u)) return null; return V.sel[p] || (auto? (u.g>0?{t:"guard"}:null) : null); });
+  const withIn = list => list.map((a,p)=>V.ins[p]==null?a:Object.assign({t:"none"},a||{},{in:V.ins[p]}));
   if(!auto && acts.some((a,p)=>!a && alive(me.us[me.field[p]]))){ return dlg(`<p>${T("戦略を立てていない魔物は「ガード」になります（のこりがなければ何もしない）。いいですか？","Monsters without a plan will Guard (or do nothing if no guards left). OK?")}</p>`,[[T("やめる","Cancel"),null],[T("準備OK","Ready"),()=>{ V.sel=acts.map((a,p)=>a||(alive(me.us[me.field[p]])&&me.us[me.field[p]].g>0?{t:"guard"}:null)); ready(true); }]]); }
   // レベルアップのコインは、決めたときに払う
   const lv=acts.filter(a=>a&&a.t==="lvup").length; if(lv){ if((S.coins||0)<lv*MB.LVUP){ return dlg(`<p>${T("コインが足りません","Not enough coins")}</p>`); } S.coins-=lv*MB.LVUP; save(); coinUpd(); }
   acts.forEach(a=>{ if(a&&a.t==="item"){ const b=st(); b.items[a.i]=Math.max(0,(b.items[a.i]||0)-1); } }); save();
-  V.submitted=true; sfx("tap"); drawBattle(); V.cfg.send(acts); }
+  V.submitted=true; sfx("tap"); drawBattle(); V.cfg.send(withIn(acts)); }
 // 両方の作戦がそろったら、結果を見せる
 async function playTurn(actsA, actsB){ if(V.anim) return; V.anim=true; const B=V.B, before=JSON.parse(JSON.stringify(B));
   const res=resolve(B,[actsA,actsB], (B.seed^(B.turn*2654435761))>>>0);
@@ -413,7 +426,12 @@ async function playTurn(actsA, actsB){ if(V.anim) return; V.anim=true; const B=V
   res.hits.forEach(h=>{ const [x,y]=pos(h.s,h.p); const d=document.createElement("div"); d.className="bt-dmg"+(h.heal?" heal":""); d.style.left=x+"px"; d.style.top=(y-200)+"px"; d.textContent=(h.heal?"+":"-")+nf(h.v)+(h.gd?"🛡":"");
     document.querySelector("#mbo .mb-st")?.appendChild(d); setTimeout(()=>d.remove(),1200); const u=el(h.s,h.p); if(u&&!h.heal){ u.classList.remove("hit1"); void u.offsetWidth; u.classList.add("hit1"); } });
   if(res.hits.some(h=>!h.heal)) sfx("ng");
-  await wait(1300); V.sel=[null,null,null]; V.submitted=false; V.anim=false; V.turnAt=Date.now(); drawBattle();
+  await wait(900);
+  // たおれた魔物のところに、お墓を一瞬出す
+  if(res.outs.length){ res.outs.forEach(o=>{ const [x,y]=pos(o.s,o.p), g=document.createElement("img"); g.src="mb/grave.png"; g.className="bt-grave"; g.style.left=x+"px"; g.style.top=(y-150)+"px"; document.querySelector("#mbo .mb-st")?.appendChild(g); setTimeout(()=>g.remove(),1300); }); sfx("ng"); await wait(1300); }
+  else await wait(400);
+  V.sel=[null,null,null]; V.ins=[null,null,null]; V.submitted=false; V.anim=false; V.turnAt=Date.now(); drawBattle();
+  if(!B2.end) pickIns();
   if(B2.end){ const win=B2.end==="draw"?"draw":(B2.end==="a")===(meIdx===0)?"win":"lose"; finish(win==="draw"?"draw":win==="win"?(meIdx?"b":"a"):(meIdx?"a":"b")); } }
 function finish(endSide, giveup, silent){ const B=V.B; if(B.end&&B._done) return; B.end=B.end||endSide; B._done=1; const meIdx=V.cfg.me;
   const res = endSide==="draw" ? "draw" : (endSide==="a")===(meIdx===0) ? "win" : "lose"; const b=st();
