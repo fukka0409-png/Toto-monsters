@@ -485,7 +485,7 @@ function finish(endSide, giveup, silent){ const B=V.B; if(B.end&&B._done) return
   sfx(res==="win"?"reveal":"ng", "S");
   dlg(`<div style="font-size:60px">${res==="win"?"🏆":res==="draw"?"🤝":"💀"}</div><h3>${res==="win"?T("勝利！","Victory!"):res==="draw"?T("引き分け","Draw"):T("敗北…","Defeat...")}</h3>
     <p>${res==="win"?T(`+${fmt(coin)}コイン！<br>編成の魔物のレベルは、次のバトルに持ちこせます。`,`+${fmt(coin)} coins!<br>Your monsters keep their levels for the next battle.`):res==="draw"?T("おたがい全滅しました。レベルはそのままです。","Both sides fell. Levels stay as they are."):(rank?T(`編成の魔物のレベルが、${MB.RANK_LOSE_LV}ずつ下がりました（Lv1より下にはなりません）。`,`Formation monsters lost ${MB.RANK_LOSE_LV} levels each (not below Lv1).`):T("編成の魔物のレベルが、全員Lv1にもどりました。","All formation monsters went back to Lv1."))}</p>`,[[T("メニューへ","Menu"),()=>openMenu()]],{modal:true}); }
-const questPrize = lv => Math.max(1, Math.floor(Math.pow(1.5, (lv||1)-1)));   // Lv1は1コイン。レベルが上がるほど増える
+const questPrize = lv => Math.max(1, Math.floor(Math.pow(lv||1, 5/3)));   // Lv1は1コイン・Lv100で約2,000・Lv1000で約10万コイン（2026-10-24：1.5倍ずつ増えて多すぎたので変更）
 
 /* ---------- クエストマッチ（ボット） ---------- */
 function myTeam(){ const t=teamOf(); return t.map(x=>x?{id:x.id, lv:x.lv, w:x.w}:null); }
