@@ -18,7 +18,7 @@ const MB_WEAPONS = [];
 // アイテム：price で買える。heal＝体力を回復。例：{ id:1, name:"やくそう", img:"mb/i1.png", price:500, heal:5 }
 const MB_ITEMS = [];
 // ガチャ：cost＝1回のコイン、pool＝[{id, w（出やすさ）}]。中身が空のあいだは「準備中」
-const MB_GACHA = { mon:{ cost:1000, pool:[] }, weapon:{ cost:1000, pool:[] } };
+const MB_GACHA = { mon:{ cost:5000, pool:[ {id:1, w:19}, {id:2, w:1} ] }, weapon:{ cost:2000, pool:[] } };   // 魔物：スライム19・戦士トト1（約20分の1）
 
 const MB = { SLOTS0:10, SLOT_MAX:500, SLOT_COST:10000, LVUP:10000, GROW:1.5, GUARDS:3, TURN_MS:60000, WIN_COIN:1000 };
 const T = (ja,en) => (typeof LANG!=="undefined" && LANG==="en") ? en : ja;
