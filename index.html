@@ -2139,6 +2139,9 @@ const I18N_EN = {
 "冒険者レベルの上位100人を表示しています。今は順位のつかない時間なので、だれでもひとことコメントを残せます！": "Showing the top 100 by Adventurer Level. Right now there are no ranks, so everyone can leave a short message!",
 "冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。": "Showing the top 100 by Adventurer Level. The top 50 can leave a short message.",
 "更新": "Refresh",
+"🛡 配置する魔物をえらぶ": "🛡 Choose a monster to place",
+"タップした魔物をプロフィールに配置します。": "Tap a monster to place it on your profile.",
+"🛡 魔物を配置": "🛡 Place a monster",
 "✅ 景品の受け取り条件クリア（終了前6時間以内にログイン済み）": "✅ Prize requirement met (logged in within the last 6 hours)",
 "⏰ 景品をもらうには、18:00〜24:00に1度ログインしてね": "⏰ To get prizes, log in once between 18:00 and 24:00",
 "・ あなたは": " · You are ",
@@ -3263,6 +3266,20 @@ function fixGuard(){ fixDownTime();
   S.attacks=S.attacks||{}; S.lastBattle=S.lastBattle||0;
 }
 const guardUnit=()=>S.guard?S.units.find(z=>z.u===S.guard)||null:null;
+// ランキングの画面から、プロフィールに配置する魔物をえらぶ
+function openGuardPick(){
+  const L=[...S.units].sort((a,b)=>(b.l-a.l)||(RANKS.indexOf(mon(b.m).rank)-RANKS.indexOf(mon(a.m).rank)));
+  const g=guardUnit();
+  const bg=sheet(`<div class="sheet-h"><h3>🛡 配置する魔物をえらぶ</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <p class="note" style="margin:0 0 8px">${g?`いま配置中：<b>${esc(mon(g.m).name)} Lv${g.l}</b>`:`いまは何も配置していません（枠が空のあいだは${EMPTY_TXT}）`}<br>タップした魔物をプロフィールに配置します。</p>
+    ${g?`<div class="row"><button class="btn ghost" id="gpOff" type="button">配置を外す</button></div>`:""}
+    ${L.length?`<div class="grid" id="gpList">${L.map(x=>unitCard(x,(S.guard===x.u?"sel":"")+(isDown(x)?" dim":""))).join("")}</div>`:`<div class="empty">魔物がいません。ガチャで仲間を増やそう</div>`}`);
+  const off=bg.querySelector("#gpOff"); if(off) off.onclick=()=>{ clearGuard(); save(); toast(`配置を外しました。枠が空のあいだは${EMPTY_TXT}`); closeSheet(); render(); };
+  bg.querySelectorAll("#gpList .card").forEach(c=>c.onclick=()=>{ const x=S.units.find(z=>z.u===+c.dataset.u); if(!x) return; const m=mon(x.m);
+    if(S.guard===x.u){ closeSheet(); return; }
+    if(isDown(x)) return toast(`${m.name}は現在配置不可です（あと${Math.ceil((x.down-gnow())/HOUR_MS)}時間）`);
+    setGuard(x.u); toast(`${m.name}をプロフィールに配置しました`); closeSheet(); render(); });
+}
 function setGuard(u){ try{ guardPay(); }catch(e){} S.guard=u; S.decayAt=0; S.gpT=gnow(); save(); }
 function clearGuard(){ try{ guardPay(); }catch(e){} S.guard=null; S.decayAt=gnow(); S.gpT=null; }
 const WIN_BASE = 500, DOWN_MS = 2*HOUR_MS;   // 勝利報酬：500コイン＋相手の冒険者Lv分のコイン、冒険者Lv+1 ／ 負けた魔物は2時間休み
@@ -5675,8 +5692,9 @@ function renderRanking(segHtml){
       🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
-    <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button></div>
+    <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button><button class="chip" id="rkGuard" type="button" style="margin-left:auto">🛡 魔物を配置${guardUnit()?`（${esc(mon(guardUnit().m).name)} Lv${guardUnit().l}）`:""}</button></div>
     ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
+  $("#rkGuard").onclick=()=>openGuardPick();
   $("#reRank").onclick=async()=>{ RANK=null; render(); await loadRanking(true); if(!rankErr) toast("全員の最新の状態に更新しました"); };
   const qi=$("#rkQ"); if(qi){ qi.oninput=()=>{ rankQ=qi.value; filterRank(); }; qi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); qi.blur(); if(!filterRank()) searchOutside(); } }; filterRank(); }
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
