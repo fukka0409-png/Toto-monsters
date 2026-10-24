@@ -588,5 +588,34 @@ async function joinMatch(id, mode){ const ref=DB.collection("mbm").doc(id); let 
     const t=V.B.turn, a=pending["a"+t], b=pending["b"+t]; if(a!=null&&b!=null){ if(pending[op+t]) missed=0; playTurn(JSON.parse(a),JSON.parse(b)).then(()=>setTimeout(step,50)); } };
   V.unsubs=[ref.onSnapshot(s=>{ pending=s.data()||pending; step(); },()=>{})]; }
 
+/* ---------- ランキングにのっている人へ、変更のお知らせ（1回だけ・2026-10-24） ---------- */
+let noteBusy=false;
+async function rankNote(){ if(noteBusy||!S.mb||S.mb.note1024||!DB||!MYID) return; if(document.querySelector("#title:not([hidden])")) return; noteBusy=true;
+  try{ let on=(S.mb.rw||0)+(S.mb.rl||0)>0; if(!on){ const d=await DB.collection("mbp").doc(MYID).get(); const x=d.exists?d.data():null; on=!!(x&&((x.w||0)+(x.l||0))>0); }
+    S.mb.note1024=1; save(); if(!on) return;
+    const show=()=>{ if(document.querySelector(".reveal,.sheet-bg,#kno,#mco,#mbo,#adv,#dfo,.mb-dlg")) return setTimeout(show,2500);
+      const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=136; bg.setAttribute("translate","no");
+      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" style="max-height:88vh;overflow:auto"><div class="swear-face">⚔️</div><p>${T("魔物バトル　ルールが変わりました！","Monster Battle: rule changes!")}</p>
+        <div class="m-text" style="text-align:left;font-size:13px;line-height:1.6">${T(`<ul style="margin:0;padding-left:18px">
+          <li>🏆 ランクマッチの<b>ランキング</b>ができました（勝率の順位）。</li>
+          <li>⏱ ランクマッチの勝ち負けとランキングは、「ガチャ・育成」の<b>ランク戦と同じタイミングでリセット</b>されます。</li>
+          <li>💰 ランクマッチで勝つと <b>5,000コイン</b>。</li>
+          <li>📉 ランクマッチで負けると、編成の魔物のレベルが<b>3ずつ下がる</b>（Lv1より下にはならない）。</li>
+          <li>🥚 ガチャで持っている魔物が出たら、<b>いちばんレベルが高い同じ魔物に自動で合成</b>（レベル+1）。</li>
+          <li>👾 同じ魔物は<b>2体まで</b>。レベルの上限は<b>Lv100</b>。</li>
+          <li>⬆ バトル中のレベルアップは<b>無料</b>。</li>
+          <li>🔒 1体の魔物は、編成の<b>1か所だけ</b>に入れられます。</li></ul>`,`<ul style="margin:0;padding-left:18px">
+          <li>🏆 A Rank Match <b>ranking</b> (by win rate) has been added.</li>
+          <li>⏱ Rank Match records and the ranking <b>reset with the Gacha & Raising ranked match</b>.</li>
+          <li>💰 Win a Rank Match for <b>5,000 coins</b>.</li>
+          <li>📉 Lose a Rank Match and formation monsters <b>lose 3 levels</b> (not below Lv1).</li>
+          <li>🥚 Duplicate gacha monsters <b>auto-merge into your highest-level one</b> (+1 level).</li>
+          <li>👾 Up to <b>2 of the same monster</b>. Max level is <b>Lv100</b>.</li>
+          <li>⬆ Leveling up in battle is <b>free</b>.</li>
+          <li>🔒 Each monster can be in <b>only one</b> formation spot.</li></ul>`)}</div>
+        <button class="btn gold" type="button">OK</button></div>`;
+      document.body.appendChild(bg); sfx("coin"); bg.querySelector(".btn").onclick=()=>bg.remove(); };
+    show(); }catch(e){} finally{ noteBusy=false; } }
+setInterval(()=>{ try{ rankNote(); }catch(e){} },6000);
 window.__mb={ openForm, openBox, openGacha, openShop, startQuest, resolve, mkSide, MB_MONS, MB_WEAPONS, MB_ITEMS, MB_GACHA, playTurn };
 })();
