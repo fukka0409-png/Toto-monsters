@@ -26,7 +26,7 @@ const TS_RANK = {
 const TS_MON = {
   10:{ w:1, h:1, spd:1.0, anim:"ts10", melee:true, atkMap:[0,1,2,3,3,2,1,0,9,9] },
   93:{ w:1, h:1, spd:1.0, anim:"ts93", drawH:1.6, zone:{x:2,up:1} },   // うさぎメイド：移動ふつう・けりの攻撃。前2マス×（同じ高さ＋1つ上）の4マスにいる相手のうち、いちばん近い1体に当たる
-  88:{ w:1, h:1, spd:0.5, anim:"ts88", shot:true, line:true, range:2.1, atkMul:0.85 },   // 始まりキノコ：とても遅い・攻撃力やや低め。魔法の玉を飛ばす。同じ高さの前3マスまでとどき、いちばん近い1体に当たる（実線＋先に丸の図）
+  88:{ w:1, h:1, spd:0.5, anim:"ts88", shot:true, rays:[[0.15,1.5],[1.5,1.5],[2.5,1.5],[2.5,0.5]], atkMul:0.85 },   // 始まりキノコ：とても遅い・攻撃力やや低め。前のマスのすみから4本の線（前1・2・3マスの1つ上、前3マスの同じ高さ）の方向に魔法の玉を1発ずつ同時に撃つ。どの線も先の丸まで届き、線の上のいちばん近い1体に当たる
   63:{ w:1, h:1, spd:0.8, anim:"ts63", fly:true, diag:true, flyLoop:[1,2,3,4,5,6,7,8] },   // 羽スライム：やや遅め・1×1。空中にも置ける。置いた高さのまま飛び、前の1マスと斜め前下の1マスにいる相手を攻撃   // ドットスライム：近距離攻撃・移動速度ふつう・1×1マス・歩きと攻撃のアニメ（右向きの絵）
 };
 // 歩き・攻撃のコマ（[中心x, 足もとy]・大きさ）。攻撃の8・9コマ目はエフェクトだけの絵なので、体（攻撃1コマ目）の前に重ねる
@@ -256,7 +256,7 @@ function cpuLayout(mine){ const n=Math.max(3,Math.min(TS.MAX_UNITS,mine.units.le
 function mkUnit(u, side, X0, cols, lv){ const k=cfgOf(u.id), s=statsOf(u.id, lv), w=k.w*TS.CS, h=k.h*TS.CS;
   const c = side ? (cols-u.c-k.w) : u.c;   // 相手は左右反対（前が自分のほうを向く）
   if(k.mine) return { id:u.id, mine:true, side, x:X0+c*TS.CS+w/2, y:-u.r*TS.CS, w, h, done:false };
-  return { id:u.id, wall:!!k.wall, side, diag:!!k.diag, shot:!!k.shot, line:!!k.line, zone:k.zone||null, drawH:k.drawH||0, x:X0+c*TS.CS+w/2, y:-Math.max(0,u.r)*TS.CS,   /* 土の中に置いた魔物は、バトルが始まると地面に出てくる */ w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
+  return { id:u.id, wall:!!k.wall, side, diag:!!k.diag, shot:!!k.shot, line:!!k.line, zone:k.zone||null, rays:k.rays||null, drawH:k.drawH||0, x:X0+c*TS.CS+w/2, y:-Math.max(0,u.r)*TS.CS,   /* 土の中に置いた魔物は、バトルが始まると地面に出てくる */ w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
 function startBattle(mine, opp){
   const X1=0, X2=mine.cols*TS.CS+TS.GAP*TS.CS;
   const all=[...mine.units.filter(u=>okId(u.id)).map(u=>mkUnit(u,0,X1,mine.cols,myLv())), ...opp.units.filter(u=>okId(u.id)).map(u=>mkUnit(u,1,X2,opp.cols,opp.plv||myLv()))];
@@ -304,12 +304,35 @@ function stepZone(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false;
   let nx=u.x+u.face*u.spd*dt;
   if(!u.fly) for(const wl of walls(1-u.side)){ const edge=wl.x-u.face*(wl.w+u.w)/2; if(u.face>0 ? (u.x<=edge+1 && nx>edge) : (u.x>=edge-1 && nx<edge)) nx=edge; }
   u.moving=nx!==u.x; u.x=nx; u.hop+=dt*8; }
+// 線の方向に魔法の玉を撃つ魔物（rays：[前に何マス, 上に何段] の先の丸）。前のマスの下のすみから線をのばし、線の上でいちばん近い1体をねらう。1回の攻撃で線の数だけ同時に撃つ（同じ相手には1発だけ）
+function rayTargets(u,foes){ const f0=u.face, xf=u.x+f0*u.w/2, out=[];
+  // マスの数え方：前のマスの下のすみが(0,0)。線の先（rays の値）までたどって、通ったマス（すみをかすっただけのマスはのぞく）に相手がいたら、いちばん近い1体に当たる
+  const inCell=(f,cx,cy)=>{ const x0=xf+f0*cx*TS.CS, x1=x0+f0*TS.CS, l=Math.min(x0,x1), r=Math.max(x0,x1), b=u.y-cy*TS.CS, t=b-TS.CS;
+    const ox=Math.min(r,f.x+f.w/2)-Math.max(l,f.x-f.w/2), oy=Math.min(b,f.y)-Math.max(t,f.y-f.h); return ox>TS.CS*0.4 && oy>TS.CS*0.4; };
+  for(const [tx,ty] of u.rays){ const seen=new Set();
+    for(let i=1;i<=60;i++){ const x=tx*i/60, y=ty*i/60, fx=x-Math.floor(x), fy=y-Math.floor(y);
+      if(fx<0.12||fx>0.88&&x<tx-0.1||fy<0.12&&y>0.12||fy>0.88&&y<ty-0.1) continue;   // マスのさかいめはかすっただけ
+      const cx=Math.floor(x), cy=Math.floor(y), key=cx+","+cy; if(seen.has(key)) continue; seen.add(key);
+      const hs=foes.filter(f=>inCell(f,cx,cy)); if(hs.length){ let h=hs[0]; for(const f of hs) if(Math.abs(f.x-u.x)<Math.abs(h.x-u.x)) h=f; if(!out.includes(h)) out.push(h); break; } } }
+  return out; }
+function stepRays(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false;
+  if(!u.fly){ if(u.y<0){ u.vy+=1800*dt; u.y=Math.min(0,u.y+u.vy*dt); if(u.y>=0) u.vy=0; } }
+  if(!alive(1-u.side).length) return;
+  const maxUp=Math.max(...u.rays.map(r=>r[1])), top=u.y-(maxUp+1)*TS.CS+4;
+  const foes=[...alive(1-u.side),...walls(1-u.side)].filter(f=>f.y>top && f.y-f.h<u.y-4);
+  if(!foes.length){ advance(u,B,dt,walls); return; }
+  let tg=null, bd=Infinity; for(const f of foes){ const d=Math.abs(f.x-u.x); if(d<bd){ bd=d; tg=f; } }
+  if(Math.abs(tg.x-u.x)>u.w*0.6) u.face=tg.x>=u.x?1:-1;
+  const hits=rayTargets(u,foes);
+  if(hits.length){ if(u.t<=0){ u.t=u.cd; u.atkT=0; for(const h of hits) B.shots.push({x:u.x+u.face*u.w*0.45, y:u.y-u.h*0.42, tg:h, dmg:u.atk, side:u.side, face:u.face, d:0.3}); } return; }
+  advance(u,B,dt,walls); }
 function stepBattle(dt){ const B=V.B; if(!B||B.over) return;
   const alive=s=>B.units.filter(u=>u.side===s&&!u.dead&&!u.wall);   // 勝ち負けに数えるのは魔物だけ
   const walls=s=>B.units.filter(u=>u.side===s&&!u.dead&&u.wall);
   for(const u of B.units){ if(u.dead){ u.deadT+=dt; continue; } u.flash=Math.max(0,u.flash-dt); if(u.wall) continue; u.t-=dt;
     if(u.diag){ stepDiag(u,B,dt,alive,walls); continue; }
     if(u.zone){ stepZone(u,B,dt,alive,walls); continue; }
+    if(u.rays){ stepRays(u,B,dt,alive,walls); continue; }
     if(!u.fly){ if(u.y<0){ u.vy+=1800*dt; u.y=Math.min(0,u.y+u.vy*dt); if(u.y>=0) u.vy=0; } }   // 地上の魔物は地面に落ちる
     // 地上の魔物がとどくのは、地面のすぐ上（1段目）を飛んでいる魔物まで
     let foes=u.fly?alive(1-u.side):[...alive(1-u.side).filter(f=>!f.fly||f.y>=-TS.CS-2),...walls(1-u.side)]; if(!alive(1-u.side).length) continue;
@@ -341,7 +364,7 @@ function stepBattle(dt){ const B=V.B; if(!B||B.over) return;
   for(const sh of B.shots){ if(sh.d>0){ sh.d-=dt; continue; } const tg=sh.tg; if(tg.dead){ sh.gone=true; continue; }
     const tx=tg.x, ty=tg.y-tg.h*0.45, dx=tx-sh.x, dy=ty-sh.y, d=Math.hypot(dx,dy), v=TS.CS*9*dt;
     if(d<=v+tg.w*0.3){ sh.gone=true; tg.hp=Math.max(0,tg.hp-sh.dmg); tg.flash=0.15; B.pops.push({x:tg.x,y:tg.y-tg.h,v:sh.dmg,t:0,side:tg.side}); if(tg.hp<=0) tg.dead=true; continue; }
-    sh.x+=dx/d*v; sh.y+=dy/d*v; }
+    sh.x+=dx/d*v; sh.y+=dy/d*v; sh.ang=Math.atan2(dy,dx); }
   B.shots=B.shots.filter(sh=>!sh.gone);
   B.booms.forEach(b=>b.t+=dt); B.booms=B.booms.filter(b=>b.t<0.9);
   B.pops.forEach(p=>p.t+=dt); B.pops=B.pops.filter(p=>p.t<0.9);
@@ -421,7 +444,7 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
     const p=w2s(u.x-u.w*0.4,u.y-Math.max(u.h,u.drawH*TS.CS*0.97)-10), bw=u.w*0.8*z, bh=Math.max(3,7*z); g.fillStyle="#111"; g.fillRect(p.x-1,p.y-1,bw+2,bh+2); g.fillStyle="#3a1f2a"; g.fillRect(p.x,p.y,bw,bh);
     const r=u.hp/u.max; g.fillStyle=u.side?(r<.3?"#ff7a5a":"#ff9a3d"):(r<.3?"#ff5a5a":"#5ec44a"); g.fillRect(p.x,p.y,bw*r,bh); }
   const shI=animImg("ts88shot");
-  if(shI.complete&&shI.naturalWidth) for(const sh of B.shots){ if(sh.d>0) continue; const p=w2s(sh.x,sh.y), w=TS.CS*0.5*z, h=w*shI.naturalHeight/shI.naturalWidth; g.save(); g.translate(p.x,p.y); if(sh.face<0) g.scale(-1,1); g.drawImage(shI,-w/2,-h/2,w,h); g.restore(); }
+  if(shI.complete&&shI.naturalWidth) for(const sh of B.shots){ if(sh.d>0) continue; const p=w2s(sh.x,sh.y), w=TS.CS*0.5*z, h=w*shI.naturalHeight/shI.naturalWidth; g.save(); g.translate(p.x,p.y); if(sh.ang!=null) g.rotate(sh.ang); else if(sh.face<0) g.scale(-1,1); g.drawImage(shI,-w/2,-h/2,w,h); g.restore(); }
   g.textAlign="center"; g.font=`900 ${Math.round(Math.max(11,16*z))}px sans-serif`;
   for(const q of B.pops){ const p=w2s(q.x,q.y-q.t*40); g.globalAlpha=1-q.t/0.9; g.fillStyle="#000"; g.fillText((typeof q.v==="number"?"-"+fmt(q.v):q.v),p.x+1,p.y+1); g.fillStyle=q.side?"#ffd75e":"#ff6a5a"; g.fillText((typeof q.v==="number"?"-"+fmt(q.v):q.v),p.x,p.y); } g.globalAlpha=1;
 }
