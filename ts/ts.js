@@ -14,7 +14,7 @@ const esc3 = t => String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;","
 const fmt = n => Math.round(n).toLocaleString();
 const now = () => (typeof gnow==="function" ? gnow() : Date.now());
 
-const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:20, COST_MUL:5,
+const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:20, COST_MUL:5, MIN_READY:5,
   UNDER:-1, PREP_MS:3*60000,   // UNDER：赤いマスは土の中にも1マス（r=-1）
   BATTLE_MS:60000, CS:64, GAP:8 };
 // ランクごとのきまり：w×h＝置くときのマスの大きさ、spd＝1秒に進むマス、range＝攻撃がとどく距離（マス）、cd＝攻撃の間かく（秒）
@@ -175,10 +175,16 @@ window.__tsW2S=(x,y)=>{ if(!V) return null; const p=w2s(x,y), r=V.cv.getBounding
 
 function sideView(){ const s=V&&V.root.querySelector("#tsSide"); if(!s) return; const t=st();
   if(V.mode!=="prep"){ s.innerHTML=V.B?`<div class="ts-info">${T("相手","Opponent")}：${esc3(V.B.enemyName)}</div>`:""; return; }
-  const rdTxt=V.embed?`<div class="ts-info">${!S.tsRd?T("⚠️ まだ準備完了していません","⚠️ Not ready yet"):S.tsSig===sigOf(t)?T("✅ 準備完了ずみ","✅ Ready"):T("✏️ 変えた配置は、もう一度「準備完了」で反映","✏️ Press Ready again to save changes")}</div>`:"";
+  const rdTxt=V.embed?`<div class="ts-info">${!S.tsRd?T(`⚠️ まだ準備完了していません（魔物${TS.MIN_READY}体以上）`,`⚠️ Not ready (${TS.MIN_READY}+ monsters)`):S.tsSig===sigOf(t)?T("✅ 準備完了ずみ","✅ Ready"):T("✏️ 変えた配置は、もう一度「準備完了」で反映","✏️ Press Ready again to save changes")}</div>`:"";
   s.innerHTML=`${rdTxt}<div class="ts-info">${T("配置","Placed")} ${t.units.length}/${TS.MAX_UNITS}　${T("マス","Grid")} ${t.cols}×${t.rows}</div>
     <div style="display:flex;gap:6px"><button type="button" class="ts-b" id="tsEx" ${t.cols>=TS.COLS_MAX?"disabled":""}>${T("横+1","Width +1")}</button><button type="button" class="ts-b" id="tsEy" ${t.rows>=TS.ROWS_MAX?"disabled":""}>${T("縦+1","Height +1")}</button></div>`;
   s.querySelector("#tsEx").onclick=()=>expand("c"); s.querySelector("#tsEy").onclick=()=>expand("r"); }
+// 魔物合戦で負けたとき：配置をすべて取り消して、置くのに使ったコインの3分の1を返す（index.html の checkTsBattles からよばれる）
+window.tsLoseLayout=()=>{ const t=st(); let paid=0; t.units.forEach(u=>{ try{ paid+=costOf(u.id); }catch(e){} }); const back=Math.floor(paid/3), n=t.units.length;
+  t.units=[]; S.tsRd=0; S.tsSig=""; S.coins=(S.coins||0)+back; try{ save(); }catch(e){}
+  if(V&&V.embed){ V.sel=null; V.placing=null; try{ selView(); sideView(); coinView(); }catch(e){} }
+  else if(EV){ EV.sel=null; EV.placing=null; }
+  return {back, n}; };
 const sigOf=t=>JSON.stringify([t.cols,t.rows,t.units.map(u=>[u.id,u.c,u.r])]);
 function expand(k){ const t=st(), max=k==="c"?TS.COLS_MAX:TS.ROWS_MAX, cur=k==="c"?t.cols:t.rows; if(cur>=max) return;
   dlg(`<h3>➕ ${k==="c"?T("マスを横に1列ふやす","Add 1 column"):T("マスを縦に1列ふやす","Add 1 row")}</h3><p>${k==="c"?`${T("横","Width")} ${cur} → <b>${cur+1}</b>`:`${T("縦","Height")} ${cur} → <b>${cur+1}</b>`}（${T("最大","max")} ${max}）<br>💰 <b>${fmt(TS.EXPAND_COST)}</b> ${T("コイン","coins")}（${T("所持","you have")} ${fmt(S.coins||0)}）</p>`,
@@ -267,8 +273,9 @@ async function readyGo(auto){ if(!V||V.mode!=="prep"||busy) return; const t=st()
   const mine={cols:t.cols, rows:t.rows, units:t.units.map(u=>({id:u.id,c:u.c,r:u.r}))};
   if(V.embed){   // ホーム：時間制限なし。準備完了で、ランキングの魔物合戦の相手になれる
     if(!(typeof DB!=="undefined" && DB && MYID)){ sfx("ng"); return msg(T("ログインすると準備完了できます","Log in to get ready")); }
+    const nMon=t.units.filter(u=>!isItem(u.id)).length; if(nMon<TS.MIN_READY){ sfx("ng"); return msg(T(`魔物合戦に出るには、魔物を${TS.MIN_READY}体以上置いてください（今 ${nMon}体）`,`Place at least ${TS.MIN_READY} monsters to join (now ${nMon})`)); }
     busy=true; V.placing=null; V.sel=null; selView(); let nm=""; try{ nm=myName(); }catch(e){}
-    try{ await DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), rd:1, at:now()}); S.tsRd=1; S.tsSig=sigOf(t); save(); try{ queueProfile(true); }catch(e){}
+    try{ await DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), rd:1, at:now()}); S.tsRd=1; S.tsRdAt=(typeof gnow==="function"?gnow():Date.now()); S.tsSig=sigOf(t); save(); try{ queueProfile(true); }catch(e){}
       sfx("level"); dlg(`<div style="font-size:48px">⚔️</div><h3>${T("準備完了！","Ready!")}</h3><p>${T("ランキングで冒険者のプロフィールを開くと「魔物合戦」で戦えます。<br>勝つと冒険者Lv+1・1000コイン！<br>ほかの冒険者からも、この配置に合戦をしかけられます。","Open an adventurer's profile in the ranking to start a Monster Battle. Win for Adventurer Lv+1 and 1000 coins!")}</p>`,[["OK",null]]); }
     catch(e){ sfx("ng"); msg(T("保存できませんでした。もう一度ためしてね","Couldn't save. Try again.")); }
     busy=false; sideView(); return; }

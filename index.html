@@ -5804,15 +5804,14 @@ async function searchOutside(){
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } }; });
 }
 const todayN=()=>seasonNow();   // バトル・ボットの「1日1回」もランク戦タイマーで区切る
-// 魔物合戦：ホームで準備完了した冒険者どうしが、トトの戦略の配置で戦う（1人に1日1回）
+// 魔物合戦：ホームで準備完了した冒険者どうしが、トトの戦略の配置で戦う（回数の制限なし。勝つと相手の配置は取り消される）
 function tsFightBox(r){
   if(!DB||!tsHome()||r.id===MYID) return "";
   let body;
   if(!r.tr) body=`<div class="note" style="margin:0">この冒険者は、まだ魔物合戦の準備ができていません</div>`;
   else if(!S.tsRd) body=`<div class="note" style="margin:0;color:var(--berry)">戦うには、ホームで魔物を置いて「準備完了」を押してください</div>`;
-  else if((S.tsFought||{})[r.id]===todayN()) body=`<button class="btn" type="button" disabled>この冒険者とは今日はもう魔物合戦をしました</button>`;
   else body=`<button class="btn gold" type="button" data-tsfight="${esc(r.id)}">⚔️ 魔物合戦</button>`;
-  return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">勝つと冒険者Lv+1・1000コイン</div>${body}</div></div>`;
+  return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">勝つと冒険者Lv+1・1000コイン。負けた相手の配置は取り消される</div>${body}</div></div>`;
 }
 document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsfight]"); if(!b) return; const r=findRank(b.dataset.tsfight)||{id:b.dataset.tsfight};
   b.disabled=true; b.textContent="相手の配置を読みこみ中…";
@@ -5821,20 +5820,25 @@ document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsf
     document.querySelectorAll(".sheet-bg").forEach(z=>z.remove());
     window.openTS&&window.openTS({fight:x}); }catch(err){ b.disabled=false; b.textContent="⚔️ 魔物合戦"; toast("読みこめませんでした。もう一度ためしてね"); } });
 // 魔物合戦の結果（ts/ts.js からよばれる）。勝ったら冒険者Lv+1・1000コイン。相手が勝ったら記録をのこして、相手が次に来たときにごほうび
-window.tsFightDone=(opp,res)=>{ S.tsFought=S.tsFought||{}; S.tsFought[opp.uid]=todayN();
-  if(res==="win"){ S.plv=(S.plv||1)+1; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+1000); }
+window.tsFightDone=(opp,res)=>{
+  if(res==="win"){ S.plv=(S.plv||1)+1; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+1000);
+    try{ if(DB&&opp.uid) DB.collection("tsp").doc(opp.uid).update({rd:0, lb:myName().slice(0,12), lt:gnow()}).catch(()=>{}); }catch(e){} }   // 負けた相手は、すぐに準備完了が外れる
   save(); try{ queueProfile(true); }catch(e){} try{ renderCoins(); }catch(e){}
   try{ if(DB&&MYID&&opp.uid) DB.collection("tsb").add({att:MYID, an:myName().slice(0,12), def:opp.uid, at:gnow(), result:res==="win"?"att":res==="lose"?"def":"draw"}).catch(()=>{}); }catch(e){} };
-// 留守中の魔物合戦：勝っていたら通知＋冒険者Lv+1・1000コイン。負けていても何も起こらない
+// 留守中の魔物合戦：勝っていたら通知＋冒険者Lv+1・1000コイン。
+// 負けていたら、配置はすべて取り消し（置くのに使ったコインの3分の1が返ってくる）＋お知らせ
 async function checkTsBattles(){ if(!DB||!MYID) return;
   try{ const q=await DB.collection("tsb").where("def","==",MYID).get(); const L=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastTsb||0)).sort((a,b)=>a.at-b.at); if(!L.length) return;
     S.lastTsb=Math.max(...L.map(b=>b.at)); const W=L.filter(b=>b.result==="def");
-    if(!W.length){ save(); return; }
-    S.plv=(S.plv||1)+W.length; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+1000*W.length); save(); render();
+    const lost=L.find(b=>b.result==="att" && b.at>=(S.tsRdAt||0) && S.tsRd);   // 準備完了したあとの配置で負けた
+    let back=0, n=0; if(lost&&window.tsLoseLayout){ const x=window.tsLoseLayout(); back=x.back; n=x.n; }
+    if(W.length){ S.plv=(S.plv||1)+W.length; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+1000*W.length); }
+    save(); if(!W.length&&!lost) return; render();
     const bg=document.createElement("div"); bg.className="sheet-bg center";
-    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚔️</div><p>留守中の魔物合戦で勝ちました！</p>
-      <div class="note" style="margin:0;text-align:left">${W.map(b=>`・${esc(b.an||"冒険者")}に勝った！`).join("<br>")}</div>
-      <div class="note" style="margin:0;color:var(--moss)">冒険者Lv +${W.length}・コイン +${(1000*W.length).toLocaleString()}</div>
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚔️</div><p>留守中に魔物合戦がありました</p>
+      <div class="note" style="margin:0;text-align:left">${W.map(b=>`・${esc(b.an||"冒険者")}に勝った！`).join("<br>")}${W.length&&lost?"<br>":""}${lost?`・${esc(lost.an||"冒険者")}に負けて、ホームの配置（${n}つ）がすべて取り消されました`:""}</div>
+      ${W.length?`<div class="note" style="margin:0;color:var(--moss)">冒険者Lv +${W.length}・コイン +${(1000*W.length).toLocaleString()}</div>`:""}
+      ${lost?`<div class="note" style="margin:0;color:var(--berry)">置くのに使ったコインの3分の1（+${back.toLocaleString()}コイン）が返ってきました。ホームでもう一度魔物を置いて「準備完了」を押そう</div>`:""}
       <button class="btn gold" type="button">OK</button></div>`;
     document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); }catch(e){} }
 function fightButton(r){
@@ -9399,5 +9403,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=37" defer></script>
+<script src="ts/ts.js?v=38" defer></script>
 </body></html>
