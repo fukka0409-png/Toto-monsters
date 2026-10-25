@@ -6924,8 +6924,8 @@ function itemBox(r){
     + ownArts().map(x=>`<button type="button" class="iu gift" data-artgift="${x.k}" data-to="${esc(r.id)}"><img src="${x.img}" alt=""><b>${esc(x.name)}を贈る</b><small>×${(S.arts[x.k]||0).toLocaleString()}</small></button>`).join("");
   return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div>${giftBtn?`<div class="item-use" style="margin-bottom:6px">${giftBtn}</div>`:""}
     ${safe?`<div class="note" style="margin:0">🔰 Lv${SAFE_LV}になるまでは守られています（攻撃アイテムは使えません）</div>`:
-    `<div class="item-use">${["magnet","fire","bomb",...(inv("shbomb")?["shbomb"]:[])].map(k=>{ const i=itemOf(k), cost=USE_COST[k]||0, no=!(k==="bomb"&&inv("bomb")>=SHBOMB_NEED)&&(!inv(k)||(k==="fire"&&!r.gm)||(k==="bomb"&&S.plv<BOMB_MIN_LV)||S.coins<cost);
-      return `<button type="button" class="iu" data-item="${k}" data-to="${esc(r.id)}" ${no?"disabled":""}><img src="${i.img}" alt=""><b>${i.name}</b><small>×${inv(k)}${cost?`・${cost.toLocaleString()}コイン`:""}</small></button>`; }).join("")}</div>
+    `<div class="item-use">${["magnet","fire","bomb",...(inv("shbomb")?["shbomb"]:[])].map(k=>{ const i=itemOf(k), cost=USE_COST[k]||0, no=!(k==="bomb"&&inv("bomb")>=SHBOMB_NEED)&&(!inv(k)||(k==="fire"&&!r.gm)||(k==="bomb"&&S.plv<BOMB_MIN_LV)||S.coins<cost||useLeft(k)<=0), lf=useLeft(k);
+      return `<button type="button" class="iu" data-item="${k}" data-to="${esc(r.id)}" ${no?"disabled":""}><img src="${i.img}" alt=""><b>${i.name}</b><small>×${inv(k)}${cost?`・${cost.toLocaleString()}コイン`:""}${isFinite(lf)?`<br>今シーズンのこり${lf}回`:""}</small></button>`; }).join("")}</div>
     ${S.plv<BOMB_MIN_LV?`<div class="note" style="margin:4px 0 0">💣 爆弾は冒険者Lv${BOMB_MIN_LV}から使えます</div>`:""}
     ${!r.gm?`<div class="note" style="margin:4px 0 0">配置魔物がいないので、ファイヤーボールは使えません</div>`:""}
     ${ITEMS.every(i=>i.k==="stone"||!inv(i.k))?`<div class="note" style="margin:4px 0 0">アイテムはガチャの「アイテムガチャ」で手に入ります</div>`:""}`}</div>`;
@@ -6942,9 +6942,15 @@ async function sendArt(r,x,n){
   catch(e){ toast("贈れませんでした。少し時間をおいてためしてください"); return false; }
   S.arts[x.k]-=n; save(); closeSheet(); render(); SFX.coin(); toast(`${r.name||"名無しの召喚士"}さんに「${x.name}」を${n}枚贈りました！`); return true;
 }
+// 爆弾とマグネットは1シーズン（ランク戦）に30回まで使える（ファイヤーボールは制限なし）
+const SEASON_USE_MAX = { bomb:30, magnet:30 };
+const useCnt = () => { const s=seasonNow(); if(!S.useCnt||S.useCnt.s!==s) S.useCnt={s}; return S.useCnt; };
+const useLeft = k => SEASON_USE_MAX[k]==null ? Infinity : Math.max(0, SEASON_USE_MAX[k]-(useCnt()[k]||0));
+const useLimitTxt = k => `${itemOf(k).name}は1シーズンに${SEASON_USE_MAX[k]}回まで使えます（今シーズンはもう使えません）`;
 function confirmItem(r,k,direct){
   if(k==="bomb" && !direct) return bombChoice(r);
   if(noAct()) return toast(FREEZE_TXT);
+  if(useLeft(k)<=0) return toast(useLimitTxt(k));
   if(itemRest()) return toast(ITEM_REST_TXT);
   const i=itemOf(k), who=esc(r.name||"名無しの召喚士");
   if(SENDABLE.includes(k)) return qtyDialog({img:i.img, title:`${who}さんに${i.name}を贈る`, max:inv(k), ok:"贈る！",
@@ -6970,12 +6976,13 @@ async function useItem(r,k,qty=1){
   if(k==="fire"&&(!d.gm||!mon(d.gm))) { toast("相手は魔物を配置していません"); return false; }
   if(k==="bomb"&&S.plv<BOMB_MIN_LV) { toast(`爆弾は冒険者Lv${BOMB_MIN_LV}から使えます`); return false; }
   const cost=USE_COST[k]||0; if(S.coins<cost) { toast(`使うのに${cost.toLocaleString()}コイン必要です`); return false; }
+  if(useLeft(k)<=0) { toast(useLimitTxt(k)); return false; }
   const coins = k==="magnet" ? Math.floor(Math.max(0,d.cn||0)*MAGNET) : 0;
   try{
     await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
       item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:gnow()}));
   }catch(e){ { toast("アイテムを使えませんでした。少し時間をおいてためしてください"); return false; } }
-  addItem(k,-qty); S.coins-=cost; save(); closeSheet(); render();   // マグネットのコインは、相手が開いたときに（盾で防がれなければ）届く
+  addItem(k,-qty); S.coins-=cost; if(SEASON_USE_MAX[k]!=null){ const u=useCnt(); u[k]=(u[k]||0)+qty; } save(); closeSheet(); render();   // マグネットのコインは、相手が開いたときに（盾で防がれなければ）届く
   const i=itemOf(k), who=esc(d.name||"相手");
   const msg=k==="gift"?`${who}さんに <b style="color:var(--staff)">${(GIFT_COIN*qty).toLocaleString()}コイン</b> をプレゼントした！`:k==="ticket"?`${who}さんに <b style="color:var(--staff)">ガチャチケット${qty}枚</b> を贈った！`:k==="magnet"?`${who}さんにコインマグネットを使った！<br>うばったコイン（約${coins.toLocaleString()}コイン）は、相手が次にアプリを開いたときに届きます`
           :k==="fire"?`${who}さんの${esc(mon(d.gm).name)}にファイヤーボールを放った！<br>${cost?`（−${cost.toLocaleString()}コイン）`:""}`
@@ -6989,8 +6996,8 @@ async function useItem(r,k,qty=1){
 }
 // ランキングで「爆弾」をタップ → 「使う」か「10個合体させて対盾爆弾を作る」をえらぶ
 function bombChoice(r){
-  const i=itemOf("bomb"), canUse=inv("bomb")>0&&S.plv>=BOMB_MIN_LV&&S.coins>=USE_COST.bomb, canMake=inv("bomb")>=SHBOMB_NEED;
-  const why=!inv("bomb")?"爆弾を持っていません":S.plv<BOMB_MIN_LV?`爆弾は冒険者Lv${BOMB_MIN_LV}から使えます`:S.coins<USE_COST.bomb?`使うのに${USE_COST.bomb.toLocaleString()}コイン必要です`:"";
+  const i=itemOf("bomb"), canUse=inv("bomb")>0&&S.plv>=BOMB_MIN_LV&&S.coins>=USE_COST.bomb&&useLeft("bomb")>0, canMake=inv("bomb")>=SHBOMB_NEED;
+  const why=!inv("bomb")?"爆弾を持っていません":useLeft("bomb")<=0?useLimitTxt("bomb"):S.plv<BOMB_MIN_LV?`爆弾は冒険者Lv${BOMB_MIN_LV}から使えます`:S.coins<USE_COST.bomb?`使うのに${USE_COST.bomb.toLocaleString()}コイン必要です`:"";
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="bcT"><img src="${i.img}" alt="" style="width:88px;height:88px;margin:0 auto;image-rendering:pixelated"><p id="bcT">爆弾（${inv("bomb")}個）</p>
     <button class="btn gold" type="button" id="bcUse" ${canUse?"":"disabled"}>💣 使う</button>${why?`<div class="note" style="margin:-4px 0 0">${why}</div>`:""}
