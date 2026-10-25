@@ -124,10 +124,13 @@ function expand(k){ const t=st(), max=k==="c"?TS.COLS_MAX:TS.ROWS_MAX, cur=k==="
 /* ---------- 魔物をえらぶ ---------- */
 function pickMonster(){ const t=st();
   if(t.units.length>=TS.MAX_UNITS) return dlg(`<p>${T(`置けるのは合わせて${TS.MAX_UNITS}体までです`,`You can place up to ${TS.MAX_UNITS}`)}</p>`,[["OK",null]]);
-  const L=MONSTERS.filter(m=>(S.got||{})[m.id]).sort((a,b)=>RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank)||a.id-b.id);
-  if(!L.length) return dlg(`<p>${T("図鑑で解放した魔物がいません。ガチャで魔物と出会おう！","No monsters unlocked in your Monster Book yet.")}</p>`,[["OK",null]]);
-  const bg=dlg(`<h3>👾 ${T("魔物を追加","Add a monster")}</h3><p style="font-size:12px;margin:0 0 8px">${T("図鑑で解放した魔物を置けます。コインは置いたときに払います（取り除いてももどりません）","Unlocked monsters only. You pay when you place it (no refund on removal).")}</p>
-    <div class="ts-grid">${L.map(m=>{ const c=cfgOf(m.id), s=statsOf(m.id), cost=costOf(m.id); return `<button type="button" class="ts-card ${(S.coins||0)<cost?"no":""}" data-id="${m.id}"><img src="${m.img}" alt=""><b>${esc3(m.name)}</b><span><span class="rk rk-${m.rank}">${m.rank==="L"?T("限定","LTD"):m.rank}</span> ${c.w}×${c.h}${T("マス","")}${c.fly?" 🪽":""}</span><span>❤ ${fmt(s.hp)}　⚔ ${fmt(s.atk)}</span><span class="c">💰 ${fmt(cost)}</span></button>`; }).join("")}</div>`,[[T("とじる","Close"),null,"g"]]);
+  const own=MONSTERS.filter(m=>(S.got||{})[m.id]);
+  if(!own.length) return dlg(`<p>${T("図鑑で解放した魔物がいません。ガチャで魔物と出会おう！","No monsters unlocked in your Monster Book yet.")}</p>`,[["OK",null]]);
+  // 今追加できる魔物だけ（コインが足りる・今のマスに入る大きさ）
+  const L=own.filter(m=>{ const c=cfgOf(m.id); return costOf(m.id)<=(S.coins||0) && c.w<=t.cols && c.h<=t.rows; }).sort((a,b)=>RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank)||a.id-b.id);
+  if(!L.length) return dlg(`<h3>👾 ${T("魔物を追加","Add a monster")}</h3><p>${T(`今追加できる魔物がいません。<br>（いちばん安い魔物：💰 ${fmt(Math.min(...own.map(m=>costOf(m.id))))}・所持 ${fmt(S.coins||0)}コイン）`,`No monster you can add right now.`)}</p>`,[["OK",null]]);
+  const bg=dlg(`<h3>👾 ${T("魔物を追加","Add a monster")}</h3><p style="font-size:12px;margin:0 0 8px">${T(`今の所持コイン（${fmt(S.coins||0)}）で追加できる魔物だけ出ています。コインは置いたときに払います（取り除いてももどりません）`,`Only monsters you can afford now (${fmt(S.coins||0)} coins). You pay when you place it (no refund on removal).`)}</p>
+    <div class="ts-grid">${L.map(m=>{ const c=cfgOf(m.id), s=statsOf(m.id), cost=costOf(m.id); return `<button type="button" class="ts-card" data-id="${m.id}"><img src="${m.img}" alt=""><b>${esc3(m.name)}</b><span><span class="rk rk-${m.rank}">${m.rank==="L"?T("限定","LTD"):m.rank}</span> ${c.w}×${c.h}${T("マス","")}${c.fly?" 🪽":""}</span><span>❤ ${fmt(s.hp)}　⚔ ${fmt(s.atk)}</span><span class="c">💰 ${fmt(cost)}</span></button>`; }).join("")}</div>`,[[T("とじる","Close"),null,"g"]]);
   bg.querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{ const id=+b.dataset.id, cost=costOf(id);
     if((S.coins||0)<cost){ sfx("ng"); return msg(T("コインが足りません","Not enough coins")); }
     bg.remove(); V.placing={id}; V.sel=null; selView(); const c=cfgOf(id); msg(T(`置きたいマスをタップ（${c.w}×${c.h}マス・左下のマスをタップ）`,`Tap a cell to place it (${c.w}×${c.h}, bottom-left cell)`)); });
