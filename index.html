@@ -280,6 +280,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 /* ホーム */
 .home{position:relative;margin:-4px max(-16px,calc(-1*env(safe-area-inset-left,0px) - 16px)) 0;height:calc(100dvh - 140px);min-height:540px;overflow:hidden;border-radius:0 0 18px 18px}
 .hm-bg{position:absolute;inset:0 0 50% 0;background-size:100% 100%}
+.home.ts{background:linear-gradient(#5aa7e6,#7cc4f5)}
+.hm-ts{position:absolute;left:0;right:0;bottom:0;top:45%;z-index:1;overflow:hidden}
 .hm-ground{position:absolute;left:0;right:0;bottom:0;top:50%;background-size:100% 100%;box-shadow:inset 0 3px 0 #0004}
 .hm-top{position:absolute;left:12px;right:12px;top:12px;display:flex;gap:8px;align-items:flex-start;z-index:5}
 .hm-card{flex:1;min-width:0;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:7px;border-radius:14px;background:#fffffff0;border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;text-align:left;font:inherit;cursor:pointer}
@@ -3538,8 +3540,8 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
-    clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -4354,7 +4356,7 @@ function renderGacha(){
       <button class="pull ten" data-pull="item" data-n="10" type="button" ${S.coins<ITEM_COST*10?"disabled":""}>10連まわす<small>${(ITEM_COST*10).toLocaleString()}コイン</small></button>
       ${tkBtn("tk-item",`チケットで${TICKET_ITEMS}回まわす`)}</div>
   </section>
-  <section class="g-banner deco">
+  ${tsHome()?"":`<section class="g-banner deco">
     <div class="g-head"><canvas id="cvDeco" width="200" height="200" aria-hidden="true"></canvas>
       <div><div class="g-tag">HOME DECO</div><div class="g-title">装飾ガチャ</div><div class="g-sub">ホームの背景・床・装飾 全${DECO_POOL.length}種（持っているものが出たら🪙10コインか💎覚醒の石1個に）</div></div></div>
     <div class="pulls">
@@ -4363,7 +4365,7 @@ function renderGacha(){
       ${tkBtn("tk-deco","チケットで10連パック")}</div>
     <details class="rates"><summary>集めた数</summary>${["Z","S","A","B","C"].map(r=>`<div class="rate-row"><span><span class="rk rk-${r}">${r}</span> 背景${DECO_POOL.filter(x=>x.rank===r&&x.type==="bg").length}・床${DECO_POOL.filter(x=>x.rank===r&&x.type==="gd").length}${DECO_POOL.some(x=>x.rank===r&&x.type==="dc")?"・装飾"+DECO_POOL.filter(x=>x.rank===r&&x.type==="dc").length:""}</span></div>`).join("")}
       <p class="note">集めた数：${DECO_POOL.filter(x=>homeOwn()[x.type][x.k]).length}/${DECO_POOL.length}。そのランクのものがまだないときは、近いランクのものが出ます。</p></details>
-  </section>
+  </section>`}
 `;
   const PULL={mon:pullMonsters, frame:pullFrames, item:pullItems, deco:pullDeco};
   $("#itemDetail").onclick=openItemList;
@@ -4372,7 +4374,7 @@ function renderGacha(){
   const db=$("#dailyBig"); if(db) db.onclick=claimDaily;
   const c1=$("#cvMon").getContext("2d"); if(IMG[1]) c1.drawImage(IMG[1],6,6,188,188);
   // （アイコン枠ガチャは2026-10-18に終了）
-  const c3=$("#cvDeco").getContext("2d"), pv=new Image(); pv.onload=()=>{ c3.save(); c3.beginPath(); c3.roundRect?c3.roundRect(10,10,180,180,18):c3.rect(10,10,180,180); c3.clip(); c3.drawImage(pv,10,10,180,180); c3.restore(); }; const bgs=HOME_BG.filter(x=>!x.free); pv.src=homeThumb("bg",bgs[Math.floor(gnow()/4000)%bgs.length].k);
+  if($("#cvDeco")){ const c3=$("#cvDeco").getContext("2d"), pv=new Image(); pv.onload=()=>{ c3.save(); c3.beginPath(); c3.roundRect?c3.roundRect(10,10,180,180,18):c3.rect(10,10,180,180); c3.clip(); c3.drawImage(pv,10,10,180,180); c3.restore(); }; const bgs=HOME_BG.filter(x=>!x.free); pv.src=homeThumb("bg",bgs[Math.floor(gnow()/4000)%bgs.length].k); }
 }
 
 function sortedUnits(){
@@ -4805,6 +4807,8 @@ function renderDex(){
   document.querySelectorAll("[data-ds]").forEach(b=>b.onclick=()=>{ dexSort=b.dataset.ds; try{ localStorage.setItem("toto-dex-sort",dexSort); }catch(e){} render(); });
 }
 // 図鑑の魔物をタップ：過去に獲得した数・全冒険者の獲得数・今の売却価格。10万コインで自分の獲得数を1減らせる
+// 魔物合戦（ホームにトトの戦略の配置画面）：まだ公開前なので、ふっかーだけに見せる
+const tsHome = () => dexPeek();
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
   if(!h && !dexPeek()) return toast("まだ出会っていない魔物です");
@@ -5069,7 +5073,7 @@ function profilePayload(){
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
     comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
-    units:S.units.length, missions:(S.stats.missions||0),
+    units:S.units.length, missions:(S.stats.missions||0), tr:S.tsRd?1:0,
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
 }
@@ -5301,9 +5305,9 @@ function renderHome(){
   if(homeMode==="invest") return renderInvest();
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
   const h=homeCfg(), m=isArt(h.m)?artOf(h.m):mon(h.m);
-  $("#stage").innerHTML=`<div class="home">
-    <div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
-    <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>
+  $("#stage").innerHTML=`<div class="home${tsHome()?" ts":""}">
+    ${tsHome()?"":`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
+    <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>`}
     <div class="hm-top"><div class="hm-left">
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
         ${avatarImg(S.avatar,50)}
@@ -5320,16 +5324,17 @@ function renderHome(){
         <button class="hm-btn ${pbox().length?"new":""}" type="button" id="hmPbox">🎁 プレゼントBOX${pbox().length?`<span class="rules-new fr-badge">${pbox().length}</span>`:""}</button>
       </div>
     </div>
-    ${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
+    ${tsHome()?`<div class="hm-ts" id="hmTs"></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
     <div class="hm-stand ${isArt(h.m)?"art":""}"><img class="hm-mon" src="${m.img}" alt="${esc(m.name)}"></div>
     <div class="hm-name">${esc(m.name)}</div>
-    <button class="hm-change" type="button" id="hmChange">🎨「魔物／装飾」変更</button>
+    <button class="hm-change" type="button" id="hmChange">🎨「魔物／装飾」変更</button>`}
   </div>`;
   $("#hmName").textContent=myName();
   $("#hmProf").onclick=e=>{ if(e.target.closest("#hmShield")) return openShield(); if(e.target.closest("#hmRank")){ tab="rank"; profMode="rank"; loadRanking(); render(); return; } homeMode="me"; render(); $("#stage").scrollTop=0; };
   $("#hmTitle").onclick=()=>{ try{ SFX.tap(); }catch(e){} window.showTitle&&window.showTitle(); };
   $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
-  $("#hmChange").onclick=()=>openHomeEdit("m");
+  if($("#hmChange")) $("#hmChange").onclick=()=>openHomeEdit("m");
+  if($("#hmTs")){ const tp=$(".hm-top"); if(tp) $("#hmTs").style.top=(tp.offsetTop+tp.offsetHeight+8)+"px"; const go=()=>{ if(window.openTS) window.openTS({embed:$("#hmTs")}); else setTimeout(go,200); }; go(); }   // 魔物合戦の配置画面（ts/ts.js）
 
   $("#hmFriend").onclick=()=>openFriends();
   $("#hmPbox").onclick=()=>{ try{ SFX.tap(); }catch(e){} openPresentBox(); };
@@ -5799,6 +5804,39 @@ async function searchOutside(){
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } }; });
 }
 const todayN=()=>seasonNow();   // バトル・ボットの「1日1回」もランク戦タイマーで区切る
+// 魔物合戦：ホームで準備完了した冒険者どうしが、トトの戦略の配置で戦う（1人に1日1回）
+function tsFightBox(r){
+  if(!DB||!tsHome()||r.id===MYID) return "";
+  let body;
+  if(!r.tr) body=`<div class="note" style="margin:0">この冒険者は、まだ魔物合戦の準備ができていません</div>`;
+  else if(!S.tsRd) body=`<div class="note" style="margin:0;color:var(--berry)">戦うには、ホームで魔物を置いて「準備完了」を押してください</div>`;
+  else if((S.tsFought||{})[r.id]===todayN()) body=`<button class="btn" type="button" disabled>この冒険者とは今日はもう魔物合戦をしました</button>`;
+  else body=`<button class="btn gold" type="button" data-tsfight="${esc(r.id)}">⚔️ 魔物合戦</button>`;
+  return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">勝つと冒険者Lv+1・1000コイン</div>${body}</div></div>`;
+}
+document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsfight]"); if(!b) return; const r=findRank(b.dataset.tsfight)||{id:b.dataset.tsfight};
+  b.disabled=true; b.textContent="相手の配置を読みこみ中…";
+  try{ const d=await DB.collection("tsp").doc(r.id).get(); const x=d.exists?d.data():null;
+    if(!x||!x.rd||!Array.isArray(x.units)||!x.units.length){ b.textContent="相手の準備ができていません"; return; }
+    document.querySelectorAll(".sheet-bg").forEach(z=>z.remove());
+    window.openTS&&window.openTS({fight:x}); }catch(err){ b.disabled=false; b.textContent="⚔️ 魔物合戦"; toast("読みこめませんでした。もう一度ためしてね"); } });
+// 魔物合戦の結果（ts/ts.js からよばれる）。勝ったら冒険者Lv+1・1000コイン。相手が勝ったら記録をのこして、相手が次に来たときにごほうび
+window.tsFightDone=(opp,res)=>{ S.tsFought=S.tsFought||{}; S.tsFought[opp.uid]=todayN();
+  if(res==="win"){ S.plv=(S.plv||1)+1; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+1000); }
+  save(); try{ queueProfile(true); }catch(e){} try{ renderCoins(); }catch(e){}
+  try{ if(DB&&MYID&&opp.uid) DB.collection("tsb").add({att:MYID, an:myName().slice(0,12), def:opp.uid, at:gnow(), result:res==="win"?"att":res==="lose"?"def":"draw"}).catch(()=>{}); }catch(e){} };
+// 留守中の魔物合戦：勝っていたら通知＋冒険者Lv+1・1000コイン。負けていても何も起こらない
+async function checkTsBattles(){ if(!DB||!MYID) return;
+  try{ const q=await DB.collection("tsb").where("def","==",MYID).get(); const L=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastTsb||0)).sort((a,b)=>a.at-b.at); if(!L.length) return;
+    S.lastTsb=Math.max(...L.map(b=>b.at)); const W=L.filter(b=>b.result==="def");
+    if(!W.length){ save(); return; }
+    S.plv=(S.plv||1)+W.length; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+1000*W.length); save(); render();
+    const bg=document.createElement("div"); bg.className="sheet-bg center";
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚔️</div><p>留守中の魔物合戦で勝ちました！</p>
+      <div class="note" style="margin:0;text-align:left">${W.map(b=>`・${esc(b.an||"冒険者")}に勝った！`).join("<br>")}</div>
+      <div class="note" style="margin:0;color:var(--moss)">冒険者Lv +${W.length}・コイン +${(1000*W.length).toLocaleString()}</div>
+      <button class="btn gold" type="button">OK</button></div>`;
+    document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); }catch(e){} }
 function fightButton(r){
   if(!DB) return "";
   if(noAct()) return `<div class="note" style="margin:0">${FREEZE_TXT}</div>`;
@@ -7076,7 +7114,7 @@ function openOtherProfile(r,rank){
     ${r.id===MYID?"":`<div class="guard-box ${r.gm?"":"warn"}">${r.gm&&mon(r.gm)?`<img src="${cardURL(r.gm,0,128)}" alt="">`:""}
       <div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物</div>
       ${r.gm&&mon(r.gm)?`<b>${esc(mon(r.gm).name)}</b><div class="note" style="margin:0">レベルは ？？？</div>`:`<div class="note" style="margin:0">配置なし（戦えません）</div>`}
-      ${fightButton(r)}</div></div>${itemBox(r)}${friendBox(r)}`}
+      ${fightButton(r)}</div></div>${tsFightBox(r)}${itemBox(r)}${friendBox(r)}`}
     ${r.id===MYID?itemBox(r):""}
     ${(rank==null||rank<=50)&&r.comment?`<div class="rk-cmt" translate="no" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div><button type="button" class="rk-rep" id="profRep">💬 ${LANG==="en"?"See / write replies":"返信を見る・書く"}</button>`:""}
     ${radarHtml(r)}
@@ -9361,5 +9399,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=36" defer></script>
+<script src="ts/ts.js?v=37" defer></script>
 </body></html>

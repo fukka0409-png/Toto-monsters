@@ -85,6 +85,9 @@ function sfx(k){ try{ if(k==="tap") SFX.tap(); else if(k==="coin") SFX.coin(); e
 const css=document.createElement("style");
 css.textContent=`
 #tso{position:fixed;inset:0;z-index:150;background:#7cc4f5;touch-action:none;user-select:none;-webkit-user-select:none;font-family:var(--f-body,sans-serif);overflow:hidden}
+#tso.embed{position:absolute;inset:0;z-index:1;background:transparent}
+#tso.embed #tsX,#tso.embed #tsTm{visibility:hidden}
+#tso.embed .ts-top{padding-top:6px}
 #tso canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #tso .ts-top{position:absolute;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));pointer-events:none}
 #tso .ts-top>*{pointer-events:auto}
@@ -130,7 +133,15 @@ function msg(t){ const m=V&&V.root.querySelector(".ts-msg"); if(!m) return; m.te
 function coinView(){ const c=V&&V.root.querySelector(".ts-coin"); if(c) c.textContent=fmt(S.coins||0); try{ renderCoins(); }catch(e){} }
 const mmss = ms => { ms=Math.max(0,ms); const s=Math.ceil(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; };
 
-function openTS(){
+// opts.embed＝ホームの中に配置画面を出す（時間制限なし・準備完了で魔物合戦の相手になれる）
+// opts.fight＝ランキングの魔物合戦：相手の配置（tsp）と、自分の配置で戦う
+let EV=null;   // 魔物合戦のあいだ、ホームの配置画面をしまっておく
+function openTS(opts){ opts=opts||{};
+  if(opts.embed){ const host=opts.embed;
+    if(V&&V.embed){ host.appendChild(V.root); resize(); sideView(); coinView(); return; }   // ホームが描きなおされたら、同じ画面をつけかえる
+    if(EV){ host.appendChild(EV.root); return; }
+  }
+  if(opts.fight&&V&&V.embed){ cancelAnimationFrame(V.raf); EV=V; V=null; }
   if(V) closeTS();
   try{ if(typeof loadDexStats==="function") loadDexStats(); }catch(e){}
   const root=el(`<div id="tso" role="dialog" aria-label="トトの戦略" translate="no"><canvas></canvas>
@@ -142,10 +153,10 @@ function openTS(){
       <button type="button" class="ts-hit" id="tsAddI" style="left:34%;top:50%;width:31.4%;height:46%" aria-label="${T("アイテムを追加","Add item")}"></button>
       <button type="button" class="ts-hit" id="tsGo" style="left:75.6%;top:5%;width:22.8%;height:90%" aria-label="${T("準備完了","Ready")}"></button>
     </div></div></div>`);
-  document.body.appendChild(root);
-  V={root, cv:root.querySelector("canvas"), mode:"prep", cam:{x:0,y:0,z:1}, ptr:new Map(), placing:null, sel:null, drag:null, prepEnd:now()+TS.PREP_MS, raf:0, last:0};
+  if(opts.embed){ root.classList.add("embed"); opts.embed.appendChild(root); } else document.body.appendChild(root);
+  V={root, embed:!!opts.embed, fight:opts.fight||null, cv:root.querySelector("canvas"), mode:"prep", cam:{x:0,y:0,z:1}, ptr:new Map(), placing:null, sel:null, drag:null, prepEnd:now()+TS.PREP_MS, raf:0, last:0};
   V.ctx=V.cv.getContext("2d");
-  root.querySelector("#tsX").onclick=()=>{ if(V&&V.mode==="battle") return dlg(`<p>${T("バトル中です。やめると負けになります。","You're in a battle. Leaving counts as a loss.")}</p>`,[[T("つづける","Keep playing"),null,"g"],[T("やめる","Leave"),()=>closeTS()]]); closeTS(); };
+  root.querySelector("#tsX").onclick=()=>{ if(V&&V.mode==="battle"&&!(V.B&&V.B.over)) return dlg(`<p>${T("バトル中です。やめると負けになります。","You're in a battle. Leaving counts as a loss.")}</p>`,[[T("つづける","Keep playing"),null,"g"],[T("やめる","Leave"),()=>{ if(V&&V.fight&&!V.done){ V.done=1; try{ window.tsFightDone&&window.tsFightDone(V.fight,"lose"); }catch(e){} } closeTS(); }]]); closeTS(); };
   root.querySelector("#tsAddM").onclick=()=>{ sfx("tap"); pickMonster(); };
   root.querySelector("#tsAddI").onclick=()=>{ sfx("tap"); pickItem(); };
   root.querySelector("#tsGo").onclick=()=>{ sfx("tap"); readyGo(); };
@@ -153,18 +164,22 @@ function openTS(){
   resize(); fitPrep(); addEventListener("resize",resize);
   bindPointers();
   V.last=performance.now(); V.raf=requestAnimationFrame(loop);
-  setTimeout(()=>msg(T("「魔物を追加」で魔物をえらんで、赤いマスに置こう。二本指で拡大・縮小できます","Pick a monster with “Add monster” and place it on the red grid. Pinch to zoom.")),400);
+  if(opts.fight){ const t=st(); startBattle({cols:t.cols, rows:t.rows, units:t.units.map(u=>({id:u.id,c:u.c,r:u.r}))}, opts.fight); return; }
+  setTimeout(()=>msg(V&&V.embed?T("魔物を置いて「準備完了」を押すと、ランキングで魔物合戦ができます。二本指で拡大・縮小","Place monsters and press Ready to join Monster Battles in the ranking. Pinch to zoom."):T("「魔物を追加」で魔物をえらんで、赤いマスに置こう。二本指で拡大・縮小できます","Pick a monster with “Add monster” and place it on the red grid. Pinch to zoom.")),400);
 }
-function closeTS(){ if(!V) return; cancelAnimationFrame(V.raf); removeEventListener("resize",resize); V.root.remove(); document.querySelectorAll(".ts-dlg").forEach(x=>x.remove()); V=null; }
+function closeTS(){ if(!V) return; cancelAnimationFrame(V.raf); removeEventListener("resize",resize); V.root.remove(); document.querySelectorAll(".ts-dlg").forEach(x=>x.remove()); V=null;
+  if(EV){ V=EV; EV=null; addEventListener("resize",resize); resize(); sideView(); coinView(); V.last=performance.now(); V.raf=requestAnimationFrame(loop); } }
 window.openTS=openTS;
 window.__tsB=()=>V&&V.B;   // テスト用
 window.__tsW2S=(x,y)=>{ if(!V) return null; const p=w2s(x,y), r=V.cv.getBoundingClientRect(); return {x:r.left+p.x/V.dpr, y:r.top+p.y/V.dpr}; };   // テスト用
 
 function sideView(){ const s=V&&V.root.querySelector("#tsSide"); if(!s) return; const t=st();
   if(V.mode!=="prep"){ s.innerHTML=V.B?`<div class="ts-info">${T("相手","Opponent")}：${esc3(V.B.enemyName)}</div>`:""; return; }
-  s.innerHTML=`<div class="ts-info">${T("配置","Placed")} ${t.units.length}/${TS.MAX_UNITS}　${T("マス","Grid")} ${t.cols}×${t.rows}</div>
+  const rdTxt=V.embed?`<div class="ts-info">${!S.tsRd?T("⚠️ まだ準備完了していません","⚠️ Not ready yet"):S.tsSig===sigOf(t)?T("✅ 準備完了ずみ","✅ Ready"):T("✏️ 変えた配置は、もう一度「準備完了」で反映","✏️ Press Ready again to save changes")}</div>`:"";
+  s.innerHTML=`${rdTxt}<div class="ts-info">${T("配置","Placed")} ${t.units.length}/${TS.MAX_UNITS}　${T("マス","Grid")} ${t.cols}×${t.rows}</div>
     <div style="display:flex;gap:6px"><button type="button" class="ts-b" id="tsEx" ${t.cols>=TS.COLS_MAX?"disabled":""}>${T("横+1","Width +1")}</button><button type="button" class="ts-b" id="tsEy" ${t.rows>=TS.ROWS_MAX?"disabled":""}>${T("縦+1","Height +1")}</button></div>`;
   s.querySelector("#tsEx").onclick=()=>expand("c"); s.querySelector("#tsEy").onclick=()=>expand("r"); }
+const sigOf=t=>JSON.stringify([t.cols,t.rows,t.units.map(u=>[u.id,u.c,u.r])]);
 function expand(k){ const t=st(), max=k==="c"?TS.COLS_MAX:TS.ROWS_MAX, cur=k==="c"?t.cols:t.rows; if(cur>=max) return;
   dlg(`<h3>➕ ${k==="c"?T("マスを横に1列ふやす","Add 1 column"):T("マスを縦に1列ふやす","Add 1 row")}</h3><p>${k==="c"?`${T("横","Width")} ${cur} → <b>${cur+1}</b>`:`${T("縦","Height")} ${cur} → <b>${cur+1}</b>`}（${T("最大","max")} ${max}）<br>💰 <b>${fmt(TS.EXPAND_COST)}</b> ${T("コイン","coins")}（${T("所持","you have")} ${fmt(S.coins||0)}）</p>`,
     [[T("やめる","Cancel"),null,"g"],[T("ふやす","Add"),()=>{ if((S.coins||0)<TS.EXPAND_COST){ sfx("ng"); return msg(T("コインが足りません","Not enough coins")); } S.coins-=TS.EXPAND_COST; if(k==="c") t.cols++; else t.rows++; save(); sfx("coin"); coinView(); sideView(); }]]); }
@@ -249,8 +264,15 @@ function bindPointers(){ const cv=V.cv;
 let busy=false;
 async function readyGo(auto){ if(!V||V.mode!=="prep"||busy) return; const t=st();
   if(!t.units.length){ if(auto){ msg(T("魔物を置かなかったので、準備時間をもう一度はじめます","Nothing placed — prep time restarted")); V.prepEnd=now()+TS.PREP_MS; return; } sfx("ng"); return msg(T("魔物を1体以上置いてね","Place at least one monster")); }
-  busy=true; V.placing=null; V.sel=null; selView(); msg(T("相手をさがしています…","Finding an opponent…"));
   const mine={cols:t.cols, rows:t.rows, units:t.units.map(u=>({id:u.id,c:u.c,r:u.r}))};
+  if(V.embed){   // ホーム：時間制限なし。準備完了で、ランキングの魔物合戦の相手になれる
+    if(!(typeof DB!=="undefined" && DB && MYID)){ sfx("ng"); return msg(T("ログインすると準備完了できます","Log in to get ready")); }
+    busy=true; V.placing=null; V.sel=null; selView(); let nm=""; try{ nm=myName(); }catch(e){}
+    try{ await DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), rd:1, at:now()}); S.tsRd=1; S.tsSig=sigOf(t); save(); try{ queueProfile(true); }catch(e){}
+      sfx("level"); dlg(`<div style="font-size:48px">⚔️</div><h3>${T("準備完了！","Ready!")}</h3><p>${T("ランキングで冒険者のプロフィールを開くと「魔物合戦」で戦えます。<br>勝つと冒険者Lv+1・1000コイン！<br>ほかの冒険者からも、この配置に合戦をしかけられます。","Open an adventurer's profile in the ranking to start a Monster Battle. Win for Adventurer Lv+1 and 1000 coins!")}</p>`,[["OK",null]]); }
+    catch(e){ sfx("ng"); msg(T("保存できませんでした。もう一度ためしてね","Couldn't save. Try again.")); }
+    busy=false; sideView(); return; }
+  busy=true; V.placing=null; V.sel=null; selView(); msg(T("相手をさがしています…","Finding an opponent…"));
   try{ if(typeof DB!=="undefined" && DB && MYID){ let nm=""; try{ nm=myName(); }catch(e){} DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), at:now()}).catch(()=>{}); } }catch(e){}
   let opp=null;
   try{ if(typeof DB!=="undefined" && DB && MYID){ const q=await Promise.race([DB.collection("tsp").orderBy("at","desc").limit(40).get(), new Promise((_,ng)=>setTimeout(()=>ng(new Error("to")),6000))]);
@@ -407,13 +429,16 @@ function result(res, ga, gb, ko){ if(!V) return; sfx(res==="win"?"win":"ng");
   const B=V.B, n=s=>B.units.filter(u=>u.side===s&&!u.dead&&!u.wall).length;
   dlg(`<div style="font-size:54px">${res==="win"?"🏆":res==="draw"?"🤝":"💀"}</div><h3>${res==="win"?T("勝利！","Victory!"):res==="draw"?T("引き分け","Draw"):T("敗北…","Defeat...")}</h3>
     <p>${ko?T("どちらかの魔物が全滅しました。","One side was wiped out."):T("1分がたったので、のこった体力ゲージの合計で決まりました。","Time's up — decided by the total of remaining HP gauges.")}<br>
-    ${T("あなた","You")}：${T("のこり","left")} ${n(0)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${ga.toFixed(2)}</b><br>${T("相手","Opponent")}：${T("のこり","left")} ${n(1)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${gb.toFixed(2)}</b></p>`,
-    [[T("準備にもどる","Back to setup"),()=>backToPrep()]],{modal:true}); }
+    ${T("あなた","You")}：${T("のこり","left")} ${n(0)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${ga.toFixed(2)}</b><br>${T("相手","Opponent")}：${T("のこり","left")} ${n(1)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${gb.toFixed(2)}</b></p>${V.fight&&res==="win"?`<p style="font-weight:900;color:#c77d00">🎉 ${T("冒険者Lv+1・1000コイン！","Adventurer Lv+1 · 1000 coins!")}</p>`:""}`,
+    V.fight?[[T("とじる","Close"),()=>closeTS()]]:[[T("準備にもどる","Back to setup"),()=>backToPrep()]],{modal:true});
+  if(V.fight&&!V.done){ V.done=1; try{ window.tsFightDone&&window.tsFightDone(V.fight,res); }catch(e){} } }
 function backToPrep(){ if(!V) return; V.mode="prep"; V.B=null; V.prepEnd=now()+TS.PREP_MS; V.root.querySelector("#tsPanel").hidden=false; resize(); sideView(); coinView(); fitPrep(); }
 
 /* ---------- 描く ---------- */
 function loop(ts){ if(!V) return; const dt=Math.min(0.05,(ts-V.last)/1000); V.last=ts;
-  if(V.mode==="prep"){ const left=V.prepEnd-now(); timerView(T("準備時間","Setup time"),left); if(left<=0) readyGo(true); }
+  if(V.embed && !V.root.isConnected){ V.raf=requestAnimationFrame(loop); return; }   // ホームから別の画面に行っているあいだは描かない
+  if(V.mode==="prep"&&V.embed){ /* 時間制限なし */ }
+  else if(V.mode==="prep"){ const left=V.prepEnd-now(); timerView(T("準備時間","Setup time"),left); if(left<=0) readyGo(true); }
   else if(V.mode==="battle"&&V.B){ stepBattle(dt); timerView(T("制限時間","Time limit"),V.B.end-now()); }
   draw(); V.raf=requestAnimationFrame(loop); }
 function timerView(l,ms){ const a=V.root.querySelector("#tsTmL"), b=V.root.querySelector("#tsTmV"), box=V.root.querySelector("#tsTm"); if(a.textContent!==l) a.textContent=l; const t=mmss(ms); if(b.textContent!==t) b.textContent=t; box.classList.toggle("low",ms<10000); }
