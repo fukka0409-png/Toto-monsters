@@ -50,12 +50,12 @@ css.textContent=`
 #tso .ts-timer.low b{color:#ff8a6a}
 #tso .ts-side{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
 #tso .ts-info{background:#0008;color:#fff;border-radius:8px;padding:4px 8px;font:700 11px/1.4 var(--f-body,sans-serif)}
-#tso .ts-panel{position:absolute;left:0;right:0;bottom:0;height:min(30vh,calc(100vw*345/1505));background:#b98a5f;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px)}
-#tso .ts-pin{position:relative;height:100%;aspect-ratio:1505/345;max-width:100%}
+#tso .ts-panel{position:absolute;left:0;right:0;bottom:0;height:min(34vh,calc((100vw - 12px)*270/1280));background:#b98a5f;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px)}
+#tso .ts-pin{position:relative;height:100%;aspect-ratio:1280/270;max-width:100%}
 #tso .ts-pin img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #tso .ts-hit{position:absolute;background:transparent;border:0;padding:0;cursor:pointer;border-radius:8px}
 #tso .ts-hit:active{background:#0002}
-#tso .ts-coin{position:absolute;left:9.6%;top:40%;width:22.2%;height:31%;display:flex;align-items:center;justify-content:center;color:#ffd75e;font:900 clamp(12px,3.4vh,22px)/1 var(--f-body,sans-serif);font-variant-numeric:tabular-nums;pointer-events:none}
+#tso .ts-coin{position:absolute;left:2%;top:33%;width:26.6%;height:42.6%;display:flex;align-items:center;justify-content:center;color:#ffd75e;font:900 clamp(13px,5.5vw,28px)/1 var(--f-body,sans-serif);font-variant-numeric:tabular-nums;pointer-events:none}
 #tso .ts-msg{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%);background:#000c;color:#fff;border-radius:10px;padding:8px 14px;font:900 13px/1.4 var(--f-body,sans-serif);pointer-events:none;opacity:0;transition:opacity .2s;text-align:center;max-width:86vw}
 #tso .ts-msg.on{opacity:1}
 #tso .ts-sel{position:absolute;display:flex;gap:6px;transform:translate(-50%,-100%);pointer-events:auto}
@@ -91,9 +91,9 @@ function openTS(){
     <div class="ts-msg"></div><div id="tsSel"></div>
     <div class="ts-panel" id="tsPanel"><div class="ts-pin"><img src="ts/panel.jpg" alt="">
       <div class="ts-coin"></div>
-      <button type="button" class="ts-hit" id="tsAddM" style="left:36.5%;top:16%;width:26.8%;height:30%" aria-label="${T("魔物を追加","Add monster")}"></button>
-      <button type="button" class="ts-hit" id="tsAddI" style="left:36.5%;top:52%;width:26.8%;height:34%" aria-label="${T("アイテムを追加","Add item")}"></button>
-      <button type="button" class="ts-hit" id="tsGo" style="left:71.9%;top:18%;width:19.5%;height:69%" aria-label="${T("準備完了","Ready")}"></button>
+      <button type="button" class="ts-hit" id="tsAddM" style="left:34%;top:4%;width:31.4%;height:42%" aria-label="${T("魔物を追加","Add monster")}"></button>
+      <button type="button" class="ts-hit" id="tsAddI" style="left:34%;top:50%;width:31.4%;height:46%" aria-label="${T("アイテムを追加","Add item")}"></button>
+      <button type="button" class="ts-hit" id="tsGo" style="left:75.6%;top:5%;width:22.8%;height:90%" aria-label="${T("準備完了","Ready")}"></button>
     </div></div></div>`);
   document.body.appendChild(root);
   V={root, cv:root.querySelector("canvas"), mode:"prep", cam:{x:0,y:0,z:1}, ptr:new Map(), placing:null, sel:null, drag:null, prepEnd:now()+TS.PREP_MS, raf:0, last:0};
