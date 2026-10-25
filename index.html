@@ -5097,7 +5097,9 @@ function queueProfile(now){
 let RANK_LOAD_AT=0;
 // 魔物合戦の準備ができている冒険者（tsp の rd が 1）。負けて準備完了が外れた人は入らない
 let TS_READY=null;
-async function loadTsReady(){ if(!DB) return; try{ const q=await DB.collection("tsp").where("rd","==",1).get(); TS_READY=new Set(q.docs.map(d=>d.id)); if(tab==="rank") render(); }catch(e){} }
+// 今のきまり（20個まで・魔物5種類まで・魔物5体以上）に合っている配置だけを、合戦の相手にする（きまりができる前に準備完了した配置は外す）
+const tsLayoutOk=x=>{ const U=(x&&Array.isArray(x.units))?x.units:[]; const M=U.filter(u=>typeof u.id==="number"); return U.length<=20 && M.length>=5 && new Set(M.map(u=>u.id)).size<=5; };
+async function loadTsReady(){ if(!DB) return; try{ const q=await DB.collection("tsp").where("rd","==",1).get(); TS_READY=new Set(q.docs.filter(d=>tsLayoutOk(d.data())).map(d=>d.id)); if(tab==="rank") render(); }catch(e){} }
 const tsReadyOf=r=>r.id===MYID?!!S.tsRd:(TS_READY?TS_READY.has(r.id):!!r.tr);
 async function loadRanking(force){
   if(!DB) return;
@@ -5848,7 +5850,7 @@ function tsFightBox(r){
 document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsfight]"); if(!b) return; const r=findRank(b.dataset.tsfight)||{id:b.dataset.tsfight};
   b.disabled=true; b.textContent="相手の配置を読みこみ中…";
   try{ const d=await DB.collection("tsp").doc(r.id).get(); const x=d.exists?d.data():null;
-    if(!x||!x.rd||!Array.isArray(x.units)||!x.units.length){ b.textContent="相手の準備ができていません"; return; }
+    if(!x||!x.rd||!Array.isArray(x.units)||!x.units.length||!tsLayoutOk(x)){ b.textContent="相手の準備ができていません"; return; }
     document.querySelectorAll(".sheet-bg").forEach(z=>z.remove());
     window.openTS&&window.openTS({fight:x}); }catch(err){ b.disabled=false; b.textContent="⚔️ 魔物合戦"; toast("読みこめませんでした。もう一度ためしてね"); } });
 // 魔物合戦のごほうび：負かした相手の配置の強さ（置いた魔物・アイテムの値段の合計）で6段階
@@ -6275,7 +6277,8 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
   { id:"fix-2026-10-25-tspanel", coins:1000 },
-  { id:"fix-2026-10-25-tsanim", coins:1000 },   // トトの戦略（試作）：No.4・63・88・93 の歩き・攻撃のアニメが消えていた   // トトの戦略（試作）：iPhoneで下の操作パネルが小さく表示されていた
+  { id:"fix-2026-10-25-tsanim", coins:1000 },
+  { id:"fix-2026-10-25-tskinds", coins:1000 },   // 魔物合戦：5種類のきまりができる前に準備完了した配置（6種類以上）と戦えてしまっていた   // トトの戦略（試作）：No.4・63・88・93 の歩き・攻撃のアニメが消えていた   // トトの戦略（試作）：iPhoneで下の操作パネルが小さく表示されていた
   { id:"fix-2026-10-25-dblloss", coins:1000 },   // 留守中に続けて攻撃されると、もうBOXにもどった魔物のレベルが何回も下がっていた（2002→2000→1000）
   { id:"fix-2026-10-24-mbstat", coins:1000 },   // 魔物バトル：レベルが上がると攻撃力と体力が1.5倍ずつ増えて、ものすごく大きな数になっていた
   { id:"fix-2026-10-24-itemrest", coins:1000 },   // ランク戦が始まって1時間はアイテムを使えないはずなのに、CPUの冒険者がアイテムを使ってきて「留守中にアイテムを使われました」が出ていた
@@ -9441,5 +9444,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=41" defer></script>
+<script src="ts/ts.js?v=42" defer></script>
 </body></html>

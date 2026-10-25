@@ -138,6 +138,8 @@ const mmss = ms => { ms=Math.max(0,ms); const s=Math.ceil(ms/1000); return `${Ma
 let EV=null;   // 魔物合戦のあいだ、ホームの配置画面をしまっておく
 function openTS(opts){ opts=opts||{};
   if(opts.embed){ const host=opts.embed;
+    // きまり（魔物5種類まで・20個まで）ができる前に準備完了していた配置は、準備完了を外す
+    try{ const t=st(); if(S.tsRd && (kindsOf(t).size>TS.MAX_KINDS || t.units.length>TS.MAX_UNITS)){ S.tsRd=0; S.tsSig=""; save(); if(typeof DB!=="undefined"&&DB&&MYID) DB.collection("tsp").doc(MYID).set({rd:0},{merge:true}).catch(()=>{}); setTimeout(()=>msg(T(`魔物は${TS.MAX_KINDS}種類までになりました。へらしてから、もう一度「準備完了」を押してね`,`Now up to ${TS.MAX_KINDS} kinds. Remove some and press Ready again.`)),600); } }catch(e){}
     if(V&&V.embed){ host.appendChild(V.root); resize(); sideView(); coinView(); return; }   // ホームが描きなおされたら、同じ画面をつけかえる
     if(EV){ host.appendChild(EV.root); return; }
   }
