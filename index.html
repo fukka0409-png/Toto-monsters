@@ -646,6 +646,7 @@ html .ttl .ttl-mini span small{font:900 20px/1 var(--f-body);color:#7a3d10;displ
 html .ttl .ttl-mini span small:empty{display:none}
 html[lang=en] .ttl .ttl-mini span{font-size:36px}
 .ttl-mini:active{transform:scale(.96)}
+.ttl-mini.ttl-ts{top:1045px}
 .mg-pick{display:flex;flex-direction:column;gap:10px;width:100%}
 .mg-pick button{display:flex;align-items:center;gap:12px;text-align:left;border:3px solid #3a2306;border-radius:16px;background:#fff3d6;padding:12px 14px;cursor:pointer;font-family:var(--f-body);color:#3a2306;box-shadow:0 4px 0 #0005}
 .mg-pick button:active{transform:translateY(2px);box-shadow:none}
@@ -1163,6 +1164,7 @@ html[lang=en] .kn-bt span{font-size:38px}
       <img src="title/c1.png" alt="" style="top:1180px;--w:280px;--d:115s;--o:-90s;opacity:.95">
       <img src="title/c2.png" alt="" style="top:960px;--w:200px;--d:100s;--o:-55s;opacity:.9">
     </div>
+    <button class="ttl-mini ttl-ts" id="ttlTs" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧠 トトの戦略<small>試作（ふっかーだけに表示）</small></span></button>
     <button class="ttl-mini" id="ttlMini" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
     <div class="ttl-nx" id="ttlNx" translate="no"></div>
@@ -9315,6 +9317,9 @@ async function titleRanks(){
     bg.querySelector("#mgMb").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.openMB) openMB(); };
     bg.querySelector("#mgMc").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.openMC) openMC(); };
     bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); }; }); };
+  // トトの戦略（試作）：まだ公開しないので、冒険者「ふっかー」にだけボタンを出す
+  { const tb=document.getElementById("ttlTs"); tb.onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.openTS) openTS(); };
+    const tv=()=>{ try{ tb.hidden=!dexPeek(); }catch(e){} }; tv(); setInterval(tv,2000); }
   document.getElementById("ttlKn").onclick=()=>{ try{ SFX.tap(); }catch(e){} openKuni(); };
   try{ knTitleBtn(); }catch(e){ try{ showErr("knTitleBtn: "+(e&&e.message),"title"); }catch(_){} }
   // 防衛作戦のボタンに、防衛中なら残り時間を出す
@@ -9353,4 +9358,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
+<script src="ts/ts.js?v=1" defer></script>
 </body></html>
