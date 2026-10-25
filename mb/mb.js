@@ -97,7 +97,7 @@ css.textContent=`
 #mbo .hit:active{background:#0002}
 #mbo .mb-back{position:absolute;z-index:3;border:4px solid #3a2306;background:#fff3d6;color:#3a2306;border-radius:999px;padding:10px 22px;font:900 28px/1 var(--f-body,sans-serif)}
 #mbo .mb-coin{position:absolute;left:700px;top:96px;width:192px;height:56px;display:flex;align-items:center;justify-content:flex-end;font:900 42px/1 var(--f-pix,monospace);color:#3a2306}
-#mbo .mb-lb{position:absolute;left:88px;width:768px;height:172px;display:flex;align-items:center;justify-content:center;gap:22px;color:#3a2306;pointer-events:none;white-space:nowrap;font:900 64px/1 var(--f-body,sans-serif);letter-spacing:.04em;text-shadow:0 2px 0 #fff8}
+#mbo .mb-lb{position:absolute;left:88px;width:768px;height:257px;display:flex;align-items:center;justify-content:center;gap:22px;color:#3a2306;pointer-events:none;white-space:nowrap;font:900 64px/1 var(--f-body,sans-serif);letter-spacing:.04em;text-shadow:0 2px 0 #fff8}
 #mbo .mb-lb i{font-style:normal;font-size:58px}
 #mbo .mb-pt{position:absolute;width:266px;text-align:center;color:#3a2306;pointer-events:none;white-space:nowrap;font-family:var(--f-body,sans-serif)}
 #mbo .mb-pt.h{font-weight:900;font-size:24px;line-height:1}
@@ -207,11 +207,11 @@ const tw=(ms,f)=>new Promise(res=>{ const t0=performance.now(); const step=t=>{ 
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
 /* ---------- 1：メニュー ---------- */
-function openMenu(){ const s=shell(941,1672,"mb/menu2.jpg");   // 2026-10-25：4つの大きいボタンの中のイラストをなくしてシンプルに（文字はHTML） st(); sfx("tap");
+function openMenu(){ const s=shell(941,1672,"mb/menu3.jpg");   // 2026-10-25：大きいボタンの中のイラストをなくしてシンプルに（文字はHTML）・魔物BOXのボタンはなくして3つに st(); sfx("tap");
   s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:24px;top:40px">← ${T("もどる","Back")}</button>
     <div class="mb-coin" id="mbCoin"></div>
-    ${[["⚔️",T("魔物編成","Formation")],["🧪",T("アイテム購入","Items")],["🥚",T("ガチャ","Gacha")],["📦",T("魔物BOX","Monster BOX")]].map(([ic,l],i)=>`<div class="mb-lb" style="top:${[274,528,784,1039][i]}px"><i>${ic}</i>${l}</div>`).join("")}
-    ${hit("mbForm",55,238,835,237,T("魔物編成","Formation"))}${hit("mbShop",55,492,835,235,T("アイテム購入","Items"))}${hit("mbGacha",55,748,835,237,T("ガチャ","Gacha"))}${hit("mbBox",55,1003,835,232,T("魔物BOX","Monster BOX"))}
+    ${[["⚔️",T("魔物編成","Formation")],["🧪",T("アイテム購入","Items")],["🥚",T("ガチャ","Gacha")]].map(([ic,l],i)=>`<div class="mb-lb" style="top:${274+341*i}px"><i>${ic}</i>${l}</div>`).join("")}
+    ${hit("mbForm",55,238,835,320,T("魔物編成","Formation"))}${hit("mbShop",55,579,835,320,T("アイテム購入","Items"))}${hit("mbGacha",55,920,835,320,T("ガチャ","Gacha"))}
     ${[72,338,604].map((x,i)=>`<div class="mb-pt h" ${i===0?'id="mbCnt"':""} style="left:${x}px;top:1306px">${["",T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`),T("あいことばで","With a passphrase")][i]}</div><div class="mb-pt l" style="left:${x}px;top:1450px">${[T("ランクマッチ","Rank Match"),T("クエストマッチ","Quest Match"),T("フレンドマッチ","Friend Match")][i]}</div>`).join("")}
     <div class="mb-pt i" style="left:338px;top:1352px">⚔️</div>
     <button type="button" class="mb-rk" id="mbRk">🏆 ${T("ランキング","Ranking")}<br><small id="mbMyRk">${T("勝率の順位","by win rate")}</small></button>
@@ -219,7 +219,7 @@ function openMenu(){ const s=shell(941,1672,"mb/menu2.jpg");   // 2026-10-25：4
     ${hit("mbRand",72,1265,266,260,T("ランクマッチ","Rank Match"))}${hit("mbQuest",338,1265,266,260,T("クエストマッチ","Quest Match"))}${hit("mbFriend",604,1265,266,260,T("フレンドマッチ","Friend Match"))}`;
   coinUpd(); const g=id=>document.getElementById(id);
   g("mbX").onclick=()=>{ sfx("tap"); closeAll(); };
-  g("mbForm").onclick=()=>openForm(); g("mbShop").onclick=()=>openShop(); g("mbGacha").onclick=()=>openGacha(); g("mbBox").onclick=()=>openBox();
+  g("mbForm").onclick=()=>openForm(); g("mbShop").onclick=()=>openShop(); g("mbGacha").onclick=()=>openGacha();
   g("mbRand").onclick=()=>startRandom(); g("mbRk").onclick=()=>openRank(); g("mbQuest").onclick=()=>startQuest(); g("mbFriend").onclick=()=>startFriend();
   myRankTag(); clearInterval(V.tick); V.tick=setInterval(()=>{ const e=document.getElementById("mbRst"); if(e) e.textContent=resetLeft(); },1000); }   // 参加人数の表示はなくした
 window.openMB = openMenu;
@@ -278,7 +278,7 @@ function openShop(){ const box=page(`🧪 ${T("アイテム購入","Item Shop")}
 function openGacha(){ const box=page(`🎰 ${T("ガチャ","Gacha")}`, ""); const G=MB_GACHA;
   box.innerHTML=`<button type="button" class="bigbtn" id="gcM" ${MB_MONS.length?"":"disabled"}>🥚 ${T("魔物ガチャ","Monster Gacha")}<small>${MB_MONS.length?T(`1回 ${fmt(G.mon.cost)}コイン`,`${fmt(G.mon.cost)} coins`):T("準備中","Coming soon")}</small></button>
     <button type="button" class="bigbtn" id="gcW" ${G.weapon.pool.length?"":"disabled"}>🗡 ${T("装備ガチャ","Equipment Gacha")}<small>${G.weapon.pool.length?T(`1回 ${fmt(G.weapon.cost)}コイン`,`${fmt(G.weapon.cost)} coins`):T("準備中","Coming soon")}</small></button>
-    <p class="note">${T(`魔物BOXの枠：${st().units.length}/${st().slots}`,`BOX: ${st().units.length}/${st().slots}`)}</p>
+    <p class="note">${T(`持っている魔物：${st().units.length}/${st().slots}`,`Monsters: ${st().units.length}/${st().slots}`)}</p>
     <div class="card" style="max-width:520px;margin:10px auto;align-items:stretch;text-align:left;font-size:13px"><b style="text-align:center">📊 ${T("魔物ガチャの出る確率（強さ10段階）","Monster gacha rates (10 power tiers)")}</b><small style="text-align:center;opacity:.8">${T("段階ごとの確率：","Tier rates: ")}${TIER_P.map((v,i)=>`Lv${i+1} ${v}%`).join("・")}</small>${(()=>{ const P=monPool(), tot=P.reduce((a,x)=>a+x.w,0); return MB_MONS.slice().sort((a,b)=>mbTier(a)-mbTier(b)).map(m=>`<div style="display:flex;align-items:center;gap:6px;border-top:1px solid #0002;padding:3px 0"><img src="${m.img}" alt="" style="width:34px;height:34px;${gotMon(m.id)?"":"filter:brightness(0);opacity:.85"}"><span style="flex:1">${esc2(mname(m))}<br><small>${T("強さ","Power")} ${tierStars(mbTier(m))}</small></span><b>${(P.find(x=>x.id===m.id).w/tot*100).toFixed(1)}%</b></div>`).join(""); })()}</div>`;
   box.querySelector("#gcM").onclick=()=>pull("mon"); box.querySelector("#gcW").onclick=()=>pull("weapon"); }
 // 1度でも手に入れた魔物（手に入れていない魔物は、黒いシルエットで表示）
@@ -301,7 +301,7 @@ function pull(kind){ const G=MB_GACHA[kind]; if(kind==="mon") G.pool=monPool(); 
   if(dupU){ const inF=u=>b.form.some(f=>f&&f.u===u.u);
     const u=dupU;
     u.lv=(u.lv||1)+1; save(); sfx("level");
-    return dlg(`<h3>⬆ ${T("かぶった！ レベルアップ！","Duplicate! Level up!")}</h3>${show}<p>${T(`${inF(u)?"編成に入っている":"BOXの"}「${esc2(mname(m))}」が <b>Lv.${u.lv}</b> になった！（攻撃力と体力が上がった）`,`Your ${inF(u)?"team's":"BOX"} "${esc2(mname(m))}" is now <b>Lv.${u.lv}</b>! (ATK and HP went up)`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
+    return dlg(`<h3>⬆ ${T("かぶった！ レベルアップ！","Duplicate! Level up!")}</h3>${show}<p>${T(`${inF(u)?"編成に入っている":"持っている"}「${esc2(mname(m))}」が <b>Lv.${u.lv}</b> になった！（攻撃力と体力が上がった）`,`Your ${inF(u)?"team's":"own"} "${esc2(mname(m))}" is now <b>Lv.${u.lv}</b>! (ATK and HP went up)`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
   // 同じ魔物は1体まで（Lv100で合成もできないときは、ガチャのコインを返す）
   if(b.units.filter(x=>x.id===id).length>=MB.SAME_MAX){ S.coins+=G.cost; save(); coinUpd();
     return dlg(`<h3>📦 ${T("これ以上持てません","You can't hold more")}</h3>${show}<p>${T(`同じ魔物は${MB.SAME_MAX}体までしか持てません（もうLv100なので合成もできません）。<br>ガチャの${fmt(G.cost)}コインを返しました。`,`You can only hold ${MB.SAME_MAX} of the same monster (it's already Lv100, so it can't merge).<br>Your ${fmt(G.cost)} coins were refunded.`)}</p>`,[[T("OK","OK"),()=>openGacha()]],{modal:true}); }
