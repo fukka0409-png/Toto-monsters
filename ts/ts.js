@@ -26,9 +26,9 @@ const TS_RANK = {
 // 向き：自分の魔物はいつも右向き、相手の魔物はいつも左向き（u.face=u.side?-1:1）
 const TS_MON = {
   10:{ w:1, h:1, spd:1.0, anim:"ts10", melee:true, atkMap:[0,1,2,3,3,2,1,0,9,9] },
-  42:{ w:2, h:2, spd:0.35, anim:"ts42", fly:true, drawH:2.3, atkMul:0.93, rock:true,
+  42:{ w:2, h:2, spd:0.35, anim:"ts42", fly:true, still:true, drawH:2.3, atkMul:0.93, rock:true,
        zone:{abs:true, cells:[[2,0,1],[2,1,1],[3,0,1],[4,0,1],[5,0,0]]} },   // 42：2×2・空を飛ぶ・めっちゃ遅い・攻撃力少しだけ低め。地面から岩をつき出す。abs＝高さは地面から数える（0＝地面のすぐ上の段）。3つ目が1＝矢印（貫通：そのマスの相手ぜんぶ）、0＝点（いちばん近い1体）
-  47:{ w:2, h:2, spd:0.65, anim:"ts47", fly:true, atkMul:1.15, fire:true, atkMap:[0,1,2,3,4,5,5,5,4,9],
+  47:{ w:2, h:2, spd:0.65, anim:"ts47", fly:true, still:true, atkMul:1.15, fire:true, atkMap:[0,1,2,3,4,5,5,5,4,9],
        zone:{cells:[[1,1],[2,1],[1,0],[2,0],[3,0],[4,0],[2,-1],[3,-1],[4,-1]]} },   // 夕焼けドラゴン：2×2・空を飛ぶ・ゆっくり・攻撃力やや高め。炎をはく。cells＝[前に何マス目, 体の下の段から何段上]（-1は1つ下）。範囲にいる相手のうち、いちばん近い1体に当たる
   4:{ w:2, h:1, spd:1.5, anim:"ts4", drawH:1.8, zone:{x:1,up:1}, atkMap:[1,2,2,3,4,5,5,6,7,7] },   // 魔術師ウルフールーパー：横2×縦1マス・移動が早い・かむ攻撃（2〜8コマ目だけ使う）。前1マスの同じ高さと1つ上の2マスにいる相手のうち、いちばん近い1体に当たる
   93:{ w:1, h:1, spd:1.0, anim:"ts93", drawH:1.6, zone:{x:2,up:1} },   // うさぎメイド：移動ふつう・けりの攻撃。前2マス×（同じ高さ＋1つ上）の4マスにいる相手のうち、いちばん近い1体に当たる
@@ -436,7 +436,7 @@ function drawAnim(g,id,cx,by,w,face,kind,i,flash,alpha){ const an=(TS_MON[id]||{
   const one=(k,j,dx)=>{ const im=animImg(an+k+j); if(!im.complete||!im.naturalWidth) return; const m=A[k][j]; g.drawImage(im,dx-m[0]*sc,-m[1]*sc,im.naturalWidth*sc,im.naturalHeight*sc); };
   g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); if(flash>0) g.filter="brightness(2.2)";
   const cf=TS_MON[id]||{};
-  if(kind==="a" && !A.a) one("w",i,0);   // 攻撃の絵がない魔物は、飛ぶ絵のまま
+  if(kind==="a" && !A.a) one("w",cf.still?0:i,0);   // 攻撃の絵がない魔物は、飛ぶ絵のまま
   else if(kind==="a") one("a",cf.atkMap?cf.atkMap[i]:i,0);   // atkMap：使うコマのならび（ドットスライムはエフェクトのないコマだけ）
   else if(cf.flyLoop) one("w",cf.flyLoop[i%cf.flyLoop.length],0);   // 飛ぶ魔物は空中のコマだけをくり返す
   else one(kind,i,0);
@@ -463,9 +463,9 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
   const L=[...B.units].sort((a,b)=>b.h-a.h);
   for(const u of L){ if(u.dead&&u.wall){ if(u.deadT<1.0) drawFx(g,"wall",Math.min(9,Math.floor(u.deadT/1.0*10)),u.x,u.y,u.side?-1:1); continue; }   // 壁がくずれる
     if(u.dead){ if(u.deadT<1.2 && grave.complete){ const p=w2s(u.x,u.fly?u.y:0), h=TS.CS*0.7*z, w=h*grave.width/grave.height; g.globalAlpha=1-u.deadT/1.2; g.drawImage(grave,p.x-w/2,p.y-h,w,h); g.globalAlpha=1; } continue; }
-    const bob=u.fly?Math.sin(u.hop*0.6)*4:0;
+    const still=(TS_MON[u.id]||{}).still, bob=still?Math.sin(V.last/1000*3.2+u.x0r)*5:u.fly?Math.sin(u.hop*0.6)*4:0;   // still：No.42・No.47 は羽を動かさず、1枚の絵のままゆらゆら進む
     if(u.wall) drawMon(g,u.id,u.x,u.y,u.w,u.h,u.side?-1:1,1,u.flash);
-    else if(!drawAnim(g,u.id,u.x,u.y+bob,u.w,u.face,u.atkT<0.6?"a":"w",u.atkT<0.6?Math.min(9,Math.floor(u.atkT/0.6*10)):(u.fly?Math.floor(V.last/1000*12+u.x0r)%10:u.moving?Math.floor(u.hop*1.4)%10:0),u.flash)) drawMon(g,u.id,u.x,u.y+bob,u.w,u.h,u.face,1,u.flash);
+    else if(!drawAnim(g,u.id,u.x,u.y+bob,u.w,u.face,u.atkT<0.6?"a":"w",u.atkT<0.6?Math.min(9,Math.floor(u.atkT/0.6*10)):(still?0:u.fly?Math.floor(V.last/1000*12+u.x0r)%10:u.moving?Math.floor(u.hop*1.4)%10:0),u.flash)) drawMon(g,u.id,u.x,u.y+bob,u.w,u.h,u.face,1,u.flash);
     // 体力ゲージ
     const p=w2s(u.x-u.w*0.4,u.y-Math.max(u.h,u.drawH*TS.CS*0.97)-10), bw=u.w*0.8*z, bh=Math.max(3,7*z); g.fillStyle="#111"; g.fillRect(p.x-1,p.y-1,bw+2,bh+2); g.fillStyle="#3a1f2a"; g.fillRect(p.x,p.y,bw,bh);
     const r=u.hp/u.max; g.fillStyle=u.side?(r<.3?"#ff7a5a":"#ff9a3d"):(r<.3?"#ff5a5a":"#5ec44a"); g.fillRect(p.x,p.y,bw*r,bh); }
