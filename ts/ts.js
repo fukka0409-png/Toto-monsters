@@ -22,6 +22,7 @@ const TS_RANK = {
   C:{w:1,h:1,spd:1.1,range:0.6,cd:1.0}, B:{w:1,h:1,spd:1.0,range:0.8,cd:1.0}, A:{w:2,h:2,spd:0.9,range:1.0,cd:1.1},
   S:{w:2,h:2,spd:0.85,range:1.5,cd:1.1}, Z:{w:3,h:3,spd:0.7,range:2.0,cd:1.2}, L:{w:3,h:3,spd:0.7,range:2.2,cd:1.2} };
 // 魔物ごとのきまり（ここに書いた魔物は、ランクのきまりより優先）。例：{ 42:{ fly:true, spd:1.4, range:3 } }
+// 置ける場所：ふつうは地面の上のマスだけ。fly:true＝空中のマスにも置ける・under:true＝土の中のマスにも置ける
 const TS_MON = {
   10:{ w:1, h:1, spd:1.0, anim:"ts10", melee:true },   // ドットスライム：近距離攻撃・移動速度ふつう・1×1マス・歩きと攻撃のアニメ（右向きの絵）
 };
@@ -150,12 +151,14 @@ function pickMonster(){ const t=st();
 
 /* ---------- 置く・動かす ---------- */
 const fits = (id,c,r,skip) => { const t=st(), k=cfgOf(id); if(c<0||r<TS.UNDER||c+k.w>t.cols||r+k.h>t.rows) return false;
+  if(r<0 && !k.under) return false;   // 土の中に置けるのは under:true の魔物・アイテムだけ
+  if(r>0 && !k.fly) return false;     // 地面から浮かせて置けるのは fly:true の魔物・アイテムだけ
   return !t.units.some(u=>{ if(u===skip) return false; const q=cfgOf(u.id); return c<u.c+q.w && u.c<c+k.w && r<u.r+q.h && u.r<r+k.h; }); };
 const cellAt = (wx,wy) => ({ c:Math.floor(wx/TS.CS), r:Math.floor(-wy/TS.CS) });
 const unitAt = (wx,wy) => { const t=st(); for(let i=t.units.length-1;i>=0;i--){ const u=t.units[i], k=cfgOf(u.id); const x0=u.c*TS.CS, y1=-u.r*TS.CS, x1=x0+k.w*TS.CS, y0=y1-k.h*TS.CS; if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1) return u; } return null; };
 function place(c,r){ const id=V.placing.id, t=st(), cost=costOf(id);
   if(t.units.length>=TS.MAX_UNITS){ V.placing=null; return msg(T(`置けるのは${TS.MAX_UNITS}体までです`,`Up to ${TS.MAX_UNITS}`)); }
-  if(!fits(id,c,r)){ sfx("ng"); return msg(T("そこには置けません（マスからはみ出す・ほかと重なる）","Can't place there (off the grid or overlapping)")); }
+  if(!fits(id,c,r)){ sfx("ng"); const k=cfgOf(id); return msg(r<0&&!k.under?T("この魔物は土の中には置けません（地面の上のマスに置いてね）","This one can't go underground"):r>0&&!k.fly?T("この魔物は浮かせて置けません（地面の上のマスに置いてね）","This one can't float — place it on the ground"):T("そこには置けません（マスからはみ出す・ほかと重なる）","Can't place there (off the grid or overlapping)")); }
   if((S.coins||0)<cost){ sfx("ng"); V.placing=null; return msg(T("コインが足りません","Not enough coins")); }
   S.coins-=cost; t.units.push({u:t.nu++, id, c, r}); save(); sfx("coin"); coinView(); sideView(); V.placing=null;
   msg(T(`「${mon(id).name}」を置きました（-${fmt(cost)}コイン）`,`Placed ${mon(id).name} (-${fmt(cost)})`)); }
