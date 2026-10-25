@@ -189,6 +189,18 @@ window.tsLoseLayout=()=>{ const t=st(); let paid=0; t.units.forEach(u=>{ try{ pa
 window.tsPower=L=>(L&&L.units||[]).reduce((a,u)=>{ try{ return a+(okId(u.id)?costOf(u.id):0); }catch(e){ return a; } },0);
 // マスの中に置ける魔物は5種類まで（アイテムは数えない）。置ける数は魔物とアイテムを合わせて20個まで
 const kindsOf=t=>new Set(t.units.filter(u=>!isItem(u.id)).map(u=>u.id));
+// 攻撃範囲のマス（準備画面で、タップした魔物の範囲をうすい赤で点滅させる）。[前に何マス目, 体の下の段から何段上, 地面から数えるか]
+function rangeCells(id){ const k=cfgOf(id), out=[]; if(isItem(id)) return out;
+  if(k.zone&&k.zone.cells) return k.zone.cells.map(c=>[c[0],c[1],!!k.zone.abs]);
+  if(k.zone){ for(let x=1;x<=k.zone.x;x++) for(let y=0;y<=k.zone.up;y++) out.push([x,y,false]); return out; }
+  if(k.diag) return [[1,0,false],[1,-1,false]];
+  if(k.rays){ const seen=new Set();   // 線がとおるマス（rayTargets と同じ数え方）
+    for(const [tx,ty] of k.rays) for(let i=1;i<=60;i++){ const x=tx*i/60, y=ty*i/60, fx=x-Math.floor(x), fy=y-Math.floor(y);
+      if(fx<0.12||fx>0.88&&x<tx-0.1||fy<0.12&&y>0.12||fy>0.88&&y<ty-0.1) continue; const key=(Math.floor(x)+1)+","+Math.floor(y); if(!seen.has(key)){ seen.add(key); out.push([Math.floor(x)+1,Math.floor(y),false]); } }
+    return out; }
+  const n=Math.max(1,Math.ceil((k.range||0)+0.01)); for(let x=1;x<=n;x++) out.push([x,0,false]);   // ふつうの魔物：前のマス（地上の魔物は1つ上の段にもとどく）
+  if(!k.fly) out.push([1,1,false]);
+  return out; }
 const sigOf=t=>JSON.stringify([t.cols,t.rows,t.units.map(u=>[u.id,u.c,u.r])]);
 function expand(k){ const t=st(), max=k==="c"?TS.COLS_MAX:TS.ROWS_MAX, cur=k==="c"?t.cols:t.rows; if(cur>=max) return;
   dlg(`<h3>➕ ${k==="c"?T("マスを横に1列ふやす","Add 1 column"):T("マスを縦に1列ふやす","Add 1 row")}</h3><p>${k==="c"?`${T("横","Width")} ${cur} → <b>${cur+1}</b>`:`${T("縦","Height")} ${cur} → <b>${cur+1}</b>`}（${T("最大","max")} ${max}）<br>💰 <b>${fmt(TS.EXPAND_COST)}</b> ${T("コイン","coins")}（${T("所持","you have")} ${fmt(S.coins||0)}）</p>`,
@@ -491,6 +503,8 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
     // 置ける場所
     const a=w2s(0,-t.rows*TS.CS), b=w2s(t.cols*TS.CS,-TS.UNDER*TS.CS); g.fillStyle="#ff5a5a14"; g.fillRect(a.x,a.y,b.x-a.x,b.y-a.y);
     drawGrid(g,0,t.cols,t.rows,"#e0505599");
+    if(V.sel&&!(V.drag&&V.drag.moved)){ const u=V.sel, k=cfgOf(u.id), a=0.16+0.16*(0.5+0.5*Math.sin(performance.now()/1000*6)); g.fillStyle=`rgba(255,40,40,${a.toFixed(3)})`;
+      for(const [x,y,abs] of rangeCells(u.id)){ const c=u.c+k.w+x-1, r=abs?y:Math.max(0,u.r)+y; if(r<TS.UNDER) continue; const p0=w2s(c*TS.CS,-(r+1)*TS.CS), p1=w2s((c+1)*TS.CS,-r*TS.CS); g.fillRect(p0.x,p0.y,p1.x-p0.x,p1.y-p0.y); } }
     for(const u of t.units){ const k=cfgOf(u.id); let c=u.c, r=u.r; const dr=V.drag&&V.drag.u===u&&V.drag.moved; if(dr){ c=V.drag.c; r=V.drag.r; }
       if(dr||V.sel===u){ const ok=!dr||fits(u.id,c,r,u); const p0=w2s(c*TS.CS,-(r+k.h)*TS.CS), p1=w2s((c+k.w)*TS.CS,-r*TS.CS); g.fillStyle=ok?"#ffd75e55":"#ff303055"; g.fillRect(p0.x,p0.y,p1.x-p0.x,p1.y-p0.y); }
       if(!drawAnim(g,u.id,(c+k.w/2)*TS.CS,-r*TS.CS,k.w*TS.CS,1,"w",0,0,dr?0.75:1)) drawMon(g,u.id,(c+k.w/2)*TS.CS,-r*TS.CS,k.w*TS.CS,k.h*TS.CS,1,dr?0.75:1); }

@@ -308,6 +308,9 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .nm-sil{position:relative}.nm-sil.photo::after{content:"？";position:absolute;inset:0;display:grid;place-items:center;font:900 38px var(--f-pix);color:#e9f1ea;text-shadow:0 2px 6px #000}
 .nm-sil img.photo{filter:blur(9px) brightness(.25);transform:scale(1.15)}
 .hm-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.hm-tsnew{align-self:flex-start;display:flex;align-items:center;gap:6px;margin-top:8px;padding:9px 14px;border-radius:12px;background:linear-gradient(#ff6b4a,#c0392b);border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#fff;font:inherit;font-weight:900;font-size:14px;text-shadow:0 1px 0 #0006;animation:tsnew 1.6s ease-in-out infinite}
+@keyframes tsnew{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.ts-help li{margin:0 0 6px}
 .hm-invest{align-self:flex-start;display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;background:#f2dc3a;border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font:inherit;font-weight:900;font-size:14px}
 .hm-invest.last{background:#fff;font-size:13px;padding:7px 14px}
 .hm-invest:active{transform:translateY(2px);box-shadow:0 1px 0 #1d1d1d}
@@ -1297,6 +1300,8 @@ const I18N_EN = {
 "次のランク戦が始まってから1時間は、だれでもひとことコメントを残せます！ 感想を他の冒険者と共有しよう！！✨": "For the first hour of the next ranked match, anyone can leave a short message! Share your thoughts with the other adventurers!! ✨",
 "📈 投資の素質": "📈 Investing skill",
 "⚔️ 合戦可能": "⚔️ Battle ready",
+"⚔️ 魔物合戦が追加されました！": "⚔️ Monster Battles are here!",
+"⚔️ 魔物合戦の遊び方": "⚔️ How to play Monster Battles",
 "⚔️ 魔物合戦": "⚔️ Monster Battle",
 "魔物合戦": "Monster Battle",
 "{0}コインの{1}%を受け取りました！！（+{2}コイン）": "Received {1}% of {0} coins!! (+{2} coins)",
@@ -5324,7 +5329,8 @@ function renderHome(){
         <span class="hm-shield" id="hmShield" role="button" tabindex="0" aria-label="盾"><i>🛡</i><small>${shieldOn()?`耐久${shEquipped().dur}${S.shieldList.length>1?`+${S.shieldList.length-1}`:""}`:"盾"}</small></span>
         <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
       </button>
-      <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${activeInvs().length?`<small>投資中 ${activeInvs().length}/${INV_MAX}</small>`:""}</button></div>
+      <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${activeInvs().length?`<small>投資中 ${activeInvs().length}/${INV_MAX}</small>`:""}</button>
+      ${tsHome()?`<button class="hm-tsnew" type="button" id="hmTsNew">⚔️ 魔物合戦が追加されました！</button>`:""}</div>
       <div class="hm-btns">
         <button class="hm-btn ${rulesNew()?"new":""}" type="button" data-rules="1">📖 最新ルール確認${rulesNew()?'<span class="rules-new">NEW</span>':""}</button>
         <button class="hm-btn" type="button" id="hmStats">📊 自己記録確認</button>
@@ -5343,6 +5349,7 @@ function renderHome(){
   $("#hmTitle").onclick=()=>{ try{ SFX.tap(); }catch(e){} window.showTitle&&window.showTitle(); };
   $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   if($("#hmChange")) $("#hmChange").onclick=()=>openHomeEdit("m");
+  if($("#hmTsNew")) $("#hmTsNew").onclick=()=>{ try{ SFX.tap(); }catch(e){} openTsHelp(); };
   if($("#hmTs")){ const tp=$(".hm-top"); if(tp) $("#hmTs").style.top=(tp.offsetTop+tp.offsetHeight+8)+"px"; const go=()=>{ if(window.openTS) window.openTS({embed:$("#hmTs")}); else setTimeout(go,200); }; go(); }   // 魔物合戦の配置画面（ts/ts.js）
 
   $("#hmFriend").onclick=()=>openFriends();
@@ -5814,6 +5821,22 @@ async function searchOutside(){
 }
 const todayN=()=>seasonNow();   // バトル・ボットの「1日1回」もランク戦タイマーで区切る
 // 魔物合戦：ホームで準備完了した冒険者どうしが、トトの戦略の配置で戦う（回数の制限なし。勝つと相手の配置は取り消される）
+// 魔物合戦の遊び方
+function openTsHelp(){
+  const tiers=TS_TIERS.slice().reverse().map((t,i,a)=>`<li>強さ ${t[0].toLocaleString()}${i<a.length-1?`〜${(a[i+1][0]-1).toLocaleString()}`:" 以上"}：冒険者Lv+${t[1]}・${t[2].toLocaleString()}コイン</li>`).join("");
+  sheet(`<div class="sheet-h"><h3>⚔️ 魔物合戦の遊び方</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+  <div class="note ts-help" style="text-align:left;margin:0"><ol style="padding-left:1.2em;margin:0">
+    <li><b>ホームで魔物を置く</b><br>「魔物を追加」で魔物をえらんで、赤いマスに置きます。コインは置いたときに払います（魔物は売却価格の5倍）。「アイテムを追加」で地雷や壁も置けます。二本指で拡大・縮小できます。</li>
+    <li><b>置ける数のきまり</b><br>魔物とアイテムを合わせて<b>20個</b>まで。魔物は<b>5種類</b>まで（同じ種類なら何体でも）。合戦に出るには、魔物を<b>5体以上</b>置く必要があります。</li>
+    <li><b>魔物の攻撃範囲を見る</b><br>置いた魔物を1回タップすると、その魔物の攻撃範囲のマスがうすい赤で点滅します。</li>
+    <li><b>「準備完了」を押す</b><br>時間制限はありません。準備完了すると、ランキングに「⚔️ 合戦可能」と出て、ほかの冒険者と合戦できるようになります。配置を変えたら、もう一度「準備完了」を押すと反映されます。</li>
+    <li><b>ランキングで合戦をしかける</b><br>「⚔️ 合戦可能」の冒険者のプロフィールを開いて「⚔️ 魔物合戦」を押すと、自分の配置と相手の配置で戦います。</li>
+    <li><b>勝ち負けのきまり</b><br>1分のあいだに相手の魔物を全滅させたら勝ち。1分たったら、のこった魔物の体力ゲージの合計が多いほうの勝ちです。</li>
+    <li><b>勝ったときのごほうび</b><br>相手の配置の強さ（置いた魔物とアイテムの値段の合計）で決まります。<ul style="padding-left:1.1em;margin:4px 0 0">${tiers}</ul></li>
+    <li><b>負けた相手は…</b><br>合戦に負けると、ホームの配置がすべて取り消されます（置くのに使ったコインの3分の1が返ってきます）。もう一度置いて「準備完了」を押せば、また合戦に出られます。</li>
+    <li><b>留守中の合戦</b><br>留守中にしかけられて勝っていたら、次に来たときにお知らせが出て、ごほうびが自動でもらえます。負けていたら、配置が取り消されたお知らせが出ます。</li>
+  </ol></div>`);
+}
 function tsFightBox(r){
   if(!DB||!tsHome()||r.id===MYID) return "";
   let body;
@@ -9418,5 +9441,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=40" defer></script>
+<script src="ts/ts.js?v=41" defer></script>
 </body></html>
