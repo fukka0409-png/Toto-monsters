@@ -5073,7 +5073,7 @@ function profilePayload(){
     icon:S.avatar||"", pulls:S.stats.pulls, fuses:S.stats.fuses, comp:compPct(),
     comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
-    units:S.units.length, missions:(S.stats.missions||0), tr:S.tsRd?1:0,
+    units:S.units.length, missions:(S.stats.missions||0), tr:S.tsRd?1:0, tp:S.tsRd?(S.tsPow||0):0,
     gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
 }
@@ -5811,7 +5811,7 @@ function tsFightBox(r){
   if(!r.tr) body=`<div class="note" style="margin:0">この冒険者は、まだ魔物合戦の準備ができていません</div>`;
   else if(!S.tsRd) body=`<div class="note" style="margin:0;color:var(--berry)">戦うには、ホームで魔物を置いて「準備完了」を押してください</div>`;
   else body=`<button class="btn gold" type="button" data-tsfight="${esc(r.id)}">⚔️ 魔物合戦</button>`;
-  return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">勝つと冒険者Lv+1・1000コイン。負けた相手の配置は取り消される</div>${body}</div></div>`;
+  return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">${r.tr?(()=>{ const t=tsTier(r.tp); return `相手の配置の強さ <b>${(r.tp||0).toLocaleString()}</b> → 勝つと冒険者Lv+${t.lv}・${t.c.toLocaleString()}コイン`; })():"勝つと、相手の配置の強さに合わせて冒険者Lv+1〜5・100〜10,000コイン"}。負けた相手の配置は取り消される</div>${body}</div></div>`;
 }
 document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsfight]"); if(!b) return; const r=findRank(b.dataset.tsfight)||{id:b.dataset.tsfight};
   b.disabled=true; b.textContent="相手の配置を読みこみ中…";
@@ -5819,12 +5819,16 @@ document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsf
     if(!x||!x.rd||!Array.isArray(x.units)||!x.units.length){ b.textContent="相手の準備ができていません"; return; }
     document.querySelectorAll(".sheet-bg").forEach(z=>z.remove());
     window.openTS&&window.openTS({fight:x}); }catch(err){ b.disabled=false; b.textContent="⚔️ 魔物合戦"; toast("読みこめませんでした。もう一度ためしてね"); } });
+// 魔物合戦のごほうび：負かした相手の配置の強さ（置いた魔物・アイテムの値段の合計）で6段階
+const TS_TIERS=[[500000,5,10000],[200000,4,6000],[50000,3,3000],[10000,2,1000],[2000,1,300],[0,1,100]];   // [強さがこれ以上, 冒険者Lv, コイン]
+window.tsTier=p=>{ const t=TS_TIERS.find(x=>(p||0)>=x[0]); return {lv:t[1], c:t[2]}; };
 // 魔物合戦の結果（ts/ts.js からよばれる）。勝ったら冒険者Lv+1・1000コイン。相手が勝ったら記録をのこして、相手が次に来たときにごほうび
 window.tsFightDone=(opp,res)=>{
-  if(res==="win"){ S.plv=(S.plv||1)+1; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+1000);
+  const myPow=S.tsPow||0, opPow=window.tsPower?window.tsPower(opp):0;
+  if(res==="win"){ const r=tsTier(opPow); S.plv=(S.plv||1)+r.lv; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+r.c);
     try{ if(DB&&opp.uid) DB.collection("tsp").doc(opp.uid).update({rd:0, lb:myName().slice(0,12), lt:gnow()}).catch(()=>{}); }catch(e){} }   // 負けた相手は、すぐに準備完了が外れる
   save(); try{ queueProfile(true); }catch(e){} try{ renderCoins(); }catch(e){}
-  try{ if(DB&&MYID&&opp.uid) DB.collection("tsb").add({att:MYID, an:myName().slice(0,12), def:opp.uid, at:gnow(), result:res==="win"?"att":res==="lose"?"def":"draw"}).catch(()=>{}); }catch(e){} };
+  try{ if(DB&&MYID&&opp.uid) DB.collection("tsb").add({att:MYID, an:myName().slice(0,12), def:opp.uid, at:gnow(), sp:myPow, dp:opPow, result:res==="win"?"att":res==="lose"?"def":"draw"}).catch(()=>{}); }catch(e){} };
 // 留守中の魔物合戦：勝っていたら通知＋冒険者Lv+1・1000コイン。
 // 負けていたら、配置はすべて取り消し（置くのに使ったコインの3分の1が返ってくる）＋お知らせ
 async function checkTsBattles(){ if(!DB||!MYID) return;
@@ -5832,12 +5836,13 @@ async function checkTsBattles(){ if(!DB||!MYID) return;
     S.lastTsb=Math.max(...L.map(b=>b.at)); const W=L.filter(b=>b.result==="def");
     const lost=L.find(b=>b.result==="att" && b.at>=(S.tsRdAt||0) && S.tsRd);   // 準備完了したあとの配置で負けた
     let back=0, n=0; if(lost&&window.tsLoseLayout){ const x=window.tsLoseLayout(); back=x.back; n=x.n; }
-    if(W.length){ S.plv=(S.plv||1)+W.length; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+1000*W.length); }
+    let gLv=0, gC=0; W.forEach(b=>{ const r=tsTier(b.sp); gLv+=r.lv; gC+=r.c; });   // ごほうびは、しかけてきた相手の配置の強さで決まる
+    if(W.length){ S.plv=(S.plv||1)+gLv; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+gC); }
     save(); if(!W.length&&!lost) return; render();
     const bg=document.createElement("div"); bg.className="sheet-bg center";
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚔️</div><p>留守中に魔物合戦がありました</p>
-      <div class="note" style="margin:0;text-align:left">${W.map(b=>`・${esc(b.an||"冒険者")}に勝った！`).join("<br>")}${W.length&&lost?"<br>":""}${lost?`・${esc(lost.an||"冒険者")}に負けて、ホームの配置（${n}つ）がすべて取り消されました`:""}</div>
-      ${W.length?`<div class="note" style="margin:0;color:var(--moss)">冒険者Lv +${W.length}・コイン +${(1000*W.length).toLocaleString()}</div>`:""}
+      <div class="note" style="margin:0;text-align:left">${W.map(b=>{ const r=tsTier(b.sp); return `・${esc(b.an||"冒険者")}に勝った！（Lv+${r.lv}・${r.c.toLocaleString()}コイン）`; }).join("<br>")}${W.length&&lost?"<br>":""}${lost?`・${esc(lost.an||"冒険者")}に負けて、ホームの配置（${n}つ）がすべて取り消されました`:""}</div>
+      ${W.length?`<div class="note" style="margin:0;color:var(--moss)">冒険者Lv +${gLv}・コイン +${gC.toLocaleString()}</div>`:""}
       ${lost?`<div class="note" style="margin:0;color:var(--berry)">置くのに使ったコインの3分の1（+${back.toLocaleString()}コイン）が返ってきました。ホームでもう一度魔物を置いて「準備完了」を押そう</div>`:""}
       <button class="btn gold" type="button">OK</button></div>`;
     document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); }catch(e){} }
@@ -9403,5 +9408,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=38" defer></script>
+<script src="ts/ts.js?v=39" defer></script>
 </body></html>

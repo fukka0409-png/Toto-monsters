@@ -185,6 +185,8 @@ window.tsLoseLayout=()=>{ const t=st(); let paid=0; t.units.forEach(u=>{ try{ pa
   if(V&&V.embed){ V.sel=null; V.placing=null; try{ selView(); sideView(); coinView(); }catch(e){} }
   else if(EV){ EV.sel=null; EV.placing=null; }
   return {back, n}; };
+// 配置の強さ＝置いた魔物・アイテムの値段の合計（魔物合戦のごほうびの段階に使う）
+window.tsPower=L=>(L&&L.units||[]).reduce((a,u)=>{ try{ return a+(okId(u.id)?costOf(u.id):0); }catch(e){ return a; } },0);
 const sigOf=t=>JSON.stringify([t.cols,t.rows,t.units.map(u=>[u.id,u.c,u.r])]);
 function expand(k){ const t=st(), max=k==="c"?TS.COLS_MAX:TS.ROWS_MAX, cur=k==="c"?t.cols:t.rows; if(cur>=max) return;
   dlg(`<h3>➕ ${k==="c"?T("マスを横に1列ふやす","Add 1 column"):T("マスを縦に1列ふやす","Add 1 row")}</h3><p>${k==="c"?`${T("横","Width")} ${cur} → <b>${cur+1}</b>`:`${T("縦","Height")} ${cur} → <b>${cur+1}</b>`}（${T("最大","max")} ${max}）<br>💰 <b>${fmt(TS.EXPAND_COST)}</b> ${T("コイン","coins")}（${T("所持","you have")} ${fmt(S.coins||0)}）</p>`,
@@ -275,7 +277,7 @@ async function readyGo(auto){ if(!V||V.mode!=="prep"||busy) return; const t=st()
     if(!(typeof DB!=="undefined" && DB && MYID)){ sfx("ng"); return msg(T("ログインすると準備完了できます","Log in to get ready")); }
     const nMon=t.units.filter(u=>!isItem(u.id)).length; if(nMon<TS.MIN_READY){ sfx("ng"); return msg(T(`魔物合戦に出るには、魔物を${TS.MIN_READY}体以上置いてください（今 ${nMon}体）`,`Place at least ${TS.MIN_READY} monsters to join (now ${nMon})`)); }
     busy=true; V.placing=null; V.sel=null; selView(); let nm=""; try{ nm=myName(); }catch(e){}
-    try{ await DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), rd:1, at:now()}); S.tsRd=1; S.tsRdAt=(typeof gnow==="function"?gnow():Date.now()); S.tsSig=sigOf(t); save(); try{ queueProfile(true); }catch(e){}
+    try{ await DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), rd:1, at:now()}); S.tsPow=window.tsPower(mine); S.tsRd=1; S.tsRdAt=(typeof gnow==="function"?gnow():Date.now()); S.tsSig=sigOf(t); save(); try{ queueProfile(true); }catch(e){}
       sfx("level"); dlg(`<div style="font-size:48px">⚔️</div><h3>${T("準備完了！","Ready!")}</h3><p>${T("ランキングで冒険者のプロフィールを開くと「魔物合戦」で戦えます。<br>勝つと冒険者Lv+1・1000コイン！<br>ほかの冒険者からも、この配置に合戦をしかけられます。","Open an adventurer's profile in the ranking to start a Monster Battle. Win for Adventurer Lv+1 and 1000 coins!")}</p>`,[["OK",null]]); }
     catch(e){ sfx("ng"); msg(T("保存できませんでした。もう一度ためしてね","Couldn't save. Try again.")); }
     busy=false; sideView(); return; }
@@ -436,7 +438,7 @@ function result(res, ga, gb, ko){ if(!V) return; sfx(res==="win"?"win":"ng");
   const B=V.B, n=s=>B.units.filter(u=>u.side===s&&!u.dead&&!u.wall).length;
   dlg(`<div style="font-size:54px">${res==="win"?"🏆":res==="draw"?"🤝":"💀"}</div><h3>${res==="win"?T("勝利！","Victory!"):res==="draw"?T("引き分け","Draw"):T("敗北…","Defeat...")}</h3>
     <p>${ko?T("どちらかの魔物が全滅しました。","One side was wiped out."):T("1分がたったので、のこった体力ゲージの合計で決まりました。","Time's up — decided by the total of remaining HP gauges.")}<br>
-    ${T("あなた","You")}：${T("のこり","left")} ${n(0)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${ga.toFixed(2)}</b><br>${T("相手","Opponent")}：${T("のこり","left")} ${n(1)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${gb.toFixed(2)}</b></p>${V.fight&&res==="win"?`<p style="font-weight:900;color:#c77d00">🎉 ${T("冒険者Lv+1・1000コイン！","Adventurer Lv+1 · 1000 coins!")}</p>`:""}`,
+    ${T("あなた","You")}：${T("のこり","left")} ${n(0)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${ga.toFixed(2)}</b><br>${T("相手","Opponent")}：${T("のこり","left")} ${n(1)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${gb.toFixed(2)}</b></p>${V.fight&&res==="win"&&window.tsTier?(()=>{ const r=window.tsTier(window.tsPower(V.fight)); return `<p style="font-weight:900;color:#c77d00">🎉 ${T(`冒険者Lv+${r.lv}・${fmt(r.c)}コイン！`,`Adventurer Lv+${r.lv} · ${fmt(r.c)} coins!`)}</p>`; })():""}`,
     V.fight?[[T("とじる","Close"),()=>closeTS()]]:[[T("準備にもどる","Back to setup"),()=>backToPrep()]],{modal:true});
   if(V.fight&&!V.done){ V.done=1; try{ window.tsFightDone&&window.tsFightDone(V.fight,res); }catch(e){} } }
 function backToPrep(){ if(!V) return; V.mode="prep"; V.B=null; V.prepEnd=now()+TS.PREP_MS; V.root.querySelector("#tsPanel").hidden=false; resize(); sideView(); coinView(); fitPrep(); }
