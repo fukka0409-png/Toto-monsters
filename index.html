@@ -9302,6 +9302,7 @@ async function titleRanks(){
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56; bg.setAttribute("translate","no");
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎮</div><p>${L?"Mini games":"ミニゲーム"}</p>
       <div class="mg-pick"><button type="button" id="mgDef"><i>🛡</i><span><b>${L?"Defense":"防衛作戦"}</b><small>${L?"An idle game — guard your base for 24 hours and earn coins":"放置ゲーム。24時間土台を守ってコインをかせごう"}</small>${st?`<small><em>${st}</em></small>`:""}</span></button>
+      <button type="button" id="mgMb" class="mg-mb"><img src="mb/banner.jpg" alt=""><span><b>⚔️ ${L?"Monster Battle":"魔物バトル"}</b><small>${L?"Build a team of 6 and battle players or quests!":"6体の魔物を編成して、みんなやクエストと対戦しよう！"}</small></span></button>
       <button type="button" id="mgMc" class="mg-mc"><img src="mc/banner.jpg" alt=""><span><b>🎯 ${L?"Monster Catcher":"魔物キャッチャー"}</b><small>${L?"A claw machine — grab monsters with arms drawn by everyone!":"UFOキャッチャー。みんなが描いたアームで魔物をつかもう！"}</small></span></button>
       <button type="button" id="mgAdv"><i>🗡</i><span><b>${L?"Toto's Adventure":"トトの冒険"}</b><small>${L?"Action — defeat monsters for 5 minutes and climb the ranking":"アクション。5分間魔物を倒してランキング上位をめざそう"}</small></span></button>
       <div class="mg-rk"><div class="mg-rkh">🏆 ${L?"Toto's Adventure Ranking":"トトの冒険ランキング"}</div><div class="mg-rkg"><div><small>${L?"Defeated":"倒した数"}</small><b id="mgR1">―</b></div><div><small>${L?"Best Lv":"最高レベル"}</small><b id="mgR2">―</b></div></div><div class="mg-nx" id="mgNx"></div><div class="mg-rt" id="mgRt"></div></div></div>
@@ -9311,7 +9312,7 @@ async function titleRanks(){
     sync(); try{ titleRanks().then(sync); }catch(e){} const iv=setInterval(sync,1000); const close=()=>{ clearInterval(iv); bg.remove(); };
     bg.onclick=e=>{ if(e.target===bg) close(); }; bg.querySelector("#mgX").onclick=close;
     bg.querySelector("#mgDef").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} openDefense(); };
-    /* 2026-10-25：魔物バトルはミニゲームからなくした */
+    bg.querySelector("#mgMb").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.openMB) openMB(); };
     bg.querySelector("#mgMc").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.openMC) openMC(); };
     bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); }; }); };
   document.getElementById("ttlKn").onclick=()=>{ try{ SFX.tap(); }catch(e){} openKuni(); };
