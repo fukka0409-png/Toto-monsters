@@ -22,13 +22,14 @@ const TS_RANK = {
   S:{w:2,h:2,spd:0.85,range:1.5,cd:1.1}, Z:{w:3,h:3,spd:0.7,range:2.0,cd:1.2}, L:{w:3,h:3,spd:0.7,range:2.2,cd:1.2} };
 // 魔物ごとのきまり（ここに書いた魔物は、ランクのきまりより優先）。例：{ 42:{ fly:true, spd:1.4, range:3 } }
 const TS_MON = {
-  10:{ w:1, h:1, spd:1.0, anim:"ts10" },   // ドットスライム：移動速度ふつう・1×1マス・歩きと攻撃のアニメ（右向きの絵）
+  10:{ w:1, h:1, spd:1.0, anim:"ts10", melee:true },   // ドットスライム：近距離攻撃・移動速度ふつう・1×1マス・歩きと攻撃のアニメ（右向きの絵）
 };
 // 歩き・攻撃のコマ（[中心x, 足もとy]・大きさ）。攻撃の8・9コマ目はエフェクトだけの絵なので、体（攻撃1コマ目）の前に重ねる
 const TS_ANIM = { ts10:{"a":[[41.0,67.5],[38.0,57.0],[39.0,50.0],[39.0,75.5],[41.5,52.0],[52.0,62.0],[56.5,67.0],[28.5,62.0],[27.8,65.5],[44.5,69.0]],"w":[[41.0,76.0],[44.5,77.0],[45.5,76.0],[46.5,60.0],[48.0,70.5],[45.5,49.0],[46.0,56.5],[41.0,76.5],[40.0,67.5],[42.5,55.0]],"size":{"a0":[82,68],"a1":[80,58],"a2":[80,51],"a3":[84,76],"a4":[90,53],"a5":[93,62],"a6":[92,68],"a7":[89,63],"a8":[88,66],"a9":[90,70],"w0":[83,76],"w1":[82,78],"w2":[82,77],"w3":[85,60],"w4":[90,71],"w5":[88,50],"w6":[90,57],"w7":[88,77],"w8":[88,68],"w9":[91,56]}} };
 const ANIM_IMG={}; const animImg=n=>{ if(!ANIM_IMG[n]){ const im=new Image(); im.src="ts/"+n+".png"; ANIM_IMG[n]=im; } return ANIM_IMG[n]; };
 Object.keys(TS_ANIM).forEach(k=>{ for(let i=0;i<10;i++){ animImg(k+"a"+i); animImg(k+"w"+i); } });
-const cfgOf = id => { const m=mon(id); return Object.assign({fly:false}, TS_RANK[m&&m.rank]||TS_RANK.C, TS_MON[id]||{}); };
+// melee:true＝近距離攻撃。相手のすぐ前（すきま0.08マス）まで近づいてから攻撃する
+const cfgOf = id => { const m=mon(id), c=Object.assign({fly:false}, TS_RANK[m&&m.rank]||TS_RANK.C, TS_MON[id]||{}); if(c.melee) c.range=0.08; return c; };
 // 強さ：売却価格（＝図鑑の全冒険者の獲得数で決まる）から。めずらしいほど強い
 const priceOf = id => { try{ const p=dexPrice(id); if(p!=null) return p; }catch(e){} try{ return sellPrice({m:id}); }catch(e){ return 10; } };
 const statsOf = id => { const k=Math.pow(Math.max(1,priceOf(id)),0.35), c=cfgOf(id), sz=Math.sqrt(c.w*c.h); return { hp:Math.round(60*k*sz), atk:Math.max(1,Math.round(8*k)) }; };
@@ -119,6 +120,7 @@ function openTS(){
 }
 function closeTS(){ if(!V) return; cancelAnimationFrame(V.raf); removeEventListener("resize",resize); V.root.remove(); document.querySelectorAll(".ts-dlg").forEach(x=>x.remove()); V=null; }
 window.openTS=openTS;
+window.__tsB=()=>V&&V.B;   // テスト用
 window.__tsW2S=(x,y)=>{ if(!V) return null; const p=w2s(x,y), r=V.cv.getBoundingClientRect(); return {x:r.left+p.x/V.dpr, y:r.top+p.y/V.dpr}; };   // テスト用
 
 function sideView(){ const s=V&&V.root.querySelector("#tsSide"); if(!s) return; const t=st();
