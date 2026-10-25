@@ -8768,7 +8768,13 @@ function advStep(dt){
     if(a.t>=a.dur) A.atk=null; }
   // 弾
   // 魔法：ねらった的（敵か宝箱）に向かって飛んでいく
-  A.bolts.forEach(b=>{ b.life-=dt; const tg=b.tg;
+  A.bolts.forEach(b=>{ b.life-=dt;
+    if(b.pierce){ b.x+=b.dir*2.4*dt; if(Math.abs(b.x-b.x0)>ADV.MAGIC_RANGE*1.4) b.life=0;   // 貫通する氷の魔法弾
+      A.enemies.forEach(e=>{ if(e.dead||b.hits.includes(e)) return; const ey=(e.y||0); if(Math.abs(e.x-b.x)<e.w*0.5+0.05 && b.y>ey-0.04 && b.y<ey+advEH(e)+0.06){ b.hits.push(e);
+        A.drBooms.push({x:e.x,y:ey+advEH(e)*0.5,t:0,img:b.boom}); advDamageEnemy(e,b.dmg); if(b.freeze&&!e.dead){ e.frozen=ADV.FREEZE0/Math.pow(2,e.fz||0); e.fz=(e.fz||0)+1; } } });
+      A.chests.forEach(c=>{ if(c.open||b.hits.includes(c)) return; if(Math.abs(c.x-b.x)<0.07 && b.y<0.2){ b.hits.push(c); advHitChest(c); } });
+      return; }
+    const tg=b.tg;
     if(tg && !(tg.dead||tg.open)){ const tx=tg.x, ty=tg.chest?0.05:(tg.y||0)+advEH(tg)*0.5, dx=tx-b.x, dy=ty-b.y, d=Math.hypot(dx,dy), st=2.4*dt;
       if(d<=st+0.02){ b.life=0; if(b.boom) A.drBooms.push({x:tg.x,y:tg.chest?0.05:(tg.y||0)+advEH(tg)*0.5,t:0,img:b.boom}); if(tg.chest) advHitChest(tg); else { advDamageEnemy(tg,b.dmg); if(b.fire){ (A.booms=A.booms||[]).push({x:tg.x,y:(tg.y||0)+advEH(tg)*0.5,t:0,big:!!tg.boss}); if(!tg.dead) advIgnite(tg,b.fire,b.dmg); } if(b.freeze&&!tg.dead){ tg.frozen=ADV.FREEZE0/Math.pow(2,tg.fz||0); tg.fz=(tg.fz||0)+1; } } }   // 氷：最初は2秒、同じ魔物は氷の耐性がついて半分ずつ短くなる
       else { b.x+=dx/d*st; b.y+=dy/d*st; } }
@@ -8896,7 +8902,7 @@ function advMagicTarget(){
 }
 // ドラゴンうさぎの魔法弾（装備なし＝トトの3倍・氷＝さらに5倍で凍る）
 function advDrFire(a){ const ice=!!a.it, dmg=advMeleeDmg()*DR_MUL*(ice?DR_ICE_MUL:1);
-  A.bolts.push({ x:A.x+A.dir*0.16, x0:A.x, y:A.y+0.08, dmg, img:ice?"dr_bolt_b":"dr_bolt_r", boom:ice?"dr_boom_b":"dr_boom_r", dr:1, freeze:ice?(ADV.SHARD.b.freeze||0):0, fire:0, dir:A.dir, tg:advMagicTarget(), life:3 });
+  A.bolts.push({ x:A.x+A.dir*0.16, x0:A.x, y:A.y+0.08, dmg, img:ice?"dr_bolt_b":"dr_bolt_r", boom:ice?"dr_boom_b":"dr_boom_r", dr:1, freeze:ice?(ADV.SHARD.b.freeze||0):0, fire:0, dir:A.dir, tg:ice?null:advMagicTarget(), life:3, pierce:ice?1:0, hits:[] });   // 氷は貫通：まっすぐ飛んで、通り道の敵ぜんぶに当たる
   try{ voice&&ac()&&voice(ac(),{f:ice?880:520,f2:ice?1320:780,dur:.12,vol:.06}); }catch(e){}
   if(!ice) return;
   const it=a.it; it.u--; if(it.u<=0){ const i=A.inv.indexOf(it); if(i>=0){ A.inv.splice(i,1); A.fuse=[-1,-1]; }
