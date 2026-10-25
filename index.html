@@ -281,6 +281,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .home{position:relative;margin:-4px max(-16px,calc(-1*env(safe-area-inset-left,0px) - 16px)) 0;height:calc(100dvh - 140px);min-height:540px;overflow:hidden;border-radius:0 0 18px 18px}
 .hm-bg{position:absolute;inset:0 0 50% 0;background-size:100% 100%}
 .rk-ts{display:inline-block;margin:3px 0 1px;padding:2px 8px;border-radius:999px;background:#c0392b;color:#fff;font-weight:900;font-size:12px;letter-spacing:.04em}
+#stage:has(.home.ts),html:has(.home.ts),body:has(.home.ts){overflow:hidden!important;overscroll-behavior:none}   /* ホーム（魔物合戦）はスクロールしない */
 .home.ts{background:linear-gradient(#5aa7e6,#7cc4f5)}
 .hm-ts{position:absolute;left:0;right:0;bottom:0;top:45%;z-index:1;overflow:hidden}
 .hm-ground{position:absolute;left:0;right:0;bottom:0;top:50%;background-size:100% 100%;box-shadow:inset 0 3px 0 #0004}
@@ -5322,6 +5323,7 @@ const decoHtml=(k,side)=>{ const d=HOME_DECO.find(x=>x.k===k); if(!d||d.k==="non
 // ホームの魔物合戦：画面がずれても見切れないように、ホームの高さを「上のヘッダーの下〜下のタブの上」ちょうどにする
 function tsHomeFit(){ try{ const hm=$(".home.ts"), ts=$("#hmTs"); if(!hm||!ts) return; const st=$("#stage"); if(st) st.scrollTop=0; window.scrollTo(0,0);
   const tb=document.querySelector(".tabs"), fixedTabs=tb&&getComputedStyle(tb).position==="fixed", bottom=fixedTabs?tb.getBoundingClientRect().top:window.innerHeight;
+  if(!hm._noScroll){ hm._noScroll=1; hm.addEventListener("touchmove",e=>{ if(!e.target.closest(".sheet-bg,.ts-dlg")) e.preventDefault(); },{passive:false}); hm.addEventListener("wheel",e=>e.preventDefault(),{passive:false}); }   // ホームはスクロールしない
   const h=Math.max(420,Math.floor(bottom-hm.getBoundingClientRect().top-2)); hm.style.height=h+"px"; hm.style.minHeight="0";
   const tp=$(".hm-top"); if(tp) ts.style.top=(tp.offsetTop+tp.offsetHeight+8)+"px"; ts.style.bottom="0px";
   if(window.openTS) window.openTS({embed:ts}); }catch(e){} }
