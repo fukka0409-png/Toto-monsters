@@ -34,7 +34,10 @@ const priceOf = id => { try{ const p=dexPrice(id); if(p!=null) return p; }catch(
 const statsOf = id => { const k=Math.pow(Math.max(1,priceOf(id)),0.35), c=cfgOf(id), sz=Math.sqrt(c.w*c.h); return { hp:Math.round(60*k*sz), atk:Math.max(1,Math.round(8*k)) }; };
 const costOf = id => { let p=0; try{ p=sellPrice({m:id}); }catch(e){ p=priceOf(id); } return Math.max(1,Math.round(p*TS.COST_MUL)); };
 
-const st = () => { S.ts=S.ts||{}; const t=S.ts; t.cols=t.cols||TS.COLS0; t.rows=t.rows||TS.ROWS0; t.units=(t.units||[]).filter(u=>mon(u.id)); t.nu=t.nu||1; return t; };
+const st = () => { S.ts=S.ts||{}; const t=S.ts; t.cols=t.cols||TS.COLS0; t.rows=t.rows||TS.ROWS0; t.units=(t.units||[]).filter(u=>mon(u.id)); t.nu=t.nu||1;
+  // まだトトの戦略に追加していない魔物が置かれていたら外して、払ったコインを返す（2026-10-25）
+  const bad=t.units.filter(u=>!TS_MON[u.id]); if(bad.length){ let back=0; bad.forEach(u=>{ back+=costOf(u.id); }); t.units=t.units.filter(u=>TS_MON[u.id]); S.coins=(S.coins||0)+back; try{ save(); }catch(e){} setTimeout(()=>{ try{ coinView(); msg(T(`まだ使えない魔物${bad.length}体を外して、${fmt(back)}コインを返しました`,`Removed ${bad.length} monsters not yet available and refunded ${fmt(back)} coins`)); }catch(e){} },600); }
+  return t; };
 const IMGS={}; const imgOf = id => { if(!IMGS[id]){ const im=new Image(); const m=mon(id); im.src=m?m.img:""; IMGS[id]=im; } return IMGS[id]; };
 const deco = (()=>{ const im=new Image(); im.src="adv/toto_s.png"; return im; })();
 const grave = (()=>{ const im=new Image(); im.src="mb/grave.png"; return im; })();
@@ -130,8 +133,8 @@ function expand(k){ const t=st(), max=k==="c"?TS.COLS_MAX:TS.ROWS_MAX, cur=k==="
 /* ---------- 魔物をえらぶ ---------- */
 function pickMonster(){ const t=st();
   if(t.units.length>=TS.MAX_UNITS) return dlg(`<p>${T(`置けるのは合わせて${TS.MAX_UNITS}体までです`,`You can place up to ${TS.MAX_UNITS}`)}</p>`,[["OK",null]]);
-  const own=MONSTERS.filter(m=>(S.got||{})[m.id]);
-  if(!own.length) return dlg(`<p>${T("図鑑で解放した魔物がいません。ガチャで魔物と出会おう！","No monsters unlocked in your Monster Book yet.")}</p>`,[["OK",null]]);
+  const own=MONSTERS.filter(m=>(S.got||{})[m.id] && TS_MON[m.id]);   // トトの戦略に追加した魔物（TS_MON にある魔物）だけ。図鑑で解放していることも必要
+  if(!own.length) return dlg(`<p>${T(`使える魔物がいません。<br>トトの戦略で使える魔物：${Object.keys(TS_MON).map(id=>mon(+id)?`「${esc3(mon(+id).name)}」`:"").join("")}（図鑑で解放すると使えます）`,"No usable monsters yet. Unlock them in your Monster Book.")}</p>`,[["OK",null]]);
   // 今追加できる魔物だけ（コインが足りる・今のマスに入る大きさ）
   const L=own.filter(m=>{ const c=cfgOf(m.id); return costOf(m.id)<=(S.coins||0) && c.w<=t.cols && c.h<=t.rows; }).sort((a,b)=>RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank)||a.id-b.id);
   if(!L.length) return dlg(`<h3>👾 ${T("魔物を追加","Add a monster")}</h3><p>${T(`今追加できる魔物がいません。<br>（いちばん安い魔物：💰 ${fmt(Math.min(...own.map(m=>costOf(m.id))))}・所持 ${fmt(S.coins||0)}コイン）`,`No monster you can add right now.`)}</p>`,[["OK",null]]);
@@ -202,7 +205,7 @@ async function readyGo(auto){ if(!V||V.mode!=="prep"||busy) return; const t=st()
   if(!opp) opp=cpuLayout(mine);
   busy=false; startBattle(mine, opp);
 }
-function cpuLayout(mine){ const n=Math.max(3,Math.min(TS.MAX_UNITS,mine.units.length)), cols=mine.cols, rows=mine.rows, L=[], pool=MONSTERS.filter(m=>m.rank!=="L"&&!m.gift);
+function cpuLayout(mine){ const n=Math.max(3,Math.min(TS.MAX_UNITS,mine.units.length)), cols=mine.cols, rows=mine.rows, L=[], pool=MONSTERS.filter(m=>TS_MON[m.id]);
   const occ=new Set(), ok=(id,c,r)=>{ const k=cfgOf(id); if(c<0||r<0||c+k.w>cols||r+k.h>rows) return false; for(let i=0;i<k.w;i++) for(let j=0;j<k.h;j++) if(occ.has((c+i)+","+(r+j))) return false; return true; };
   for(let tries=0; L.length<n && tries<400; tries++){ const m=pool[Math.floor(Math.random()*pool.length)], k=cfgOf(m.id), c=Math.floor(Math.random()*cols), r=k.fly?Math.floor(Math.random()*rows):0;
     if(!ok(m.id,c,r)) continue; for(let i=0;i<k.w;i++) for(let j=0;j<k.h;j++) occ.add((c+i)+","+(r+j)); L.push({id:m.id,c,r}); }
