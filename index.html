@@ -3389,10 +3389,10 @@ function myTrend(){
   return up&&dn?"mix":up?"up":dn?"down":"";
 }
 const TREND_ICON = { up:'<span class="tr up" title="上昇中">▲</span>', down:'<span class="tr down" title="下降中">▼</span>', mix:'<span class="tr mix" title="上がったり下がったり">▶</span>' };
-// 所持コインの上限：1億コイン（こえた分はもらえない）
-const COIN_MAX = 100000000;
+// 所持コインの上限：10億コイン（こえた分はもらえない）（2026-10-25に1億から変更）
+const COIN_MAX = 1000000000;
 let coinCapToastAt=0;
-function capCoins(){ if(S.coins>COIN_MAX){ S.coins=COIN_MAX; if(Date.now()-coinCapToastAt>60000){ coinCapToastAt=Date.now(); setTimeout(()=>{ try{ toast(LANG==="en"?"💰 You've reached the coin limit (100,000,000). Extra coins can't be kept.":"💰 所持コインの上限（1億コイン）に達しました。こえた分は受け取れません"); }catch(e){} },300); } } }
+function capCoins(){ if(S.coins>COIN_MAX){ S.coins=COIN_MAX; if(Date.now()-coinCapToastAt>60000){ coinCapToastAt=Date.now(); setTimeout(()=>{ try{ toast(LANG==="en"?"💰 You've reached the coin limit (1,000,000,000). Extra coins can't be kept.":"💰 所持コインの上限（10億コイン）に達しました。こえた分は受け取れません"); }catch(e){} },300); } } }
 function save(){
   capCoins();
   trackLv();
