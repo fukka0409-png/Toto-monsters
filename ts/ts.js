@@ -25,7 +25,7 @@ const TS_RANK = {
 // 置ける場所：ふつうは地面の上のマスだけ。fly:true＝空中のマスにも置ける・under:true＝土の中のマスにも置ける
 const TS_MON = {
   10:{ w:1, h:1, spd:1.0, anim:"ts10", melee:true, atkMap:[0,1,2,3,3,2,1,0,9,9] },
-  63:{ w:1, h:1, spd:0.8, anim:"ts63", fly:true, diag:true, flyLoop:[1,2,3,4,5,6,7,8] },   // 羽スライム：やや遅め・1×1。空中にも置ける。置いた高さのまま飛び、斜め前下の1マスにいる相手を攻撃   // ドットスライム：近距離攻撃・移動速度ふつう・1×1マス・歩きと攻撃のアニメ（右向きの絵）
+  63:{ w:1, h:1, spd:0.8, anim:"ts63", fly:true, diag:true, flyLoop:[1,2,3,4,5,6,7,8] },   // 羽スライム：やや遅め・1×1。空中にも置ける。置いた高さのまま飛び、前の1マスと斜め前下の1マスにいる相手を攻撃   // ドットスライム：近距離攻撃・移動速度ふつう・1×1マス・歩きと攻撃のアニメ（右向きの絵）
 };
 // 歩き・攻撃のコマ（[中心x, 足もとy]・大きさ）。攻撃の8・9コマ目はエフェクトだけの絵なので、体（攻撃1コマ目）の前に重ねる
 const TS_ANIM = { ts63:{"a":[[41.8,68.5],[42.2,65.0],[38.5,65.0],[42.8,66.5],[44.2,83.5],[43.2,72.5],[43.8,67.0],[42.8,72.0],[43.2,69.0],[39.1,68.0]],"w":[[42.0,65.5],[39.0,65.0],[38.5,60.5],[39.5,61.5],[44.0,49.5],[42.0,59.5],[40.0,61.0],[42.5,66.5],[43.5,67.5],[36.0,65.5]],"size":{"a0":[80,69],"a1":[84,67],"a2":[78,66],"a3":[86,67],"a4":[88,82],"a5":[86,74],"a6":[86,69],"a7":[82,74],"a8":[80,71],"a9":[82,68],"w0":[80,66],"w1":[76,78],"w2":[76,80],"w3":[78,82],"w4":[82,57],"w5":[82,69],"w6":[76,71],"w7":[86,81],"w8":[86,80],"w9":[78,66]}}, ts10:{"a":[[41.0,67.5],[38.0,57.0],[39.0,50.0],[39.0,75.5],[41.5,52.0],[52.0,62.0],[56.5,67.0],[28.5,62.0],[27.8,65.5],[44.5,69.0]],"w":[[41.0,76.0],[44.5,77.0],[45.5,76.0],[46.5,60.0],[48.0,70.5],[45.5,49.0],[46.0,56.5],[41.0,76.5],[40.0,67.5],[42.5,55.0]],"size":{"a0":[82,68],"a1":[80,58],"a2":[80,51],"a3":[84,76],"a4":[90,53],"a5":[93,62],"a6":[92,68],"a7":[89,63],"a8":[88,66],"a9":[90,70],"w0":[83,76],"w1":[82,78],"w2":[82,77],"w3":[85,60],"w4":[90,71],"w5":[88,50],"w6":[90,57],"w7":[88,77],"w8":[88,68],"w9":[91,56]}} };
@@ -273,15 +273,17 @@ function advance(u,B,dt,walls){ const dir=u.side?-1:1; let nx=u.x+dir*u.spd*dt;
   if(u.x<B.X1-TS.CS*2 || u.x>B.W+TS.CS*2){ u.hp=0; u.dead=true; u.deadT=9; B.pops.push({x:Math.max(B.X1,Math.min(B.W,u.x)),y:u.y-u.h,v:"OUT",t:0,side:u.side}); } }
 function stepDiag(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false; u.hop+=dt*8;
   // 斜め前下の高さにいる相手だけが、攻撃できる相手
-  const all=[...alive(1-u.side),...walls(1-u.side)], foes=all.filter(f=>f.y>u.y+4 && f.y-f.h<u.y+TS.CS-4);
+  // 攻撃範囲：前の1列の「同じ高さ」と「1つ下」の2マス（No.63の図）
+  const top=u.y-TS.CS+4, bot=u.y+TS.CS-4;
+  const all=[...alive(1-u.side),...walls(1-u.side)], foes=all.filter(f=>f.y>top && f.y-f.h<bot);
   if(!foes.length){ advance(u,B,dt,null); return; }
   let tg=null, bd=Infinity; for(const f of foes){ const d=Math.abs(f.x-u.x)+Math.abs(f.y-u.y)*0.3; if(d<bd){ bd=d; tg=f; } }
   u.face=tg.x>=u.x?1:-1;
-  const zx0=u.face>0?u.x+u.w/2-4:u.x-u.w/2-TS.CS+4, zx1=zx0+TS.CS, zy0=u.y+4, zy1=u.y+TS.CS-4;   // 斜め前下の1マス
+  const zx0=u.face>0?u.x+u.w/2-10:u.x-u.w/2-14, zx1=zx0+24, zy0=top, zy1=bot;   // 前の1列・2マス（くっつくところまで近づいて攻撃）
   const inZ=f=>{ const fx0=f.x-f.w/2, fx1=f.x+f.w/2, fy0=f.y-f.h, fy1=f.y; return fx1>zx0&&fx0<zx1&&fy1>zy0&&fy0<zy1; };
   const hitT=foes.find(inZ);
   if(hitT){ if(u.t<=0){ u.t=u.cd; u.atkT=0; hitT.hp=Math.max(0,hitT.hp-u.atk); hitT.flash=0.15; B.pops.push({x:hitT.x,y:hitT.y-hitT.h,v:u.atk,t:0,side:hitT.side}); if(hitT.hp<=0) hitT.dead=true; } return; }
-  const want=tg.x-u.face*(u.w/2+TS.CS*0.5+tg.w/2-4), dx=want-u.x;   // 相手が斜め前下に来る位置まで動く
+  const want=tg.x-u.face*(u.w/2+tg.w/2-8), dx=want-u.x;   // 相手が前の列（同じ高さか1つ下）に来る位置まで動く
   if(Math.abs(dx)>2){ u.x+=Math.sign(dx)*Math.min(Math.abs(dx),u.spd*dt); u.moving=true; } }
 function stepBattle(dt){ const B=V.B; if(!B||B.over) return;
   const alive=s=>B.units.filter(u=>u.side===s&&!u.dead&&!u.wall);   // 勝ち負けに数えるのは魔物だけ
