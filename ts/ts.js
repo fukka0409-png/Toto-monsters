@@ -183,7 +183,7 @@ window.__tsW2S=(x,y)=>{ if(!V) return null; const p=w2s(x,y), r=V.cv.getBounding
 
 function sideView(){ const s=V&&V.root.querySelector("#tsSide"); if(!s) return; const t=st();
   if(V.mode!=="prep"){ s.innerHTML=V.B?`<div class="ts-info">${T("相手","Opponent")}：${esc3(V.B.enemyName)}</div>`:""; return; }
-  const rdTxt=V.embed?`<div class="ts-info">${!S.tsRd?T(`⚠️ まだ準備完了していません（魔物${TS.MIN_READY}体で出られます）`,`⚠️ Not ready (${TS.MIN_READY}+ monsters)`):S.tsSig===sigOf(t)?T("✅ 準備完了ずみ","✅ Ready"):T("✏️ 変えた配置は、もう一度「準備完了」で反映","✏️ Press Ready again to save changes")}</div>`:"";
+  const rdTxt=V.embed?`<div class="ts-info">${!S.tsRd?T(`⚠️ まだ準備完了していません（魔物${TS.MIN_READY}体で出られます）`,`⚠️ Not ready (needs ${TS.MIN_READY} monsters)`):S.tsSig===sigOf(t)?T("✅ 準備完了ずみ","✅ Ready"):T("✏️ 変えた配置は、もう一度「準備完了」で反映","✏️ Press Ready again to save changes")}</div>`:"";
   s.innerHTML=`${rdTxt}<div class="ts-info">${T("魔物","Monsters")} ${t.units.filter(u=>!isItem(u.id)).length}/${TS.MAX_MON}　${T("アイテム","Items")} ${t.units.filter(u=>isItem(u.id)).length}/${TS.MAX_ITEM}　${T("マス","Grid")} ${t.cols}×${t.rows}</div>
     <div style="display:flex;gap:6px"><button type="button" class="ts-b" id="tsEx" ${t.cols>=TS.COLS_MAX?"disabled":""}>${T("横+1","Width +1")}</button><button type="button" class="ts-b" id="tsEy" ${t.rows>=TS.ROWS_MAX?"disabled":""}>${T("縦+1","Height +1")}</button></div>`;
   s.querySelector("#tsEx").onclick=()=>expand("c"); s.querySelector("#tsEy").onclick=()=>expand("r"); }
