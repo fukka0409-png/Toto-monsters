@@ -3519,7 +3519,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -3939,7 +3939,36 @@ function pickFrom(list, rank){
     const w=x=>x.by?COLLAB_W:1, tot=p.reduce((a,x)=>a+w(x),0); let k=Math.random()*tot; for(const x of p){ if((k-=w(x))<0) return x; } return p[p.length-1]; }
 }
 const BIG_PACK = 500;   // 500連パック：BOXの魔物が500体以下のときだけ
+// BOXに入れられる魔物の上限（2026-10-25〜）。ガチャはこれをこえる分は回せない
+const BOX_MAX = 800;
+function boxFullDlg(need){ const L=LANG==="en", have=(S.units||[]).length, over=have+need-BOX_MAX;
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">📦</div><p>${L?`Your BOX can hold up to ${BOX_MAX} monsters`:`BOXに入る魔物は${BOX_MAX}体までです`}</p>
+    <div class="m-text">${L?`You have <b>${have}</b> now. Sell or fuse <b>${over}</b> more to pull this.`:`いま <b>${have}</b>体です。このガチャを回すには、あと <b>${over}</b>体 売却か合成でへらしてください。`}</div>
+    <button class="btn gold" type="button" id="bfGo">${L?"Go to BOX":"BOXへ移動"}</button><button class="btn ghost" type="button" id="bfX">${L?"Close":"とじる"}</button></div>`;
+  document.body.appendChild(bg); try{ SFX.ng(); }catch(e){}
+  bg.querySelector("#bfX").onclick=()=>bg.remove();
+  bg.querySelector("#bfGo").onclick=()=>{ bg.remove(); tab="box"; boxMode="units"; render(); try{ $("#stage").scrollTop=0; }catch(e){} }; }
+// すでに上限をこえている冒険者：Cランクから順に（同じランクなら保護していない・レベルが低い魔物から）売却して、そのコインをプレゼントBOXへ（1回だけ・限定ランクと配置中の魔物は売らない）
+async function trimBox(){
+  if(S.boxTrim===1 || !MYID) return;
+  if((S.units||[]).length<=BOX_MAX){ S.boxTrim=1; save(); return; }
+  try{ if(DB) await loadDexStats(); }catch(e){}   // 売却価格は、いつもの売却と同じ（図鑑の獲得数で決まる）
+  if(S.boxTrim===1) return; S.boxTrim=1;
+  const over=(S.units||[]).length-BOX_MAX; if(over<=0){ save(); return; }
+  const cand=S.units.filter(u=>{ const m=mon(u.m); return m && m.rank!=="L" && u.u!==S.guard; })
+    .sort((a,b)=>(RANKS.indexOf(mon(a.m).rank)-RANKS.indexOf(mon(b.m).rank)) || ((a.k?1:0)-(b.k?1:0)) || (a.l-b.l) || (a.u-b.u)).slice(0,over);
+  const del=new Set(cand.map(u=>u.u)); let coins=0; const byRank={};
+  cand.forEach(u=>{ let c=0; try{ c=sellPrice(u)||0; }catch(e){} coins+=c; const rk=mon(u.m).rank; byRank[rk]=(byRank[rk]||0)+1; });
+  S.sellLog=(S.sellLog||[]).concat({at:gnow(), units:cand.map(u=>({...u})), coins, plv:0, up:0, auto:"box800"}).slice(-30);   // 記録（あとで戻せるように）
+  S.units=S.units.filter(u=>!del.has(u.u));
+  if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
+  const rk=RANKS.filter(k=>byRank[k]).map(k=>`${k}${byRank[k]}`).join("・");
+  presentAdd({key:"boxtrim800", ic:"📦", title:`BOXの上限が${BOX_MAX}体になったので、こえていた${cand.length}体（${rk}）を売却しました`, en:`BOX limit is now ${BOX_MAX}: sold ${cand.length} extra monsters`, coins});
+  save(); try{ render(); }catch(e){}
+}
 function pullMonsters(n, ticket){
+  { const need = ticket ? TICKET_PACKS : n; if((S.units||[]).length + need > BOX_MAX) return boxFullDlg(need); }
   if(!ticket && n>=BIG_PACK && (S.units||[]).length>BIG_PACK){
     const L=LANG==="en", bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚠️</div><p>${L?"Reduce the monsters in your BOX to 500 or fewer":"BOXの魔物を500体以下まで減らしてください"}</p>
@@ -4350,7 +4379,7 @@ const boxSeg=()=>{ const cur=BOX_MENU.find(x=>x[0]===boxMode); const h=BOX_HELP[
 function bindBoxTop(){ const b=document.getElementById("boxBack"); if(b) b.onclick=()=>{ boxMode="menu"; sellMode=false; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; };
   const h=document.getElementById("boxHelp"); if(h) h.onclick=()=>{ const x=BOX_HELP[boxMode]; const bg=sheet(`<div class="sheet-h"><h3>${x[0]}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div class="rules-body">${x[1]}</div>`); }; }
 function renderBoxMenu(){
-  $("#stage").innerHTML=`<h2>魔物</h2><p class="sub">${S.units.length}体の仲間。やりたいことをえらんでね。</p>
+  $("#stage").innerHTML=`<h2>魔物</h2><p class="sub">${S.units.length}体の仲間（BOXは${BOX_MAX}体まで）。やりたいことをえらんでね。</p>
     <div class="box-menu">${BOX_MENU.map(([k,ic,nm,sub])=>`<button type="button" data-bm="${k}"><i>${ic}</i><span><b>${nm}</b><small>${sub}</small></span></button>`).join("")}
     <button type="button" data-bm="units" class="sm"><i>👾</i><span><b>手持ちの魔物を見る</b><small>魔物をタップして、配置・鍵・合成・進化など</small></span></button></div>`;
   document.querySelectorAll("[data-bm]").forEach(b=>b.onclick=()=>{ try{ SFX.tap(); }catch(e){} boxMode=b.dataset.bm; sellMode=boxMode==="sell"; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; }); }
@@ -4364,7 +4393,7 @@ function renderBox(){
   const list=boxMode==="evo"?sortedUnits().filter(x=>mon(x.m).next).sort((a,b)=>evoReady(b)-evoReady(a)):sortedUnits();
   [...sellSel].forEach(u=>{ const x=S.units.find(z=>z.u===u); if(!x||x.k) sellSel.delete(u); });
   const total=[...sellSel].reduce((t,u)=>t+sellPrice(S.units.find(z=>z.u===u)),0);
-  $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}<p class="sub">${S.units.length}体の仲間。${lockMode?"🔒 タップした魔物に鍵をかけたり外したりできます。鍵付きは合成の素材・売却に使われません。":sellMode?"売却する魔物をタップで選んでね（鍵付きは選べません）。":"タップして合成でレベルを上げよう。"}</p>
+  $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}<p class="sub">${S.units.length} / ${BOX_MAX}体の仲間。${lockMode?"🔒 タップした魔物に鍵をかけたり外したりできます。鍵付きは合成の素材・売却に使われません。":sellMode?"売却する魔物をタップで選んでね（鍵付きは選べません）。":"タップして合成でレベルを上げよう。"}</p>
   <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r}</button>`).join("")}
     <button class="chip" id="lockToggle" type="button" aria-pressed="${lockMode}" style="margin-left:auto">${lockMode?"鍵をおわる":"🔒 鍵をかける"}</button>
     ${boxMode==="sell"?"":`<button class="chip" id="sellToggle" type="button" aria-pressed="${sellMode}">${sellMode?"売却をやめる":"まとめて売却"}</button>`}</div>
@@ -9254,6 +9283,6 @@ async function titleRanks(){
   }
 })();
 </script>
-<script src="mc/mc.js?v=7" defer></script>
+<script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 </body></html>

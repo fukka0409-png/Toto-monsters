@@ -276,7 +276,12 @@ async function play(){ if(V.busy) return; const a=curArm(); if(!a) return noArm(
   if(!V.items.length) say(T("この台は空っぽ！ 次の台へ","This machine is empty! Try the next one"),2500);
   V.busy=false; }
 function givePrize(pd, quiet){ const m=pd.m, M=st(), key=`${day()}_${pd.mi}`; (M.taken[key]=M.taken[key]||[]).push(pd.i);
-  S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:false,t:now()}); save();
+  S.got[m.id]=(S.got[m.id]||0)+1;
+  // BOXがいっぱい（800体）のときは、BOXに入れずに売却したコインをもらう
+  let full=false; try{ full=(S.units||[]).length>=BOX_MAX; }catch(e){}
+  if(full){ let c=0; try{ c=sellPrice({m:m.id}); }catch(e){} S.coins=(S.coins||0)+c; save(); try{ render(); }catch(e){}
+    try{ toast(T(`🎯「${m.name}」をゲット！ BOXがいっぱい（${BOX_MAX}体）なので、売却して +${c.toLocaleString()}コイン`,`🎯 Got "${m.name}"! Your BOX is full (${BOX_MAX}), so it was sold for +${c.toLocaleString()} coins`)); }catch(e){} return; }
+  S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:false,t:now()}); save();
   try{ render(); }catch(e){}
   if(quiet){ try{ toast(T(`🎯 魔物キャッチャー：「${m.name}」をゲット！（BOXに入りました）`,`🎯 Monster Catcher: got "${m.name}"! (sent to your BOX)`)); }catch(e){} return; }
   sfx("reveal", m.rank); const g=document.createElement("div"); g.className="reveal"; g.style.zIndex=160; g.setAttribute("translate","no");
