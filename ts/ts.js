@@ -31,17 +31,38 @@ const TS_ANIM = { ts10:{"a":[[41.0,67.5],[38.0,57.0],[39.0,50.0],[39.0,75.5],[41
 const ANIM_IMG={}; const animImg=n=>{ if(!ANIM_IMG[n]){ const im=new Image(); im.src="ts/"+n+".png"; ANIM_IMG[n]=im; } return ANIM_IMG[n]; };
 Object.keys(TS_ANIM).forEach(k=>{ for(let i=0;i<10;i++){ animImg(k+"a"+i); animImg(k+"w"+i); } });
 // melee:true＝近距離攻撃。絵のまわりの草の分だけ少し重なるくらい（-0.3マス）まで近づいてから攻撃する
-const cfgOf = id => { const m=mon(id), c=Object.assign({fly:false}, TS_RANK[m&&m.rank]||TS_RANK.C, TS_MON[id]||{}); if(c.melee) c.range=-0.3; return c; };
+/* アイテム（2026-10-25）。図鑑の解放はいらない。cost＝置くのにかかるコイン（仮の値）
+   地雷：1×1。土の中にも置ける。相手の地上の魔物が上を通ると爆発して、地雷の上の横3×縦2マスにいる相手の魔物の体力を半分（最大体力の半分）へらす。
+         空中の魔物は通っても反応しないが、爆発したときに範囲にいればダメージ。地雷の位置は相手には見えない（自分には見える）
+   壁：縦3×横1。相手の地上の魔物は通りぬけられず、こわすまで先に進めない（空中の魔物は飛びこえる）。トゲは相手のほうを向く */
+const TS_ITEMS = {
+  "i:mine":{ name:"地雷", en:"Mine", img:"ts/mine.png", w:1, h:1, under:true, cost:1000, mine:true },
+  "i:wall":{ name:"壁", en:"Wall", img:"ts/wall.png", w:1, h:3, cost:500, hpPerLv:100, wall:true },   // 耐久力＝置いた冒険者の冒険者レベル×100
+};
+const isItem = id => typeof id==="string" && !!TS_ITEMS[id];
+const nameOf = id => isItem(id) ? T(TS_ITEMS[id].name, TS_ITEMS[id].en) : ((mon(id)||{}).name||"");
+const okId = id => isItem(id) || (!!mon(id) && !!TS_MON[id]);
+const cfgOf = id => { if(isItem(id)) return Object.assign({fly:false, spd:0, range:0, cd:9}, TS_ITEMS[id]); const m=mon(id), c=Object.assign({fly:false}, TS_RANK[m&&m.rank]||TS_RANK.C, TS_MON[id]||{}); if(c.melee) c.range=-0.3; return c; };
 // 強さ：売却価格（＝図鑑の全冒険者の獲得数で決まる）から。めずらしいほど強い
 const priceOf = id => { try{ const p=dexPrice(id); if(p!=null) return p; }catch(e){} try{ return sellPrice({m:id}); }catch(e){ return 10; } };
-const statsOf = id => { const k=Math.pow(Math.max(1,priceOf(id)),0.35), c=cfgOf(id), sz=Math.sqrt(c.w*c.h); return { hp:Math.round(60*k*sz), atk:Math.max(1,Math.round(8*k)) }; };
-const costOf = id => { let p=0; try{ p=sellPrice({m:id}); }catch(e){ p=priceOf(id); } return Math.max(1,Math.round(p*TS.COST_MUL)); };
+const myLv = () => Math.max(1, Math.floor(S.plv||1));
+const statsOf = (id, lv) => { if(isItem(id)){ const it=TS_ITEMS[id]; return { hp:it.hpPerLv?it.hpPerLv*Math.max(1,lv||myLv()):(it.hp||1), atk:0 }; } const k=Math.pow(Math.max(1,priceOf(id)),0.35), c=cfgOf(id), sz=Math.sqrt(c.w*c.h); return { hp:Math.round(60*k*sz), atk:Math.max(1,Math.round(8*k)) }; };
+const costOf = id => { if(isItem(id)) return TS_ITEMS[id].cost; let p=0; try{ p=sellPrice({m:id}); }catch(e){ p=priceOf(id); } return Math.max(1,Math.round(p*TS.COST_MUL)); };
 
-const st = () => { S.ts=S.ts||{}; const t=S.ts; t.cols=t.cols||TS.COLS0; t.rows=t.rows||TS.ROWS0; t.units=(t.units||[]).filter(u=>mon(u.id)); t.nu=t.nu||1;
+const st = () => { S.ts=S.ts||{}; const t=S.ts; t.cols=t.cols||TS.COLS0; t.rows=t.rows||TS.ROWS0; t.units=(t.units||[]).filter(u=>isItem(u.id)||mon(u.id)); t.nu=t.nu||1;
   // まだトトの戦略に追加していない魔物が置かれていたら外して、払ったコインを返す（2026-10-25）
-  const bad=t.units.filter(u=>!TS_MON[u.id]); if(bad.length){ let back=0; bad.forEach(u=>{ back+=costOf(u.id); }); t.units=t.units.filter(u=>TS_MON[u.id]); S.coins=(S.coins||0)+back; try{ save(); }catch(e){} setTimeout(()=>{ try{ coinView(); msg(T(`まだ使えない魔物${bad.length}体を外して、${fmt(back)}コインを返しました`,`Removed ${bad.length} monsters not yet available and refunded ${fmt(back)} coins`)); }catch(e){} },600); }
+  const bad=t.units.filter(u=>!okId(u.id)); if(bad.length){ let back=0; bad.forEach(u=>{ back+=costOf(u.id); }); t.units=t.units.filter(u=>okId(u.id)); S.coins=(S.coins||0)+back; try{ save(); }catch(e){} setTimeout(()=>{ try{ coinView(); msg(T(`まだ使えない魔物${bad.length}体を外して、${fmt(back)}コインを返しました`,`Removed ${bad.length} monsters not yet available and refunded ${fmt(back)} coins`)); }catch(e){} },600); }
   return t; };
-const IMGS={}; const imgOf = id => { if(!IMGS[id]){ const im=new Image(); const m=mon(id); im.src=m?m.img:""; IMGS[id]=im; } return IMGS[id]; };
+const IMGS={}; const imgOf = id => { if(!IMGS[id]){ const im=new Image(); const m=isItem(id)?null:mon(id); im.src=isItem(id)?TS_ITEMS[id].img:(m?m.img:""); IMGS[id]=im; } return IMGS[id]; };
+Object.keys(TS_ITEMS).forEach(imgOf);
+// 地雷が爆発する動き・壁がくずれる動き（各10コマ。[中心x, 下y, 幅, 高さ]）。基準：地雷1コマ目の幅＝1マス、壁1コマ目の高さ＝3マス
+const FX = {"mine":[[52.5,42.0,106,40],[50.2,56.7,100,55],[47.8,64.8,97,63],[56.0,77.3,109,75],[55.8,89.6,112,88],[52.3,86.8,114,83],[57.2,86.8,118,85],[54.4,82.6,113,80],[54.8,78.8,115,77],[46.6,70.0,104,68]],"wall":[[19.9,142.1,42,140],[18.2,141.0,43,139],[18.9,137.9,49,136],[21.5,135.1,57,133],[22.9,128.4,58,127],[26.4,113.7,63,112],[31.7,93.1,68,91],[39.4,68.9,75,67],[37.3,57.7,74,55],[36.1,37.1,74,35]]};
+const fxImg = (k,i) => imgOf("fx:"+k+i);
+(function(){ for(const k in FX) for(let i=0;i<10;i++){ const im=new Image(); im.src=`ts/${k}_x${i}.png`; IMGS["fx:"+k+i]=im; } })();
+function drawFx(g,k,i,wx,wy,face,alpha){ const m=FX[k][i], im=fxImg(k,i); if(!im||!im.complete||!im.naturalWidth) return; const z=V.cam.z;
+  const big = k==="mine" ? 1+1.6*Math.min(1,Math.max(0,(i-1)/4)) : 1;   // 爆発は、ダメージの範囲（横3マス）くらいまで大きくなる
+  const sc=(k==="mine" ? TS.CS/FX.mine[0][2] : TS.CS*3/FX.wall[0][3])*z*big, p=w2s(wx,wy);
+  g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); g.drawImage(im,-m[0]*sc,-m[1]*sc,m[2]*sc,m[3]*sc); g.restore(); }
 const deco = (()=>{ const im=new Image(); im.src="adv/toto_s.png"; return im; })();
 const grave = (()=>{ const im=new Image(); im.src="mb/grave.png"; return im; })();
 function sfx(k){ try{ if(k==="tap") SFX.tap(); else if(k==="coin") SFX.coin(); else if(k==="ng") SFX.ng(); else if(k==="win") SFX.reveal("S"); else if(k==="level") SFX.level(); }catch(e){} }
@@ -112,7 +133,7 @@ function openTS(){
   V.ctx=V.cv.getContext("2d");
   root.querySelector("#tsX").onclick=()=>{ if(V&&V.mode==="battle") return dlg(`<p>${T("バトル中です。やめると負けになります。","You're in a battle. Leaving counts as a loss.")}</p>`,[[T("つづける","Keep playing"),null,"g"],[T("やめる","Leave"),()=>closeTS()]]); closeTS(); };
   root.querySelector("#tsAddM").onclick=()=>{ sfx("tap"); pickMonster(); };
-  root.querySelector("#tsAddI").onclick=()=>{ sfx("tap"); dlg(`<h3>🧰 ${T("アイテム","Items")}</h3><p>${T("アイテムは準備中です。もうすぐ追加されます！","Items are coming soon!")}</p>`,[["OK",null]]); };
+  root.querySelector("#tsAddI").onclick=()=>{ sfx("tap"); pickItem(); };
   root.querySelector("#tsGo").onclick=()=>{ sfx("tap"); readyGo(); };
   sideView(); coinView();
   resize(); fitPrep(); addEventListener("resize",resize);
@@ -149,6 +170,18 @@ function pickMonster(){ const t=st();
     bg.remove(); V.placing={id}; V.sel=null; selView(); const c=cfgOf(id); msg(T(`置きたいマスをタップ（${c.w}×${c.h}マス・左下のマスをタップ）`,`Tap a cell to place it (${c.w}×${c.h}, bottom-left cell)`)); });
 }
 
+/* ---------- アイテムをえらぶ ---------- */
+function pickItem(){ const t=st();
+  if(t.units.length>=TS.MAX_UNITS) return dlg(`<p>${T(`置けるのは魔物とアイテムを合わせて${TS.MAX_UNITS}個までです`,`Up to ${TS.MAX_UNITS} in total`)}</p>`,[["OK",null]]);
+  const desc={ "i:mine":T("土の中にも置ける。相手の地上の魔物が上を通ると爆発し、上の横3×縦2マスの相手の体力を半分へらす（空中の魔物は通っても反応しない）。相手には見えない","Can go underground. Explodes when an enemy ground monster walks over it: halves HP in a 3×2 area above. Hidden from the opponent."),
+    "i:wall":T(`相手の地上の魔物は、こわすまで通りぬけられない。空中の魔物は飛びこえる。耐久力は冒険者レベル×${TS_ITEMS["i:wall"].hpPerLv}（今は${fmt(statsOf("i:wall").hp)}）`,`Blocks enemy ground monsters until destroyed. HP = Adventurer Lv × ${TS_ITEMS["i:wall"].hpPerLv}.`) };
+  const L=Object.keys(TS_ITEMS).filter(id=>{ const c=cfgOf(id); return c.w<=t.cols && c.h<=t.rows; });
+  const bg=dlg(`<h3>🧰 ${T("アイテムを追加","Add an item")}</h3><p style="font-size:12px;margin:0 0 8px">${T(`所持コイン ${fmt(S.coins||0)}。コインは置いたときに払います（取り除いてももどりません）`,`You have ${fmt(S.coins||0)} coins. You pay when you place it.`)}</p>
+    <div class="ts-grid">${L.map(id=>{ const c=cfgOf(id), cost=costOf(id), ok=(S.coins||0)>=cost; return `<button type="button" class="ts-card ${ok?"":"no"}" data-it="${id}"><img src="${TS_ITEMS[id].img}" alt="" style="object-fit:contain"><b>${esc3(nameOf(id))}</b><span>${c.w}×${c.h}${T("マス","")}${c.under?T("・土の中OK"," · underground OK"):""}${c.wall?`・❤ ${fmt(statsOf(id).hp)}`:""}</span><span style="font-size:10px;font-weight:700">${desc[id]||""}</span><span class="c">💰 ${fmt(cost)}</span></button>`; }).join("")}</div>`,[[T("とじる","Close"),null,"g"]]);
+  bg.querySelectorAll("[data-it]").forEach(b=>b.onclick=()=>{ const id=b.dataset.it, cost=costOf(id);
+    if((S.coins||0)<cost){ sfx("ng"); return msg(T("コインが足りません","Not enough coins")); }
+    bg.remove(); V.placing={id}; V.sel=null; selView(); const c=cfgOf(id); msg(T(`置きたいマスをタップ（${c.w}×${c.h}マス・左下のマスをタップ）`,`Tap a cell to place it (${c.w}×${c.h}, bottom-left cell)`)); });
+}
 /* ---------- 置く・動かす ---------- */
 const fits = (id,c,r,skip) => { const t=st(), k=cfgOf(id); if(c<0||r<TS.UNDER||c+k.w>t.cols||r+k.h>t.rows) return false;
   if(r<0 && !k.under) return false;   // 土の中に置けるのは under:true の魔物・アイテムだけ
@@ -158,13 +191,13 @@ const cellAt = (wx,wy) => ({ c:Math.floor(wx/TS.CS), r:Math.floor(-wy/TS.CS) });
 const unitAt = (wx,wy) => { const t=st(); for(let i=t.units.length-1;i>=0;i--){ const u=t.units[i], k=cfgOf(u.id); const x0=u.c*TS.CS, y1=-u.r*TS.CS, x1=x0+k.w*TS.CS, y0=y1-k.h*TS.CS; if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1) return u; } return null; };
 function place(c,r){ const id=V.placing.id, t=st(), cost=costOf(id);
   if(t.units.length>=TS.MAX_UNITS){ V.placing=null; return msg(T(`置けるのは${TS.MAX_UNITS}体までです`,`Up to ${TS.MAX_UNITS}`)); }
-  if(!fits(id,c,r)){ sfx("ng"); const k=cfgOf(id); return msg(r<0&&!k.under?T("この魔物は土の中には置けません（地面の上のマスに置いてね）","This one can't go underground"):r>0&&!k.fly?T("この魔物は浮かせて置けません（地面の上のマスに置いてね）","This one can't float — place it on the ground"):T("そこには置けません（マスからはみ出す・ほかと重なる）","Can't place there (off the grid or overlapping)")); }
+  if(!fits(id,c,r)){ sfx("ng"); const k=cfgOf(id); return msg(r<0&&!k.under?T(isItem(id)?"このアイテムは土の中には置けません（地面の上のマスに置いてね）":"この魔物は土の中には置けません（地面の上のマスに置いてね）","This one can't go underground"):r>0&&!k.fly?T("この魔物は浮かせて置けません（地面の上のマスに置いてね）","This one can't float — place it on the ground"):T("そこには置けません（マスからはみ出す・ほかと重なる）","Can't place there (off the grid or overlapping)")); }
   if((S.coins||0)<cost){ sfx("ng"); V.placing=null; return msg(T("コインが足りません","Not enough coins")); }
   S.coins-=cost; t.units.push({u:t.nu++, id, c, r}); save(); sfx("coin"); coinView(); sideView(); V.placing=null;
-  msg(T(`「${mon(id).name}」を置きました（-${fmt(cost)}コイン）`,`Placed ${mon(id).name} (-${fmt(cost)})`)); }
+  msg(T(`「${nameOf(id)}」を置きました（-${fmt(cost)}コイン）`,`Placed ${nameOf(id)} (-${fmt(cost)})`)); }
 function selView(){ const box=V&&V.root.querySelector("#tsSel"); if(!box) return; box.innerHTML=""; const u=V.sel; if(!u||V.mode!=="prep") return;
-  const k=cfgOf(u.id), s=statsOf(u.id), m=mon(u.id), p=w2s((u.c+k.w/2)*TS.CS, -(u.r+k.h)*TS.CS);
-  const d=el(`<div class="ts-sel" style="left:${p.x/V.dpr}px;top:${p.y/V.dpr-6}px"><span class="ts-info">${esc3(m.name)}　❤${fmt(s.hp)} ⚔${fmt(s.atk)}<br>${T("ドラッグで移動","Drag to move")}</span><button type="button" class="ts-b">${T("取り除く","Remove")}</button></div>`);
+  const k=cfgOf(u.id), s=statsOf(u.id), m={name:nameOf(u.id)}, p=w2s((u.c+k.w/2)*TS.CS, -(u.r+k.h)*TS.CS);
+  const d=el(`<div class="ts-sel" style="left:${p.x/V.dpr}px;top:${p.y/V.dpr-6}px"><span class="ts-info">${esc3(m.name)}${isItem(u.id)?(k.wall?`　❤${fmt(s.hp)}`:""):`　❤${fmt(s.hp)} ⚔${fmt(s.atk)}`}<br>${T("ドラッグで移動","Drag to move")}</span><button type="button" class="ts-b">${T("取り除く","Remove")}</button></div>`);
   d.querySelector("button").onclick=()=>dlg(`<p>${T(`「${esc3(m.name)}」を取り除きますか？<br>置いたときのコインはもどりません。`,`Remove ${esc3(m.name)}? Coins are not refunded.`)}</p>`,[[T("やめる","Cancel"),null,"g"],[T("取り除く","Remove"),()=>{ const t=st(); t.units=t.units.filter(x=>x!==u); save(); V.sel=null; selView(); sideView(); }]]);
   box.appendChild(d); }
 
@@ -204,10 +237,10 @@ async function readyGo(auto){ if(!V||V.mode!=="prep"||busy) return; const t=st()
   if(!t.units.length){ if(auto){ msg(T("魔物を置かなかったので、準備時間をもう一度はじめます","Nothing placed — prep time restarted")); V.prepEnd=now()+TS.PREP_MS; return; } sfx("ng"); return msg(T("魔物を1体以上置いてね","Place at least one monster")); }
   busy=true; V.placing=null; V.sel=null; selView(); msg(T("相手をさがしています…","Finding an opponent…"));
   const mine={cols:t.cols, rows:t.rows, units:t.units.map(u=>({id:u.id,c:u.c,r:u.r}))};
-  try{ if(typeof DB!=="undefined" && DB && MYID){ let nm=""; try{ nm=myName(); }catch(e){} DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, at:now()}).catch(()=>{}); } }catch(e){}
+  try{ if(typeof DB!=="undefined" && DB && MYID){ let nm=""; try{ nm=myName(); }catch(e){} DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), at:now()}).catch(()=>{}); } }catch(e){}
   let opp=null;
   try{ if(typeof DB!=="undefined" && DB && MYID){ const q=await Promise.race([DB.collection("tsp").orderBy("at","desc").limit(40).get(), new Promise((_,ng)=>setTimeout(()=>ng(new Error("to")),6000))]);
-      const L=q.docs.map(d=>d.data()).filter(x=>x&&x.uid!==MYID&&Array.isArray(x.units)&&x.units.some(u=>mon(u.id))); if(L.length) opp=L[Math.floor(Math.random()*L.length)]; } }catch(e){}
+      const L=q.docs.map(d=>d.data()).filter(x=>x&&x.uid!==MYID&&Array.isArray(x.units)&&x.units.some(u=>okId(u.id)&&!isItem(u.id))); if(L.length) opp=L[Math.floor(Math.random()*L.length)]; } }catch(e){}
   if(!opp) opp=cpuLayout(mine);
   busy=false; startBattle(mine, opp);
 }
@@ -217,40 +250,54 @@ function cpuLayout(mine){ const n=Math.max(3,Math.min(TS.MAX_UNITS,mine.units.le
     if(!ok(m.id,c,r)) continue; for(let i=0;i<k.w;i++) for(let j=0;j<k.h;j++) occ.add((c+i)+","+(r+j)); L.push({id:m.id,c,r}); }
   return {nm:T("さすらいの戦略家（CPU）","Wandering Tactician (CPU)"), cols, rows, units:L, cpu:1}; }
 
-function mkUnit(u, side, X0, cols){ const k=cfgOf(u.id), s=statsOf(u.id), w=k.w*TS.CS, h=k.h*TS.CS;
+function mkUnit(u, side, X0, cols, lv){ const k=cfgOf(u.id), s=statsOf(u.id, lv), w=k.w*TS.CS, h=k.h*TS.CS;
   const c = side ? (cols-u.c-k.w) : u.c;   // 相手は左右反対（前が自分のほうを向く）
-  return { id:u.id, side, x:X0+c*TS.CS+w/2, y:-Math.max(0,u.r)*TS.CS,   /* 土の中に置いた魔物は、バトルが始まると地面に出てくる */ w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
+  if(k.mine) return { id:u.id, mine:true, side, x:X0+c*TS.CS+w/2, y:-u.r*TS.CS, w, h, done:false };
+  return { id:u.id, wall:!!k.wall, side, x:X0+c*TS.CS+w/2, y:-Math.max(0,u.r)*TS.CS,   /* 土の中に置いた魔物は、バトルが始まると地面に出てくる */ w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
 function startBattle(mine, opp){
   const X1=0, X2=mine.cols*TS.CS+TS.GAP*TS.CS;
-  const units=[...mine.units.filter(u=>mon(u.id)).map(u=>mkUnit(u,0,X1,mine.cols)), ...opp.units.filter(u=>mon(u.id)).map(u=>mkUnit(u,1,X2,opp.cols))];
-  V.B={units, pops:[], end:now()+TS.BATTLE_MS, X1, X2, W:X2+opp.cols*TS.CS, rows:Math.max(mine.rows,opp.rows||mine.rows), mine, opp, enemyName:opp.nm||T("冒険者","Adventurer"), over:false};
+  const all=[...mine.units.filter(u=>okId(u.id)).map(u=>mkUnit(u,0,X1,mine.cols,myLv())), ...opp.units.filter(u=>okId(u.id)).map(u=>mkUnit(u,1,X2,opp.cols,opp.plv||myLv()))];
+  const units=all.filter(u=>!u.mine), mines=all.filter(u=>u.mine);
+  V.B={units, mines, booms:[], pops:[], end:now()+TS.BATTLE_MS, X1, X2, W:X2+opp.cols*TS.CS, rows:Math.max(mine.rows,opp.rows||mine.rows), mine, opp, enemyName:opp.nm||T("冒険者","Adventurer"), over:false};
   V.mode="battle"; V.root.querySelector("#tsPanel").hidden=true; resize(); sideView();
   fitRect(-TS.CS*2, -V.B.rows*TS.CS-TS.CS*2, V.B.W+TS.CS*2, TS.CS*1);
   sfx("win"); msg(T(`バトル開始！ 相手：${opp.nm||"冒険者"}`,`Battle start! vs ${opp.nm||"Adventurer"}`));
 }
 function stepBattle(dt){ const B=V.B; if(!B||B.over) return;
-  const alive=s=>B.units.filter(u=>u.side===s&&!u.dead);
-  for(const u of B.units){ if(u.dead){ u.deadT+=dt; continue; } u.flash=Math.max(0,u.flash-dt); u.t-=dt;
+  const alive=s=>B.units.filter(u=>u.side===s&&!u.dead&&!u.wall);   // 勝ち負けに数えるのは魔物だけ
+  const walls=s=>B.units.filter(u=>u.side===s&&!u.dead&&u.wall);
+  for(const u of B.units){ if(u.dead){ u.deadT+=dt; continue; } u.flash=Math.max(0,u.flash-dt); if(u.wall) continue; u.t-=dt;
     if(!u.fly){ if(u.y<0){ u.vy+=1800*dt; u.y=Math.min(0,u.y+u.vy*dt); if(u.y>=0) u.vy=0; } }   // 地上の魔物は地面に落ちる
-    const foes=alive(1-u.side); if(!foes.length) continue;
+    const foes=u.fly?alive(1-u.side):[...alive(1-u.side),...walls(1-u.side)]; if(!alive(1-u.side).length) continue;
     let tg=null, bd=Infinity; for(const f of foes){ const d=Math.hypot(f.x-u.x,(f.y-f.h/2)-(u.y-u.h/2)); if(d<bd){ bd=d; tg=f; } }
     const dx=tg.x-u.x, gap=Math.abs(dx)-(u.w+tg.w)/2, vgap=Math.abs((tg.y-tg.h/2)-(u.y-u.h/2))-(u.h+tg.h)/2;
     u.face=dx>=0?1:-1;
     u.atkT+=dt; u.moving=false;
-    if(gap>u.range || (vgap>u.range && !u.fly && tg.fly===false)){ u.x+=Math.sign(dx)*u.spd*dt; u.hop+=dt*8; u.moving=true; }
-    else if(u.fly && vgap>u.range){ const ty=tg.y-tg.h/2+u.h/2; u.y+=Math.sign(ty-u.y)*u.spd*0.8*dt; }
+    const rg=tg.wall?Math.max(u.range,2):u.range;   // 壁はくっついたところで攻撃する
+    if(gap>rg || (vgap>rg && !u.fly && tg.fly===false)){ let nx=u.x+Math.sign(dx)*u.spd*dt;
+      if(!u.fly) for(const wl of walls(1-u.side)){ const edge=wl.x-Math.sign(dx)*(wl.w+u.w)/2; if(Math.sign(dx)>0 ? (u.x<=edge+1 && nx>edge) : (u.x>=edge-1 && nx<edge)) nx=edge; }   // 相手の壁は通りぬけられない
+      u.x=nx; u.hop+=dt*8; u.moving=true; }
+    else if(u.fly && vgap>rg){ const ty=tg.y-tg.h/2+u.h/2; u.y+=Math.sign(ty-u.y)*u.spd*0.8*dt; }
     else if(u.t<=0){ u.t=u.cd; u.atkT=0; tg.hp=Math.max(0,tg.hp-u.atk); tg.flash=0.15; B.pops.push({x:tg.x,y:tg.y-tg.h,v:u.atk,t:0,side:tg.side});
       if(tg.hp<=0){ tg.dead=true; } }
     if(u.fly && gap>u.range){ const ty=tg.y-tg.h/2+u.h/2; u.y+=Math.sign(ty-u.y)*Math.min(Math.abs(ty-u.y),u.spd*0.5*dt); }
   }
+  // 地雷：相手の地上の魔物が上を通ったら爆発（上の横3×縦2マス）。空中の魔物には反応しない
+  for(const mn of B.mines){ if(mn.done) continue;
+    const hit=B.units.find(u=>!u.dead&&!u.wall&&!u.fly&&u.side!==mn.side&&Math.abs(u.x-mn.x)<mn.w/2+u.w*0.25&&u.y>=-4);
+    if(!hit) continue; mn.done=true; B.booms.push({x:mn.x,y:mn.y,t:0});
+    const x0=mn.x-TS.CS*1.5, x1=mn.x+TS.CS*1.5, y0=-TS.CS*2;
+    for(const u of B.units){ if(u.dead||u.wall||u.side===mn.side) continue; const ux0=u.x-u.w/2, ux1=u.x+u.w/2, uy0=u.y-u.h, uy1=u.y;
+      if(ux1>x0&&ux0<x1&&uy1>y0&&uy0<4){ const d=Math.ceil(u.max/2); u.hp=Math.max(0,u.hp-d); u.flash=0.25; B.pops.push({x:u.x,y:u.y-u.h,v:d,t:0,side:u.side}); if(u.hp<=0) u.dead=true; } } }
+  B.booms.forEach(b=>b.t+=dt); B.booms=B.booms.filter(b=>b.t<0.9);
   B.pops.forEach(p=>p.t+=dt); B.pops=B.pops.filter(p=>p.t<0.9);
   const a=alive(0).length, b=alive(1).length, left=B.end-now();
-  if(!a||!b||left<=0){ B.over=true; const g=s=>B.units.filter(u=>u.side===s).reduce((t,u)=>t+u.hp/u.max,0), ga=g(0), gb=g(1);
+  if(!a||!b||left<=0){ B.over=true; const g=s=>B.units.filter(u=>u.side===s&&!u.wall).reduce((t,u)=>t+u.hp/u.max,0), ga=g(0), gb=g(1);
     const res = !b&&a?"win" : !a&&b?"lose" : !a&&!b?"draw" : ga>gb?"win" : ga<gb?"lose" : "draw";
     setTimeout(()=>result(res, ga, gb, !a||!b), 900); }
 }
 function result(res, ga, gb, ko){ if(!V) return; sfx(res==="win"?"win":"ng");
-  const B=V.B, n=s=>B.units.filter(u=>u.side===s&&!u.dead).length;
+  const B=V.B, n=s=>B.units.filter(u=>u.side===s&&!u.dead&&!u.wall).length;
   dlg(`<div style="font-size:54px">${res==="win"?"🏆":res==="draw"?"🤝":"💀"}</div><h3>${res==="win"?T("勝利！","Victory!"):res==="draw"?T("引き分け","Draw"):T("敗北…","Defeat...")}</h3>
     <p>${ko?T("どちらかの魔物が全滅しました。","One side was wiped out."):T("1分がたったので、のこった体力ゲージの合計で決まりました。","Time's up — decided by the total of remaining HP gauges.")}<br>
     ${T("あなた","You")}：${T("のこり","left")} ${n(0)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${ga.toFixed(2)}</b><br>${T("相手","Opponent")}：${T("のこり","left")} ${n(1)}${T("体","")}・${T("体力ゲージ合計","HP gauges")} <b>${gb.toFixed(2)}</b></p>`,
@@ -299,17 +346,22 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
     for(const u of t.units){ const k=cfgOf(u.id); let c=u.c, r=u.r; const dr=V.drag&&V.drag.u===u&&V.drag.moved; if(dr){ c=V.drag.c; r=V.drag.r; }
       if(dr||V.sel===u){ const ok=!dr||fits(u.id,c,r,u); const p0=w2s(c*TS.CS,-(r+k.h)*TS.CS), p1=w2s((c+k.w)*TS.CS,-r*TS.CS); g.fillStyle=ok?"#ffd75e55":"#ff303055"; g.fillRect(p0.x,p0.y,p1.x-p0.x,p1.y-p0.y); }
       if(!drawAnim(g,u.id,(c+k.w/2)*TS.CS,-r*TS.CS,k.w*TS.CS,1,"w",0,0,dr?0.75:1)) drawMon(g,u.id,(c+k.w/2)*TS.CS,-r*TS.CS,k.w*TS.CS,k.h*TS.CS,1,dr?0.75:1); }
-    if(V.placing){ const k=cfgOf(V.placing.id); g.fillStyle="#fff"; g.font=`900 ${Math.round(13*V.dpr)}px sans-serif`; g.textAlign="center"; const p=w2s(t.cols*TS.CS/2,-t.rows*TS.CS); g.fillText(T(`${mon(V.placing.id).name}（${k.w}×${k.h}）を置くマスをタップ`,`Tap a cell for ${mon(V.placing.id).name} (${k.w}×${k.h})`),p.x,p.y-10*V.dpr); }
+    if(V.placing){ const k=cfgOf(V.placing.id); g.fillStyle="#fff"; g.font=`900 ${Math.round(13*V.dpr)}px sans-serif`; g.textAlign="center"; const p=w2s(t.cols*TS.CS/2,-t.rows*TS.CS); g.fillText(T(`${nameOf(V.placing.id)}（${k.w}×${k.h}）を置くマスをタップ`,`Tap a cell for ${nameOf(V.placing.id)} (${k.w}×${k.h})`),p.x,p.y-10*V.dpr); }
     const d=w2s(-TS.CS*0.9,0); if(deco.complete){ const h=TS.CS*1.1*z, w=h*deco.width/deco.height; g.drawImage(deco,d.x-w/2,d.y-h,w,h); }
     return; }
   const B=V.B; if(!B) return;
   drawGrid(g,B.X1,B.mine.cols,B.mine.rows,"#e0505530"); drawGrid(g,B.X2,B.opp.cols,B.opp.rows||B.mine.rows,"#5070e030");
   // かざり（両はし）
   if(deco.complete){ const h=TS.CS*1.1*z, w=h*deco.width/deco.height; const L=w2s(B.X1-TS.CS*1.2,0), R=w2s(B.W+TS.CS*1.2,0); g.drawImage(deco,L.x-w/2,L.y-h,w,h); g.save(); g.translate(R.x,R.y); g.scale(-1,1); g.drawImage(deco,-w/2,-h,w,h); g.restore(); }
+  // 地雷：自分の地雷だけ見える（相手の地雷は見えない）
+  for(const mn of B.mines){ if(mn.done||mn.side!==0) continue; drawMon(g,mn.id,mn.x,mn.y,mn.w,mn.h,1,0.85,0); }
+  for(const bo of B.booms) drawFx(g,"mine",Math.min(9,1+Math.floor(bo.t/0.9*9)),bo.x,bo.y,1);   // 爆発（2〜10コマ目）
   const L=[...B.units].sort((a,b)=>b.h-a.h);
-  for(const u of L){ if(u.dead){ if(u.deadT<1.2 && grave.complete){ const p=w2s(u.x,u.fly?u.y:0), h=TS.CS*0.7*z, w=h*grave.width/grave.height; g.globalAlpha=1-u.deadT/1.2; g.drawImage(grave,p.x-w/2,p.y-h,w,h); g.globalAlpha=1; } continue; }
+  for(const u of L){ if(u.dead&&u.wall){ if(u.deadT<1.0) drawFx(g,"wall",Math.min(9,Math.floor(u.deadT/1.0*10)),u.x,u.y,u.side?-1:1); continue; }   // 壁がくずれる
+    if(u.dead){ if(u.deadT<1.2 && grave.complete){ const p=w2s(u.x,u.fly?u.y:0), h=TS.CS*0.7*z, w=h*grave.width/grave.height; g.globalAlpha=1-u.deadT/1.2; g.drawImage(grave,p.x-w/2,p.y-h,w,h); g.globalAlpha=1; } continue; }
     const bob=u.fly?Math.sin(u.hop*0.6)*4:0;
-    if(!drawAnim(g,u.id,u.x,u.y+bob,u.w,u.face,u.atkT<0.6?"a":"w",u.atkT<0.6?Math.min(9,Math.floor(u.atkT/0.6*10)):(u.moving?Math.floor(u.hop*1.4)%10:0),u.flash)) drawMon(g,u.id,u.x,u.y+bob,u.w,u.h,u.face,1,u.flash);
+    if(u.wall) drawMon(g,u.id,u.x,u.y,u.w,u.h,u.side?-1:1,1,u.flash);
+    else if(!drawAnim(g,u.id,u.x,u.y+bob,u.w,u.face,u.atkT<0.6?"a":"w",u.atkT<0.6?Math.min(9,Math.floor(u.atkT/0.6*10)):(u.moving?Math.floor(u.hop*1.4)%10:0),u.flash)) drawMon(g,u.id,u.x,u.y+bob,u.w,u.h,u.face,1,u.flash);
     // 体力ゲージ
     const p=w2s(u.x-u.w*0.4,u.y-u.h-10), bw=u.w*0.8*z, bh=Math.max(3,7*z); g.fillStyle="#111"; g.fillRect(p.x-1,p.y-1,bw+2,bh+2); g.fillStyle="#3a1f2a"; g.fillRect(p.x,p.y,bw,bh);
     const r=u.hp/u.max; g.fillStyle=u.side?(r<.3?"#ff7a5a":"#ff9a3d"):(r<.3?"#ff5a5a":"#5ec44a"); g.fillRect(p.x,p.y,bw*r,bh); }
