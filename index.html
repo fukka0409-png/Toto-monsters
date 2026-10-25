@@ -625,6 +625,8 @@ html[lang=en] .ttl-start span{display:flex}
 .ttl-corner img{display:block;width:100%;height:100%}
 .ttl-corner:active{transform:scale(.95)}
 .ttl-set span{position:absolute;left:0;right:0;bottom:12%;text-align:center;font:900 calc(var(--s)*24px)/1 var(--f-body);color:#222}
+.ttl-code{box-sizing:border-box;display:grid;place-items:center;background:linear-gradient(#ffe27a,#f2b84b);border:calc(var(--s)*6px) solid #3a2306;border-radius:calc(var(--s)*14px);box-shadow:inset 0 calc(var(--s)*-6px) 0 #c98a1e,0 calc(var(--s)*4px) 0 #0005}
+.ttl .ttl-code span{display:block!important;position:static;font:900 calc(var(--s)*27px)/1 var(--f-body);color:#3a2306;white-space:nowrap}
 .ttl-upd span{position:absolute;inset:0;align-items:center;justify-content:center;font:900 calc(var(--s)*30px)/1 var(--f-body);color:#3a2306}
 html[lang=en] .ttl-upd span{display:flex}
 .ttl-lang{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:4px;background:#0008;border:2px solid #fff6;border-radius:999px;padding:4px}
@@ -1168,6 +1170,7 @@ html[lang=en] .kn-bt span{font-size:38px}
   </div>
   <button class="ttl-corner ttl-set" id="ttlSet" type="button" aria-label="設定"><img src="title/set.png" alt="" draggable="false"><span>設定</span></button>
   <button class="ttl-corner ttl-upd" id="ttlUpd" type="button"><img src="title/upd.png" alt="" draggable="false"><span>最新アップデート情報</span></button>
+  <button class="ttl-corner ttl-code" id="ttlCode" type="button" aria-label="呪文・QRプレゼント"><span>🎁 呪文・QRコード</span></button>
   <div class="ttl-lang" translate="no"><button type="button" data-tl="ja">日本語</button><button type="button" data-tl="en">English</button></div>
 </div>
 <script>
@@ -1189,7 +1192,7 @@ html[lang=en] .kn-bt span{font-size:38px}
 (function(){
   const T=document.getElementById("title"); if(!T) return;
   const W=1046, H=1504, st=document.getElementById("ttlStage");
-  const set=document.getElementById("ttlSet"), upd=document.getElementById("ttlUpd");
+  const set=document.getElementById("ttlSet"), upd=document.getElementById("ttlUpd"), cod=document.getElementById("ttlCode");
   const lay=()=>{ if(T.hidden) return; const vw=innerWidth, vh=innerHeight; const s=vh/H;   // 高さに合わせる（スマホは左右が少し切れ、PCは左右にぼかした背景）
     const sw=W*s, ox=(vw-sw)/2; st.style.transform=`translate(${ox}px,0) scale(${s})`;
     // 画面がせまいときは、タイトルの巻物を見えている幅に合わせて小さくする
@@ -1200,6 +1203,8 @@ html[lang=en] .kn-bt span{font-size:38px}
     set.style.width=138*s+"px"; set.style.height=169*s+"px"; set.style.left=(fl+m)+"px"; set.style.top=Math.max(10,31*s)+"px";
     upd.style.width=319*s+"px"; upd.style.height=97*s+"px"; upd.style.left=(fr-m-319*s)+"px"; upd.style.top=Math.max(10,47*s)+"px";
     if(fr-fl<(138+319)*s+3*m){ const k=(fr-fl-3*m)/((138+319)*s); set.style.width=138*s*k+"px"; set.style.height=169*s*k+"px"; upd.style.width=319*s*k+"px"; upd.style.height=97*s*k+"px"; upd.style.left=(fr-m-319*s*k)+"px"; }
+    // 呪文・QRプレゼントのボタン：アップデート情報のすぐ下
+    if(cod){ cod.style.width=upd.style.width; cod.style.height=upd.style.height; cod.style.left=upd.style.left; cod.style.top=(parseFloat(upd.style.top)+parseFloat(upd.style.height)+Math.max(8,22*s))+"px"; }
   };
   window.ttlLay=()=>{ lay(); T.classList.add("laid"); };
   window.ttlLay(); addEventListener("resize",window.ttlLay);
@@ -1220,7 +1225,7 @@ html[lang=en] .kn-bt span{font-size:38px}
   <div class="tabs"><nav role="tablist">
     <button role="tab" data-tab="home" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ホーム</button>
     <button role="tab" data-tab="box" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-4 9 4v9l-9 4-9-4z"/><path d="M3 8l9 4 9-4M12 12v9"/></svg>BOX</button>
-    <button role="tab" data-tab="mission" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span class="tab2"><small>呪文</small>QRコード</span></button>
+    <button role="tab" data-tab="mission" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>ショップ</span></button>
     <button role="tab" data-tab="gacha" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M5 10h14M8 21h8M12 17v4"/></svg>ガチャ</button>
     <button role="tab" data-tab="rank" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg><span class="tab2"><small>ランキング</small>戦闘</span></button>
   </nav></div>
@@ -1947,6 +1952,9 @@ const I18N_EN = {
 "ミッションタブの": "Enter a secret phrase in ",
 "呪文": "Spells",
 "QRコード": "QR code",
+"ショップ": "Shop",
+"🎁 呪文・QRプレゼント": "🎁 Spells & QR gifts",
+"🎁 呪文・QRコード": "🎁 Spells & QR",
 "に合言葉を入れるとプレゼントがもらえることも…？": " on the Missions tab and you might get a present…?",
 "ログインすると、ほかの端末でも続きから遊べる。": "Log in to continue playing on other devices.",
 "最新ルール": "Latest Rules",
@@ -9288,6 +9296,8 @@ async function titleRanks(){
     bg.querySelectorAll("[data-tsl]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.tsl!==LANG) setLang(b.dataset.tsl); });
   });
   upd.onclick=()=>onTop(()=>openRules());
+  // 呪文・QRプレゼント（ショップのページと同じもの）をタイトルから開く
+  document.getElementById("ttlCode").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🎁 呪文・QRプレゼント</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div id="ttlCodeBody"></div>`); renderBonus(bg.querySelector("#ttlCodeBody")); }); };
   // ミニゲーム：防衛作戦とトトの冒険をえらぶ
   document.getElementById("ttlMini").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(()=>{ const L=LANG==="en", R=S.def&&S.def.run;
     const st=R?(gnow()>=R.end?(L?"Finished! Tap to see":"終了！ 結果を見る"):(L?"Defending ":"防衛中 ")+defFmtT(R.end-gnow())):"";
