@@ -9369,7 +9369,7 @@ async function titleRanks(){
     bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); }; }); };
   // トトの戦略（試作）：まだ公開しないので、冒険者「ふっかー」にだけボタンを出す
   { const tb=document.getElementById("ttlTs"); tb.onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.openTS) openTS(); };
-    const tv=()=>{ try{ tb.hidden=!dexPeek(); }catch(e){} }; tv(); setInterval(tv,2000); }
+    tb.hidden=true; }   // トトの戦略の試作ボタンは消した（魔物合戦はホームから）
   document.getElementById("ttlKn").onclick=()=>{ try{ SFX.tap(); }catch(e){} openKuni(); };
   try{ knTitleBtn(); }catch(e){ try{ showErr("knTitleBtn: "+(e&&e.message),"title"); }catch(_){} }
   // 防衛作戦のボタンに、防衛中なら残り時間を出す
