@@ -14,7 +14,7 @@ const esc3 = t => String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;","
 const fmt = n => Math.round(n).toLocaleString();
 const now = () => (typeof gnow==="function" ? gnow() : Date.now());
 
-const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:20, COST_MUL:5, MIN_READY:5,
+const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:20, MAX_KINDS:5, COST_MUL:5, MIN_READY:5,
   UNDER:-1, PREP_MS:3*60000,   // UNDER：赤いマスは土の中にも1マス（r=-1）
   BATTLE_MS:60000, CS:64, GAP:8 };
 // ランクごとのきまり：w×h＝置くときのマスの大きさ、spd＝1秒に進むマス、range＝攻撃がとどく距離（マス）、cd＝攻撃の間かく（秒）
@@ -176,7 +176,7 @@ window.__tsW2S=(x,y)=>{ if(!V) return null; const p=w2s(x,y), r=V.cv.getBounding
 function sideView(){ const s=V&&V.root.querySelector("#tsSide"); if(!s) return; const t=st();
   if(V.mode!=="prep"){ s.innerHTML=V.B?`<div class="ts-info">${T("相手","Opponent")}：${esc3(V.B.enemyName)}</div>`:""; return; }
   const rdTxt=V.embed?`<div class="ts-info">${!S.tsRd?T(`⚠️ まだ準備完了していません（魔物${TS.MIN_READY}体以上）`,`⚠️ Not ready (${TS.MIN_READY}+ monsters)`):S.tsSig===sigOf(t)?T("✅ 準備完了ずみ","✅ Ready"):T("✏️ 変えた配置は、もう一度「準備完了」で反映","✏️ Press Ready again to save changes")}</div>`:"";
-  s.innerHTML=`${rdTxt}<div class="ts-info">${T("配置","Placed")} ${t.units.length}/${TS.MAX_UNITS}　${T("マス","Grid")} ${t.cols}×${t.rows}</div>
+  s.innerHTML=`${rdTxt}<div class="ts-info">${T("配置","Placed")} ${t.units.length}/${TS.MAX_UNITS}　${T("種類","Kinds")} ${kindsOf(t).size}/${TS.MAX_KINDS}　${T("マス","Grid")} ${t.cols}×${t.rows}</div>
     <div style="display:flex;gap:6px"><button type="button" class="ts-b" id="tsEx" ${t.cols>=TS.COLS_MAX?"disabled":""}>${T("横+1","Width +1")}</button><button type="button" class="ts-b" id="tsEy" ${t.rows>=TS.ROWS_MAX?"disabled":""}>${T("縦+1","Height +1")}</button></div>`;
   s.querySelector("#tsEx").onclick=()=>expand("c"); s.querySelector("#tsEy").onclick=()=>expand("r"); }
 // 魔物合戦で負けたとき：配置をすべて取り消して、置くのに使ったコインの3分の1を返す（index.html の checkTsBattles からよばれる）
@@ -187,6 +187,8 @@ window.tsLoseLayout=()=>{ const t=st(); let paid=0; t.units.forEach(u=>{ try{ pa
   return {back, n}; };
 // 配置の強さ＝置いた魔物・アイテムの値段の合計（魔物合戦のごほうびの段階に使う）
 window.tsPower=L=>(L&&L.units||[]).reduce((a,u)=>{ try{ return a+(okId(u.id)?costOf(u.id):0); }catch(e){ return a; } },0);
+// マスの中に置ける魔物は5種類まで（アイテムは数えない）。置ける数は魔物とアイテムを合わせて20個まで
+const kindsOf=t=>new Set(t.units.filter(u=>!isItem(u.id)).map(u=>u.id));
 const sigOf=t=>JSON.stringify([t.cols,t.rows,t.units.map(u=>[u.id,u.c,u.r])]);
 function expand(k){ const t=st(), max=k==="c"?TS.COLS_MAX:TS.ROWS_MAX, cur=k==="c"?t.cols:t.rows; if(cur>=max) return;
   dlg(`<h3>➕ ${k==="c"?T("マスを横に1列ふやす","Add 1 column"):T("マスを縦に1列ふやす","Add 1 row")}</h3><p>${k==="c"?`${T("横","Width")} ${cur} → <b>${cur+1}</b>`:`${T("縦","Height")} ${cur} → <b>${cur+1}</b>`}（${T("最大","max")} ${max}）<br>💰 <b>${fmt(TS.EXPAND_COST)}</b> ${T("コイン","coins")}（${T("所持","you have")} ${fmt(S.coins||0)}）</p>`,
@@ -194,12 +196,13 @@ function expand(k){ const t=st(), max=k==="c"?TS.COLS_MAX:TS.ROWS_MAX, cur=k==="
 
 /* ---------- 魔物をえらぶ ---------- */
 function pickMonster(){ const t=st();
-  if(t.units.length>=TS.MAX_UNITS) return dlg(`<p>${T(`置けるのは合わせて${TS.MAX_UNITS}体までです`,`You can place up to ${TS.MAX_UNITS}`)}</p>`,[["OK",null]]);
+  if(t.units.length>=TS.MAX_UNITS) return dlg(`<p>${T(`置けるのは魔物とアイテムを合わせて${TS.MAX_UNITS}個までです`,`Up to ${TS.MAX_UNITS} in total`)}</p>`,[["OK",null]]);
+  const K=kindsOf(t);
   const own=MONSTERS.filter(m=>(S.got||{})[m.id] && TS_MON[m.id]);   // トトの戦略に追加した魔物（TS_MON にある魔物）だけ。図鑑で解放していることも必要
   if(!own.length) return dlg(`<p>${T(`使える魔物がいません。<br>トトの戦略で使える魔物：${Object.keys(TS_MON).map(id=>mon(+id)?`「${esc3(mon(+id).name)}」`:"").join("")}（図鑑で解放すると使えます）`,"No usable monsters yet. Unlock them in your Monster Book.")}</p>`,[["OK",null]]);
   // 今追加できる魔物だけ（コインが足りる・今のマスに入る大きさ）
-  const L=own.filter(m=>{ const c=cfgOf(m.id); return costOf(m.id)<=(S.coins||0) && c.w<=t.cols && c.h<=t.rows; }).sort((a,b)=>RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank)||a.id-b.id);
-  if(!L.length) return dlg(`<h3>👾 ${T("魔物を追加","Add a monster")}</h3><p>${T(`今追加できる魔物がいません。<br>（いちばん安い魔物：💰 ${fmt(Math.min(...own.map(m=>costOf(m.id))))}・所持 ${fmt(S.coins||0)}コイン）`,`No monster you can add right now.`)}</p>`,[["OK",null]]);
+  const L=own.filter(m=>{ const c=cfgOf(m.id); return (K.size<TS.MAX_KINDS||K.has(m.id)) && costOf(m.id)<=(S.coins||0) && c.w<=t.cols && c.h<=t.rows; }).sort((a,b)=>RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank)||a.id-b.id);
+  if(!L.length) return dlg(`<h3>👾 ${T("魔物を追加","Add a monster")}</h3><p>${K.size>=TS.MAX_KINDS?T(`置ける魔物は${TS.MAX_KINDS}種類までです。今置いている種類の魔物だけ追加できます。<br>`,`Up to ${TS.MAX_KINDS} kinds.<br>`):""}${T(`今追加できる魔物がいません。<br>（いちばん安い魔物：💰 ${fmt(Math.min(...own.map(m=>costOf(m.id))))}・所持 ${fmt(S.coins||0)}コイン）`,`No monster you can add right now.`)}</p>`,[["OK",null]]);
   const bg=dlg(`<h3>👾 ${T("魔物を追加","Add a monster")}</h3><p style="font-size:12px;margin:0 0 8px">${T(`今の所持コイン（${fmt(S.coins||0)}）で追加できる魔物だけ出ています。コインは置いたときに払います（取り除いてももどりません）`,`Only monsters you can afford now (${fmt(S.coins||0)} coins). You pay when you place it (no refund on removal).`)}</p>
     <div class="ts-grid">${L.map(m=>{ const c=cfgOf(m.id), s=statsOf(m.id), cost=costOf(m.id); return `<button type="button" class="ts-card" data-id="${m.id}"><img src="${m.img}" alt=""><b>${esc3(m.name)}</b><span><span class="rk rk-${m.rank}">${m.rank==="L"?T("限定","LTD"):m.rank}</span> ${c.w}×${c.h}${T("マス","")}${c.fly?" 🪽":""}</span><span>❤ ${fmt(s.hp)}　⚔ ${fmt(s.atk)}</span><span class="c">💰 ${fmt(cost)}</span></button>`; }).join("")}</div>`,[[T("とじる","Close"),null,"g"]]);
   bg.querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{ const id=+b.dataset.id, cost=costOf(id);
@@ -227,7 +230,8 @@ const fits = (id,c,r,skip) => { const t=st(), k=cfgOf(id); if(c<0||r<TS.UNDER||c
 const cellAt = (wx,wy) => ({ c:Math.floor(wx/TS.CS), r:Math.floor(-wy/TS.CS) });
 const unitAt = (wx,wy) => { const t=st(); for(let i=t.units.length-1;i>=0;i--){ const u=t.units[i], k=cfgOf(u.id); const x0=u.c*TS.CS, y1=-u.r*TS.CS, x1=x0+k.w*TS.CS, y0=y1-k.h*TS.CS; if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1) return u; } return null; };
 function place(c,r){ const id=V.placing.id, t=st(), cost=costOf(id);
-  if(t.units.length>=TS.MAX_UNITS){ V.placing=null; return msg(T(`置けるのは${TS.MAX_UNITS}体までです`,`Up to ${TS.MAX_UNITS}`)); }
+  if(t.units.length>=TS.MAX_UNITS){ V.placing=null; return msg(T(`置けるのは魔物とアイテムを合わせて${TS.MAX_UNITS}個までです`,`Up to ${TS.MAX_UNITS} in total`)); }
+  if(!isItem(id)){ const K=kindsOf(t); if(!K.has(id)&&K.size>=TS.MAX_KINDS){ V.placing=null; sfx("ng"); return msg(T(`置ける魔物は${TS.MAX_KINDS}種類までです`,`Up to ${TS.MAX_KINDS} kinds`)); } }
   if(!fits(id,c,r)){ sfx("ng"); const k=cfgOf(id); return msg(r<0&&!k.under?T(isItem(id)?"このアイテムは土の中には置けません（地面の上のマスに置いてね）":"この魔物は土の中には置けません（地面の上のマスに置いてね）","This one can't go underground"):r>0&&!k.fly?T("この魔物は浮かせて置けません（地面の上のマスに置いてね）","This one can't float — place it on the ground"):T("そこには置けません（マスからはみ出す・ほかと重なる）","Can't place there (off the grid or overlapping)")); }
   if((S.coins||0)<cost){ sfx("ng"); V.placing=null; return msg(T("コインが足りません","Not enough coins")); }
   S.coins-=cost; t.units.push({u:t.nu++, id, c, r}); save(); sfx("coin"); coinView(); sideView(); V.placing=null;
@@ -275,6 +279,7 @@ async function readyGo(auto){ if(!V||V.mode!=="prep"||busy) return; const t=st()
   const mine={cols:t.cols, rows:t.rows, units:t.units.map(u=>({id:u.id,c:u.c,r:u.r}))};
   if(V.embed){   // ホーム：時間制限なし。準備完了で、ランキングの魔物合戦の相手になれる
     if(!(typeof DB!=="undefined" && DB && MYID)){ sfx("ng"); return msg(T("ログインすると準備完了できます","Log in to get ready")); }
+    if(kindsOf(t).size>TS.MAX_KINDS){ sfx("ng"); return msg(T(`置ける魔物は${TS.MAX_KINDS}種類までです（今 ${kindsOf(t).size}種類）。へらしてから準備完了してね`,`Up to ${TS.MAX_KINDS} kinds`)); }
     const nMon=t.units.filter(u=>!isItem(u.id)).length; if(nMon<TS.MIN_READY){ sfx("ng"); return msg(T(`魔物合戦に出るには、魔物を${TS.MIN_READY}体以上置いてください（今 ${nMon}体）`,`Place at least ${TS.MIN_READY} monsters to join (now ${nMon})`)); }
     busy=true; V.placing=null; V.sel=null; selView(); let nm=""; try{ nm=myName(); }catch(e){}
     try{ await DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), rd:1, at:now()}); S.tsPow=window.tsPower(mine); S.tsRd=1; S.tsRdAt=(typeof gnow==="function"?gnow():Date.now()); S.tsSig=sigOf(t); save(); try{ queueProfile(true); }catch(e){}
