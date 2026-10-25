@@ -5090,11 +5090,16 @@ function queueProfile(now){
   }, now?300:20000);
 }
 let RANK_LOAD_AT=0;
+// 魔物合戦の準備ができている冒険者（tsp の rd が 1）。負けて準備完了が外れた人は入らない
+let TS_READY=null;
+async function loadTsReady(){ if(!DB) return; try{ const q=await DB.collection("tsp").where("rd","==",1).get(); TS_READY=new Set(q.docs.map(d=>d.id)); if(tab==="rank") render(); }catch(e){} }
+const tsReadyOf=r=>r.id===MYID?!!S.tsRd:(TS_READY?TS_READY.has(r.id):!!r.tr);
 async function loadRanking(force){
   if(!DB) return;
   // 2分以内に読みこんだばかりなら、読みなおさない（Firebaseの1日の読みこみ回数を節約）
   if(!force && RANK && Date.now()-RANK_LOAD_AT<2*60000){ if(tab==="rank"||tab==="home") render(); return; }
   RANK_LOAD_AT=Date.now();
+  loadTsReady();
   try{
     const q=await DB.collection("profiles").orderBy("score","desc").limit(200).get();
     const now=gnow();
@@ -5757,7 +5762,7 @@ function renderRanking(segHtml){
   else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3&&!rankless()?"top"+(i+1):""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
       <span class="rk-no">${rkNo(i+1)}</span>${avatarImg(r.icon,56)}
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
-        <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${(r.id===MYID?S.tsRd:r.tr)?`<div class="rk-ts">⚔️ 合戦可能</div>`:""}${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
+        <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${tsReadyOf(r)?`<div class="rk-ts">⚔️ 合戦可能</div>`:""}${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
         ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${INV_CNT[r.id]}人ついています</div>`:""}
         ${(cmtOpen()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div><button type="button" class="rk-rep" data-rep="${i}">💬 ${LANG==="en"?"Reply":"返信"}</button>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
@@ -5812,10 +5817,10 @@ const todayN=()=>seasonNow();   // バトル・ボットの「1日1回」もラ�
 function tsFightBox(r){
   if(!DB||!tsHome()||r.id===MYID) return "";
   let body;
-  if(!r.tr) body=`<div class="note" style="margin:0">この冒険者は、まだ魔物合戦の準備ができていません</div>`;
+  if(!tsReadyOf(r)) body=`<div class="note" style="margin:0">この冒険者は、まだ魔物合戦の準備ができていません</div>`;
   else if(!S.tsRd) body=`<div class="note" style="margin:0;color:var(--berry)">戦うには、ホームで魔物を置いて「準備完了」を押してください</div>`;
   else body=`<button class="btn gold" type="button" data-tsfight="${esc(r.id)}">⚔️ 魔物合戦</button>`;
-  return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">${r.tr?(()=>{ const t=tsTier(r.tp); return `相手の配置の強さ <b>${(r.tp||0).toLocaleString()}</b> → 勝つと冒険者Lv+${t.lv}・${t.c.toLocaleString()}コイン`; })():"勝つと、相手の配置の強さに合わせて冒険者Lv+1〜5・100〜10,000コイン"}。負けた相手の配置は取り消される</div>${body}</div></div>`;
+  return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">${tsReadyOf(r)?(()=>{ const t=tsTier(r.tp); return `相手の配置の強さ <b>${(r.tp||0).toLocaleString()}</b> → 勝つと冒険者Lv+${t.lv}・${t.c.toLocaleString()}コイン`; })():"勝つと、相手の配置の強さに合わせて冒険者Lv+1〜5・100〜10,000コイン"}。負けた相手の配置は取り消される</div>${body}</div></div>`;
 }
 document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsfight]"); if(!b) return; const r=findRank(b.dataset.tsfight)||{id:b.dataset.tsfight};
   b.disabled=true; b.textContent="相手の配置を読みこみ中…";
@@ -5830,6 +5835,7 @@ window.tsTier=p=>{ const t=TS_TIERS.find(x=>(p||0)>=x[0]); return {lv:t[1], c:t[
 window.tsFightDone=(opp,res)=>{
   const myPow=S.tsPow||0, opPow=window.tsPower?window.tsPower(opp):0;
   if(res==="win"){ const r=tsTier(opPow); S.plv=(S.plv||1)+r.lv; bumpMaxLv(); S.coins=Math.min(COIN_MAX,(S.coins||0)+r.c);
+    try{ if(TS_READY) TS_READY.delete(opp.uid); }catch(e){}
     try{ if(DB&&opp.uid) DB.collection("tsp").doc(opp.uid).update({rd:0, lb:myName().slice(0,12), lt:gnow()}).catch(()=>{}); }catch(e){} }   // 負けた相手は、すぐに準備完了が外れる
   save(); try{ queueProfile(true); }catch(e){} try{ renderCoins(); }catch(e){}
   try{ if(DB&&MYID&&opp.uid) DB.collection("tsb").add({att:MYID, an:myName().slice(0,12), def:opp.uid, at:gnow(), sp:myPow, dp:opPow, result:res==="win"?"att":res==="lose"?"def":"draw"}).catch(()=>{}); }catch(e){} };
