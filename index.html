@@ -280,6 +280,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 /* ホーム */
 .home{position:relative;margin:-4px max(-16px,calc(-1*env(safe-area-inset-left,0px) - 16px)) 0;height:calc(100dvh - 140px);min-height:540px;overflow:hidden;border-radius:0 0 18px 18px}
 .hm-bg{position:absolute;inset:0 0 50% 0;background-size:100% 100%}
+.rk-ts{display:inline-block;margin:3px 0 1px;padding:2px 8px;border-radius:999px;background:#c0392b;color:#fff;font-weight:900;font-size:12px;letter-spacing:.04em}
 .home.ts{background:linear-gradient(#5aa7e6,#7cc4f5)}
 .hm-ts{position:absolute;left:0;right:0;bottom:0;top:45%;z-index:1;overflow:hidden}
 .hm-ground{position:absolute;left:0;right:0;bottom:0;top:50%;background-size:100% 100%;box-shadow:inset 0 3px 0 #0004}
@@ -1295,6 +1296,9 @@ const I18N_EN = {
 "（あなたが{0}位なので2倍）": "(2x because you were #{0}) ",
 "次のランク戦が始まってから1時間は、だれでもひとことコメントを残せます！ 感想を他の冒険者と共有しよう！！✨": "For the first hour of the next ranked match, anyone can leave a short message! Share your thoughts with the other adventurers!! ✨",
 "📈 投資の素質": "📈 Investing skill",
+"⚔️ 合戦可能": "⚔️ Battle ready",
+"⚔️ 魔物合戦": "⚔️ Monster Battle",
+"魔物合戦": "Monster Battle",
 "{0}コインの{1}%を受け取りました！！（+{2}コイン）": "Received {1}% of {0} coins!! (+{2} coins)",
 "🤝 投資家{0}人から、投資額の40%（+{1}コイン）": "🤝 40% of investments from {0} investor(s) (+{1} coins)",
 "・投資された冒険者は、投資されたときに、すぐに投資額の40%をもらえる": "• Adventurers who receive an investment immediately get 40% of it",
@@ -5753,7 +5757,7 @@ function renderRanking(segHtml){
   else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3&&!rankless()?"top"+(i+1):""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
       <span class="rk-no">${rkNo(i+1)}</span>${avatarImg(r.icon,56)}
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
-        <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
+        <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${(r.id===MYID?S.tsRd:r.tr)?`<div class="rk-ts">⚔️ 合戦可能</div>`:""}${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
         ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${INV_CNT[r.id]}人ついています</div>`:""}
         ${(cmtOpen()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div><button type="button" class="rk-rep" data-rep="${i}">💬 ${LANG==="en"?"Reply":"返信"}</button>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
