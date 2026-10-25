@@ -70,7 +70,10 @@ const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.un
     { const seen=new Set(); b.form=b.form.map(f=>{ if(!f) return f; if(seen.has(f.u)) return null; seen.add(f.u); return f; }); }
     try{ save(); }catch(e){} }
   // ランクバトルの勝ち負けは「ガチャ・育成」のランク戦ごと（ランク戦が切りかわるとリセット）
-  { let ss=0; try{ ss=seasonNow(); }catch(e){} if(b.rss!==ss){ b.rss=ss; b.rw=0; b.rl=0; try{ save(); }catch(e){} } }
+  { let ss=0; try{ ss=seasonNow(); }catch(e){} if(b.rss!==ss){ const was=b.rss; b.rss=ss; b.rw=0; b.rl=0;
+    // ランクバトルのタイマーが0になったら、持っている魔物は全員Lv1にもどる（2026-10-25〜）
+    if(was!=null && b.lvRS!==ss){ b.lvRS=ss; b.units.forEach(u=>u.lv=1); b.lvNote=ss; }
+    try{ save(); }catch(e){} } }
   // 同じ1体が編成の2か所に入っていたら、あとの方を外す（同じ1体を2か所に入れると、レベルもいっしょに上がってしまっていた）
   { const seen=new Set(); let ch=false; b.form=b.form.map(f=>{ if(!f) return f; if(seen.has(f.u)){ ch=true; return null; } seen.add(f.u); return f; }); if(ch) try{ save(); }catch(e){} }
   if(!b.starter){ b.starter=1; b.same2=1; b.same1=1; b.seen=b.seen||{}; b.seen[1]=1; for(let k=0;k<MB.SAME_MAX;k++){ const u={u:b.nu++, id:1, lv:3}; b.units.push(u); const i=b.form.findIndex(f=>!f); if(i>=0) b.form[i]={u:u.u, w:null}; } try{ save(); }catch(e){} }
@@ -121,6 +124,12 @@ css.textContent=`
 /* 編成 */
 #mbo .fm-cell{position:absolute;display:flex;align-items:center;justify-content:center}
 #mbo .fm-cell img{max-width:92%;max-height:92%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 3px 2px #0008)}
+#mbo .fm-up{position:absolute;width:166px;height:48px;z-index:2;border:3px solid #3a2306;border-radius:12px;background:linear-gradient(#ffe27a,#f2b84b);color:#3a2306;font:900 24px/1 var(--f-body,sans-serif);font-family:inherit;cursor:pointer;box-shadow:0 3px 0 #3a2306}
+#mbo .fm-up:disabled{background:#d9c9a6;color:#7a5520;cursor:default}
+#mbo .fm-stone{position:absolute;right:24px;top:24px;background:#000b;color:#fff;border:3px solid #9fd8ff;border-radius:14px;padding:6px 14px;font:900 26px/1.2 var(--f-body,sans-serif)}
+.mb-dlg .su-row{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 0 6px}
+.mb-dlg .su-row button,.mb-dlg .su-all{border:2px solid #3a2306;border-radius:10px;background:#fdf7e6;font:900 14px/1 var(--f-body,sans-serif);padding:8px 10px;cursor:pointer;color:#3a2306}
+.mb-dlg .su-row b{min-width:60px;font-size:18px}
 #mbo .fm-st{position:absolute;color:#3a2306;font:900 34px/1.35 var(--f-body,sans-serif);pointer-events:none}
 #mbo .fm-st b{font-size:40px}
 #mbo .fm-st small{display:block;font-size:24px;color:#7a5520;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -244,7 +253,8 @@ function openMenu(){ const s=shell(941,1672,"mb/menu4.jpg"); st(); sfx("tap");  
   g("mbX").onclick=()=>{ sfx("tap"); closeAll(); };
   g("mbForm").onclick=()=>openForm(); g("mbShop").onclick=()=>openShop(); g("mbGacha").onclick=()=>openGacha();
   g("mbRand").onclick=()=>startRandom(); g("mbRk").onclick=()=>openRank(); g("mbQuest").onclick=()=>startQuest(); g("mbFriend").onclick=()=>startFriend();
-  myRankTag(); clearInterval(V.tick); V.tick=setInterval(()=>{ const e=document.getElementById("mbRst"); if(e) e.textContent=resetLeft(); },1000); }
+  myRankTag(); clearInterval(V.tick); V.tick=setInterval(()=>{ const e=document.getElementById("mbRst"); if(e) e.textContent=resetLeft(); if(S.mb && S.mb.rss!==curSS()) openMenu(); },1000);   // タイマーが0になったら、その場でリセット
+  if(b.lvNote){ delete b.lvNote; save(); dlg(`<div style="font-size:50px">🔄</div><h3>${T("ランクバトルが終わりました","The Rank Battle has ended")}</h3><p>${T("ランクバトルのタイマーが0になったので、持っている魔物は全員 <b>Lv.1</b> にもどりました。勝率もリセットされました。<br>💎 覚醒の石を使うと、「魔物編成」でレベルを上げられます。","The timer hit 0, so all your monsters are back to <b>Lv.1</b> and your win rate was reset.<br>💎 Use Awakening Stones in Formation to level up.")}</p>`); } }
 window.openMB = openMenu;
 async function countPlayers(){ const el=document.getElementById("mbCnt"); if(!el||!DB) return;
   try{ const q=await DB.collection("mbq").where("at",">",now()-25000).get(); if(document.getElementById("mbCnt")) el.textContent=T(`参加者 ${Math.max(1,q.size)}人`,`${Math.max(1,q.size)} player(s)`); }catch(e){} }   // いつも1人以上の表示
@@ -256,17 +266,33 @@ function teamOf(){ const b=st(); return b.form.map(f=>{ if(!f) return null; cons
 function weapFree(id, exceptSlot){ const b=st(); const used=b.form.filter((f,i)=>f&&f.w===id&&i!==exceptSlot).length; return (b.weap[id]||0)-used; }
 function openForm(){ const s=shell(1024,1536,"mb/form.jpg?v=2"); const b=st(); sfx("tap");
   const tm=teamOf();
-  s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:20px;top:22px">← ${T("もどる","Back")}</button>`+FROWS.map((top,i)=>{ const t=tm[i], m=t&&monOf(t.id), sv=t&&statOf(t.id,t.lv,t.w), W=t&&wOf(t.w);
+  s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:20px;top:22px">← ${T("もどる","Back")}</button><div class="fm-stone">💎 ${T("覚醒の石","Awakening Stones")} ${fmt(stones())}</div>`+FROWS.map((top,i)=>{ const t=tm[i], m=t&&monOf(t.id), sv=t&&statOf(t.id,t.lv,t.w), W=t&&wOf(t.w);
       return `<div class="fm-cell" style="left:112px;top:${top+12}px;width:172px;height:156px">${m?`<img src="${m.img}" alt="">`:""}</div>
       <div class="fm-st" style="left:312px;top:${top+26}px">${m?`<b>Lv.${t.lv}</b>　${esc2(mname(m))}<br>⚔ ${T("攻撃力","ATK")} ${nf(sv.atk)}<br>❤ ${T("体力","HP")} ${nf(sv.hp)}`:`<small>${T("＋をタップして魔物をえらぶ","Tap ＋ to pick a monster")}</small>`}</div>
       <div class="fm-cell" style="left:730px;top:${top+12}px;width:194px;height:156px">${W?`<img src="${W.img}" alt="">`:""}</div>
-      ${hit("fmM"+i,110,top+8,178,164,T("魔物","Monster"))}${hit("fmA"+i,568,top+92,130,70,T("能力","Ability"))}${hit("fmW"+i,726,top+8,202,164,T("装備","Equip"))}`; }).join("");
+      ${hit("fmM"+i,110,top+8,178,164,T("魔物","Monster"))}${m?`<button type="button" class="fm-up" id="fmU${i}" style="left:116px;top:${top+124}px" ${t.lv>=MB.MAX_LV?"disabled":""}>${t.lv>=MB.MAX_LV?"Lv.MAX":"💎 Lv UP"}</button>`:""}${hit("fmA"+i,568,top+92,130,70,T("能力","Ability"))}${hit("fmW"+i,726,top+8,202,164,T("装備","Equip"))}`; }).join("");
   document.getElementById("mbX").onclick=()=>openMenu();
   FROWS.forEach((_,i)=>{ const g=id=>document.getElementById(id);
-    g("fmM"+i).onclick=()=>pickMon(i); g("fmW"+i).onclick=()=>pickWeap(i);
+    g("fmM"+i).onclick=()=>pickMon(i); g("fmW"+i).onclick=()=>pickWeap(i); if(g("fmU"+i)) g("fmU"+i).onclick=()=>stoneUp(i);
     g("fmA"+i).onclick=()=>{ const t=teamOf()[i], m=t&&monOf(t.id); if(!m) return dlg(`<p>${T("魔物がいません","No monster")}</p>`);
       const sv=statOf(t.id,t.lv,t.w);
       dlg(`<img src="${m.img}" alt="" style="width:120px;height:120px;object-fit:contain;image-rendering:pixelated"><h3>${esc2(mname(m))}　Lv.${t.lv}</h3><p>⚔ ${T("攻撃力","ATK")} ${nf(sv.atk)}　❤ ${T("体力","HP")} ${nf(sv.hp)}</p><p><b>✨ ${T("能力","Ability")}</b><br>${m.magic?`${esc2(T(m.magic.name,m.magic.en||m.magic.name))}：${esc2(m.magic.desc||"")}`:T("なし（魔法は使えない）","None (can't use magic)")}</p>${t.w?`<p>🗡 ${esc2(wOf(t.w).name)}（⚔+${wOf(t.w).atk||0} ❤+${wOf(t.w).hp||0}）</p>`:""}<p style="font-size:11px">${T("バトルに勝つとレベルは持ちこし、負けると全員Lv1にもどります。","Win and levels carry over; lose and everyone returns to Lv1.")}</p>`); }; }); }
+// 覚醒の石（「ガチャ・育成」と同じ石）：1個で1レベル上がる（Lv100まで）
+const stones = () => { try{ return inv("stone"); }catch(e){ return (S.items||{}).stone||0; } };
+function stoneUp(i){ const b=st(), f=b.form[i], u=f&&b.units.find(z=>z.u===f.u), m=u&&monOf(u.id); if(!m) return;
+  const room=MB.MAX_LV-(u.lv||1), have=stones(); if(room<=0) return dlg(`<p>${T("もうLv100（上限）です","Already Lv100 (max)")}</p>`);
+  if(!have) return dlg(`<h3>💎 ${T("覚醒の石がありません","No Awakening Stones")}</h3><p>${T("覚醒の石は「ガチャ・育成」のランク戦の賞品や装飾ガチャで手に入ります。","Get them from ranked-match prizes or the decoration gacha in Gacha & Training.")}</p>`);
+  let n=1; const max=Math.min(room,have);
+  const bg=dlg(`<img src="${m.img}" alt="" style="width:100px;height:100px;object-fit:contain;image-rendering:pixelated"><h3>💎 ${T("覚醒の石でレベルアップ","Level up with Awakening Stones")}</h3>
+    <p style="margin:0">${T(`1個で1レベル上がります（持っている石：${fmt(have)}個）`,`1 stone = 1 level (you have ${fmt(have)})`)}</p>
+    <div class="su-row"><button type="button" data-d="-10">−10</button><button type="button" data-d="-1">−1</button><b id="suN"></b><button type="button" data-d="1">+1</button><button type="button" data-d="10">+10</button></div>
+    <button type="button" class="su-all" id="suAll">${T("できるだけ使う","Use as many as possible")}（${max}）</button>
+    <p id="suP" style="margin:6px 0 0"></p>`,[[T("やめる","Cancel"),null],[T("レベルアップ！","Level up!"),()=>{ if(stones()<n||u.lv+n>MB.MAX_LV) return;
+      try{ addItem("stone",-n); }catch(e){ S.items.stone=Math.max(0,(S.items.stone||0)-n); } u.lv=(u.lv||1)+n; save(); sfx("level"); openForm();
+      dlg(`<h3>⬆ ${T(`${esc2(mname(m))}が Lv.${u.lv} になった！`,`${esc2(mname(m))} is now Lv.${u.lv}!`)}</h3>`); }]]);
+  const upd=()=>{ n=Math.max(1,Math.min(max,n)); bg.querySelector("#suN").textContent=T(`${n}個`,`${n}`); const a=statOf(u.id,u.lv,f.w), z=statOf(u.id,u.lv+n,f.w);
+    bg.querySelector("#suP").innerHTML=`Lv.${u.lv} → <b>Lv.${u.lv+n}</b><br>⚔ ${nf(a.atk)} → <b>${nf(z.atk)}</b>　❤ ${nf(a.hp)} → <b>${nf(z.hp)}</b>`; };
+  bg.querySelectorAll("[data-d]").forEach(x=>x.onclick=()=>{ n+=+x.dataset.d; upd(); }); bg.querySelector("#suAll").onclick=()=>{ n=max; upd(); }; upd(); }
 function pickMon(i){ const b=st(); if(!b.units.length) return dlg(`<h3>${T("魔物がいません","No monsters")}</h3><p>${T("ガチャで魔物を手に入れよう！","Get monsters from the gacha!")}</p>`,[[T("閉じる","Close"),null],[T("ガチャへ","Gacha"),()=>openGacha()]]);
   const cur=b.form[i];
   const bg=dlg(`<h3>${T(`${i<3?"前半":"待機"}編成 ${i%3+1}番目`,`${i<3?"Front":"Bench"} slot ${i%3+1}`)}</h3><p style="font-size:12px">${T("1体の魔物は1か所だけ。編成中の魔物をえらぶと、前の場所から移動します","Each monster can be in one spot only — picking one already in the team moves it")}</p><div class="al">${b.units.map(u=>{ const m=monOf(u.id); const fi=b.form.findIndex(f=>f&&f.u===u.u); return m?`<button type="button" data-u="${u.u}"${fi>=0?' class="inf"':""}>${fi>=0?`<span class="inb">${T(`編成中・${fi<3?"前半":"待機"}${fi%3+1}`,`In team · ${fi<3?"Front":"Bench"} ${fi%3+1}`)}</span>`:""}<img src="${m.img}" alt=""><b style="font-size:13px">Lv.${u.lv||1}</b><span>${esc2(mname(m))}</span><small>⚔${nf(statOf(u.id,u.lv).atk)} ❤${nf(statOf(u.id,u.lv).hp)}${m.magic?" ✨":""}</small></button>`:""; }).join("")}</div>`,
@@ -435,7 +461,7 @@ const defaultActs = (sd) => [0,1,2].map(p=>{ const u=sd.us[sd.field[p]]; if(!ali
 /* ---------- バトル画面 ---------- */
 const FIELD={ en:[[282,612],[468,612],[654,612]], me:[[212,948],[468,948],[724,948]] };
 const TOPX=[42,342,632], ROWY=[1010,1165,1320];
-function openBattle(cfg){ // cfg: {mode:"quest"|"pvp", B, me:0|1, qlv, send(acts), onEnd}
+function openBattle(cfg){ cfg.ss=curSS(); // cfg: {mode:"quest"|"pvp", B, me:0|1, qlv, send(acts), onEnd}
   const s=shell(937,1678,"mb/battle.jpg"); V.B=cfg.B; V.cfg=cfg; V.sel=[null,null,null]; V.ins=[null,null,null]; V.submitted=false; V.anim=false; V.turnAt=Date.now();
   s.innerHTML=`<div class="bt-time" id="btTime"></div>${TOPX.map((x,i)=>`<div class="bt-top" id="btT${i}" style="left:${x}px"></div>`).join("")}
     <div id="btField"></div>${ROWY.map((y,i)=>`<div class="bt-row" id="btR${i}" style="top:${y+20}px"></div>${hit("btRH"+i,75,y+20,620,140,T("戦略を立てる","Plan"))}`).join("")}
@@ -541,12 +567,12 @@ async function playTurn(actsA, actsB){ if(V.anim) return; V.anim=true; const B=V
 function finish(endSide, giveup, silent){ const B=V.B; if(B.end&&B._done) return; B.end=B.end||endSide; B._done=1; const meIdx=V.cfg.me;
   const res = endSide==="draw" ? "draw" : (endSide==="a")===(meIdx===0) ? "win" : "lose"; const b=st();
   clearInterval(V.tick); V.leave=null;
-  if(res==="win"){ // レベルは持ちこし
+  if(res==="win" && V.cfg.ss===curSS()){ // レベルは持ちこし（バトルの途中でランクバトルのタイマーが0になったときは、Lv1にもどったまま）
     mySide().us.forEach(u=>{ const f=b.form[u.slot], x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv=Math.max(x.lv||1,u.lv); });
   }
   const rank=V.cfg.mode==="rank"||V.cfg.mode==="ghost";
   // 負けたとき：ランクバトルはレベル−3（Lv1より下にはならない）、それ以外のバトルは全員Lv1にもどる
-  if(res==="lose") b.form.forEach(f=>{ const x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv = rank ? Math.max(1,(x.lv||1)-MB.RANK_LOSE_LV) : 1; });   // ランクバトル（リアルタイムの相手・過去のデータの相手）：勝率に入るのは自分だけ
+  if(res==="lose" && V.cfg.ss===curSS()) b.form.forEach(f=>{ const x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv = rank ? Math.max(1,(x.lv||1)-MB.RANK_LOSE_LV) : 1; });   // ランクバトル（リアルタイムの相手・過去のデータの相手）：勝率に入るのは自分だけ
   if(rank){ if(res==="win") b.rw=(b.rw||0)+1; else if(res==="lose") b.rl=(b.rl||0)+1; }
   let coin=0; if(res==="win"){ coin=V.cfg.mode==="quest"?questPrize(V.cfg.qlv):rank?MB.RANK_COIN:MB.WIN_COIN; S.coins+=coin; if(V.cfg.mode==="quest") b.qlv=(b.qlv||1)+1; b.w=(b.w||0)+1; } else if(res==="lose") b.l=(b.l||0)+1;
   save(); coinUpd(); V.cfg.onEnd&&V.cfg.onEnd(res); publishMe();
@@ -675,6 +701,8 @@ async function rankNote(){ if(noteBusy||!S.mb||S.mb.note1024||!DB||!MYID) return
           <li>💰 ランクバトルで勝つと <b>5,000コイン</b>。</li>
           <li>📉 ランクバトルで負けると、編成の魔物のレベルが<b>3ずつ下がる</b>（Lv1より下にはならない）。</li>
           <li>🥚 ガチャで持っている魔物が出たら、<b>いちばんレベルが高い同じ魔物に自動で合成</b>（レベル+1）。</li>
+          <li>💎 「魔物編成」で<b>覚醒の石1個につき1レベル</b>上げられる（Lv100まで）。</li>
+          <li>🔄 ランクバトルのタイマーが0になると、持っている魔物は<b>全員Lv1</b>にもどる。</li>
           <li>👾 同じ魔物は<b>1体まで</b>。レベルの上限は<b>Lv100</b>。</li>
           <li>⬆ バトル中のレベルアップは<b>無料</b>。</li>
           <li>🔒 1体の魔物は、編成の<b>1か所だけ</b>に入れられます。</li></ul>`,`<ul style="margin:0;padding-left:18px">
@@ -683,6 +711,8 @@ async function rankNote(){ if(noteBusy||!S.mb||S.mb.note1024||!DB||!MYID) return
           <li>💰 Win a Rank Battle for <b>5,000 coins</b>.</li>
           <li>📉 Lose a Rank Battle and formation monsters <b>lose 3 levels</b> (not below Lv1).</li>
           <li>🥚 Duplicate gacha monsters <b>auto-merge into your highest-level one</b> (+1 level).</li>
+          <li>💎 In Formation, <b>1 Awakening Stone = 1 level</b> (up to Lv100).</li>
+          <li>🔄 When the Rank Battle timer hits 0, all your monsters go back to <b>Lv1</b>.</li>
           <li>👾 Only <b>1 of each monster</b>. Max level is <b>Lv100</b>.</li>
           <li>⬆ Leveling up in battle is <b>free</b>.</li>
           <li>🔒 Each monster can be in <b>only one</b> formation spot.</li></ul>`)}</div>
