@@ -99,6 +99,19 @@ css.textContent=`
 #mbo .mb-coin{position:absolute;left:700px;top:96px;width:192px;height:56px;display:flex;align-items:center;justify-content:flex-end;font:900 42px/1 var(--f-pix,monospace);color:#3a2306}
 #mbo .mb-lb{position:absolute;left:88px;width:768px;height:257px;display:flex;align-items:center;justify-content:center;gap:22px;color:#3a2306;pointer-events:none;white-space:nowrap;font:900 64px/1 var(--f-body,sans-serif);letter-spacing:.04em;text-shadow:0 2px 0 #fff8}
 #mbo .mb-lb i{font-style:normal;font-size:58px}
+#mbo .mb-qlv{position:absolute;right:34px;bottom:22px;font-size:40px;letter-spacing:0}
+#mbo .mb-sq{position:absolute;left:40px;top:1268px;width:420px;display:flex;flex-direction:column;gap:16px}
+#mbo .mb-sq button,#mbo .mb-stat{background:linear-gradient(#f6e6c2,#ead2a0);border:7px solid #6b3f17;border-radius:18px;box-shadow:inset 0 0 0 3px #c99a5a,0 6px 0 #3a2306;color:#3a2306;font:900 46px/1 var(--f-body,sans-serif);font-family:inherit}
+#mbo .mb-sq button{height:112px;cursor:pointer;white-space:nowrap}
+#mbo .mb-sq button:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px #c99a5a,0 3px 0 #3a2306}
+#mbo .mb-stat{position:absolute;left:484px;top:1268px;width:417px;height:368px;box-sizing:border-box;padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+#mbo .mb-stat .t{font-size:34px}
+#mbo .mb-stat .r{font-size:76px;color:#b5420e;line-height:1.05}
+#mbo .mb-stat .wl{font-size:30px}
+#mbo .mb-stat .rs{font-size:26px;line-height:1.25;margin-top:4px}
+#mbo .mb-stat .rs b{font-size:34px}
+#mbo .mb-stat button{margin-top:auto;width:100%;font:900 30px/1.2 var(--f-body,sans-serif);font-family:inherit;color:#3a2306;background:linear-gradient(#ffe27a,#f2b84b);border:3px solid #3a2306;border-radius:14px;padding:6px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+#mbo .mb-stat button small{font-size:22px}
 #mbo .mb-pt{position:absolute;width:266px;text-align:center;color:#3a2306;pointer-events:none;white-space:nowrap;font-family:var(--f-body,sans-serif)}
 #mbo .mb-pt.h{font-weight:900;font-size:24px;line-height:1}
 #mbo .mb-pt.l{font-weight:900;font-size:27px;line-height:1;letter-spacing:-.02em}
@@ -207,21 +220,31 @@ const tw=(ms,f)=>new Promise(res=>{ const t0=performance.now(); const step=t=>{ 
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
 /* ---------- 1：メニュー ---------- */
-function openMenu(){ const s=shell(941,1672,"mb/menu3.jpg");   // 2026-10-25：大きいボタンの中のイラストをなくしてシンプルに（文字はHTML）・魔物BOXのボタンはなくして3つに st(); sfx("tap");
+function openMenu(){ const s=shell(941,1672,"mb/menu4.jpg"); st(); sfx("tap");   // 2026-10-25：配置を変更（上：ランクバトル・フレンドバトル・クエスト／下：魔物編成・アイテム購入・ガチャ＋ランクバトルの勝率）
+  const b=st();
   s.innerHTML=`<button type="button" class="mb-back" id="mbX" style="left:24px;top:40px">← ${T("もどる","Back")}</button>
     <div class="mb-coin" id="mbCoin"></div>
-    ${[["⚔️",T("魔物編成","Formation")],["🧪",T("アイテム購入","Items")],["🥚",T("ガチャ","Gacha")]].map(([ic,l],i)=>`<div class="mb-lb" style="top:${274+341*i}px"><i>${ic}</i>${l}</div>`).join("")}
-    ${hit("mbForm",55,238,835,320,T("魔物編成","Formation"))}${hit("mbShop",55,579,835,320,T("アイテム購入","Items"))}${hit("mbGacha",55,920,835,320,T("ガチャ","Gacha"))}
-    ${[72,338,604].map((x,i)=>`<div class="mb-pt h" ${i===0?'id="mbCnt"':""} style="left:${x}px;top:1306px">${["",T(`クエスト Lv.${st().qlv}`,`Quest Lv.${st().qlv}`),T("あいことばで","With a passphrase")][i]}</div><div class="mb-pt l" style="left:${x}px;top:1450px">${[T("ランクマッチ","Rank Match"),T("クエストマッチ","Quest Match"),T("フレンドマッチ","Friend Match")][i]}</div>`).join("")}
-    <div class="mb-pt i" style="left:338px;top:1352px">⚔️</div>
-    <button type="button" class="mb-rk" id="mbRk">🏆 ${T("ランキング","Ranking")}<br><small id="mbMyRk">${T("勝率の順位","by win rate")}</small></button>
-    <div class="mb-rwr">${T("ランクマッチ勝率","Rank win rate")} ${rankRate()}<br><small>${T(`${st().rw||0}勝 ${st().rl||0}敗`,`${st().rw||0}W ${st().rl||0}L`)}</small><br><small style="font-size:18px;opacity:.85">⏱ ${T("リセットまで","Resets in")} <span id="mbRst">${resetLeft()}</span></small></div>
-    ${hit("mbRand",72,1265,266,260,T("ランクマッチ","Rank Match"))}${hit("mbQuest",338,1265,266,260,T("クエストマッチ","Quest Match"))}${hit("mbFriend",604,1265,266,260,T("フレンドマッチ","Friend Match"))}`;
+    <div class="mb-lb" style="top:274px;height:326px;font-size:84px"><i style="font-size:72px">🏆</i>${T("ランクバトル","Rank Battle")}</div>
+    <div class="mb-lb" style="top:684px;height:256px;font-size:72px"><i style="font-size:60px">🤝</i>${T("フレンドバトル","Friend Battle")}</div>
+    <div class="mb-lb" style="top:1024px;height:189px;font-size:72px"><i style="font-size:60px">⚔️</i>${T("クエスト","Quest")}<span class="mb-qlv">Lv.${b.qlv||1}</span></div>
+    ${hit("mbRand",55,238,835,400,T("ランクバトル","Rank Battle"))}${hit("mbFriend",55,648,835,320,T("フレンドバトル","Friend Battle"))}${hit("mbQuest",55,988,835,255,T("クエスト","Quest"))}
+    <div class="mb-sq">
+      <button type="button" id="mbForm">⚔️ ${T("魔物編成","Formation")}</button>
+      <button type="button" id="mbShop">🧪 ${T("アイテム購入","Items")}</button>
+      <button type="button" id="mbGacha">🥚 ${T("ガチャ","Gacha")}</button>
+    </div>
+    <div class="mb-stat">
+      <div class="t">${T("ランクバトルの勝率","Rank Battle win rate")}</div>
+      <div class="r">${rankRate()}</div>
+      <div class="wl">${T(`${b.rw||0}勝 ${b.rl||0}敗`,`${b.rw||0}W ${b.rl||0}L`)}</div>
+      <div class="rs">⏱ ${T("リセットまで","Resets in")}<br><b id="mbRst">${resetLeft()}</b></div>
+      <button type="button" id="mbRk">🏆 ${T("ランキング","Ranking")}<small id="mbMyRk">${T("勝率の順位","by win rate")}</small></button>
+    </div>`;
   coinUpd(); const g=id=>document.getElementById(id);
   g("mbX").onclick=()=>{ sfx("tap"); closeAll(); };
   g("mbForm").onclick=()=>openForm(); g("mbShop").onclick=()=>openShop(); g("mbGacha").onclick=()=>openGacha();
   g("mbRand").onclick=()=>startRandom(); g("mbRk").onclick=()=>openRank(); g("mbQuest").onclick=()=>startQuest(); g("mbFriend").onclick=()=>startFriend();
-  myRankTag(); clearInterval(V.tick); V.tick=setInterval(()=>{ const e=document.getElementById("mbRst"); if(e) e.textContent=resetLeft(); },1000); }   // 参加人数の表示はなくした
+  myRankTag(); clearInterval(V.tick); V.tick=setInterval(()=>{ const e=document.getElementById("mbRst"); if(e) e.textContent=resetLeft(); },1000); }
 window.openMB = openMenu;
 async function countPlayers(){ const el=document.getElementById("mbCnt"); if(!el||!DB) return;
   try{ const q=await DB.collection("mbq").where("at",">",now()-25000).get(); if(document.getElementById("mbCnt")) el.textContent=T(`参加者 ${Math.max(1,q.size)}人`,`${Math.max(1,q.size)} player(s)`); }catch(e){} }   // いつも1人以上の表示
