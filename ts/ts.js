@@ -14,7 +14,7 @@ const esc3 = t => String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;","
 const fmt = n => Math.round(n).toLocaleString();
 const now = () => (typeof gnow==="function" ? gnow() : Date.now());
 
-const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:10, MAX_KINDS:5, MAX_MON:5, MAX_ITEM:5, MAX_PER:2, MAX_LTD:1, COST_MUL:5, MIN_READY:5,
+const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:10, MAX_KINDS:5, MAX_MON:5, MAX_ITEM:5, MAX_PER:2, MAX_LTD:1, GEN:2, COST_MUL:5, MIN_READY:5,
   UNDER:-1, PREP_MS:3*60000,   // UNDER：赤いマスは土の中にも1マス（r=-1）
   BATTLE_MS:60000, CS:64, GAP:8 };
 // ランクごとのきまり：w×h＝置くときのマスの大きさ、spd＝1秒に進むマス、range＝攻撃がとどく距離（マス）、cd＝攻撃の間かく（秒）
@@ -138,6 +138,11 @@ const mmss = ms => { ms=Math.max(0,ms); const s=Math.ceil(ms/1000); return `${Ma
 let EV=null;   // 魔物合戦のあいだ、ホームの配置画面をしまっておく
 function openTS(opts){ opts=opts||{};
   if(opts.embed){ const host=opts.embed;
+    // 2026-10-25：全冒険者の配置から魔物をいったん全部取り除く（置いたときのコインは全部返す）。GEN を上げると、もう一度取り除ける
+    try{ const t=st(); if((S.tsGen||0)<TS.GEN){ const M=t.units.filter(u=>!isItem(u.id)); let back=0; M.forEach(u=>{ try{ back+=costOf(u.id); }catch(e){} });
+      t.units=t.units.filter(u=>isItem(u.id)); S.tsGen=TS.GEN; S.tsRd=0; S.tsSig=""; S.coins=(S.coins||0)+back; save();
+      if(typeof DB!=="undefined"&&DB&&MYID) DB.collection("tsp").doc(MYID).set({rd:0},{merge:true}).catch(()=>{});
+      if(M.length) setTimeout(()=>dlg(`<div style="font-size:44px">⚔️</div><h3>${T("魔物合戦のお知らせ","Monster Battle notice")}</h3><p>${T(`魔物合戦のきまりが変わったので、置いていた魔物（${M.length}体）をいったん全部取り除きました。<br>置いたときのコイン <b>${fmt(back)}</b> は全部返しました。<br>新しいきまり（魔物5体まで・同じ魔物2体まで・限定1体まで・アイテム5個まで）で置き直して「準備完了」を押してね`,`Monsters were removed due to rule changes. ${fmt(back)} coins refunded.`)}</p>`,[["OK",null]]),500); } }catch(e){}
     // きまり（魔物5種類まで・20個まで）ができる前に準備完了していた配置は、準備完了を外す
     try{ const t=st(); if(S.tsRd && layoutErr(t)){ S.tsRd=0; S.tsSig=""; save(); if(typeof DB!=="undefined"&&DB&&MYID) DB.collection("tsp").doc(MYID).set({rd:0},{merge:true}).catch(()=>{}); const er=layoutErr(t); setTimeout(()=>msg(T(`魔物合戦のきまりが変わりました：${er}。へらしてから、もう一度「準備完了」を押してね`,`Rules changed: ${er}. Adjust and press Ready again.`)),600); } }catch(e){}
     if(V&&V.embed){ host.appendChild(V.root); resize(); sideView(); coinView(); return; }   // ホームが描きなおされたら、同じ画面をつけかえる
@@ -310,7 +315,7 @@ async function readyGo(auto){ if(!V||V.mode!=="prep"||busy) return; const t=st()
     { const er=layoutErr(t); if(er){ sfx("ng"); return msg(er+T("。へらしてから準備完了してね","")); } }
     const nMon=t.units.filter(u=>!isItem(u.id)).length; if(nMon<TS.MIN_READY){ sfx("ng"); return msg(T(`魔物合戦に出るには、魔物を${TS.MIN_READY}体置いてください（今 ${nMon}体）`,`Place at least ${TS.MIN_READY} monsters to join (now ${nMon})`)); }
     busy=true; V.placing=null; V.sel=null; selView(); let nm=""; try{ nm=myName(); }catch(e){}
-    try{ await DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), rd:1, at:now()}); S.tsPow=window.tsPower(mine); S.tsRd=1; S.tsRdAt=(typeof gnow==="function"?gnow():Date.now()); S.tsSig=sigOf(t); save(); try{ queueProfile(true); }catch(e){}
+    try{ await DB.collection("tsp").doc(MYID).set({uid:MYID, nm:String(nm).slice(0,24), ...mine, plv:myLv(), rd:1, g:TS.GEN, at:now()}); S.tsPow=window.tsPower(mine); S.tsRd=1; S.tsRdAt=(typeof gnow==="function"?gnow():Date.now()); S.tsSig=sigOf(t); save(); try{ queueProfile(true); }catch(e){}
       sfx("level"); dlg(`<div style="font-size:48px">⚔️</div><h3>${T("準備完了！","Ready!")}</h3><p>${T("ランキングで冒険者のプロフィールを開くと「魔物合戦」で戦えます。<br>勝つと冒険者Lv+1・1000コイン！<br>ほかの冒険者からも、この配置に合戦をしかけられます。","Open an adventurer's profile in the ranking to start a Monster Battle. Win for Adventurer Lv+1 and 1000 coins!")}</p>`,[["OK",null]]); }
     catch(e){ sfx("ng"); msg(T("保存できませんでした。もう一度ためしてね","Couldn't save. Try again.")); }
     busy=false; sideView(); return; }
