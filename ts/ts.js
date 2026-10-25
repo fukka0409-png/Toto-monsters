@@ -25,11 +25,12 @@ const TS_RANK = {
 // 置ける場所：ふつうは地面の上のマスだけ。fly:true＝空中のマスにも置ける・under:true＝土の中のマスにも置ける
 const TS_MON = {
   10:{ w:1, h:1, spd:1.0, anim:"ts10", melee:true, atkMap:[0,1,2,3,3,2,1,0,9,9] },
+  93:{ w:1, h:1, spd:1.0, anim:"ts93", drawH:1.6, zone:{x:2,up:1} },   // うさぎメイド：移動ふつう・けりの攻撃。前2マス×（同じ高さ＋1つ上）の4マスにいる相手のうち、いちばん近い1体に当たる
   88:{ w:1, h:1, spd:0.5, anim:"ts88", shot:true, line:true, range:2.1, atkMul:0.85 },   // 始まりキノコ：とても遅い・攻撃力やや低め。魔法の玉を飛ばす。同じ高さの前3マスまでとどき、いちばん近い1体に当たる（実線＋先に丸の図）
   63:{ w:1, h:1, spd:0.8, anim:"ts63", fly:true, diag:true, flyLoop:[1,2,3,4,5,6,7,8] },   // 羽スライム：やや遅め・1×1。空中にも置ける。置いた高さのまま飛び、前の1マスと斜め前下の1マスにいる相手を攻撃   // ドットスライム：近距離攻撃・移動速度ふつう・1×1マス・歩きと攻撃のアニメ（右向きの絵）
 };
 // 歩き・攻撃のコマ（[中心x, 足もとy]・大きさ）。攻撃の8・9コマ目はエフェクトだけの絵なので、体（攻撃1コマ目）の前に重ねる
-const TS_ANIM = { ts88:{"a":[[68.0,151.0],[63.0,146.0],[63.0,180.0],[65.0,216.0],[72.0,239.0],[67.0,141.0],[45.0,141.0],[45.0,138.0],[47.0,136.0],[59.0,145.0]],"size":{"a0":[132,151],"a1":[129,146],"a2":[128,180],"a3":[137,216],"a4":[141,239],"a5":[142,141],"a6":[131,141],"a7":[126,138],"a8":[123,136],"a9":[128,145],"w0":[135,149],"w1":[133,154],"w2":[132,153],"w3":[130,148],"w4":[130,150],"w5":[129,154],"w6":[136,149],"w7":[136,153],"w8":[135,154],"w9":[135,155]},"w":[[63.0,149.0],[63.0,154.0],[59.0,153.0],[56.0,148.0],[56.0,150.0],[54.0,154.0],[55.0,149.0],[67.5,153.0],[64.0,154.0],[64.0,155.0]]}, ts63:{"a":[[41.8,68.5],[42.2,65.0],[38.5,65.0],[42.8,66.5],[44.2,83.5],[43.2,72.5],[43.8,67.0],[42.8,72.0],[43.2,69.0],[39.1,68.0]],"w":[[42.0,65.5],[39.0,65.0],[38.5,60.5],[39.5,61.5],[44.0,49.5],[42.0,59.5],[40.0,61.0],[42.5,66.5],[43.5,67.5],[36.0,65.5]],"size":{"a0":[80,69],"a1":[84,67],"a2":[78,66],"a3":[86,67],"a4":[88,82],"a5":[86,74],"a6":[86,69],"a7":[82,74],"a8":[80,71],"a9":[82,68],"w0":[80,66],"w1":[76,78],"w2":[76,80],"w3":[78,82],"w4":[82,57],"w5":[82,69],"w6":[76,71],"w7":[86,81],"w8":[86,80],"w9":[78,66]}}, ts10:{"a":[[41.0,67.5],[38.0,57.0],[39.0,50.0],[39.0,75.5],[41.5,52.0],[52.0,62.0],[56.5,67.0],[28.5,62.0],[27.8,65.5],[44.5,69.0]],"w":[[41.0,76.0],[44.5,77.0],[45.5,76.0],[46.5,60.0],[48.0,70.5],[45.5,49.0],[46.0,56.5],[41.0,76.5],[40.0,67.5],[42.5,55.0]],"size":{"a0":[82,68],"a1":[80,58],"a2":[80,51],"a3":[84,76],"a4":[90,53],"a5":[93,62],"a6":[92,68],"a7":[89,63],"a8":[88,66],"a9":[90,70],"w0":[83,76],"w1":[82,78],"w2":[82,77],"w3":[85,60],"w4":[90,71],"w5":[88,50],"w6":[90,57],"w7":[88,77],"w8":[88,68],"w9":[91,56]}} };
+const TS_ANIM = { ts93:{"size":{"a0":[131,275],"a1":[117,280],"a2":[129,287],"a3":[181,288],"a4":[181,299],"a5":[169,299],"a6":[143,290],"a7":[150,289],"a8":[173,272],"a9":[135,280],"w0":[134,285],"w1":[134,285],"w2":[134,284],"w3":[135,283],"w4":[136,285],"w5":[134,286],"w6":[134,283],"w7":[143,279],"w8":[134,283],"w9":[137,284]},"a":[[69.0,275.0],[58.5,280.0],[72.5,287.0],[88.0,288.0],[84.5,299.0],[80.5,299.0],[81.0,290.0],[95.5,289.0],[82.5,272.0],[62.5,280.0]],"w":[[69.0,285.0],[62.0,285.0],[63.5,284.0],[62.5,283.0],[67.5,285.0],[64.5,286.0],[65.5,283.0],[67.5,279.0],[63.5,283.0],[68.5,284.0]]}, ts88:{"a":[[68.0,151.0],[63.0,146.0],[63.0,180.0],[65.0,216.0],[72.0,239.0],[67.0,141.0],[45.0,141.0],[45.0,138.0],[47.0,136.0],[59.0,145.0]],"size":{"a0":[132,151],"a1":[129,146],"a2":[128,180],"a3":[137,216],"a4":[141,239],"a5":[142,141],"a6":[131,141],"a7":[126,138],"a8":[123,136],"a9":[128,145],"w0":[135,149],"w1":[133,154],"w2":[132,153],"w3":[130,148],"w4":[130,150],"w5":[129,154],"w6":[136,149],"w7":[136,153],"w8":[135,154],"w9":[135,155]},"w":[[63.0,149.0],[63.0,154.0],[59.0,153.0],[56.0,148.0],[56.0,150.0],[54.0,154.0],[55.0,149.0],[67.5,153.0],[64.0,154.0],[64.0,155.0]]}, ts63:{"a":[[41.8,68.5],[42.2,65.0],[38.5,65.0],[42.8,66.5],[44.2,83.5],[43.2,72.5],[43.8,67.0],[42.8,72.0],[43.2,69.0],[39.1,68.0]],"w":[[42.0,65.5],[39.0,65.0],[38.5,60.5],[39.5,61.5],[44.0,49.5],[42.0,59.5],[40.0,61.0],[42.5,66.5],[43.5,67.5],[36.0,65.5]],"size":{"a0":[80,69],"a1":[84,67],"a2":[78,66],"a3":[86,67],"a4":[88,82],"a5":[86,74],"a6":[86,69],"a7":[82,74],"a8":[80,71],"a9":[82,68],"w0":[80,66],"w1":[76,78],"w2":[76,80],"w3":[78,82],"w4":[82,57],"w5":[82,69],"w6":[76,71],"w7":[86,81],"w8":[86,80],"w9":[78,66]}}, ts10:{"a":[[41.0,67.5],[38.0,57.0],[39.0,50.0],[39.0,75.5],[41.5,52.0],[52.0,62.0],[56.5,67.0],[28.5,62.0],[27.8,65.5],[44.5,69.0]],"w":[[41.0,76.0],[44.5,77.0],[45.5,76.0],[46.5,60.0],[48.0,70.5],[45.5,49.0],[46.0,56.5],[41.0,76.5],[40.0,67.5],[42.5,55.0]],"size":{"a0":[82,68],"a1":[80,58],"a2":[80,51],"a3":[84,76],"a4":[90,53],"a5":[93,62],"a6":[92,68],"a7":[89,63],"a8":[88,66],"a9":[90,70],"w0":[83,76],"w1":[82,78],"w2":[82,77],"w3":[85,60],"w4":[90,71],"w5":[88,50],"w6":[90,57],"w7":[88,77],"w8":[88,68],"w9":[91,56]}} };
 const ANIM_IMG={}; const animImg=n=>{ if(!ANIM_IMG[n]){ const im=new Image(); im.src="ts/"+n+".png"; ANIM_IMG[n]=im; } return ANIM_IMG[n]; };
 Object.keys(TS_ANIM).forEach(k=>{ for(let i=0;i<10;i++){ animImg(k+"a"+i); animImg(k+"w"+i); } });
 // melee:true＝近距離攻撃。絵のまわりの草の分だけ少し重なるくらい（-0.3マス）まで近づいてから攻撃する
@@ -255,7 +256,7 @@ function cpuLayout(mine){ const n=Math.max(3,Math.min(TS.MAX_UNITS,mine.units.le
 function mkUnit(u, side, X0, cols, lv){ const k=cfgOf(u.id), s=statsOf(u.id, lv), w=k.w*TS.CS, h=k.h*TS.CS;
   const c = side ? (cols-u.c-k.w) : u.c;   // 相手は左右反対（前が自分のほうを向く）
   if(k.mine) return { id:u.id, mine:true, side, x:X0+c*TS.CS+w/2, y:-u.r*TS.CS, w, h, done:false };
-  return { id:u.id, wall:!!k.wall, side, diag:!!k.diag, shot:!!k.shot, line:!!k.line, x:X0+c*TS.CS+w/2, y:-Math.max(0,u.r)*TS.CS,   /* 土の中に置いた魔物は、バトルが始まると地面に出てくる */ w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
+  return { id:u.id, wall:!!k.wall, side, diag:!!k.diag, shot:!!k.shot, line:!!k.line, zone:k.zone||null, drawH:k.drawH||0, x:X0+c*TS.CS+w/2, y:-Math.max(0,u.r)*TS.CS,   /* 土の中に置いた魔物は、バトルが始まると地面に出てくる */ w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
 function startBattle(mine, opp){
   const X1=0, X2=mine.cols*TS.CS+TS.GAP*TS.CS;
   const all=[...mine.units.filter(u=>okId(u.id)).map(u=>mkUnit(u,0,X1,mine.cols,myLv())), ...opp.units.filter(u=>okId(u.id)).map(u=>mkUnit(u,1,X2,opp.cols,opp.plv||myLv()))];
@@ -286,11 +287,29 @@ function stepDiag(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false; u.hop+=dt*8;
   if(hitT){ if(u.t<=0){ u.t=u.cd; u.atkT=0; hitT.hp=Math.max(0,hitT.hp-u.atk); hitT.flash=0.15; B.pops.push({x:hitT.x,y:hitT.y-hitT.h,v:u.atk,t:0,side:hitT.side}); if(hitT.hp<=0) hitT.dead=true; } return; }
   const want=tg.x-u.face*(u.w/2+tg.w/2-8), dx=want-u.x;   // 相手が前の列（同じ高さか1つ下）に来る位置まで動く
   if(Math.abs(dx)>2){ u.x+=Math.sign(dx)*Math.min(Math.abs(dx),u.spd*dt); u.moving=true; } }
+// 決まったマスの範囲を攻撃する魔物（zone：x＝前に何マス、up＝上に何段）。範囲にいる相手のうち、いちばん近い1体に当たる
+function stepZone(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false;
+  if(!u.fly){ if(u.y<0){ u.vy+=1800*dt; u.y=Math.min(0,u.y+u.vy*dt); if(u.y>=0) u.vy=0; } }
+  const Z=u.zone, top=u.y-(Z.up+1)*TS.CS+4, bot=u.y-4;
+  const foes=[...alive(1-u.side),...walls(1-u.side)].filter(f=>f.y>top && f.y-f.h<bot);   // 範囲の高さにいる相手
+  if(!alive(1-u.side).length) return;
+  if(!foes.length){ advance(u,B,dt,walls); return; }
+  let tg=null, bd=Infinity; for(const f of foes){ const d=Math.abs(f.x-u.x); if(d<bd){ bd=d; tg=f; } }
+  u.face=tg.x>=u.x?1:-1;
+  const zx0=u.face>0?u.x+u.w/2-6:u.x-u.w/2-Z.x*TS.CS, zx1=u.face>0?u.x+u.w/2+Z.x*TS.CS:u.x-u.w/2+6;
+  const inZ=f=>f.x+f.w/2>zx0+4 && f.x-f.w/2<zx1-4;
+  const hits=foes.filter(inZ);
+  if(hits.length){ if(u.t<=0){ let h=hits[0]; for(const f of hits) if(Math.abs(f.x-u.x)<Math.abs(h.x-u.x)) h=f;
+      u.t=u.cd; u.atkT=0; h.hp=Math.max(0,h.hp-u.atk); h.flash=0.15; B.pops.push({x:h.x,y:h.y-h.h,v:u.atk,t:0,side:h.side}); if(h.hp<=0) h.dead=true; } return; }
+  let nx=u.x+u.face*u.spd*dt;
+  if(!u.fly) for(const wl of walls(1-u.side)){ const edge=wl.x-u.face*(wl.w+u.w)/2; if(u.face>0 ? (u.x<=edge+1 && nx>edge) : (u.x>=edge-1 && nx<edge)) nx=edge; }
+  u.moving=nx!==u.x; u.x=nx; u.hop+=dt*8; }
 function stepBattle(dt){ const B=V.B; if(!B||B.over) return;
   const alive=s=>B.units.filter(u=>u.side===s&&!u.dead&&!u.wall);   // 勝ち負けに数えるのは魔物だけ
   const walls=s=>B.units.filter(u=>u.side===s&&!u.dead&&u.wall);
   for(const u of B.units){ if(u.dead){ u.deadT+=dt; continue; } u.flash=Math.max(0,u.flash-dt); if(u.wall) continue; u.t-=dt;
     if(u.diag){ stepDiag(u,B,dt,alive,walls); continue; }
+    if(u.zone){ stepZone(u,B,dt,alive,walls); continue; }
     if(!u.fly){ if(u.y<0){ u.vy+=1800*dt; u.y=Math.min(0,u.y+u.vy*dt); if(u.y>=0) u.vy=0; } }   // 地上の魔物は地面に落ちる
     // 地上の魔物がとどくのは、地面のすぐ上（1段目）を飛んでいる魔物まで
     let foes=u.fly?alive(1-u.side):[...alive(1-u.side).filter(f=>!f.fly||f.y>=-TS.CS-2),...walls(1-u.side)]; if(!alive(1-u.side).length) continue;
@@ -365,7 +384,7 @@ function drawMon(g, id, cx, by, w, h, face, alpha, flash){ const im=imgOf(id); i
   g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); if(flash>0) g.filter="brightness(2.2)"; g.drawImage(im,-dw/2,-dh,dw,dh); g.restore(); }
 // アニメのある魔物を描く（ないときは false）
 function drawAnim(g,id,cx,by,w,face,kind,i,flash,alpha){ const an=(TS_MON[id]||{}).anim, A=an&&TS_ANIM[an]; if(!A) return false;
-  const z=V.cam.z, base=A.size["w0"], sc=w*1.05/base[0]*z, p=w2s(cx,by);
+  const z=V.cam.z, base=A.size["w0"], dh=(TS_MON[id]||{}).drawH, sc=(dh?dh*TS.CS/base[1]:w*1.05/base[0])*z,   /* drawH：縦長の絵は高さ（マス）で大きさを決める */ p=w2s(cx,by);
   const one=(k,j,dx)=>{ const im=animImg(an+k+j); if(!im.complete||!im.naturalWidth) return; const m=A[k][j]; g.drawImage(im,dx-m[0]*sc,-m[1]*sc,im.naturalWidth*sc,im.naturalHeight*sc); };
   g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); if(flash>0) g.filter="brightness(2.2)";
   const cf=TS_MON[id]||{};
@@ -399,7 +418,7 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
     if(u.wall) drawMon(g,u.id,u.x,u.y,u.w,u.h,u.side?-1:1,1,u.flash);
     else if(!drawAnim(g,u.id,u.x,u.y+bob,u.w,u.face,u.atkT<0.6?"a":"w",u.atkT<0.6?Math.min(9,Math.floor(u.atkT/0.6*10)):(u.moving||u.fly?Math.floor(u.hop*1.4)%10:0),u.flash)) drawMon(g,u.id,u.x,u.y+bob,u.w,u.h,u.face,1,u.flash);
     // 体力ゲージ
-    const p=w2s(u.x-u.w*0.4,u.y-u.h-10), bw=u.w*0.8*z, bh=Math.max(3,7*z); g.fillStyle="#111"; g.fillRect(p.x-1,p.y-1,bw+2,bh+2); g.fillStyle="#3a1f2a"; g.fillRect(p.x,p.y,bw,bh);
+    const p=w2s(u.x-u.w*0.4,u.y-Math.max(u.h,u.drawH*TS.CS*0.97)-10), bw=u.w*0.8*z, bh=Math.max(3,7*z); g.fillStyle="#111"; g.fillRect(p.x-1,p.y-1,bw+2,bh+2); g.fillStyle="#3a1f2a"; g.fillRect(p.x,p.y,bw,bh);
     const r=u.hp/u.max; g.fillStyle=u.side?(r<.3?"#ff7a5a":"#ff9a3d"):(r<.3?"#ff5a5a":"#5ec44a"); g.fillRect(p.x,p.y,bw*r,bh); }
   const shI=animImg("ts88shot");
   if(shI.complete&&shI.naturalWidth) for(const sh of B.shots){ if(sh.d>0) continue; const p=w2s(sh.x,sh.y), w=TS.CS*0.5*z, h=w*shI.naturalHeight/shI.naturalWidth; g.save(); g.translate(p.x,p.y); if(sh.face<0) g.scale(-1,1); g.drawImage(shI,-w/2,-h/2,w,h); g.restore(); }
