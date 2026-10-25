@@ -21,7 +21,13 @@ const TS_RANK = {
   C:{w:1,h:1,spd:1.1,range:0.6,cd:1.0}, B:{w:1,h:1,spd:1.0,range:0.8,cd:1.0}, A:{w:2,h:2,spd:0.9,range:1.0,cd:1.1},
   S:{w:2,h:2,spd:0.85,range:1.5,cd:1.1}, Z:{w:3,h:3,spd:0.7,range:2.0,cd:1.2}, L:{w:3,h:3,spd:0.7,range:2.2,cd:1.2} };
 // 魔物ごとのきまり（ここに書いた魔物は、ランクのきまりより優先）。例：{ 42:{ fly:true, spd:1.4, range:3 } }
-const TS_MON = {};
+const TS_MON = {
+  10:{ w:1, h:1, spd:1.0, anim:"ts10" },   // ドットスライム：移動速度ふつう・1×1マス・歩きと攻撃のアニメ（右向きの絵）
+};
+// 歩き・攻撃のコマ（[中心x, 足もとy]・大きさ）。攻撃の8・9コマ目はエフェクトだけの絵なので、体（攻撃1コマ目）の前に重ねる
+const TS_ANIM = { ts10:{"a":[[41.0,67.5],[38.0,57.0],[39.0,50.0],[39.0,75.5],[41.5,52.0],[52.0,62.0],[56.5,67.0],[28.5,62.0],[27.8,65.5],[44.5,69.0]],"w":[[41.0,76.0],[44.5,77.0],[45.5,76.0],[46.5,60.0],[48.0,70.5],[45.5,49.0],[46.0,56.5],[41.0,76.5],[40.0,67.5],[42.5,55.0]],"size":{"a0":[82,68],"a1":[80,58],"a2":[80,51],"a3":[84,76],"a4":[90,53],"a5":[93,62],"a6":[92,68],"a7":[89,63],"a8":[88,66],"a9":[90,70],"w0":[83,76],"w1":[82,78],"w2":[82,77],"w3":[85,60],"w4":[90,71],"w5":[88,50],"w6":[90,57],"w7":[88,77],"w8":[88,68],"w9":[91,56]}} };
+const ANIM_IMG={}; const animImg=n=>{ if(!ANIM_IMG[n]){ const im=new Image(); im.src="ts/"+n+".png"; ANIM_IMG[n]=im; } return ANIM_IMG[n]; };
+Object.keys(TS_ANIM).forEach(k=>{ for(let i=0;i<10;i++){ animImg(k+"a"+i); animImg(k+"w"+i); } });
 const cfgOf = id => { const m=mon(id); return Object.assign({fly:false}, TS_RANK[m&&m.rank]||TS_RANK.C, TS_MON[id]||{}); };
 // 強さ：売却価格（＝図鑑の全冒険者の獲得数で決まる）から。めずらしいほど強い
 const priceOf = id => { try{ const p=dexPrice(id); if(p!=null) return p; }catch(e){} try{ return sellPrice({m:id}); }catch(e){ return 10; } };
@@ -204,7 +210,7 @@ function cpuLayout(mine){ const n=Math.max(3,Math.min(TS.MAX_UNITS,mine.units.le
 
 function mkUnit(u, side, X0, cols){ const k=cfgOf(u.id), s=statsOf(u.id), w=k.w*TS.CS, h=k.h*TS.CS;
   const c = side ? (cols-u.c-k.w) : u.c;   // 相手は左右反対（前が自分のほうを向く）
-  return { id:u.id, side, x:X0+c*TS.CS+w/2, y:-u.r*TS.CS, w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, face:side?-1:1, hop:Math.random()*6 }; }
+  return { id:u.id, side, x:X0+c*TS.CS+w/2, y:-u.r*TS.CS, w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
 function startBattle(mine, opp){
   const X1=0, X2=mine.cols*TS.CS+TS.GAP*TS.CS;
   const units=[...mine.units.filter(u=>mon(u.id)).map(u=>mkUnit(u,0,X1,mine.cols)), ...opp.units.filter(u=>mon(u.id)).map(u=>mkUnit(u,1,X2,opp.cols))];
@@ -221,9 +227,10 @@ function stepBattle(dt){ const B=V.B; if(!B||B.over) return;
     let tg=null, bd=Infinity; for(const f of foes){ const d=Math.hypot(f.x-u.x,(f.y-f.h/2)-(u.y-u.h/2)); if(d<bd){ bd=d; tg=f; } }
     const dx=tg.x-u.x, gap=Math.abs(dx)-(u.w+tg.w)/2, vgap=Math.abs((tg.y-tg.h/2)-(u.y-u.h/2))-(u.h+tg.h)/2;
     u.face=dx>=0?1:-1;
-    if(gap>u.range || (vgap>u.range && !u.fly && tg.fly===false)){ u.x+=Math.sign(dx)*u.spd*dt; u.hop+=dt*8; }
+    u.atkT+=dt; u.moving=false;
+    if(gap>u.range || (vgap>u.range && !u.fly && tg.fly===false)){ u.x+=Math.sign(dx)*u.spd*dt; u.hop+=dt*8; u.moving=true; }
     else if(u.fly && vgap>u.range){ const ty=tg.y-tg.h/2+u.h/2; u.y+=Math.sign(ty-u.y)*u.spd*0.8*dt; }
-    else if(u.t<=0){ u.t=u.cd; tg.hp=Math.max(0,tg.hp-u.atk); tg.flash=0.15; B.pops.push({x:tg.x,y:tg.y-tg.h,v:u.atk,t:0,side:tg.side});
+    else if(u.t<=0){ u.t=u.cd; u.atkT=0; tg.hp=Math.max(0,tg.hp-u.atk); tg.flash=0.15; B.pops.push({x:tg.x,y:tg.y-tg.h,v:u.atk,t:0,side:tg.side});
       if(tg.hp<=0){ tg.dead=true; } }
     if(u.fly && gap>u.range){ const ty=tg.y-tg.h/2+u.h/2; u.y+=Math.sign(ty-u.y)*Math.min(Math.abs(ty-u.y),u.spd*0.5*dt); }
   }
@@ -265,6 +272,14 @@ function drawGrid(g, X0, cols, rows, col){ const z=V.cam.z; g.strokeStyle=col; g
 function drawMon(g, id, cx, by, w, h, face, alpha, flash){ const im=imgOf(id); if(!im.complete||!im.naturalWidth) return; const z=V.cam.z;
   const k=Math.min(w/im.naturalWidth, h/im.naturalHeight), dw=im.naturalWidth*k*z, dh=im.naturalHeight*k*z, p=w2s(cx,by);
   g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); if(flash>0) g.filter="brightness(2.2)"; g.drawImage(im,-dw/2,-dh,dw,dh); g.restore(); }
+// アニメのある魔物を描く（ないときは false）
+function drawAnim(g,id,cx,by,w,face,kind,i,flash,alpha){ const an=(TS_MON[id]||{}).anim, A=an&&TS_ANIM[an]; if(!A) return false;
+  const z=V.cam.z, base=A.size["w0"], sc=w*1.05/base[0]*z, p=w2s(cx,by);
+  const one=(k,j,dx)=>{ const im=animImg(an+k+j); if(!im.complete||!im.naturalWidth) return; const m=A[k][j]; g.drawImage(im,dx-m[0]*sc,-m[1]*sc,im.naturalWidth*sc,im.naturalHeight*sc); };
+  g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); if(flash>0) g.filter="brightness(2.2)";
+  if(kind==="a" && (i===7||i===8)){ one("a",0,0); const im=animImg(an+"a"+i); if(im.complete&&im.naturalWidth){ g.drawImage(im, base[0]*sc*0.35, -A.size["a"+i][1]*sc*0.85, im.naturalWidth*sc, im.naturalHeight*sc); } }
+  else one(kind,i,0);
+  g.restore(); return true; }
 function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
   const z=V.cam.z;
   if(V.mode==="prep"){ const t=st();
@@ -273,7 +288,7 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
     drawGrid(g,0,t.cols,t.rows,"#e0505599");
     for(const u of t.units){ const k=cfgOf(u.id); let c=u.c, r=u.r; const dr=V.drag&&V.drag.u===u&&V.drag.moved; if(dr){ c=V.drag.c; r=V.drag.r; }
       if(dr||V.sel===u){ const ok=!dr||fits(u.id,c,r,u); const p0=w2s(c*TS.CS,-(r+k.h)*TS.CS), p1=w2s((c+k.w)*TS.CS,-r*TS.CS); g.fillStyle=ok?"#ffd75e55":"#ff303055"; g.fillRect(p0.x,p0.y,p1.x-p0.x,p1.y-p0.y); }
-      drawMon(g,u.id,(c+k.w/2)*TS.CS,-r*TS.CS,k.w*TS.CS,k.h*TS.CS,1,dr?0.75:1); }
+      if(!drawAnim(g,u.id,(c+k.w/2)*TS.CS,-r*TS.CS,k.w*TS.CS,1,"w",0,0,dr?0.75:1)) drawMon(g,u.id,(c+k.w/2)*TS.CS,-r*TS.CS,k.w*TS.CS,k.h*TS.CS,1,dr?0.75:1); }
     if(V.placing){ const k=cfgOf(V.placing.id); g.fillStyle="#fff"; g.font=`900 ${Math.round(13*V.dpr)}px sans-serif`; g.textAlign="center"; const p=w2s(t.cols*TS.CS/2,-t.rows*TS.CS); g.fillText(T(`${mon(V.placing.id).name}（${k.w}×${k.h}）を置くマスをタップ`,`Tap a cell for ${mon(V.placing.id).name} (${k.w}×${k.h})`),p.x,p.y-10*V.dpr); }
     const d=w2s(-TS.CS*0.9,0); if(deco.complete){ const h=TS.CS*1.1*z, w=h*deco.width/deco.height; g.drawImage(deco,d.x-w/2,d.y-h,w,h); }
     return; }
@@ -283,7 +298,8 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
   if(deco.complete){ const h=TS.CS*1.1*z, w=h*deco.width/deco.height; const L=w2s(B.X1-TS.CS*1.2,0), R=w2s(B.W+TS.CS*1.2,0); g.drawImage(deco,L.x-w/2,L.y-h,w,h); g.save(); g.translate(R.x,R.y); g.scale(-1,1); g.drawImage(deco,-w/2,-h,w,h); g.restore(); }
   const L=[...B.units].sort((a,b)=>b.h-a.h);
   for(const u of L){ if(u.dead){ if(u.deadT<1.2 && grave.complete){ const p=w2s(u.x,u.fly?u.y:0), h=TS.CS*0.7*z, w=h*grave.width/grave.height; g.globalAlpha=1-u.deadT/1.2; g.drawImage(grave,p.x-w/2,p.y-h,w,h); g.globalAlpha=1; } continue; }
-    const bob=u.fly?Math.sin(u.hop*0.6)*4:0; drawMon(g,u.id,u.x,u.y+bob,u.w,u.h,u.face,1,u.flash);
+    const bob=u.fly?Math.sin(u.hop*0.6)*4:0;
+    if(!drawAnim(g,u.id,u.x,u.y+bob,u.w,u.face,u.atkT<0.6?"a":"w",u.atkT<0.6?Math.min(9,Math.floor(u.atkT/0.6*10)):(u.moving?Math.floor(u.hop*1.4)%10:0),u.flash)) drawMon(g,u.id,u.x,u.y+bob,u.w,u.h,u.face,1,u.flash);
     // 体力ゲージ
     const p=w2s(u.x-u.w*0.4,u.y-u.h-10), bw=u.w*0.8*z, bh=Math.max(3,7*z); g.fillStyle="#111"; g.fillRect(p.x-1,p.y-1,bw+2,bh+2); g.fillStyle="#3a1f2a"; g.fillRect(p.x,p.y,bw,bh);
     const r=u.hp/u.max; g.fillStyle=u.side?(r<.3?"#ff7a5a":"#ff9a3d"):(r<.3?"#ff5a5a":"#5ec44a"); g.fillRect(p.x,p.y,bw*r,bh); }
