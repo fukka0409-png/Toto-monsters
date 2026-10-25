@@ -88,6 +88,7 @@ css.textContent=`
 #tso.embed{position:absolute;inset:0;z-index:1;background:transparent}
 #tso.embed #tsX,#tso.embed #tsTm{visibility:hidden}
 #tso.embed .ts-top{padding-top:6px}
+#tso.embed .ts-panel{padding-bottom:0}
 #tso canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #tso .ts-top{position:absolute;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));pointer-events:none}
 #tso .ts-top>*{pointer-events:auto}

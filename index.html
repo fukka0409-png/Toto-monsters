@@ -5354,7 +5354,9 @@ function renderHome(){
   $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   if($("#hmChange")) $("#hmChange").onclick=()=>openHomeEdit("m");
   if($("#hmTsNew")) $("#hmTsNew").onclick=()=>{ try{ SFX.tap(); }catch(e){} openTsHelp(); };
-  if($("#hmTs")){ const tp=$(".hm-top"); if(tp) $("#hmTs").style.top=(tp.offsetTop+tp.offsetHeight+8)+"px"; const go=()=>{ if(window.openTS) window.openTS({embed:$("#hmTs")}); else setTimeout(go,200); }; go(); }   // 魔物合戦の配置画面（ts/ts.js）
+  if($("#hmTs")){ const tp=$(".hm-top"); if(tp) $("#hmTs").style.top=(tp.offsetTop+tp.offsetHeight+8)+"px";
+    // 下のタブに隠れないように、配置画面の下をタブの上までにする
+    try{ const tb=document.querySelector(".tabs"), hm=$(".home"); if(tb&&hm&&getComputedStyle(tb).position==="fixed"){ const ov=hm.getBoundingClientRect().bottom-tb.getBoundingClientRect().top; $("#hmTs").style.bottom=Math.max(0,Math.ceil(ov)+4)+"px"; } }catch(e){} const go=()=>{ if(window.openTS) window.openTS({embed:$("#hmTs")}); else setTimeout(go,200); }; go(); }   // 魔物合戦の配置画面（ts/ts.js）
 
   $("#hmFriend").onclick=()=>openFriends();
   $("#hmPbox").onclick=()=>{ try{ SFX.tap(); }catch(e){} openPresentBox(); };
@@ -9453,5 +9455,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=44" defer></script>
+<script src="ts/ts.js?v=45" defer></script>
 </body></html>
