@@ -275,12 +275,13 @@ function drawGrid(g, X0, cols, rows, col){ const z=V.cam.z; g.strokeStyle=col; g
 function drawMon(g, id, cx, by, w, h, face, alpha, flash){ const im=imgOf(id); if(!im.complete||!im.naturalWidth) return; const z=V.cam.z;
   const k=Math.min(w/im.naturalWidth, h/im.naturalHeight), dw=im.naturalWidth*k*z, dh=im.naturalHeight*k*z, p=w2s(cx,by);
   g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); if(flash>0) g.filter="brightness(2.2)"; g.drawImage(im,-dw/2,-dh,dw,dh); g.restore(); }
+const ATK_NOFX=[0,1,2,3,3,2,1,0,9,9];   // 攻撃10コマ：エフェクトが入っている5〜9コマ目は使わない
 // アニメのある魔物を描く（ないときは false）
 function drawAnim(g,id,cx,by,w,face,kind,i,flash,alpha){ const an=(TS_MON[id]||{}).anim, A=an&&TS_ANIM[an]; if(!A) return false;
   const z=V.cam.z, base=A.size["w0"], sc=w*1.05/base[0]*z, p=w2s(cx,by);
   const one=(k,j,dx)=>{ const im=animImg(an+k+j); if(!im.complete||!im.naturalWidth) return; const m=A[k][j]; g.drawImage(im,dx-m[0]*sc,-m[1]*sc,im.naturalWidth*sc,im.naturalHeight*sc); };
   g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); if(flash>0) g.filter="brightness(2.2)";
-  if(kind==="a" && (i===7||i===8)){ one("a",0,0); const im=animImg(an+"a"+i); if(im.complete&&im.naturalWidth){ g.drawImage(im, base[0]*sc*0.35, -A.size["a"+i][1]*sc*0.85, im.naturalWidth*sc, im.naturalHeight*sc); } }
+  if(kind==="a") one("a",ATK_NOFX[i]??0,0);   // 攻撃はエフェクトのないコマだけ（体当たりの動き）
   else one(kind,i,0);
   g.restore(); return true; }
 function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
