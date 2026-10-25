@@ -6194,7 +6194,8 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
-  { id:"fix-2026-10-25-tspanel", coins:1000 },   // トトの戦略（試作）：iPhoneで下の操作パネルが小さく表示されていた
+  { id:"fix-2026-10-25-tspanel", coins:1000 },
+  { id:"fix-2026-10-25-tsanim", coins:1000 },   // トトの戦略（試作）：No.4・63・88・93 の歩き・攻撃のアニメが消えていた   // トトの戦略（試作）：iPhoneで下の操作パネルが小さく表示されていた
   { id:"fix-2026-10-25-dblloss", coins:1000 },   // 留守中に続けて攻撃されると、もうBOXにもどった魔物のレベルが何回も下がっていた（2002→2000→1000）
   { id:"fix-2026-10-24-mbstat", coins:1000 },   // 魔物バトル：レベルが上がると攻撃力と体力が1.5倍ずつ増えて、ものすごく大きな数になっていた
   { id:"fix-2026-10-24-itemrest", coins:1000 },   // ランク戦が始まって1時間はアイテムを使えないはずなのに、CPUの冒険者がアイテムを使ってきて「留守中にアイテムを使われました」が出ていた
@@ -9360,5 +9361,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=33" defer></script>
+<script src="ts/ts.js?v=34" defer></script>
 </body></html>
