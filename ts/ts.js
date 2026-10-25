@@ -265,8 +265,16 @@ function startBattle(mine, opp){
   sfx("win"); msg(T(`バトル開始！ 相手：${opp.nm||"冒険者"}`,`Battle start! vs ${opp.nm||"Adventurer"}`));
 }
 // 斜め前下を攻撃する飛ぶ魔物：置いた高さのまま。前（相手のほう）1マス・下1マスのマスにいる相手を攻撃する
+// 攻撃できる相手がいない魔物は、進む向き（自分は右・相手は左）にそのまま進みつづける。フィールドの外に出たら、たおれた扱い
+function advance(u,B,dt,walls){ const dir=u.side?-1:1; let nx=u.x+dir*u.spd*dt;
+  if(!u.fly && walls) for(const wl of walls(1-u.side)){ const edge=wl.x-dir*(wl.w+u.w)/2; if(dir>0 ? (u.x<=edge+1 && nx>edge) : (u.x>=edge-1 && nx<edge)) nx=edge; }
+  u.moving=nx!==u.x; u.face=dir; u.x=nx; u.hop+=dt*8;
+  // フィールドの外（両はしのかざりより外）に出たら、たおれた扱い
+  if(u.x<B.X1-TS.CS*2 || u.x>B.W+TS.CS*2){ u.hp=0; u.dead=true; u.deadT=9; B.pops.push({x:Math.max(B.X1,Math.min(B.W,u.x)),y:u.y-u.h,v:"OUT",t:0,side:u.side}); } }
 function stepDiag(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false; u.hop+=dt*8;
-  const foes=[...alive(1-u.side),...walls(1-u.side)]; if(!foes.length) return;
+  // 斜め前下の高さにいる相手だけが、攻撃できる相手
+  const all=[...alive(1-u.side),...walls(1-u.side)], foes=all.filter(f=>f.y>u.y+4 && f.y-f.h<u.y+TS.CS-4);
+  if(!foes.length){ advance(u,B,dt,null); return; }
   let tg=null, bd=Infinity; for(const f of foes){ const d=Math.abs(f.x-u.x)+Math.abs(f.y-u.y)*0.3; if(d<bd){ bd=d; tg=f; } }
   u.face=tg.x>=u.x?1:-1;
   const zx0=u.face>0?u.x+u.w/2-4:u.x-u.w/2-TS.CS+4, zx1=zx0+TS.CS, zy0=u.y+4, zy1=u.y+TS.CS-4;   // 斜め前下の1マス
@@ -283,7 +291,7 @@ function stepBattle(dt){ const B=V.B; if(!B||B.over) return;
     if(!u.fly){ if(u.y<0){ u.vy+=1800*dt; u.y=Math.min(0,u.y+u.vy*dt); if(u.y>=0) u.vy=0; } }   // 地上の魔物は地面に落ちる
     // 地上の魔物がとどくのは、地面のすぐ上（1段目）を飛んでいる魔物まで
     const foes=u.fly?alive(1-u.side):[...alive(1-u.side).filter(f=>!f.fly||f.y>=-TS.CS-2),...walls(1-u.side)]; if(!alive(1-u.side).length) continue;
-    if(!foes.length){ u.atkT+=dt; u.moving=false; continue; }
+    if(!foes.length){ u.atkT+=dt; advance(u,B,dt,walls); continue; }
     let tg=null, bd=Infinity; for(const f of foes){ const d=Math.hypot(f.x-u.x,(f.y-f.h/2)-(u.y-u.h/2)); if(d<bd){ bd=d; tg=f; } }
     const dx=tg.x-u.x, gap=Math.abs(dx)-(u.w+tg.w)/2, vgap=Math.abs((tg.y-tg.h/2)-(u.y-u.h/2))-(u.h+tg.h)/2;
     u.face=dx>=0?1:-1;
@@ -383,6 +391,6 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
     const p=w2s(u.x-u.w*0.4,u.y-u.h-10), bw=u.w*0.8*z, bh=Math.max(3,7*z); g.fillStyle="#111"; g.fillRect(p.x-1,p.y-1,bw+2,bh+2); g.fillStyle="#3a1f2a"; g.fillRect(p.x,p.y,bw,bh);
     const r=u.hp/u.max; g.fillStyle=u.side?(r<.3?"#ff7a5a":"#ff9a3d"):(r<.3?"#ff5a5a":"#5ec44a"); g.fillRect(p.x,p.y,bw*r,bh); }
   g.textAlign="center"; g.font=`900 ${Math.round(Math.max(11,16*z))}px sans-serif`;
-  for(const q of B.pops){ const p=w2s(q.x,q.y-q.t*40); g.globalAlpha=1-q.t/0.9; g.fillStyle="#000"; g.fillText("-"+fmt(q.v),p.x+1,p.y+1); g.fillStyle=q.side?"#ffd75e":"#ff6a5a"; g.fillText("-"+fmt(q.v),p.x,p.y); } g.globalAlpha=1;
+  for(const q of B.pops){ const p=w2s(q.x,q.y-q.t*40); g.globalAlpha=1-q.t/0.9; g.fillStyle="#000"; g.fillText((typeof q.v==="number"?"-"+fmt(q.v):q.v),p.x+1,p.y+1); g.fillStyle=q.side?"#ffd75e":"#ff6a5a"; g.fillText((typeof q.v==="number"?"-"+fmt(q.v):q.v),p.x,p.y); } g.globalAlpha=1;
 }
 })();
