@@ -5099,7 +5099,8 @@ let RANK_LOAD_AT=0;
 // 魔物合戦の準備ができている冒険者（tsp の rd が 1）。負けて準備完了が外れた人は入らない
 let TS_READY=null;
 // 今のきまり（20個まで・魔物5種類まで・魔物5体以上）に合っている配置だけを、合戦の相手にする（きまりができる前に準備完了した配置は外す）
-const tsLayoutOk=x=>{ const U=(x&&Array.isArray(x.units))?x.units:[]; const M=U.filter(u=>typeof u.id==="number"); return U.length<=20 && M.length>=5 && new Set(M.map(u=>u.id)).size<=5; };
+const tsLayoutOk=x=>{ const U=(x&&Array.isArray(x.units))?x.units:[]; const M=U.filter(u=>typeof u.id==="number"), cnt={}; M.forEach(u=>cnt[u.id]=(cnt[u.id]||0)+1);
+  return M.length===5 && U.length-M.length<=5 && Object.values(cnt).every(n=>n<=2) && M.filter(u=>(mon(u.id)||{}).rank==="L").length<=1; };   // 魔物ちょうど5体（同じ魔物2体まで・限定1体まで）・アイテム5個まで
 async function loadTsReady(){ if(!DB) return; try{ const q=await DB.collection("tsp").where("rd","==",1).get(); TS_READY=new Set(q.docs.filter(d=>tsLayoutOk(d.data())).map(d=>d.id)); if(tab==="rank") render(); }catch(e){} }
 const tsReadyOf=r=>r.id===MYID?!!S.tsRd:(TS_READY?TS_READY.has(r.id):!!r.tr);
 async function loadRanking(force){
@@ -5830,7 +5831,7 @@ function openTsHelp(){
   sheet(`<div class="sheet-h"><h3>⚔️ 魔物合戦の遊び方</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
   <div class="note ts-help" style="text-align:left;margin:0"><ol style="padding-left:1.2em;margin:0">
     <li><b>ホームで魔物を置く</b><br>「魔物を追加」で魔物をえらんで、赤いマスに置きます。コインは置いたときに払います（魔物は売却価格の5倍）。「アイテムを追加」で地雷や壁も置けます。二本指で拡大・縮小できます。</li>
-    <li><b>置ける数のきまり</b><br>魔物とアイテムを合わせて<b>20個</b>まで。魔物は<b>5種類</b>まで（同じ種類なら何体でも）。合戦に出るには、魔物を<b>5体以上</b>置く必要があります。</li>
+    <li><b>置ける数のきまり</b><br>魔物は<b>5体</b>まで（合戦に出るにはちょうど5体）。同じ魔物は<b>2体</b>まで、限定の魔物は<b>1体</b>まで。アイテムは<b>5個</b>まで。</li>
     <li><b>魔物の攻撃範囲を見る</b><br>置いた魔物を1回タップすると、その魔物の攻撃範囲のマスがうすい赤で点滅します。</li>
     <li><b>「準備完了」を押す</b><br>時間制限はありません。準備完了すると、ランキングに「⚔️ 合戦可能」と出て、ほかの冒険者と合戦できるようになります。配置を変えたら、もう一度「準備完了」を押すと反映されます。</li>
     <li><b>ランキングで合戦をしかける</b><br>「⚔️ 合戦可能」の冒険者のプロフィールを開いて「⚔️ 魔物合戦」を押すと、自分の配置と相手の配置で戦います。</li>
@@ -5855,7 +5856,7 @@ document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsf
     document.querySelectorAll(".sheet-bg").forEach(z=>z.remove());
     window.openTS&&window.openTS({fight:x}); }catch(err){ b.disabled=false; b.textContent="⚔️ 魔物合戦"; toast("読みこめませんでした。もう一度ためしてね"); } });
 // 魔物合戦のごほうび：負かした相手の配置の強さ（置いた魔物・アイテムの値段の合計）で6段階
-const TS_TIERS=[[500000,5,10000],[200000,4,6000],[50000,3,3000],[10000,2,1000],[2000,1,300],[0,1,100]];   // [強さがこれ以上, 冒険者Lv, コイン]
+const TS_TIERS=[[200000,5,10000],[80000,4,6000],[20000,3,3000],[5000,2,1000],[1000,1,300],[0,1,100]];   // 魔物5体まで・限定1体までになったので段階を見直し（2026-10-25）   // [強さがこれ以上, 冒険者Lv, コイン]
 window.tsTier=p=>{ const t=TS_TIERS.find(x=>(p||0)>=x[0]); return {lv:t[1], c:t[2]}; };
 // 魔物合戦の結果（ts/ts.js からよばれる）。勝ったら冒険者Lv+1・1000コイン。相手が勝ったら記録をのこして、相手が次に来たときにごほうび
 window.tsFightDone=(opp,res)=>{
@@ -9445,5 +9446,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=42" defer></script>
+<script src="ts/ts.js?v=43" defer></script>
 </body></html>
