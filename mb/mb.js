@@ -1,6 +1,6 @@
 /* =========================================================
    魔物バトル（ミニゲーム）
-   メニュー：魔物編成／アイテム購入／ガチャ／魔物BOX／ランダムマッチ／クエストマッチ／フレンドマッチ
+   メニュー：ランクバトル／フレンドバトル／クエスト／魔物編成／アイテム購入／ガチャ
    バトル：前半3体が場に出る・後半3体は待機。おたがい戦略を決めて同時に結果。相手の6体を全部倒したら勝ち。
    本体（index.html）のグローバル（S・save・DB・MYID・gnow・renderCoins など）を使う
    ========================================================= */
@@ -69,7 +69,7 @@ const st = () => { S.mb=S.mb||{}; const b=S.mb; b.slots=b.slots||MB.SLOTS0; b.un
     b.form=b.form.map(f=>{ if(!f||keep.has(f.u)) return f; const k=b.units.find(u=>u.id===idOf[f.u]); if(k && !b.form.some(z=>z&&z.u===k.u)) return {u:k.u, w:f.w||null}; return null; });
     { const seen=new Set(); b.form=b.form.map(f=>{ if(!f) return f; if(seen.has(f.u)) return null; seen.add(f.u); return f; }); }
     try{ save(); }catch(e){} }
-  // ランクマッチの勝ち負けは「ガチャ・育成」のランク戦ごと（ランク戦が切りかわるとリセット）
+  // ランクバトルの勝ち負けは「ガチャ・育成」のランク戦ごと（ランク戦が切りかわるとリセット）
   { let ss=0; try{ ss=seasonNow(); }catch(e){} if(b.rss!==ss){ b.rss=ss; b.rw=0; b.rl=0; try{ save(); }catch(e){} } }
   // 同じ1体が編成の2か所に入っていたら、あとの方を外す（同じ1体を2か所に入れると、レベルもいっしょに上がってしまっていた）
   { const seen=new Set(); let ch=false; b.form=b.form.map(f=>{ if(!f) return f; if(seen.has(f.u)){ ch=true; return null; } seen.add(f.u); return f; }); if(ch) try{ save(); }catch(e){} }
@@ -545,8 +545,8 @@ function finish(endSide, giveup, silent){ const B=V.B; if(B.end&&B._done) return
     mySide().us.forEach(u=>{ const f=b.form[u.slot], x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv=Math.max(x.lv||1,u.lv); });
   }
   const rank=V.cfg.mode==="rank"||V.cfg.mode==="ghost";
-  // 負けたとき：ランクマッチはレベル−3（Lv1より下にはならない）、それ以外のバトルは全員Lv1にもどる
-  if(res==="lose") b.form.forEach(f=>{ const x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv = rank ? Math.max(1,(x.lv||1)-MB.RANK_LOSE_LV) : 1; });   // ランクマッチ（リアルタイムの相手・過去のデータの相手）：勝率に入るのは自分だけ
+  // 負けたとき：ランクバトルはレベル−3（Lv1より下にはならない）、それ以外のバトルは全員Lv1にもどる
+  if(res==="lose") b.form.forEach(f=>{ const x=f&&b.units.find(z=>z.u===f.u); if(x) x.lv = rank ? Math.max(1,(x.lv||1)-MB.RANK_LOSE_LV) : 1; });   // ランクバトル（リアルタイムの相手・過去のデータの相手）：勝率に入るのは自分だけ
   if(rank){ if(res==="win") b.rw=(b.rw||0)+1; else if(res==="lose") b.rl=(b.rl||0)+1; }
   let coin=0; if(res==="win"){ coin=V.cfg.mode==="quest"?questPrize(V.cfg.qlv):rank?MB.RANK_COIN:MB.WIN_COIN; S.coins+=coin; if(V.cfg.mode==="quest") b.qlv=(b.qlv||1)+1; b.w=(b.w||0)+1; } else if(res==="lose") b.l=(b.l||0)+1;
   save(); coinUpd(); V.cfg.onEnd&&V.cfg.onEnd(res); publishMe();
@@ -558,7 +558,7 @@ const questPrize = lv => Math.min(100000, Math.max(1, Math.floor(Math.pow(lv||1,
 // クエストの敵に出てくるのは、初期の魔物（No.1〜5）だけ。敵のレベルはクエストのレベルと同じ（Lv100をこえる）
 const QUEST_POOL = () => { const L=MB_MONS.filter(m=>m.id>=1&&m.id<=5); return L.length?L:MB_MONS; };
 
-/* ---------- クエストマッチ（ボット） ---------- */
+/* ---------- クエスト（ボット） ---------- */
 function myTeam(){ const t=teamOf(); return t.map(x=>x?{id:x.id, lv:x.lv, w:x.w}:null); }
 function needTeam(){ if(!myTeam().some(Boolean)){ dlg(`<h3>${T("編成に魔物がいません","No monsters in your formation")}</h3><p>${T("「魔物編成」で魔物を入れてね。","Add monsters in Formation.")}</p>`,[[T("閉じる","Close"),null],[T("魔物編成へ","Formation"),()=>openForm()]]); return false; } return true; }
 function startQuest(){ if(!needTeam()) return; if(!MB_MONS.length) return; const lv=st().qlv||1, R=rng((Date.now()^lv*7919)>>>0);
@@ -567,15 +567,15 @@ function startQuest(){ if(!needTeam()) return; if(!MB_MONS.length) return; const
     const B={a:mkSide(myTeam()), b:mkSide(enemy), turn:0, seed:Math.floor(R()*4e9)};
     openBattle({mode:"quest", B, me:0, qlv:lv, send:acts=>{ const ba=botActs(V.B,1,rng((V.B.seed+V.B.turn*31)>>>0)); setTimeout(()=>playTurn(acts,ba),400); } }); }]]); }
 
-/* ---------- ランダムマッチ・フレンドマッチ（Firestore） ---------- */
-// mbq/{uid}：ランダムマッチの待ち（at：最後に生きていた時刻・m：決まった対戦のID）
-// mbf/{あいことば}：フレンドマッチの待ち
+/* ---------- ランクバトル・フレンドバトル（Firestore） ---------- */
+// mbq/{uid}：ランクバトルの待ち（at：最後に生きていた時刻・m：決まった対戦のID）
+// mbf/{あいことば}：フレンドバトルの待ち
 // mbm/{id}：対戦（a・b：2人のuid、ta・tb：チーム、seed、a0/b0…：ターンごとの作戦、fo：降参した側）
 function needLogin(){ if(!DB||!MYID){ dlg(`<p>${T("ログインすると対戦できます","Sign in to battle other players")}</p>`); return false; } return true; }
 function waitDlg(txt, onCancel){ const bg=dlg(`<div style="font-size:50px">⏳</div><h3>${txt}</h3><p id="mbWt" style="font-size:12px"></p>`,[[T("やめる","Cancel"),()=>{ onCancel(); }]],{modal:true}); return bg; }
 async function startRandom(){ if(!needTeam()||!needLogin()) return; const team=myTeam(), ref=DB.collection("mbq").doc(MYID); let done=false;
   const stop=()=>{ done=true; clearInterval(V.hb); (V.unsubs||[]).forEach(u=>{ try{ u(); }catch(e){} }); V.unsubs=[]; ref.delete().catch(()=>{}); };
-  const bg=waitDlg(T("ランクマッチの対戦相手をさがしています…","Looking for a Rank Match opponent..."), stop);
+  const bg=waitDlg(T("ランクバトルの対戦相手をさがしています…","Looking for a Rank Battle opponent..."), stop);
   publishMe();
   // しばらく待ってもリアルタイムの相手がいなければ、ほかの冒険者の過去のデータ（いちばん勝率が高い編成）と戦う
   setTimeout(async()=>{ if(done) return; stop(); bg.remove(); await ghostGo(team); }, MB.GHOST_WAIT);
@@ -590,8 +590,8 @@ async function startRandom(){ if(!needTeam()||!needLogin()) return; const team=m
         if(id){ if(!done){ stop(); bg.remove(); joinMatch(id,"rank"); } return; } } }catch(e){}
     if(!done) setTimeout(seek, 3000+Math.random()*2000); };
   seek(); }
-/* ---------- ランキング（ランクマッチの勝率の順位） ---------- */
-// 勝率が高い順。同じ勝率なら勝った数が多い順。ランクマッチを1回もしていない人は入らない
+/* ---------- ランキング（ランクバトルの勝率の順位） ---------- */
+// 勝率が高い順。同じ勝率なら勝った数が多い順。ランクバトルを1回もしていない人は入らない
 const curSS = () => { try{ return seasonNow(); }catch(e){ return 0; } };
 const resetLeft = () => { try{ return fmtDays(seasonEnd(seasonNow())-gnow()); }catch(e){ return "―"; } };
 const rateOf = x => { const t=(x.w||0)+(x.l||0); return t?(x.w||0)/t:0; };
@@ -600,24 +600,24 @@ async function loadRank(){ const q=await DB.collection("mbp").limit(1000).get();
   if(MYID){ const b=st(), i=L.findIndex(x=>x.uid===MYID), me={uid:MYID, nm:(()=>{ try{ return myName(); }catch(e){ return ""; } })(), w:b.rw||0, l:b.rl||0, team:myTeam()};
     if(i>=0) L[i]={...L[i],...me}; else if(me.w+me.l>0) L.push(me); }
   L.sort((a,b)=>rateOf(b)-rateOf(a)||(b.w||0)-(a.w||0)||(a.l||0)-(b.l||0)); return L; }
-async function openRank(){ const box=page(`🏆 ${T("ランキング","Ranking")}`, T("ランクマッチの勝率の順位","By Rank Match win rate"));
+async function openRank(){ const box=page(`🏆 ${T("ランキング","Ranking")}`, T("ランクバトルの勝率の順位","By Rank Battle win rate"));
   if(!DB){ box.innerHTML=`<p class="note">${T("ログインすると見られます","Sign in to see the ranking")}</p>`; return; }
   box.innerHTML=`<p class="note">${T("読みこみ中…","Loading...")}</p>`; let L=[];
   try{ L=await loadRank(); }catch(e){ box.innerHTML=`<p class="note">${T("読みこめませんでした","Couldn't load")}</p>`; return; }
   if(!document.getElementById("mbo")) return;
   clearInterval(V.tick); V.tick=setInterval(()=>{ const e=document.getElementById("mbRkT"); if(e) e.textContent=resetLeft(); },1000);
   const mi=L.findIndex(x=>x.uid===MYID), medal=i=>i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}`;
-  box.innerHTML=`<p class="note" style="margin:6px auto 0;font-size:13px">⏱ ${T("ランキングリセットまで","Resets in")} <b id="mbRkT" style="font-size:16px">${resetLeft()}</b><br><small>${T("「ガチャ・育成」のランク戦と同じタイミングでリセット","Resets with the Gacha & Raising ranked match")}</small></p><p class="note" style="font-size:15px;font-weight:900;margin-top:6px">${mi>=0?T(`あなたは ${mi+1}位 ／ ${L.length}人`,`You're #${mi+1} of ${L.length}`):T("ランクマッチで戦うと、ランキングにのります","Play a Rank Match to join the ranking")}</p>
+  box.innerHTML=`<p class="note" style="margin:6px auto 0;font-size:13px">⏱ ${T("ランキングリセットまで","Resets in")} <b id="mbRkT" style="font-size:16px">${resetLeft()}</b><br><small>${T("「ガチャ・育成」のランク戦と同じタイミングでリセット","Resets with the Gacha & Raising ranked match")}</small></p><p class="note" style="font-size:15px;font-weight:900;margin-top:6px">${mi>=0?T(`あなたは ${mi+1}位 ／ ${L.length}人`,`You're #${mi+1} of ${L.length}`):T("ランクバトルで戦うと、ランキングにのります","Play a Rank Battle to join the ranking")}</p>
     <div style="max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:6px">${L.slice(0,100).map((x,i)=>`<div class="card" style="flex-direction:row;justify-content:flex-start;gap:8px;text-align:left;${x.uid===MYID?"border-color:#2f6fe0;background:#e6efff":""}">
       <b style="width:42px;text-align:center;font-size:${i<3?24:16}px">${medal(i)}</b>
       <span style="flex:1;min-width:0"><b style="font-size:14px">${esc2(x.nm||T("名無しの召喚士","Nameless"))}${x.uid===MYID?T("（あなた）"," (you)"):""}</b><br><span style="display:inline-flex;gap:2px">${(x.team||[]).filter(t=>t&&monOf(t.id)).slice(0,6).map(t=>`<img src="${monOf(t.id).img}" alt="" style="width:24px;height:24px">`).join("")}</span></span>
-      <span style="text-align:right"><b style="font-size:16px">${(Math.round(rateOf(x)*1000)/10)}%</b><br><small>${T(`${x.w||0}勝${x.l||0}敗`,`${x.w||0}W ${x.l||0}L`)}</small></span></div>`).join("")||`<p class="note">${T("まだだれもいません","No one yet")}</p>`}</div><p class="note" style="margin-top:10px">${T("同じ勝率なら、勝った数が多い人が上。ランクマッチを1回もしていない人はのりません。","Same rate: more wins ranks higher. Players with no Rank Matches aren't listed.")}</p>`; }
+      <span style="text-align:right"><b style="font-size:16px">${(Math.round(rateOf(x)*1000)/10)}%</b><br><small>${T(`${x.w||0}勝${x.l||0}敗`,`${x.w||0}W ${x.l||0}L`)}</small></span></div>`).join("")||`<p class="note">${T("まだだれもいません","No one yet")}</p>`}</div><p class="note" style="margin-top:10px">${T("同じ勝率なら、勝った数が多い人が上。ランクバトルを1回もしていない人はのりません。","Same rate: more wins ranks higher. Players with no Rank Battlees aren't listed.")}</p>`; }
 async function myRankTag(){ const el=document.getElementById("mbMyRk"); if(!el||!DB) return; try{ const L=await loadRank(), i=L.findIndex(x=>x.uid===MYID); if(document.getElementById("mbMyRk")) el.textContent=i>=0?T(`あなたは ${i+1}位`,`You're #${i+1}`):T("勝率の順位","by win rate"); }catch(e){} }
-// 自分の編成・ランクマッチの勝敗・戦い方を公開（過去のデータの相手として使われる）。使われても、本人の勝率は変わらない
+// 自分の編成・ランクバトルの勝敗・戦い方を公開（過去のデータの相手として使われる）。使われても、本人の勝率は変わらない
 function publishMe(){ if(!DB||!MYID) return; const b=st(), team=myTeam(); if(!team.some(Boolean)) return;
   let nm=""; try{ nm=myName(); }catch(e){}
   DB.collection("mbp").doc(MYID).set({uid:MYID, nm:String(nm||"").slice(0,24), team, w:b.rw||0, l:b.rl||0, ss:curSS(), q:b.qlv||1, st:b.style||{}, at:now()}).catch(()=>{}); }
-// 相手のえらび方：①ランクマッチをしたことがある冒険者で、いちばん勝率が高い人 ②いなければ、クエストで戦った冒険者（クエストのレベルがいちばん高い人） ③だれもいなければ、クエストと同じボットの編成
+// 相手のえらび方：①ランクバトルをしたことがある冒険者で、いちばん勝率が高い人 ②いなければ、クエストで戦った冒険者（クエストのレベルがいちばん高い人） ③だれもいなければ、クエストと同じボットの編成
 async function ghostGo(myteam){ let L=[]; try{ const q=await DB.collection("mbp").limit(300).get();
   L=q.docs.map(x=>x.data()).filter(x=>x&&x.uid!==MYID&&Array.isArray(x.team)&&x.team.some(t=>t&&monOf(t.id))); }catch(e){}
   L.forEach(x=>{ if(x.ss!==curSS()){ x.w=0; x.l=0; } });   // 前のランク戦の勝ち負けは数えない
@@ -633,7 +633,7 @@ async function ghostGo(myteam){ let L=[]; try{ const q=await DB.collection("mbp"
   setTimeout(()=>say(T(`🏆 ${esc2(g.nm||"冒険者")}${g.bot?"":"さん"}の編成${info}と対戦！`,`🏆 Battling ${esc2(g.nm||"an adventurer")}'s team ${info}!`),2600),1700); }
 function passKey(p){ let h=5381; const s=String(p).trim(); for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return "k"+(h>>>0).toString(36)+"_"+s.length; }
 function startFriend(){ if(!needTeam()||!needLogin()) return;
-  const bg=dlg(`<h3>🤝 ${T("フレンドマッチ","Friend Match")}</h3><p>${T("おたがい同じあいことばを入れると対戦できます。","Enter the same passphrase as your friend.")}</p><input id="mbPass" maxlength="20" placeholder="${T("あいことば","Passphrase")}">`,[[T("やめる","Cancel"),null],[T("さがす","Search"),b=>{ const p=(b.querySelector("#mbPass").value||"").trim(); if(p.length<2){ return true; } b.remove(); friendGo(p); }]]);
+  const bg=dlg(`<h3>🤝 ${T("フレンドバトル","Friend Battle")}</h3><p>${T("おたがい同じあいことばを入れると対戦できます。","Enter the same passphrase as your friend.")}</p><input id="mbPass" maxlength="20" placeholder="${T("あいことば","Passphrase")}">`,[[T("やめる","Cancel"),null],[T("さがす","Search"),b=>{ const p=(b.querySelector("#mbPass").value||"").trim(); if(p.length<2){ return true; } b.remove(); friendGo(p); }]]);
   setTimeout(()=>bg.querySelector("#mbPass")?.focus(),50); }
 async function friendGo(pass){ const team=myTeam(), ref=DB.collection("mbf").doc(passKey(pass)); let done=false;
   const stop=()=>{ done=true; (V.unsubs||[]).forEach(u=>{ try{ u(); }catch(e){} }); V.unsubs=[]; clearInterval(V.hb); ref.get().then(s=>{ if(s.exists&&s.data().uid===MYID&&!s.data().m) ref.delete().catch(()=>{}); }).catch(()=>{}); };
@@ -670,18 +670,18 @@ async function rankNote(){ if(noteBusy||!S.mb||S.mb.note1024||!DB||!MYID) return
       const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=136; bg.setAttribute("translate","no");
       bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" style="max-height:88vh;overflow:auto"><div class="swear-face">⚔️</div><p>${T("魔物バトル　ルールが変わりました！","Monster Battle: rule changes!")}</p>
         <div class="m-text" style="text-align:left;font-size:13px;line-height:1.6">${T(`<ul style="margin:0;padding-left:18px">
-          <li>🏆 ランクマッチの<b>ランキング</b>ができました（勝率の順位）。</li>
-          <li>⏱ ランクマッチの勝ち負けとランキングは、「ガチャ・育成」の<b>ランク戦と同じタイミングでリセット</b>されます。</li>
-          <li>💰 ランクマッチで勝つと <b>5,000コイン</b>。</li>
-          <li>📉 ランクマッチで負けると、編成の魔物のレベルが<b>3ずつ下がる</b>（Lv1より下にはならない）。</li>
+          <li>🏆 ランクバトルの<b>ランキング</b>ができました（勝率の順位）。</li>
+          <li>⏱ ランクバトルの勝ち負けとランキングは、「ガチャ・育成」の<b>ランク戦と同じタイミングでリセット</b>されます。</li>
+          <li>💰 ランクバトルで勝つと <b>5,000コイン</b>。</li>
+          <li>📉 ランクバトルで負けると、編成の魔物のレベルが<b>3ずつ下がる</b>（Lv1より下にはならない）。</li>
           <li>🥚 ガチャで持っている魔物が出たら、<b>いちばんレベルが高い同じ魔物に自動で合成</b>（レベル+1）。</li>
           <li>👾 同じ魔物は<b>1体まで</b>。レベルの上限は<b>Lv100</b>。</li>
           <li>⬆ バトル中のレベルアップは<b>無料</b>。</li>
           <li>🔒 1体の魔物は、編成の<b>1か所だけ</b>に入れられます。</li></ul>`,`<ul style="margin:0;padding-left:18px">
-          <li>🏆 A Rank Match <b>ranking</b> (by win rate) has been added.</li>
-          <li>⏱ Rank Match records and the ranking <b>reset with the Gacha & Raising ranked match</b>.</li>
-          <li>💰 Win a Rank Match for <b>5,000 coins</b>.</li>
-          <li>📉 Lose a Rank Match and formation monsters <b>lose 3 levels</b> (not below Lv1).</li>
+          <li>🏆 A Rank Battle <b>ranking</b> (by win rate) has been added.</li>
+          <li>⏱ Rank Battle records and the ranking <b>reset with the Gacha & Raising ranked match</b>.</li>
+          <li>💰 Win a Rank Battle for <b>5,000 coins</b>.</li>
+          <li>📉 Lose a Rank Battle and formation monsters <b>lose 3 levels</b> (not below Lv1).</li>
           <li>🥚 Duplicate gacha monsters <b>auto-merge into your highest-level one</b> (+1 level).</li>
           <li>👾 Only <b>1 of each monster</b>. Max level is <b>Lv100</b>.</li>
           <li>⬆ Leveling up in battle is <b>free</b>.</li>
