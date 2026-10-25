@@ -15,7 +15,8 @@ const fmt = n => Math.round(n).toLocaleString();
 const now = () => (typeof gnow==="function" ? gnow() : Date.now());
 
 const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:20, COST_MUL:5,
-  PREP_MS:3*60000, BATTLE_MS:60000, CS:64, GAP:8 };
+  UNDER:-1, PREP_MS:3*60000,   // UNDER：赤いマスは土の中にも1マス（r=-1）
+  BATTLE_MS:60000, CS:64, GAP:8 };
 // ランクごとのきまり：w×h＝置くときのマスの大きさ、spd＝1秒に進むマス、range＝攻撃がとどく距離（マス）、cd＝攻撃の間かく（秒）
 const TS_RANK = {
   C:{w:1,h:1,spd:1.1,range:0.6,cd:1.0}, B:{w:1,h:1,spd:1.0,range:0.8,cd:1.0}, A:{w:2,h:2,spd:0.9,range:1.0,cd:1.1},
@@ -148,7 +149,7 @@ function pickMonster(){ const t=st();
 }
 
 /* ---------- 置く・動かす ---------- */
-const fits = (id,c,r,skip) => { const t=st(), k=cfgOf(id); if(c<0||r<0||c+k.w>t.cols||r+k.h>t.rows) return false;
+const fits = (id,c,r,skip) => { const t=st(), k=cfgOf(id); if(c<0||r<TS.UNDER||c+k.w>t.cols||r+k.h>t.rows) return false;
   return !t.units.some(u=>{ if(u===skip) return false; const q=cfgOf(u.id); return c<u.c+q.w && u.c<c+k.w && r<u.r+q.h && u.r<r+k.h; }); };
 const cellAt = (wx,wy) => ({ c:Math.floor(wx/TS.CS), r:Math.floor(-wy/TS.CS) });
 const unitAt = (wx,wy) => { const t=st(); for(let i=t.units.length-1;i>=0;i--){ const u=t.units[i], k=cfgOf(u.id); const x0=u.c*TS.CS, y1=-u.r*TS.CS, x1=x0+k.w*TS.CS, y0=y1-k.h*TS.CS; if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1) return u; } return null; };
@@ -171,7 +172,7 @@ const viewH = () => V.H - V.panelH;
 const w2s = (x,y) => ({ x:(x-V.cam.x)*V.cam.z + V.W/2, y:(y-V.cam.y)*V.cam.z + viewH()/2 });
 const s2w = (x,y) => ({ x:(x-V.W/2)/V.cam.z + V.cam.x, y:(y-viewH()/2)/V.cam.z + V.cam.y });
 function fitRect(x0,y0,x1,y1){ const pad=1.15, z=Math.min(V.W/((x1-x0)*pad), viewH()/((y1-y0)*pad)); V.cam.z=Math.max(0.15,Math.min(3,z)); V.cam.x=(x0+x1)/2; V.cam.y=(y0+y1)/2; }
-function fitPrep(){ const t=st(); fitRect(-TS.CS*1.5, -t.rows*TS.CS-TS.CS*1.2, t.cols*TS.CS+TS.CS*1.5, TS.CS*0.8); }
+function fitPrep(){ const t=st(); fitRect(-TS.CS*1.5, -t.rows*TS.CS-TS.CS*1.2, t.cols*TS.CS+TS.CS*1.5, -TS.UNDER*TS.CS+TS.CS*0.6); }
 function bindPointers(){ const cv=V.cv;
   const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)*V.dpr, y:(e.clientY-r.top)*V.dpr}; };
   cv.addEventListener("pointerdown",e=>{ if(!V) return; e.preventDefault(); try{ cv.setPointerCapture(e.pointerId); }catch(_){} const p=pos(e); V.ptr.set(e.pointerId,{...p, x0:p.x, y0:p.y, t0:performance.now()});
@@ -215,7 +216,7 @@ function cpuLayout(mine){ const n=Math.max(3,Math.min(TS.MAX_UNITS,mine.units.le
 
 function mkUnit(u, side, X0, cols){ const k=cfgOf(u.id), s=statsOf(u.id), w=k.w*TS.CS, h=k.h*TS.CS;
   const c = side ? (cols-u.c-k.w) : u.c;   // 相手は左右反対（前が自分のほうを向く）
-  return { id:u.id, side, x:X0+c*TS.CS+w/2, y:-u.r*TS.CS, w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
+  return { id:u.id, side, x:X0+c*TS.CS+w/2, y:-Math.max(0,u.r)*TS.CS,   /* 土の中に置いた魔物は、バトルが始まると地面に出てくる */ w, h, fly:k.fly, hp:s.hp, max:s.hp, atk:s.atk, spd:k.spd*TS.CS, range:k.range*TS.CS, cd:k.cd, t:Math.random()*0.4, vy:0, dead:false, deadT:0, flash:0, atkT:9, moving:false, face:side?-1:1, hop:Math.random()*6 }; }
 function startBattle(mine, opp){
   const X1=0, X2=mine.cols*TS.CS+TS.GAP*TS.CS;
   const units=[...mine.units.filter(u=>mon(u.id)).map(u=>mkUnit(u,0,X1,mine.cols)), ...opp.units.filter(u=>mon(u.id)).map(u=>mkUnit(u,1,X2,opp.cols))];
@@ -272,8 +273,8 @@ function drawWorld(g, x0, x1){ const z=V.cam.z, top=s2w(0,0).y, bot=s2w(0,V.H).y
   g.fillStyle="#9b6e47"; for(let i=0;i<60;i++){ const wx=((i*347)%4000)-800, wy=40+((i*97)%220); const p=w2s(wx,wy); g.fillRect(p.x,p.y,8*z,8*z); }
 }
 function drawGrid(g, X0, cols, rows, col){ const z=V.cam.z; g.strokeStyle=col; g.lineWidth=Math.max(1,2*z);
-  for(let c=0;c<=cols;c++){ const a=w2s(X0+c*TS.CS,-rows*TS.CS), b=w2s(X0+c*TS.CS,0); g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); }
-  for(let r=0;r<=rows;r++){ const a=w2s(X0,-r*TS.CS), b=w2s(X0+cols*TS.CS,-r*TS.CS); g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); } }
+  for(let c=0;c<=cols;c++){ const a=w2s(X0+c*TS.CS,-rows*TS.CS), b=w2s(X0+c*TS.CS,-TS.UNDER*TS.CS); g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); }
+  for(let r=TS.UNDER;r<=rows;r++){ const a=w2s(X0,-r*TS.CS), b=w2s(X0+cols*TS.CS,-r*TS.CS); g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); } }
 function drawMon(g, id, cx, by, w, h, face, alpha, flash){ const im=imgOf(id); if(!im.complete||!im.naturalWidth) return; const z=V.cam.z;
   const k=Math.min(w/im.naturalWidth, h/im.naturalHeight), dw=im.naturalWidth*k*z, dh=im.naturalHeight*k*z, p=w2s(cx,by);
   g.save(); g.globalAlpha=alpha??1; g.translate(p.x,p.y); if(face<0) g.scale(-1,1); if(flash>0) g.filter="brightness(2.2)"; g.drawImage(im,-dw/2,-dh,dw,dh); g.restore(); }
@@ -290,7 +291,7 @@ function draw(){ const g=V.ctx; g.imageSmoothingEnabled=false; drawWorld(g);
   const z=V.cam.z;
   if(V.mode==="prep"){ const t=st();
     // 置ける場所
-    const a=w2s(0,-t.rows*TS.CS), b=w2s(t.cols*TS.CS,0); g.fillStyle="#ff5a5a14"; g.fillRect(a.x,a.y,b.x-a.x,b.y-a.y);
+    const a=w2s(0,-t.rows*TS.CS), b=w2s(t.cols*TS.CS,-TS.UNDER*TS.CS); g.fillStyle="#ff5a5a14"; g.fillRect(a.x,a.y,b.x-a.x,b.y-a.y);
     drawGrid(g,0,t.cols,t.rows,"#e0505599");
     for(const u of t.units){ const k=cfgOf(u.id); let c=u.c, r=u.r; const dr=V.drag&&V.drag.u===u&&V.drag.moved; if(dr){ c=V.drag.c; r=V.drag.r; }
       if(dr||V.sel===u){ const ok=!dr||fits(u.id,c,r,u); const p0=w2s(c*TS.CS,-(r+k.h)*TS.CS), p1=w2s((c+k.w)*TS.CS,-r*TS.CS); g.fillStyle=ok?"#ffd75e55":"#ff303055"; g.fillRect(p0.x,p0.y,p1.x-p0.x,p1.y-p0.y); }
