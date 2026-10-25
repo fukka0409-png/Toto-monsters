@@ -23,6 +23,7 @@ const TS_RANK = {
   S:{w:2,h:2,spd:0.85,range:1.5,cd:1.1}, Z:{w:3,h:3,spd:0.7,range:2.0,cd:1.2}, L:{w:3,h:3,spd:0.7,range:2.2,cd:1.2} };
 // 魔物ごとのきまり（ここに書いた魔物は、ランクのきまりより優先）。例：{ 42:{ fly:true, spd:1.4, range:3 } }
 // 置ける場所：ふつうは地面の上のマスだけ。fly:true＝空中のマスにも置ける・under:true＝土の中のマスにも置ける
+// 向き：自分の魔物はいつも右向き、相手の魔物はいつも左向き（u.face=u.side?-1:1）
 const TS_MON = {
   10:{ w:1, h:1, spd:1.0, anim:"ts10", melee:true, atkMap:[0,1,2,3,3,2,1,0,9,9] },
   42:{ w:2, h:2, spd:0.35, anim:"ts42", fly:true, still:true, drawH:2.3, atkMul:0.93, rock:true,
@@ -275,7 +276,7 @@ function startBattle(mine, opp){
 // 攻撃できる相手がいない魔物は、進む向き（自分は右・相手は左）にそのまま進みつづける。フィールドの外に出たら、たおれた扱い
 function advance(u,B,dt,walls){ const dir=u.side?-1:1; let nx=u.x+dir*u.spd*dt;
   if(!u.fly && walls) for(const wl of walls(1-u.side)){ const edge=wl.x-dir*(wl.w+u.w)/2; if(dir>0 ? (u.x<=edge+1 && nx>edge) : (u.x>=edge-1 && nx<edge)) nx=edge; }
-  u.moving=nx!==u.x; u.face=dir; u.x=nx; u.hop+=dt*8;
+  u.moving=nx!==u.x; u.face=u.side?-1:1; u.x=nx; u.hop+=dt*8;
   // フィールドの外（両はしのかざりより外）に出たら、たおれた扱い
   if(u.x<B.X1-TS.CS*2 || u.x>B.W+TS.CS*2){ u.hp=0; u.dead=true; u.deadT=9; B.pops.push({x:Math.max(B.X1,Math.min(B.W,u.x)),y:u.y-u.h,v:"OUT",t:0,side:u.side}); } }
 function stepDiag(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false; u.hop+=dt*8;
@@ -285,7 +286,7 @@ function stepDiag(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false; u.hop+=dt*8;
   const all=[...alive(1-u.side),...walls(1-u.side)], foes=all.filter(f=>f.y>top && f.y-f.h<bot);
   if(!foes.length){ advance(u,B,dt,null); return; }
   let tg=null, bd=Infinity; for(const f of foes){ const d=Math.abs(f.x-u.x)+Math.abs(f.y-u.y)*0.3; if(d<bd){ bd=d; tg=f; } }
-  u.face=tg.x>=u.x?1:-1;
+  u.face=u.side?-1:1;
   const zx0=u.face>0?u.x+u.w/2-10:u.x-u.w/2-14, zx1=zx0+24, zy0=top, zy1=bot;   // 前の1列・2マス（くっつくところまで近づいて攻撃）
   const inZ=f=>{ const fx0=f.x-f.w/2, fx1=f.x+f.w/2, fy0=f.y-f.h, fy1=f.y; return fx1>zx0&&fx0<zx1&&fy1>zy0&&fy0<zy1; };
   const hitT=foes.find(inZ);
@@ -302,7 +303,7 @@ function stepZone(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false;
   if(!alive(1-u.side).length) return;
   if(!foes.length){ advance(u,B,dt,walls); return; }
   let tg=null, bd=Infinity; for(const f of foes){ const d=Math.abs(f.x-u.x); if(d<bd){ bd=d; tg=f; } }
-  u.face=tg.x>=u.x?1:-1;
+  u.face=u.side?-1:1;
   const zx0=u.face>0?u.x+u.w/2-6:u.x-u.w/2-Z.x*TS.CS, zx1=u.face>0?u.x+u.w/2+Z.x*TS.CS:u.x-u.w/2+6;
   const inZ=f=>f.x+f.w/2>zx0+4 && f.x-f.w/2<zx1-4;
   const hits=foes.filter(inZ);
@@ -330,7 +331,7 @@ function stepCells(u,B,dt,alive,walls){
   const foes=[...alive(1-u.side),...walls(1-u.side)].filter(f=>f.y>top && f.y-f.h<bot);   // 範囲の高さにいる相手
   if(!foes.length){ advance(u,B,dt,walls); return; }
   let tg=null, bd=Infinity; for(const f of foes){ const d=Math.abs(f.x-u.x); if(d<bd){ bd=d; tg=f; } }
-  if(Math.abs(tg.x-u.x)>u.w*0.3) u.face=tg.x>=u.x?1:-1;
+  if(Math.abs(tg.x-u.x)>u.w*0.3) u.face=u.side?-1:1;
   const R=cellRects(u), ov=(f,r)=>Math.min(r.x1,f.x+f.w/2)-Math.max(r.x0,f.x-f.w/2)>TS.CS*0.3 && Math.min(r.y1,f.y)-Math.max(r.y0,f.y-f.h)>TS.CS*0.3;
   const hits=foes.filter(f=>R.some(r=>ov(f,r)));
   if(hits.length && u.zone.abs){ if(u.t<=0){ u.t=u.cd; u.atkT=0;   // 矢印のマスは貫通（いる相手ぜんぶ）、点のマスはいちばん近い1体
@@ -346,7 +347,7 @@ function stepRays(u,B,dt,alive,walls){ u.atkT+=dt; u.moving=false;
   const foes=[...alive(1-u.side),...walls(1-u.side)].filter(f=>f.y>top && f.y-f.h<u.y-4);
   if(!foes.length){ advance(u,B,dt,walls); return; }
   let tg=null, bd=Infinity; for(const f of foes){ const d=Math.abs(f.x-u.x); if(d<bd){ bd=d; tg=f; } }
-  if(Math.abs(tg.x-u.x)>u.w*0.6) u.face=tg.x>=u.x?1:-1;
+  if(Math.abs(tg.x-u.x)>u.w*0.6) u.face=u.side?-1:1;
   const hits=rayTargets(u,foes);
   if(hits.length){ if(u.t<=0){ u.t=u.cd; u.atkT=0; for(const h of hits) B.shots.push({x:u.x+u.face*u.w*0.45, y:u.y-u.h*0.42, tg:h, dmg:u.atk, side:u.side, face:u.face, d:0.3}); } return; }
   advance(u,B,dt,walls); }
@@ -364,7 +365,7 @@ function stepBattle(dt){ const B=V.B; if(!B||B.over) return;
     if(!foes.length){ u.atkT+=dt; advance(u,B,dt,walls); continue; }
     let tg=null, bd=Infinity; for(const f of foes){ const d=Math.hypot(f.x-u.x,(f.y-f.h/2)-(u.y-u.h/2)); if(d<bd){ bd=d; tg=f; } }
     const dx=tg.x-u.x, gap=Math.abs(dx)-(u.w+tg.w)/2, vgap=Math.abs((tg.y-tg.h/2)-(u.y-u.h/2))-(u.h+tg.h)/2;
-    u.face=dx>=0?1:-1;
+    u.face=u.side?-1:1;
     u.atkT+=dt; u.moving=false;
     const rg=tg.wall?Math.max(u.range,2):u.range;   // 壁はくっついたところで攻撃する
     const vr=Math.max(rg,2);   // たての方向は、となりのマスならとどく
