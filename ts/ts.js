@@ -56,7 +56,7 @@ css.textContent=`
 #tso .ts-timer.low b{color:#ff8a6a}
 #tso .ts-side{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
 #tso .ts-info{background:#0008;color:#fff;border-radius:8px;padding:4px 8px;font:700 11px/1.4 var(--f-body,sans-serif)}
-#tso .ts-panel{position:absolute;left:0;right:0;bottom:0;height:min(34vh,calc((100vw - 12px)*270/1280));background:#b98a5f;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px)}
+#tso .ts-panel{position:absolute;left:0;right:0;bottom:0;box-sizing:content-box;height:min(34vh,calc((100vw - 12px)*270/1280));background:#b98a5f;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px)}
 #tso .ts-pin{position:relative;height:100%;aspect-ratio:1280/270;max-width:100%}
 #tso .ts-pin img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #tso .ts-hit{position:absolute;background:transparent;border:0;padding:0;cursor:pointer;border-radius:8px}
