@@ -4807,8 +4807,8 @@ function renderDex(){
   document.querySelectorAll("[data-ds]").forEach(b=>b.onclick=()=>{ dexSort=b.dataset.ds; try{ localStorage.setItem("toto-dex-sort",dexSort); }catch(e){} render(); });
 }
 // 図鑑の魔物をタップ：過去に獲得した数・全冒険者の獲得数・今の売却価格。10万コインで自分の獲得数を1減らせる
-// 魔物合戦（ホームにトトの戦略の配置画面）：まだ公開前なので、ふっかーだけに見せる
-const tsHome = () => dexPeek();
+// 魔物合戦（ホームにトトの戦略の配置画面）：みんなに公開（2026-10-25）
+const tsHome = () => true;
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
   if(!h && !dexPeek()) return toast("まだ出会っていない魔物です");
