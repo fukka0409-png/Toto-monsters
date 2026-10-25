@@ -4770,10 +4770,12 @@ function renderDex(){
   const all = isMon? DEX_MONS.length : FRAMES.length; const pct=Math.round(have/all*1000)/10;
   let body="";
   if(isMon){
-    const cell=m=>{const h=S.got[m.id];return `<div class="cell ${h?"has":"unk"}" data-dexm="${m.id}" role="button" tabindex="0">
+    // 冒険者「ふっかー」（運営）だけは、まだ出会っていない魔物の絵と名前も見られる（ほかの冒険者は今までどおり）
+    const peek=dexPeek();
+    const cell=m=>{const got=S.got[m.id], h=got||peek;return `<div class="cell ${h?"has":"unk"}" data-dexm="${m.id}" role="button" tabindex="0"${!got&&peek?' style="opacity:.6"':""}>
       <img src="${h?cardURL(m.id,0,160):silhouette(m.id)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${h?m.name:"？？？"}</div>${h?byLine(m):""}</div>`};
     // 限定ランクは図鑑には公開しない。手に入れた冒険者の図鑑にだけ、別の欄で載っていく
-    const lim=MONSTERS.filter(m=>m.rank==="L"&&S.got[m.id]);
+    const lim=MONSTERS.filter(m=>m.rank==="L"&&(S.got[m.id]||peek));
     const sortBar=`<div class="dex-sort" translate="no">${[["no","No.順"],["rank","ランク別"]].map(([k,l])=>`<button type="button" data-ds="${k}" aria-pressed="${dexSort===k}">${LANG==="en"?(k==="no"?"By No.":"By rank"):l}</button>`).join("")}</div>`;
     const main = dexSort==="rank"
       ? ["Z","S","A","B","C"].map(rk=>{ const L=DEX_MONS.filter(m=>m.rank===rk); if(!L.length) return ""; const c=L.filter(m=>S.got[m.id]).length;
@@ -4793,8 +4795,9 @@ function renderDex(){
   document.querySelectorAll("[data-ds]").forEach(b=>b.onclick=()=>{ dexSort=b.dataset.ds; try{ localStorage.setItem("toto-dex-sort",dexSort); }catch(e){} render(); });
 }
 // 図鑑の魔物をタップ：過去に獲得した数・全冒険者の獲得数・今の売却価格。10万コインで自分の獲得数を1減らせる
+const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
-  if(!h) return toast("まだ出会っていない魔物です");
+  if(!h && !dexPeek()) return toast("まだ出会っていない魔物です");
   const draw=()=>{ const c=S.got[id]||0, T=dexTotal(id), st=dexStats(), p=dexPrice(id);
     const bg=sheet(`<div class="sheet-h"><h3>${esc(m.name)}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="detail"><img src="${cardURL(id,0,320)}" alt="${esc(m.name)}"><div>
