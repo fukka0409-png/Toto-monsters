@@ -3847,8 +3847,11 @@ function loadImages(){
 }
 // 融合で生まれたオリジナル魔物（2026-10-26）：MONSTERS にない番号は、セーブ（S.fmons）か読みこんだ一覧（FMON_CACHE）から追加する
 const FMON_CACHE = {};
+// 融合でできる魔物のランク：どちらかが限定ランクなら限定ランク、それ以外（C〜Z・融合ランク）は融合ランク
+const fuseRank=(a,b)=>((mon(a)||{}).rank==='L'||(mon(b)||{}).rank==='L')?'L':'F';
+const rkName=r=>r==='L'?'限定':'融合';
 function fmonReg(id){ const f=((typeof S!=="undefined"&&S&&S.fmons)||{})[id]||FMON_CACHE[id]; if(!f||!f.img) return undefined;
-  const m={ id, name:f.name||"融合魔物", rank:"F", exp:10000, gift:1, fuse:1, img:f.img }; MONSTERS.push(m);
+  const m={ id, name:f.name||"融合魔物", rank:f.rk==="L"?"L":"F", exp:10000, gift:1, fuse:1, img:f.img }; MONSTERS.push(m);
   const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} }; im.src=f.img; return m; }
 const mon = id => MONSTERS.find(m=>m.id===id) || fmonReg(id);
 const rankColor = r => getComputedStyle(document.documentElement).getPropertyValue("--r-"+r.toLowerCase()).trim();
@@ -4498,7 +4501,7 @@ const BOX_HELP={
   evo:["進化とは？","<ul><li>進化できる魔物（キノコ・たけしなど）は、<b>レベルの上限</b>まで育てた同じ魔物が<b>2体</b>そろうと、上のランクの魔物に進化できる。</li><li>進化でしか手に入らない魔物もいる（ガチャには出ない）。</li><li>ここには、進化できる魔物だけがならぶ。「進化可」がついた魔物をタップして進化しよう。</li></ul>"],
   sell:["売却とは？","<ul><li>魔物を<b>コイン</b>にかえる。売った魔物はいなくなる。</li><li>値段は、みんなの図鑑の<b>獲得数の少なさ</b>で決まる（めずらしい魔物ほど高い）。</li><li>S・Zランクを売ると、冒険者レベルも上がる。</li><li>🔒鍵のかかった魔物・配置中の魔物・新しく追加されてから48時間以内の新キャラは売れない。</li></ul>"],
   shield:["盾制作とは？","<ul><li><b>Sランクの魔物3体</b>で🛡盾、<b>Zランクの魔物1体</b>で🛡✨スーパー盾を作れる（使った魔物はいなくなる）。</li><li>盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げる。防いだときは50%の確率で、使った相手にその効果を跳ね返す。1回防ぐたびに耐久力が1へる。</li><li>盾は作ったランク戦の間だけ持てる。</li></ul>"],
-  fusion:["融合とは？","<ul><li><b>種類のちがう魔物を2匹</b>えらんで、<b>500モコ</b>で融合できる。</li><li>「送信」を押すと、2匹の魔物がまざった<b>オリジナル魔物</b>が生まれる（<b>融合ランク</b>）。</li><li><b>はじめての組み合わせ</b>は図鑑に載っていない魔物なので、運営が作るまでしばらく待つ。できあがったらBOXに届く。</li><li><b>だれかがもう融合した組み合わせ</b>なら、その場ですぐ受け取れる。</li><li>融合に使った2匹は、送信したときにBOXからいなくなる（鍵のかかった魔物・配置中の魔物は使えない）。</li></ul>"],
+  fusion:["融合とは？","<ul><li><b>種類のちがう魔物を2匹</b>えらんで、<b>500モコ</b>で融合できる。</li><li>「送信」を押すと、2匹の魔物がまざった<b>オリジナル魔物</b>が生まれる。</li><li>生まれる魔物のランク：2匹の<b>どちらかが限定ランク</b>なら<b>限定ランク</b>、それ以外（C〜Zランク・融合ランク）は<b>融合ランク</b>。</li><li><b>はじめての組み合わせ</b>は図鑑に載っていない魔物なので、運営が作るまでしばらく待つ。できあがったらBOXに届く。</li><li><b>だれかがもう融合した組み合わせ</b>なら、その場ですぐ受け取れる。</li><li>融合に使った2匹は、送信したときにBOXからいなくなる（鍵のかかった魔物・配置中の魔物は使えない）。</li></ul>"],
   dexM:["魔物図鑑とは？","<ul><li>これまでに手に入れた魔物がのる。まだの魔物はシルエット。</li><li><b>コンプ率</b>（持っている魔物の割合）が上がるほど、冒険者EXPの増え方が上がる（100%で1.5倍）。</li><li>限定ランクの魔物は、手に入れた人の図鑑にだけ別の欄でのる。</li></ul>"] };
 const boxSeg=()=>{ const cur=[...BOX_MENU,["fusion","🧬","魔物オリジナル融合"]].find(x=>x[0]===boxMode); const h=BOX_HELP[boxMode];
   return `<div class="box-top"><button class="chip" type="button" id="boxBack">← BOXメニュー</button>${cur?`<b>${cur[1]} ${cur[2]}</b>`:"<b>手持ちの魔物</b>"}${h?`<button class="box-help" type="button" id="boxHelp">❓ ${h[0]}</button>`:""}</div>`; };
@@ -4553,13 +4556,13 @@ async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOK
       else if(x.an&&x.bn&&[x.an,x.bn].sort().join("+")===nkey) known=x; }); }catch(e){}   // 古い記録は魔物の名前で比べる
   if(known){ const at=gnow();
     try{ const ref=await withTO(DB.collection("fusereq").add({uid:MYID, nm:String(myName()).slice(0,24), a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, al:A.l, bl:B.l, at, auto:1}));
-      DB.collection("fusemon").doc(known.id+"_"+ref.id).set({id:known.id, name:known.name, img:known.img, uid:MYID, req:ref.id, reqAt:at, a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, same:1, auto:1, at}).catch(()=>{}); }catch(e){}
+      DB.collection("fusemon").doc(known.id+"_"+ref.id).set({id:known.id, name:known.name, img:known.img, rk:known.rk||fuseRank(A.m,B.m), uid:MYID, req:ref.id, reqAt:at, a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, same:1, auto:1, at}).catch(()=>{}); }catch(e){}
     const an=mon(A.m).name, bn=mon(B.m).name;
     S.moko-=FUSE_MOKO; S.units=S.units.filter(z=>z.u!==A.u&&z.u!==B.u);
-    S.fmons=S.fmons||{}; S.fmons[known.id]={name:known.name,img:known.img}; FMON_CACHE[known.id]=S.fmons[known.id]; mon(known.id);
+    const krk=known.rk||fuseRank(A.m,B.m); S.fmons=S.fmons||{}; S.fmons[known.id]={name:known.name,img:known.img,rk:krk}; FMON_CACHE[known.id]=S.fmons[known.id]; mon(known.id);
     S.got[known.id]=(S.got[known.id]||0)+1; S.units.push({u:S.nextUid++,m:known.id,l:1,e:0,s:0,g:0,k:true,t:at}); fuSel=[]; fuStep=0; save();
     const g=document.createElement("div"); g.className="reveal";
-    g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${known.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(an)}」と「${esc(bn)}」が融合して<br><b style="font-size:18px">${esc(known.name)}</b><br>が生まれました！<br><span class="rk rk-F">融合</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
+    g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${known.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(an)}」と「${esc(bn)}」が融合して<br><b style="font-size:18px">${esc(known.name)}</b><br>が生まれました！<br><span class="rk rk-${krk}">${rkName(krk)}</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
     document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; return; }
   const req={uid:MYID, nm:String(myName()).slice(0,24), a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, al:A.l, bl:B.l, at:gnow()};
   try{ await withTO(DB.collection("fusereq").add(req)); }catch(e){ btn.disabled=false; btn.textContent="📨 送信"; return toast("送信できませんでした。もう一度ためしてね"); }
@@ -4567,7 +4570,7 @@ async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOK
   try{ SFX.reveal("S"); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🧬</div><p>融合を送信しました！</p>
-    <div class="note" style="margin:0">図鑑に載っていない魔物なので融合されるまでしばらくお待ちください✨<br><small>「${esc(req.an)}」＋「${esc(req.bn)}」。できあがったら<b>融合ランク</b>としてBOXに届きます</small></div><button class="btn gold" type="button">OK</button></div>`;
+    <div class="note" style="margin:0">図鑑に載っていない魔物なので融合されるまでしばらくお待ちください✨<br><small>「${esc(req.an)}」＋「${esc(req.bn)}」。できあがったら<b>${rkName(fuseRank(A.m,B.m))}ランク</b>としてBOXに届きます</small></div><button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector("button").onclick=()=>{ bg.remove(); render(); }; }
 function renderBoxMenu(){
   $("#stage").innerHTML=`<h2>魔物</h2><p class="sub">${S.units.length}体の仲間（BOXは${BOX_MAX}体まで）。やりたいことをえらんでね。</p>
@@ -7304,9 +7307,9 @@ async function checkItems(){
           gifts.push(who); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="fmon"){   // 融合の完成（運営から届く）：オリジナルの限定魔物をBOXに入れて「融合に成功しました！」
           try{ const sn=await withTO(DB.collection("fusemon").doc(String(b.fid)).get()); const f=sn.exists?sn.data():null;
-            if(f&&f.img){ S.fmons=S.fmons||{}; S.fmons[f.id]={name:f.name,img:f.img}; FMON_CACHE[f.id]=S.fmons[f.id]; const m=mon(f.id);
+            if(f&&f.img){ S.fmons=S.fmons||{}; S.fmons[f.id]={name:f.name,img:f.img,rk:f.rk||"F"}; FMON_CACHE[f.id]=S.fmons[f.id]; const m=mon(f.id);
               S.got[f.id]=(S.got[f.id]||0)+1; S.units.push({u:S.nextUid++,m:f.id,l:1,e:0,s:0,g:0,k:true,t:gnow()}); S.fuReqs=(S.fuReqs||[]).filter(r=>r.at!==f.reqAt);
-              fuseDone.push({img:f.img,name:f.name,a:f.an,b:f.bn}); } }catch(e){}
+              fuseDone.push({img:f.img,name:f.name,a:f.an,b:f.bn,rk:f.rk||"F"}); } }catch(e){}
           S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="blocked"){ res.push(`🛡 盾によりアイテムが無効化されました(泣)<br>　（${esc(b.defName||"相手")}さんへの${itemOf(b.what)?.name||"アイテム"}）`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="loot"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; res.push(b.r?`🛡 跳ね返したコインマグネットで ${c?`+${c.toLocaleString()}コインをうばった！`:"…でも相手はコインを持っていなかった"}`:`🧲 コインマグネットが命中！ ${c?`+${c.toLocaleString()}コインをうばった`:"でも相手はコインを持っていなかった"}`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
@@ -7342,7 +7345,7 @@ async function checkItems(){
       }
       save(); render();
       fuseDone.forEach(x=>{ const g=document.createElement("div"); g.className="reveal";
-        g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${x.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(x.a||"")}」と「${esc(x.b||"")}」が融合して<br><b style="font-size:18px">${esc(x.name)}</b><br>が生まれました！<br><span class="rk rk-F">融合</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
+        g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${x.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(x.a||"")}」と「${esc(x.b||"")}」が融合して<br><b style="font-size:18px">${esc(x.name)}</b><br>が生まれました！<br><span class="rk rk-${x.rk}">${rkName(x.rk)}</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
         document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; });
       Object.entries(artGot).forEach(([k,q])=>{ const x=ARTS.find(z=>z.k===k); const g=document.createElement("div"); g.className="reveal";
         g.innerHTML=`<div class="burst"></div><h3>🎁 特別イラストが届いた！</h3><img src="${x.img}" alt="" style="width:min(64vw,280px);height:auto;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">神から「${esc(x.name)}」が${q>1?q+"枚":""}届きました！<br>アイコン作りとホームの魔物で使えます（持っている数：${S.arts[k]}）</p><button class="btn gold" type="button">OK</button>`;
@@ -9704,5 +9707,5 @@ async function titleRanks(){
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
-<script src="fz/fz.js?v=3" defer></script>
+<script src="fz/fz.js?v=4" defer></script>
 </body></html>
