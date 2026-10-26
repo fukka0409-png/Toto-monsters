@@ -5016,7 +5016,7 @@ const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふ
 function howToGet(m){ const L=[];
   if(m.rank==="F"||m.fuse){ const r=Object.assign({},FMON_CACHE[m.id]||{},m.recipe||{}), A=mon(r.a), B=mon(r.b), an=r.an||(A||{}).name, bn=r.bn||(B||{}).name;
     // レシピの魔物も、持っていなければ黒い影（名前だけ出す）
-    const pic=(x,nm)=>`<span class="fu-rcp"><img src="${x?(S.got[x.id]?cardURL(x.id,0,120):silhouette(x.id)):""}" alt=""><b>${esc(nm||"？？？")}</b></span>`;
+    const pic=(x,nm)=>`<span class="fu-rcp"><img src="${x?((S.got[x.id]||dexPeek())?cardURL(x.id,0,120):silhouette(x.id)):""}" alt=""><b>${esc(nm||"？？？")}</b></span>`;   // ゲットしたことのない魔物はシルエット（ふっかーだけは見える）
     L.push(an&&bn?`🧬 融合レシピ<div class="fu-rcps">${pic(A,an)}<i>＋</i>${pic(B,bn)}</div>BOXの「魔物オリジナル融合」でこの2匹を融合すると、すぐ手に入ります`:"🧬 魔物オリジナル融合（BOXメニューから）"); }
   else if(m.rank==="L"&&m.fuse) {}
   else if(m.rank==="L"||m.gift) L.push("🎁 運営からのプレゼント・イベントの限定キャラ（ガチャには出ません）");
@@ -5027,7 +5027,7 @@ function howToGet(m){ const L=[];
 function openDexHow(id){ const m=mon(id); if(!m) return;
   sheet(`<div class="sheet-h"><h3>？？？</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="detail"><img src="${silhouette(id)}" alt=""><div>
-      <div class="stat"><span>No.</span><b>${String(id).padStart(3,"0")}</b></div>
+      ${m.fuse?"":`<div class="stat"><span>No.</span><b>${String(id).padStart(3,"0")}</b></div>`}
       <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank}</span></div>
       <p class="note" style="margin:8px 0 4px"><b>まだ出会っていない魔物です。ここで手に入ります：</b></p>
       <ul class="note" style="margin:0;padding-left:1.1em">${howToGet(m).map(t=>`<li>${t}</li>`).join("")}</ul>${firstFuser(m)}</div></div>`); fillFirstFuser(m); }
