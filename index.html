@@ -3567,8 +3567,9 @@ async function startRemote(uid){
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
     try{ if(dexPeek() && !S.tk0_1026){ S.items=S.items||{}; S.items.ticket=0; S.tk0_1026=1; save(); } }catch(e){}   // 2026-10-26：ふっかーの所持ガチャチケットを1回だけ0にする
+    checkLoginBonus();
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
-    clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); }, 5*60*1000);
+    clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
@@ -5925,6 +5926,16 @@ window.tsFightDone=(opp,res)=>{
   try{ if(DB&&MYID&&opp.uid) DB.collection("tsb").add({att:MYID, an:myName().slice(0,12), def:opp.uid, at:gnow(), sp:myPow, dp:opPow, result:res==="win"?"att":res==="lose"?"def":"draw"}).catch(()=>{}); }catch(e){} };
 // 留守中の魔物合戦：勝っていたら通知＋冒険者Lv+1・1000コイン。
 // 負けていたら、配置はすべて取り消し（置くのに使ったコインの3分の1が返ってくる）＋お知らせ
+// 毎日ログインボーナス（2026-10-26）：ランキングのタイマー（シーズン）が新しくなるたびに、ログインした冒険者に3000コインと1モコ
+const LOGIN_BONUS = { coins:3000, moko:1 };
+function checkLoginBonus(){ try{ if(!MYID) return; const s=seasonNow(); if(S.lbS===s) return;
+  S.lbS=s; S.coins=Math.min(COIN_MAX,(S.coins||0)+LOGIN_BONUS.coins); S.moko=(S.moko||0)+LOGIN_BONUS.moko; save(); render();
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎁</div><p>毎日ログインボーナス！</p>
+    <div class="note" style="margin:0;font-size:15px">🪙 <b>${LOGIN_BONUS.coins.toLocaleString()}コイン</b><br><img src="moko.png" alt="" style="width:28px;height:28px;vertical-align:-8px"> <b>${LOGIN_BONUS.moko}モコ</b></div>
+    <div class="note" style="margin:0">ランキングのタイマーが新しくなるたびにもらえます。モコは「魔物レアガチャ」で使えます</div>
+    <button class="btn gold" type="button">受け取る</button></div>`;
+  document.body.appendChild(bg); try{ SFX.coin(); }catch(e){} bg.querySelector("button").onclick=()=>bg.remove(); }catch(e){} }
 async function checkTsBattles(){ if(!DB||!MYID) return;
   try{ const q=await DB.collection("tsb").where("def","==",MYID).get(); const L=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastTsb||0)).sort((a,b)=>a.at-b.at); if(!L.length) return;
     S.lastTsb=Math.max(...L.map(b=>b.at)); const W=L.filter(b=>b.result==="def");
