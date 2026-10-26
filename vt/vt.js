@@ -103,7 +103,7 @@ function draw(){ if(!V) return; const B=V.querySelector("#vtBody"); const d=CUR|
   const rows=[...Array(VT.N)].map((_,i)=>{ const x=d.e[i];
     if(!x) return `<div class="vt-row"><div class="vt-slot empty">？</div><div class="vt-info"><b>あき枠</b><small>${rest?"前の回にエントリーしたので今回は休み":entrant?"あなたはエントリーずみ":"だれでもエントリーできます"}</small></div>
       <button class="vt-b gold" type="button" data-ent="${i}" ${entrant||rest||voting?"disabled":""}>エントリー</button></div>`;
-    const m=mon(x.m), see=showAll||(entrant&&top.includes(i)), me=x.uid===MYID;
+    const m=mon(x.m), see=voting&&(showAll||(entrant&&top.includes(i))), me=x.uid===MYID;   // 票数は投票が始まってから
     return `<div class="vt-row"><div class="vt-slot"><img src="${m?cardURL(m.id,0,160):""}" alt=""></div>
       <div class="vt-info"><b>${showAll&&top[0]===i&&d.c[i]>0?'<span class="vt-rank">1位</span>':""}${esc(m?m.name:"？？？")}</b><small>${me?"あなたのエントリー":"エントリー"+(i+1)}${x.res?"（予約）":""}</small>
         ${see?`<span class="vt-cnt">${d.c[i]}票</span>`:voting?`<small>投票数：？？？</small>`:""}</div>
