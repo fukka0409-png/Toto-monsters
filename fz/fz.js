@@ -61,10 +61,11 @@ async function load(){ if(!DB) return;
 const pairKey=r=>[r.a,r.b].sort((x,y)=>x-y).join("+");
 function prevOf(r){ for(const q of REQ){ if(q.id===r.id) continue; const d=DONE[q.id]; if(d&&d.id&&pairKey(q)===pairKey(r)) return d; } return null; }
 function draw(){ if(!V) return; const left=REQ.filter(r=>!DONE[r.id]).length;
-  V.querySelector(".fz-n").textContent=`依頼数 ${REQ.length}（未対応 ${left}）`;
+  V.querySelector(".fz-n").textContent=`依頼数 ${left}（完了 ${REQ.length-left}）`;
   const B=V.querySelector(".fz-body");
-  if(!REQ.length){ B.innerHTML=`<div class="fz-row" style="justify-content:center">まだ依頼はありません</div>`; return; }
-  B.innerHTML=REQ.map(r=>{ const d=DONE[r.id], A=mon(r.a), Bm=mon(r.b), pic=d?(d.img||(FMON_CACHE[d.id]||{}).img):PIC[r.id], pv=!d&&prevOf(r);
+  const OPEN=REQ.filter(r=>!DONE[r.id]);   // 融合が完了した依頼は一覧から消す
+  if(!OPEN.length){ B.innerHTML=`<div class="fz-row" style="justify-content:center">${REQ.length?"未対応の依頼はありません ✨":"まだ依頼はありません"}</div>`; return; }
+  B.innerHTML=OPEN.map(r=>{ const d=DONE[r.id], A=mon(r.a), Bm=mon(r.b), pic=d?(d.img||(FMON_CACHE[d.id]||{}).img):PIC[r.id], pv=!d&&prevOf(r);
     return `<div class="fz-row ${d?"done":""}" data-r="${r.id}">
       <div class="fz-who"><b>${esc(r.nm||"冒険者")}</b><span>魔物融合</span><small>${new Date(r.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></div>
       <button class="fz-c" type="button" data-z="${A?cardURL(A.id,0,320):""}"><img src="${A?cardURL(A.id,0,120):""}" alt=""></button><span class="fz-plus">＋</span>
