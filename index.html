@@ -4463,7 +4463,7 @@ const BOX_HELP={
   fuse:["合成とは？","<ul><li>育てたい魔物をえらんで、ほかの魔物を<b>素材</b>にすると、経験値が入ってレベルが上がる。</li><li><b>同じ魔物</b>を素材にすると、経験値が<b>2倍</b>。</li><li>合成するたびにコインが少しかかる（合成するともらえるコインもある）。</li><li>🔒鍵のかかった魔物・配置中の魔物は、素材に使われない。</li></ul>"],
   evo:["進化とは？","<ul><li>進化できる魔物（キノコ・たけしなど）は、<b>レベルの上限</b>まで育てた同じ魔物が<b>2体</b>そろうと、上のランクの魔物に進化できる。</li><li>進化でしか手に入らない魔物もいる（ガチャには出ない）。</li><li>ここには、進化できる魔物だけがならぶ。「進化可」がついた魔物をタップして進化しよう。</li></ul>"],
   sell:["売却とは？","<ul><li>魔物を<b>コイン</b>にかえる。売った魔物はいなくなる。</li><li>値段は、みんなの図鑑の<b>獲得数の少なさ</b>で決まる（めずらしい魔物ほど高い）。</li><li>S・Zランクを売ると、冒険者レベルも上がる。</li><li>🔒鍵のかかった魔物・配置中の魔物・新しく追加されてから48時間以内の新キャラは売れない。</li></ul>"],
-  shield:["盾制作とは？","<ul><li><b>Sランクの魔物3体</b>で🛡盾、<b>Zランクの魔物1体</b>で🛡✨スーパー盾を作れる（使った魔物はいなくなる）。</li><li>盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げる。1回防ぐたびに耐久力が1へる。</li><li>盾は作ったランク戦の間だけ持てる。</li></ul>"],
+  shield:["盾制作とは？","<ul><li><b>Sランクの魔物3体</b>で🛡盾、<b>Zランクの魔物1体</b>で🛡✨スーパー盾を作れる（使った魔物はいなくなる）。</li><li>盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げる。防いだときは50%の確率で、使った相手にその効果を跳ね返す。1回防ぐたびに耐久力が1へる。</li><li>盾は作ったランク戦の間だけ持てる。</li></ul>"],
   dexM:["魔物図鑑とは？","<ul><li>これまでに手に入れた魔物がのる。まだの魔物はシルエット。</li><li><b>コンプ率</b>（持っている魔物の割合）が上がるほど、冒険者EXPの増え方が上がる（100%で1.5倍）。</li><li>限定ランクの魔物は、手に入れた人の図鑑にだけ別の欄でのる。</li></ul>"] };
 const boxSeg=()=>{ const cur=BOX_MENU.find(x=>x[0]===boxMode); const h=BOX_HELP[boxMode];
   return `<div class="box-top"><button class="chip" type="button" id="boxBack">← BOXメニュー</button>${cur?`<b>${cur[1]} ${cur[2]}</b>`:"<b>手持ちの魔物</b>"}${h?`<button class="box-help" type="button" id="boxHelp">❓ ${h[0]}</button>`:""}</div>`; };
@@ -4788,7 +4788,7 @@ function openShield(){ closeSheet(); tab="box"; boxMode="shield"; render(); $("#
 function renderShieldBox(){
   shFix(); const eq=shEquipped(), L=[...S.shieldList].sort((a,b)=>(b.id===S.shieldEq)-(a.id===S.shieldEq)||(a.t===b.t?0:a.t==="n"?-1:1)||a.id-b.id);
   $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}
-    <p class="sub">盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げます。1回防ぐたびに耐久力が1へり、こわれたら<b>鍵のかかっていない盾を自動で装備</b>します（盾→スーパー盾の順）。<b>盾の情報はあなたにしか見えません。</b></p>
+    <p class="sub">盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げます。防いだときは<b>50%の確率で、使った相手にその効果を跳ね返します</b>。1回防ぐたびに耐久力が1へり、こわれたら<b>鍵のかかっていない盾を自動で装備</b>します（盾→スーパー盾の順）。<b>盾の情報はあなたにしか見えません。</b></p>
     <div class="note" style="margin:0 0 10px;color:#ffb35c">⏳ 盾は作ったランク戦の間だけ持てます。ランク戦が終わると、持っている盾はすべて消えます（次のランク戦に持ち越せません）。</div>
     <button class="btn gold" type="button" id="shMake" style="width:100%;margin:0 0 10px">🛠 盾を作る</button>
     <div class="toolbar"><span class="chip" style="cursor:default">🛡 盾 ${S.shieldList.filter(x=>x.t==="n").length}個</span><span class="chip" style="cursor:default">🛡✨ スーパー盾 ${S.shieldList.filter(x=>x.t==="s").length}個</span></div>
@@ -7169,6 +7169,7 @@ function anonWho(b){
   return lv<SAFE_LV?"🔰初心者冒険者":lv<=50?"中級冒険者":lv<=99?"上級冒険者":"猛者冒険者";
 }
 let itemBusy=false;
+const SHIELD_REFLECT = 0.5;   // 盾で防いだアイテムを、使った人に跳ね返す確率（2026-10-26）
 async function checkItems(){
   if(itemBusy) return; if(!DB||!MYID){ shExpireNow(); return; } itemBusy=true;
   try{
@@ -7185,7 +7186,14 @@ async function checkItems(){
           if(b.item==="gift"){ S.coins+=GIFT_COIN*q; gCoins+=GIFT_COIN*q; } else { addItem("ticket",q); gTickets+=q; }
           gifts.push(who); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="blocked"){ res.push(`🛡 盾によりアイテムが無効化されました(泣)<br>　（${esc(b.defName||"相手")}さんへの${itemOf(b.what)?.name||"アイテム"}）`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
-        if(b.item==="loot"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; res.push(`🧲 コインマグネットが命中！ ${c?`+${c.toLocaleString()}コインをうばった`:"でも相手はコインを持っていなかった"}`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
+        if(b.item==="loot"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; res.push(b.r?`🛡 跳ね返したコインマグネットで ${c?`+${c.toLocaleString()}コインをうばった！`:"…でも相手はコインを持っていなかった"}`:`🧲 コインマグネットが命中！ ${c?`+${c.toLocaleString()}コインをうばった`:"でも相手はコインを持っていなかった"}`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
+        // 盾で跳ね返されたアイテム（2026-10-26）：使った自分にその効果がかえってくる
+        if(b.item==="reflect"){ const nm=itemOf(b.what)?.name||"アイテム", to=esc(b.defName||"相手");
+          if(b.what==="magnet"){ const c=Math.min(S.coins,Math.max(0,Math.floor(S.coins*MAGNET))); S.coins-=c; lostCoin+=c; res.push(`↩️ ${to}さんの盾に${nm}を跳ね返された…（−${c.toLocaleString()}コイン）`);
+            if(b.att && DB){ try{ DB.collection("items").add({att:MYID, def:b.att, attP:S.plv, item:"loot", r:1, qty:1, coins:c, at:gnow()}); }catch(e){} } }
+          else if(b.what==="fire"){ const x=guardUnit(); let t=""; if(x){ const before=x.l; x.l=Math.max(1,x.l-FIRE_LV); x.e=0; t=`${esc(mon(x.m).name)}がLv${before}→Lv${x.l}`; } res.push(`↩️ ${to}さんの盾に${nm}を跳ね返された…${t?`（${t}）`:"（配置中の魔物がいなかったので何も起きなかった）"}`); }
+          else if(b.what==="bomb"){ const d=dropPlayerLv(BOMB_LV); lostLv+=d; res.push(`↩️ ${to}さんの盾に${nm}を跳ね返された…${d?`（冒険者レベル−${d}）`:"でもチェックポイントのおかげで冒険者レベルは下がらなかった！"}`); }
+          S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(["magnet","fire","bomb","shbomb"].includes(b.item) && (b.at||0) < seasonEnd(seasonOf(b.at||0)-1)+HOUR_MS){ if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at); continue; }   // ランク戦が始まって1時間のあいだに使われた攻撃アイテムは無効（古いアプリから使われても効かない）
         if(["magnet","fire","bomb","shbomb"].includes(b.item)) shPurge(seasonOf(b.at||0));   // その攻撃のときのランク戦の盾だけが使える
         if(b.item==="shbomb"){   // 対盾爆弾：盾では防げない。装備中の盾から順に3つこわす
@@ -7197,8 +7205,9 @@ async function checkItems(){
           let tail="";
           if(eq.dur<=0){ S.shieldList=S.shieldList.filter(x=>x.id!==eq.id); S.shieldEq=null; const nx=shAutoEquip();
             tail="<br>　→ "+sh.name+"がこわれた…"+(nx?`<br>　→ 次の${SHIELDS[nx.t].name}を自動で装備した（のこり ${S.shieldList.length}個）`:""); }
-          msgs.push(`🛡 ${sh.name}が${who}からの${nm}を防いだ！（のこり耐久 ${Math.max(0,eq.dur)}）${tail}`);
-          if(!b.bot && b.att && DB && (b.at||0)>=LOOT_FROM){ try{ DB.collection("items").add({att:MYID, def:b.att, attP:S.plv, defName:myName().slice(0,12), item:"blocked", what:b.item, qty:1, coins:0, at:gnow()}); }catch(e){} }
+          const refl=!b.bot && !!b.att && Math.random()<SHIELD_REFLECT;   // 盾で防いだとき、50%で相手に跳ね返す
+          msgs.push(`🛡 ${sh.name}が${who}からの${nm}を防いだ！${refl?"さらに相手に跳ね返した！":""}（のこり耐久 ${Math.max(0,eq.dur)}）${tail}`);
+          if(!b.bot && b.att && DB && (b.at||0)>=LOOT_FROM){ try{ DB.collection("items").add({att:MYID, def:b.att, attP:S.plv, defName:myName().slice(0,12), item:refl?"reflect":"blocked", what:b.item, qty:1, coins:0, at:gnow()}); }catch(e){} }
           if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="magnet"){ const c=Math.min(S.coins,Math.max(0,Math.floor(S.coins*MAGNET))); S.coins-=c; lostCoin+=c; msgs.push(`🧲 ${who}からコインマグネットを使われた…（−${c.toLocaleString()}コイン）`);
           if(!b.bot && b.att && DB && (b.at||0)>=LOOT_FROM){ try{ DB.collection("items").add({att:MYID, def:b.att, attP:S.plv, item:"loot", qty:1, coins:c, at:gnow()}); }catch(e){} } }
