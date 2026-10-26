@@ -55,7 +55,8 @@ css.textContent=`
 #vto .vt-row{display:flex;align-items:center;gap:12px;padding:8px 10px;background:#fffaf0;border:3px solid #3a2306;box-shadow:0 3px 0 #3a2306;border-radius:6px}
 #vto .vt-slot{flex:none;width:84px;height:84px;border:4px solid #3a2306;border-radius:6px;background:#efe2c4;display:grid;place-items:center;overflow:hidden;image-rendering:pixelated}
 #vto .vt-slot img{width:100%;height:100%;object-fit:cover}
-#vto .vt-slot.empty{color:#a08a63;font:900 30px var(--f-body)}
+#vto .vt-slot.empty{display:flex;align-items:center;justify-content:center;color:#a08a63;font:900 34px/1 var(--f-body)}
+#vto .vt-slot.empty span{display:block;line-height:1;transform:translateY(-.08em)}
 #vto .vt-info{flex:1;min-width:0;text-align:left}
 #vto .vt-info b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #vto .vt-info small{display:block;font-size:11.5px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -101,7 +102,7 @@ function draw(){ if(!V) return; const B=V.querySelector("#vtBody"); const d=CUR|
     : `<div class="vt-time"><span>エントリー募集中</span><b>${d.e.length}/${VT.N}</b></div><p class="vt-lead">BOXの魔物をエントリーしよう！</p>
        <p class="vt-note">5人そろった瞬間に24時間の投票がスタート。自分でエントリーすると1モコ！<br>1位の冒険者には ${VT.WIN.coins.toLocaleString()}コイン＋${VT.WIN.moko}モコ</p>`;
   const rows=[...Array(VT.N)].map((_,i)=>{ const x=d.e[i];
-    if(!x) return `<div class="vt-row"><div class="vt-slot empty">？</div><div class="vt-info"><b>あき枠</b><small>${rest?"前の回にエントリーしたので今回は休み":entrant?"あなたはエントリーずみ":"だれでもエントリーできます"}</small></div>
+    if(!x) return `<div class="vt-row"><div class="vt-slot empty"><span>?</span></div><div class="vt-info"><b>あき枠</b><small>${rest?"前の回にエントリーしたので今回は休み":entrant?"あなたはエントリーずみ":"だれでもエントリーできます"}</small></div>
       <button class="vt-b gold" type="button" data-ent="${i}" ${entrant||rest||voting?"disabled":""}>エントリー</button></div>`;
     const m=mon(x.m), see=voting&&(showAll||(entrant&&top.includes(i))), me=x.uid===MYID;   // 票数は投票が始まってから
     return `<div class="vt-row"><div class="vt-slot"><img src="${m?cardURL(m.id,0,160):""}" alt=""></div>
