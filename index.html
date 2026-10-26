@@ -3188,14 +3188,14 @@ const DEX_MONS = MONSTERS.filter(m=>m.rank!=="L"&&!m.gift);   // 図鑑・コン
 const START_MONSTER = 1; // 最初から全員が持っている魔物
 
 /* ---------- ルール ---------- */
-const RANKS = ["C","B","A","S","Z","L","F"];   // F＝融合ランク（魔物オリジナル融合で生まれた魔物・2026-10-26）
+const RANKS = ["C","B","A","S","Z","F","L"];   // F＝融合ランク（魔物オリジナル融合で生まれた魔物）。Zランクの上・限定ランクの下（2026-10-27）
    // L＝限定ランク（Zより上・配布限定）
 const RATES = { Z:0.0025, S:0.075, A:10, B:28, C:61.9225 };   // 2026-10-26 魔物ガチャのS・Zを20分の1に（前は Z:0.05, S:1.5）     // %
 const FRAME_RATES = { Z:0.05, S:1.5, A:10, B:28, C:60.45 };   // アイコン枠・装飾ガチャは前のまま
 const COST = 100, DAILY = 1000, MAX_STAGE = 9;
 const HOURLY = 100, HOURLY_MS = 15*60*1000;   // 15分おきのボーナス
 const FUSE_COIN = 10;
-const SELL = { F:20000, L:20000, Z:10000, S:1000, A:100, B:50, C:10 };
+const SELL = { F:15000, L:20000, Z:10000, S:1000, A:100, B:50, C:10 };
 const LIMITED_SELL_LV = 50;   // 限定ランクを売ると、手持ちの魔物すべてのレベル+50
 /* ---------- アイテム ---------- */
 const ITEM_COST = 1000, MAGNET = 0.01, FIRE_LV = 30, BOMB_LV = 2;
@@ -3282,7 +3282,7 @@ const evoLocked = x => { const m=mon(x.m); return !!(m && m.cap!=null && isFinit
 // Lv → Lv+1 に必要な経験値: 後半ほど大きく、ランクが高いほど多い (Cランクは Lv1→100 で合計約10万)
 const RANK_STEP = 1.7;   // ランクが1つ上がるごとに、さらに1.7倍むずかしく
 const RANK_MUL = Object.fromEntries(Object.entries({ C:1, B:1.5, A:2, S:3, Z:5, L:7 }).map(([r,v],i)=>[r, v*Math.pow(RANK_STEP,i)]));   // L＝限定ランク（これがないと限定ランクの合成で経験値が計算できなかった）
-RANK_MUL.F = RANK_MUL.L;   // 融合ランクは限定ランクと同じ育ちやすさ
+RANK_MUL.F = Math.sqrt(RANK_MUL.Z*RANK_MUL.L);   // 融合ランクはZと限定のあいだの育ちやすさ
 const LV_HARD = 1;   // レベルアップの難しさ（2 = 以前の2倍の経験値が必要）
 const needExpR = (lv, rank) => Math.round((100 + 0.2744*lv*lv) * RANK_MUL[rank] * LV_HARD / 10) * 10;
 const needFor = u => needExpR(u.l, mon(u.m).rank);
@@ -4202,7 +4202,7 @@ function showReveal(res,title,opts={}){
         if(!ok.length){ b.disabled=true; b.textContent=left.some(sellLockLeft)?(L?"⏳ No selling for 12h":"⏳12時間売却不可"):(L?"Can't sell":"売却できません"); return; }
         b.disabled=false; b.textContent=(L?"Sell ":"売却 ")+(ok.length>1?`×${ok.length} `:"")+"+"+ok.reduce((t,z)=>t+sellPrice(z),0).toLocaleString(); });
       const rk=el.querySelector("#rvRk"); if(rk){ const by={}; units(G.flatMap(g=>g.us)).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard).forEach(z=>{ const r=mon(z.m).rank; (by[r]=by[r]||[]).push(z.u); });
-        const rs=["C","B","A","S","Z","L","F"].filter(r=>by[r]); rk.innerHTML=rs.length?`<small>${L?"Sell by rank":"ランク別に売却"}</small>${rs.map(r=>`<button type="button" data-rks="${r}"><span class="rk rk-${r}">${r==="L"?(L?"Ltd":"限定"):r}</span>×${by[r].length}</button>`).join("")}`:"";
+        const rs=["C","B","A","S","Z","F","L"].filter(r=>by[r]); rk.innerHTML=rs.length?`<small>${L?"Sell by rank":"ランク別に売却"}</small>${rs.map(r=>`<button type="button" data-rks="${r}"><span class="rk rk-${r}">${r==="L"?(L?"Ltd":"限定"):r}</span>×${by[r].length}</button>`).join("")}`:"";
         rk.querySelectorAll("[data-rks]").forEach(b=>b.onclick=()=>confirmSell(by[b.dataset.rks],()=>{ upd(); renderCoins(); try{ drawPick(); }catch(e){} })); }
       const all=el.querySelector("#rvSellAll"); if(all){ const ok=units(G.flatMap(g=>g.us)).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard); all.disabled=!ok.length; } };
     el.querySelectorAll("[data-sell]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const g=G[+b.dataset.sell]; confirmSell(units(g.us).map(z=>z.u),()=>{ upd(); renderCoins(); }); });
