@@ -173,7 +173,8 @@ function setup(){ const b=document.getElementById("ttlVote"); if(!b||setupDone) 
   titleTip(); setInterval(()=>{ if(document.querySelector("#title:not([hidden])")) titleTip(); }, 20000);
   let was=null; setInterval(()=>{ const on=!!(DB&&MYID); if(on!==was){ was=on; titleTip(); if(on){ checkWins(); clearTest(); } } }, 1000); }   // ログインしたらすぐ吹き出しを出す   // ログインしたらすぐボタンを出す
 // ふっかーの試しエントリーを消す（1回だけ・2026-10-26）
-async function clearTest(){ try{ if(S.vtClr1||!DB||!MYID||!dexPeek()) return;
+async function clearTest(){ return;   // 2026-10-26：ふっかーのエントリーはそのまま残すことになったので、何もしない
+  try{ if(S.vtClr1||!DB||!MYID||!dexPeek()) return;
   await DB.runTransaction(async tx=>{ const sn=await tx.get(ref()); if(!sn.exists) return; const d=sn.data();
     const had=d.e.some(x=>x.uid===MYID); d.e=d.e.filter(x=>x.uid!==MYID); d.q=(d.q||[]).filter(x=>x.uid!==MYID); d.pe=(d.pe||[]).filter(u=>u!==MYID);
     if(had&&d.st){ d.st=0; d.c=[0,0,0,0,0]; d.r=(d.r||1)+1; } tx.set(ref(), d); });   // 投票が始まっていたら、票を0にして回の番号を変える（同じ人がもう一度投票できるように）
