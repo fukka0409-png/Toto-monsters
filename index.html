@@ -5021,9 +5021,10 @@ function openDexHow(id){ const m=mon(id); if(!m) return;
       <ul class="note" style="margin:0;padding-left:1.1em">${howToGet(m).map(t=>`<li>${t}</li>`).join("")}</ul>${firstFuser(m)}</div></div>`); fillFirstFuser(m); }
 // 融合ランク：いちばん最初にその魔物を作った冒険者の名前「初代融合者」
 function firstFuser(m){ if(!m||!m.fuse) return ""; const f=FMON_CACHE[m.id]||{}; return `<p class="fu-first" data-ff="${m.id}">${f.fn?`👑 初代融合者 ${esc(f.fn)}`:""}</p>`; }
-async function fillFirstFuser(m){ if(!m||!m.fuse||!DB) return; const f=FMON_CACHE[m.id]=FMON_CACHE[m.id]||{}; if(f.fn) return;
-  try{ if(!f.req){ const d=await withTO(DB.collection("fusemon").doc(String(m.id)).get()); if(d.exists){ const x=d.data(); f.req=x.req; f.fn=x.fn; } }
-    if(!f.fn&&f.req){ const r=await withTO(DB.collection("fusereq").doc(f.req).get()); if(r.exists) f.fn=r.data().nm; }
+async function fillFirstFuser(m){ if(!m||!m.fuse||!DB) return; const f=FMON_CACHE[m.id]=FMON_CACHE[m.id]||{}; const noRcp=f.a==null&&!(m.recipe&&m.recipe.a!=null); if(f.fn&&!noRcp) return;
+  try{ if(!f.req){ const d=await withTO(DB.collection("fusemon").doc(String(m.id)).get()); if(d.exists){ const x=d.data(); f.req=x.req; f.fn=f.fn||x.fn; } }
+    if((!f.fn||noRcp)&&f.req){ const r=await withTO(DB.collection("fusereq").doc(f.req).get()); if(r.exists){ const q=r.data(); f.fn=f.fn||q.nm;
+      if(noRcp&&q.a!=null){ f.a=q.a; f.b=q.b; f.an=q.an; f.bn=q.bn; m.recipe={a:q.a,b:q.b,an:q.an,bn:q.bn}; if(document.querySelector(`[data-ff="${m.id}"]`)&&!S.got[m.id]) return openDexHow(m.id); } } }   // 古い融合魔物は、最初の依頼からレシピをさがす
     const el=document.querySelector(`[data-ff="${m.id}"]`); if(el&&f.fn) el.textContent=`👑 初代融合者 ${f.fn}`; }catch(e){} }
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
   if(!h && !dexPeek()) return openDexHow(id);
