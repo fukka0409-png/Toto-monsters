@@ -98,13 +98,13 @@ function draw(){ if(!V) return; const B=V.querySelector("#vtBody"); const d=CUR|
   const showAll=voting&&voted!=null, top=[...d.c.map((v,i)=>[v,i])].sort((a,b)=>b[0]-a[0]).slice(0,3).map(x=>x[1]);
   const head=voting
     ? `<div class="vt-time"><span>投票結果まで残り</span><b id="vtTm">${mmss(d.st+VT.MS-now())}</b></div><p class="vt-lead">この中で1番好きな魔物に投票せよ！</p>
-       <p class="vt-note">${voted!=null?"✅ 投票ずみ。みんなの投票数が見られます":entrant?"エントリーした冒険者は、1〜3位の投票数が見られます":"投票すると1000コイン！ 投票数は投票したあとに見られます"}</p>`
+       <p class="vt-note">${voted!=null?"✅ 投票ずみ。みんなの投票数が見られます":"投票すると1000コイン！ 投票数は投票したあとに見られます"}</p>`
     : `<div class="vt-time"><span>エントリー募集中</span><b>${d.e.length}/${VT.N}</b></div><p class="vt-lead">BOXの魔物をエントリーしよう！</p>
        <p class="vt-note">5人そろった瞬間に24時間の投票がスタート。自分でエントリーすると1モコ！<br>1位の冒険者には ${VT.WIN.coins.toLocaleString()}コイン＋${VT.WIN.moko}モコ</p>`;
   const rows=[...Array(VT.N)].map((_,i)=>{ const x=d.e[i];
     if(!x) return `<div class="vt-row"><div class="vt-slot empty"><span>?</span></div><div class="vt-info"><b>あき枠</b><small>${rest?"前の回にエントリーしたので今回は休み":entrant?"あなたはエントリーずみ":"だれでもエントリーできます"}</small></div>
       <button class="vt-b gold" type="button" data-ent="${i}" ${entrant||rest||voting?"disabled":""}>エントリー</button></div>`;
-    const m=mon(x.m), see=voting&&(showAll||(entrant&&top.includes(i))), me=x.uid===MYID;   // 票数は投票が始まってから
+    const m=mon(x.m), see=showAll, me=x.uid===MYID;   // 票数は、自分が投票するまでだれにも見せない（エントリーした冒険者も同じ）
     return `<div class="vt-row"><div class="vt-slot"><img src="${m?cardURL(m.id,0,160):""}" alt=""></div>
       <div class="vt-info"><b>${showAll&&top[0]===i&&d.c[i]>0?'<span class="vt-rank">1位</span>':""}${esc(m?m.name:"？？？")}</b><small>${me?"あなたのエントリー":"エントリー"+(i+1)}${x.res?"（予約）":""}</small>
         ${see?`<span class="vt-cnt">${d.c[i]}票</span>`:voting?`<small>投票数：？？？</small>`:""}</div>
