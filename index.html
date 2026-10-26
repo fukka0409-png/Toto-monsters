@@ -380,6 +380,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 @keyframes gShine{0%,60%{transform:translateX(-70%)}100%{transform:translateX(70%)}}
 .g-banner.mon{background:linear-gradient(135deg,#1f3d2c,#4a5a1c 55%,#6b4f12)}
 .g-banner.frame{background:linear-gradient(135deg,#2a1e47,#4a2a6b 55%,#20385e)}
+.g-banner.rare{background:linear-gradient(135deg,#3a1450,#6b2a7a 55%,#a07a12)}
+.g-rare-img{width:96px;height:96px;border-radius:14px;image-rendering:pixelated;flex:none;box-shadow:0 0 0 3px #ffd75e,0 0 18px #ffd75e88}
 .g-banner.item{background:linear-gradient(135deg,#123446,#1e4f63 55%,#5a3a1c)}
 .g-detail{position:absolute;top:10px;right:10px;z-index:2;background:#000a;border:2px solid #ffe9a8;color:#ffe9a8;font:inherit;font-weight:900;font-size:12px;padding:5px 10px;border-radius:10px}
 .g-banner.deco{background:linear-gradient(135deg,#3b2a14,#6b4a1e 50%,#2f5a3a)}
@@ -1312,6 +1314,7 @@ const I18N_EN = {
 "📈 投資の素質": "📈 Investing skill",
 "⚔️ 合戦可能": "⚔️ Battle ready",
 "モコ": "Moko",
+"魔物レアガチャ": "Rare Monster Gacha",
 "⚔️ 魔物合戦が追加されました！": "⚔️ Monster Battles are here!",
 "⚔️ 魔物合戦の遊び方": "⚔️ How to play Monster Battles",
 "⚔️ 魔物合戦": "⚔️ Monster Battle",
@@ -4034,6 +4037,25 @@ function pullMonsters(n, ticket){
     res.push({img:cardURL(m.id,0),name:m.name,rank:m.rank,isNew,by:m.by,byUrl:m.byUrl,model:m.model,modelUrl:m.modelUrl,u:S.units[S.units.length-1].u}); }
   save(); renderCoins(); openPack(res,"mon","魔物があらわれた！");
 }
+// 魔物レアガチャ（2026-10-26）：A・S・Zランクだけ。モコで回す（1パック10モコ・10連パック80モコ）
+// まだ図鑑で解放していない魔物は、出やすさが下がる（解放ずみの魔物の RARE_NEW_W 倍）
+const RARE_COST = {1:10, 10:80};
+const RARE_RATES = { Z:1, S:14, A:85 };   // %（ふつうの魔物ガチャよりずっと出やすい）
+const RARE_NEW_W = 0.3;
+function rollRare(){ let x=Math.random()*100, rank="A"; for(const r of ["Z","S","A"]){ if((x-=RARE_RATES[r])<0){ rank=r; break; } }
+  let p=NORMAL.filter(m=>m.rank===rank); if(!p.length) p=NORMAL.filter(m=>["A","S","Z"].includes(m.rank));
+  const w=m=>(S.got[m.id]?1:RARE_NEW_W)*(m.by?COLLAB_W:1), tot=p.reduce((a,m)=>a+w(m),0); let k=Math.random()*tot;
+  for(const m of p){ if((k-=w(m))<0) return m; } return p[p.length-1]; }
+function pullRare(n){
+  const cost=RARE_COST[n]; if(!cost) return;
+  if((S.units||[]).length + n > BOX_MAX) return boxFullDlg(n);
+  if((S.moko||0) < cost) return toast(`モコが足りません（${cost}モコ必要）`);
+  S.moko-=cost; const res=[]; S.stats.pulls+=n; gainPExp(PXP.pull*n); dmFix();
+  for(let i=0;i<n;i++){ const m=rollRare(); const isNew=!S.got[m.id]; if(isNew){ S.coins+=NEW_COIN; gainPExp(PXP.newMon); S.dm.nw=(S.dm.nw||0)+1; }
+    S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:false,t:gnow()});
+    res.push({img:cardURL(m.id,0),name:m.name,rank:m.rank,isNew,by:m.by,byUrl:m.byUrl,model:m.model,modelUrl:m.modelUrl,u:S.units[S.units.length-1].u}); }
+  save(); renderCoins(); openPack(res,"mon","魔物があらわれた！");
+}
 function pullFrames(n, ticket){
   if(ticket){ if(!inv("ticket")) return toast("ガチャチケットがありません"); addItem("ticket",-1); n=TICKET_PACKS; }
   else { if(S.coins < COST*n) return toast("コインが足りません"); S.coins-=COST*n; }
@@ -4372,6 +4394,13 @@ function renderGacha(){
     ${packBtns("mon")}
     <!-- 提供割合は冒険者には見せない -->
   </section>
+  <section class="g-banner rare">
+    <div class="g-head"><img class="g-rare-img" src="${(()=>{ const z=NORMAL.filter(m=>m.rank==="Z"); return z.length?cardURL(z[Math.floor(gnow()/5000)%z.length].id,0):"moko.png"; })()}" alt="">
+      <div><div class="g-tag">RARE</div><div class="g-title">魔物レアガチャ</div><div class="g-sub">Aランク・Sランク・Zランクだけが出る！<br>モコ所持：<img src="moko.png" alt="" style="width:18px;height:18px;vertical-align:-4px"> <b>${mokoFmt(S.moko||0)}モコ</b></div></div></div>
+    <div class="pulls">
+      <button class="pull" data-rare="1" type="button" ${(S.moko||0)<RARE_COST[1]?"disabled":""}>1パック<small>${RARE_COST[1]}モコ</small></button>
+      <button class="pull ten" data-rare="10" type="button" ${(S.moko||0)<RARE_COST[10]?"disabled":""}>10連パック<small>${RARE_COST[10]}モコ</small></button></div>
+  </section>
   <section class="g-banner item"><button class="g-detail" type="button" id="itemDetail">📋 詳細確認</button>
     <div class="g-head"><div class="g-items">${GACHA_ITEMS.map(i=>`<img src="${i.img}" alt="">`).join("")}</div>
       <div><div class="g-tag">ITEM</div><div class="g-title">アイテムガチャ</div><div class="g-sub">全${GACHA_ITEMS.length}種・ランキングで相手に使える</div></div></div>
@@ -4394,6 +4423,7 @@ function renderGacha(){
   const PULL={mon:pullMonsters, frame:pullFrames, item:pullItems, deco:pullDeco};
   $("#itemDetail").onclick=openItemList;
   document.querySelectorAll("[data-pull]").forEach(b=>b.onclick=()=>PULL[b.dataset.pull](+b.dataset.n));
+  document.querySelectorAll("[data-rare]").forEach(b=>b.onclick=()=>pullRare(+b.dataset.rare));
   ["mon","frame","item","deco"].forEach(k=>{ const t=$("#tk-"+k); if(t) t.onclick=()=>PULL[k](0,true); });
   const db=$("#dailyBig"); if(db) db.onclick=claimDaily;
   const c1=$("#cvMon").getContext("2d"); if(IMG[1]) c1.drawImage(IMG[1],6,6,188,188);
