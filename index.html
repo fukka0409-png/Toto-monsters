@@ -1212,6 +1212,7 @@ html[lang=en] .kn-bt span{font-size:38px}
     </div>
     <button class="ttl-mini ttl-ts" id="ttlTs" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧠 トトの戦略<small>試作（ふっかーだけに表示）</small></span></button>
     <button class="ttl-mini ttl-vote" id="ttlVote" type="button" style="top:1045px"><img src="title/btn_en.png" alt="" draggable="false"><span>🗳 魔物投票<small></small></span></button>
+    <button class="ttl-mini ttl-fz" id="ttlFz" type="button" hidden style="top:1290px"><img src="title/btn_en.png" alt="" draggable="false"><span>🧬 融合依頼<small id="ttlFzN"></small></span></button>
     <div class="ttl-vote-tip" id="ttlVoteTip" hidden></div>
     <button class="ttl-mini" id="ttlMini" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
@@ -3837,7 +3838,12 @@ ARTS.forEach(x=>{ const im=new Image(); im.onload=()=>{ IMG["art:"+x.k]=im; }; i
 function loadImages(){
   return Promise.all(MONSTERS.map(m=>new Promise(res=>{ const im=new Image(); im.onload=()=>{IMG[m.id]=im;res()}; im.onerror=res; im.src=m.img; })));
 }
-const mon = id => MONSTERS.find(m=>m.id===id);
+// 融合で生まれたオリジナル魔物（2026-10-26）：MONSTERS にない番号は、セーブ（S.fmons）か読みこんだ一覧（FMON_CACHE）から追加する
+const FMON_CACHE = {};
+function fmonReg(id){ const f=((typeof S!=="undefined"&&S&&S.fmons)||{})[id]||FMON_CACHE[id]; if(!f||!f.img) return undefined;
+  const m={ id, name:f.name||"融合魔物", rank:"L", exp:10000, gift:1, fuse:1, img:f.img }; MONSTERS.push(m);
+  const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} }; im.src=f.img; return m; }
+const mon = id => MONSTERS.find(m=>m.id===id) || fmonReg(id);
 const rankColor = r => getComputedStyle(document.documentElement).getPropertyValue("--r-"+r.toLowerCase()).trim();
 
 /* ---------- 魔物カードの枠を描く (10段階) ---------- */
@@ -7263,7 +7269,7 @@ async function checkItems(){
     const lim=settleLim(); const list=q.docs.map(d=>d.data()).filter(b=>b&&b.at>(S.lastItem||0)&&(b.at||0)<=lim).concat(isFinite(lim)?[]:botItemQueue.splice(0)).sort((a,b)=>a.at-b.at);
     if(list.length){
       const msgs=[], gifts=[]; let lostLv=0, lostCoin=0, gCoins=0, gTickets=0;
-      const artGot={}, res=[];
+      const artGot={}, res=[], fuseDone=[];
       for(const b of list){
         const who=anonWho(b);
         if(isArt(b.item)){ const x=artOf(b.item), q=Math.max(1,Math.floor(b.qty||1)); if(x){ S.arts=S.arts||{}; S.arts[x.k]=(S.arts[x.k]||0)+q; artGot[x.k]=(artGot[x.k]||0)+q; }
@@ -7271,6 +7277,12 @@ async function checkItems(){
         if(SENDABLE.includes(b.item)){ const q=Math.max(1,Math.floor(b.qty||1));
           if(b.item==="gift"){ S.coins+=GIFT_COIN*q; gCoins+=GIFT_COIN*q; } else { addItem("ticket",q); gTickets+=q; }
           gifts.push(who); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
+        if(b.item==="fmon"){   // 融合の完成（運営から届く）：オリジナルの限定魔物をBOXに入れて「融合に成功しました！」
+          try{ const sn=await withTO(DB.collection("fusemon").doc(String(b.fid)).get()); const f=sn.exists?sn.data():null;
+            if(f&&f.img){ S.fmons=S.fmons||{}; S.fmons[f.id]={name:f.name,img:f.img}; FMON_CACHE[f.id]=S.fmons[f.id]; const m=mon(f.id);
+              S.got[f.id]=(S.got[f.id]||0)+1; S.units.push({u:S.nextUid++,m:f.id,l:1,e:0,s:0,g:0,k:true,t:gnow()}); S.fuReqs=(S.fuReqs||[]).filter(r=>r.at!==f.reqAt);
+              fuseDone.push({img:f.img,name:f.name,a:f.an,b:f.bn}); } }catch(e){}
+          S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="blocked"){ res.push(`🛡 盾によりアイテムが無効化されました(泣)<br>　（${esc(b.defName||"相手")}さんへの${itemOf(b.what)?.name||"アイテム"}）`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="loot"){ const c=Math.max(0,Math.floor(b.coins||0)); S.coins+=c; res.push(b.r?`🛡 跳ね返したコインマグネットで ${c?`+${c.toLocaleString()}コインをうばった！`:"…でも相手はコインを持っていなかった"}`:`🧲 コインマグネットが命中！ ${c?`+${c.toLocaleString()}コインをうばった`:"でも相手はコインを持っていなかった"}`); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         // 盾で跳ね返されたアイテム（2026-10-26）：使った自分にその効果がかえってくる
@@ -7304,6 +7316,9 @@ async function checkItems(){
         if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at);
       }
       save(); render();
+      fuseDone.forEach(x=>{ const g=document.createElement("div"); g.className="reveal";
+        g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${x.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(x.a||"")}」と「${esc(x.b||"")}」が融合して<br><b style="font-size:18px">${esc(x.name)}</b><br>が生まれました！<br><span class="rk rk-L">限定</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
+        document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; });
       Object.entries(artGot).forEach(([k,q])=>{ const x=ARTS.find(z=>z.k===k); const g=document.createElement("div"); g.className="reveal";
         g.innerHTML=`<div class="burst"></div><h3>🎁 特別イラストが届いた！</h3><img src="${x.img}" alt="" style="width:min(64vw,280px);height:auto;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">神から「${esc(x.name)}」が${q>1?q+"枚":""}届きました！<br>アイコン作りとホームの魔物で使えます（持っている数：${S.arts[k]}）</p><button class="btn gold" type="button">OK</button>`;
         document.body.appendChild(g); SFX.reveal("S"); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; });
@@ -9664,4 +9679,5 @@ async function titleRanks(){
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
+<script src="fz/fz.js?v=1" defer></script>
 </body></html>
