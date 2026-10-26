@@ -7,7 +7,7 @@
    ・24時間後、投票数がいちばん多い冒険者（同数なら全員）にごほうび
    データ：vstate/cur（今の回）・vvotes/{回}_{uid}（投票・1人1つ）・vres/{回}（結果） */
 (()=>{
-const VT = { N:5, MS:24*3600e3, VOTE_COIN:1000, ENTRY_MOKO:1, WIN:{coins:10000, moko:5} };
+const VT = { N:5, MS:24*3600e3, VOTE_COIN:1000, ENTRY_MOKO:1, WIN:{coins:10000, moko:3} };
 const now = () => (typeof gnow==="function" ? gnow() : Date.now());
 const ref = () => DB.collection("vstate").doc("cur");
 const blank = r => ({ r:r||1, e:[], st:0, c:[0,0,0,0,0], q:[], pe:[] });
