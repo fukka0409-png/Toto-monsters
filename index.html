@@ -5106,7 +5106,7 @@ let RANK_LOAD_AT=0;
 let TS_READY=null;
 // 今のきまり（20個まで・魔物5種類まで・魔物5体以上）に合っている配置だけを、合戦の相手にする（きまりができる前に準備完了した配置は外す）
 const tsLayoutOk=x=>{ const U=(x&&Array.isArray(x.units))?x.units:[]; const M=U.filter(u=>typeof u.id==="number"), cnt={}; M.forEach(u=>cnt[u.id]=(cnt[u.id]||0)+1);
-  return x.g===2 && M.length===5 && U.length-M.length<=5 && Object.values(cnt).every(n=>n<=2) && M.filter(u=>(mon(u.id)||{}).rank==="L").length<=1; };   // 魔物ちょうど5体（同じ魔物2体まで・限定1体まで）・アイテム5個まで
+  return x.g===2 && M.every(u=>(u.r||0)<=1) && M.length===5 && U.length-M.length<=5 && Object.values(cnt).every(n=>n<=2) && M.filter(u=>(mon(u.id)||{}).rank==="L").length<=1; };   // 魔物ちょうど5体（同じ魔物2体まで・限定1体まで）・アイテム5個まで
 async function loadTsReady(){ if(!DB) return; try{ const q=await DB.collection("tsp").where("rd","==",1).get(); TS_READY=new Set(q.docs.filter(d=>tsLayoutOk(d.data())).map(d=>d.id)); if(tab==="rank") render(); }catch(e){} }
 const tsReadyOf=r=>r.id===MYID?!!S.tsRd:(TS_READY?TS_READY.has(r.id):!!r.tr);
 async function loadRanking(force){
@@ -9469,5 +9469,5 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=46" defer></script>
+<script src="ts/ts.js?v=47" defer></script>
 </body></html>

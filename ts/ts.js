@@ -14,7 +14,7 @@ const esc3 = t => String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;","
 const fmt = n => Math.round(n).toLocaleString();
 const now = () => (typeof gnow==="function" ? gnow() : Date.now());
 
-const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:10, MAX_KINDS:5, MAX_MON:5, MAX_ITEM:5, MAX_PER:2, MAX_LTD:1, GEN:2, COST_MUL:5, MIN_READY:5,
+const TS = { COLS0:10, ROWS0:5, COLS_MAX:30, ROWS_MAX:40, EXPAND_COST:100000, MAX_UNITS:10, MAX_KINDS:5, MAX_MON:5, MAX_ITEM:5, MAX_PER:2, MAX_LTD:1, GEN:2, MAX_FLY:1, COST_MUL:5, MIN_READY:5,
   UNDER:-1, PREP_MS:3*60000,   // UNDER：赤いマスは土の中にも1マス（r=-1）
   BATTLE_MS:60000, CS:64, GAP:8 };
 // ランクごとのきまり：w×h＝置くときのマスの大きさ、spd＝1秒に進むマス、range＝攻撃がとどく距離（マス）、cd＝攻撃の間かく（秒）
@@ -218,6 +218,7 @@ function addErr(t,id){ const U=t.units, M=U.filter(u=>!isItem(u.id));
   if(isLtd(id)&&M.some(u=>isLtd(u.id))) return T(`限定の魔物は${TS.MAX_LTD}体まで置けます`,`Up to ${TS.MAX_LTD} limited monster`);
   return ""; }
 function layoutErr(t){ const U=t.units, M=U.filter(u=>!isItem(u.id)), cnt={}; M.forEach(u=>cnt[u.id]=(cnt[u.id]||0)+1);
+  if(M.some(u=>u.r>TS.MAX_FLY)) return T(`空中の魔物は地面から${TS.MAX_FLY}マスまでしか浮かせられません（高いところの魔物を下ろしてね）`,`Flying monsters can float at most ${TS.MAX_FLY} cell`);
   if(M.length>TS.MAX_MON) return T(`魔物は${TS.MAX_MON}体までです（今 ${M.length}体）`,`Up to ${TS.MAX_MON} monsters`);
   if(U.length-M.length>TS.MAX_ITEM) return T(`アイテムは${TS.MAX_ITEM}個までです（今 ${U.length-M.length}個）`,`Up to ${TS.MAX_ITEM} items`);
   if(Object.values(cnt).some(n=>n>TS.MAX_PER)) return T(`同じ魔物は${TS.MAX_PER}体までです`,`Up to ${TS.MAX_PER} of the same monster`);
@@ -260,13 +261,14 @@ function pickItem(){ const t=st();
 const fits = (id,c,r,skip) => { const t=st(), k=cfgOf(id); if(c<0||r<TS.UNDER||c+k.w>t.cols||r+k.h>t.rows) return false;
   if(r<0 && !k.under) return false;   // 土の中に置けるのは under:true の魔物・アイテムだけ
   if(r>0 && !k.fly) return false;     // 地面から浮かせて置けるのは fly:true の魔物・アイテムだけ
+  if(r>TS.MAX_FLY && !isItem(id)) return false;   // 空中に置ける魔物も、地面から1マスまでしか浮かせられない（2026-10-26）
   return !t.units.some(u=>{ if(u===skip) return false; const q=cfgOf(u.id); return c<u.c+q.w && u.c<c+k.w && r<u.r+q.h && u.r<r+k.h; }); };
 const cellAt = (wx,wy) => ({ c:Math.floor(wx/TS.CS), r:Math.floor(-wy/TS.CS) });
 const unitAt = (wx,wy) => { const t=st(); for(let i=t.units.length-1;i>=0;i--){ const u=t.units[i], k=cfgOf(u.id); const x0=u.c*TS.CS, y1=-u.r*TS.CS, x1=x0+k.w*TS.CS, y0=y1-k.h*TS.CS; if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1) return u; } return null; };
 function place(c,r){ const id=V.placing.id, t=st(), cost=costOf(id);
   { const er=addErr(t,id); if(er){ V.placing=null; sfx("ng"); return msg(er); } }
   if(!isItem(id)){ const K=kindsOf(t); if(!K.has(id)&&K.size>=TS.MAX_KINDS){ V.placing=null; sfx("ng"); return msg(T(`置ける魔物は${TS.MAX_KINDS}種類までです`,`Up to ${TS.MAX_KINDS} kinds`)); } }
-  if(!fits(id,c,r)){ sfx("ng"); const k=cfgOf(id); return msg(r<0&&!k.under?T(isItem(id)?"このアイテムは土の中には置けません（地面の上のマスに置いてね）":"この魔物は土の中には置けません（地面の上のマスに置いてね）","This one can't go underground"):r>0&&!k.fly?T("この魔物は浮かせて置けません（地面の上のマスに置いてね）","This one can't float — place it on the ground"):T("そこには置けません（マスからはみ出す・ほかと重なる）","Can't place there (off the grid or overlapping)")); }
+  if(!fits(id,c,r)){ sfx("ng"); const k=cfgOf(id); return msg(r<0&&!k.under?T(isItem(id)?"このアイテムは土の中には置けません（地面の上のマスに置いてね）":"この魔物は土の中には置けません（地面の上のマスに置いてね）","This one can't go underground"):r>TS.MAX_FLY&&!isItem(id)&&k.fly?T(`空中に置くときは、地面から${TS.MAX_FLY}マスまでしか浮かせられません`,`Can float at most ${TS.MAX_FLY} cell above the ground`):r>0&&!k.fly?T("この魔物は浮かせて置けません（地面の上のマスに置いてね）","This one can't float — place it on the ground"):T("そこには置けません（マスからはみ出す・ほかと重なる）","Can't place there (off the grid or overlapping)")); }
   if((S.coins||0)<cost){ sfx("ng"); V.placing=null; return msg(T("コインが足りません","Not enough coins")); }
   S.coins-=cost; t.units.push({u:t.nu++, id, c, r}); save(); sfx("coin"); coinView(); sideView(); V.placing=null;
   msg(T(`「${nameOf(id)}」を置きました（-${fmt(cost)}コイン）`,`Placed ${nameOf(id)} (-${fmt(cost)})`)); }
