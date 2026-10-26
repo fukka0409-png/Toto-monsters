@@ -24,6 +24,10 @@ css.textContent=`
 #fzo .fz-pic img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 #fzo .fz-send{flex:none;width:52px;height:52px;border-radius:8px;border:3px solid #5a3a06;background:#e3a321;font:900 11px/1.15 var(--f-body);color:#3a2306;box-shadow:0 3px 0 #5a3a06;padding:0}
 #fzo .fz-send:disabled{opacity:.35}
+#fzo .fz-prev{display:flex;align-items:center;gap:8px;max-width:640px;margin:-6px auto 12px;padding:6px 8px;background:#fff2c4;border:2px dashed #b5651d;border-radius:6px;font-size:11.5px}
+#fzo .fz-prev img{width:40px;height:40px;object-fit:contain;image-rendering:pixelated;flex:none}
+#fzo .fz-prev span{flex:1;min-width:0}
+#fzo .fz-prev button{flex:none;padding:8px 10px;border-radius:8px;border:3px solid #5a3a06;background:#e3a321;font:900 12px var(--f-body);color:#3a2306;box-shadow:0 2px 0 #5a3a06}
 .fz-zoom{position:fixed;inset:0;z-index:240;background:#000c;display:grid;place-items:center;padding:20px}
 .fz-zoom img{width:min(86vw,420px);height:auto;image-rendering:pixelated;background:#fff3;border-radius:12px}
 .ttl-mini.ttl-fz[hidden]{display:none}
@@ -53,21 +57,26 @@ async function load(){ if(!DB) return;
   try{ const q=await withTO(DB.collection("fusereq").orderBy("at","desc").limit(100).get()); REQ=q.docs.map(d=>({id:d.id,...d.data()})); }catch(e){ REQ=[]; }
   try{ const q=await withTO(DB.collection("fusemon").get()); DONE={}; q.docs.forEach(d=>{ const x=d.data(); if(x&&x.req) DONE[x.req]=x; if(x&&x.id&&x.img) FMON_CACHE[x.id]={name:x.name,img:x.img}; }); }catch(e){}
   draw(); }
+// 同じ組み合わせ（2匹の順番は問わない）で前に作った魔物をさがす
+const pairKey=r=>[r.a,r.b].sort((x,y)=>x-y).join("+");
+function prevOf(r){ for(const q of REQ){ if(q.id===r.id) continue; const d=DONE[q.id]; if(d&&d.id&&pairKey(q)===pairKey(r)) return d; } return null; }
 function draw(){ if(!V) return; const left=REQ.filter(r=>!DONE[r.id]).length;
   V.querySelector(".fz-n").textContent=`依頼数 ${REQ.length}（未対応 ${left}）`;
   const B=V.querySelector(".fz-body");
   if(!REQ.length){ B.innerHTML=`<div class="fz-row" style="justify-content:center">まだ依頼はありません</div>`; return; }
-  B.innerHTML=REQ.map(r=>{ const d=DONE[r.id], A=mon(r.a), Bm=mon(r.b), pic=d?d.img:PIC[r.id];
+  B.innerHTML=REQ.map(r=>{ const d=DONE[r.id], A=mon(r.a), Bm=mon(r.b), pic=d?(d.img||(FMON_CACHE[d.id]||{}).img):PIC[r.id], pv=!d&&prevOf(r);
     return `<div class="fz-row ${d?"done":""}" data-r="${r.id}">
       <div class="fz-who"><b>${esc(r.nm||"冒険者")}</b><span>魔物融合</span><small>${new Date(r.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></div>
       <button class="fz-c" type="button" data-z="${A?cardURL(A.id,0,320):""}"><img src="${A?cardURL(A.id,0,120):""}" alt=""></button><span class="fz-plus">＋</span>
       <button class="fz-c" type="button" data-z="${Bm?cardURL(Bm.id,0,320):""}"><img src="${Bm?cardURL(Bm.id,0,120):""}" alt=""></button>
       <button class="fz-pic" type="button" data-pic="${r.id}" ${d?"disabled":""}>${pic?`<img src="${pic}" alt="">`:"絵を<br>えらぶ"}</button>
-      <button class="fz-send" type="button" data-send="${r.id}" ${d||!PIC[r.id]?"disabled":""}>${d?"送信<br>ずみ":"📨<br>送る"}</button></div>`; }).join("");
+      <button class="fz-send" type="button" data-send="${r.id}" ${d||!PIC[r.id]?"disabled":""}>${d?"送信<br>ずみ":"📨<br>送る"}</button></div>
+      ${pv?`<div class="fz-prev"><img src="${pv.img||(FMON_CACHE[pv.id]||{}).img||""}" alt=""><span>この組み合わせは前に作った魔物があります：<b>${esc(pv.name||"")}</b></span><button type="button" data-same="${r.id}">同じ魔物を送る</button></div>`:""}`; }).join("");
   B.querySelectorAll("[data-z]").forEach(b=>b.onclick=()=>{ if(b.dataset.z) zoom(b.dataset.z); });
   B.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ const id=b.dataset.pic; const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
     inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; try{ PIC[id]=await cutout(f); draw(); }catch(e){ toast("絵を読みこめませんでした"); } }; inp.click(); });
   B.querySelectorAll("[data-send]").forEach(b=>b.onclick=()=>send(REQ.find(r=>r.id===b.dataset.send)));
+  B.querySelectorAll("[data-same]").forEach(b=>b.onclick=()=>sendSame(REQ.find(r=>r.id===b.dataset.same), b));
 }
 function send(r){ if(!r||!PIC[r.id]) return; const def=`${r.an||"？"}×${r.bn||"？"}`.slice(0,24);
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=235;
@@ -79,10 +88,17 @@ function send(r){ if(!r||!PIC[r.id]) return; const def=`${r.an||"？"}×${r.bn||
   bg.querySelector("#fzGo").onclick=async e=>{ const nm=bg.querySelector("#fzNm").value.trim().slice(0,24); if(!nm) return toast("名前を入れてね");
     const btn=e.currentTarget; btn.disabled=true; btn.textContent="送信中…";
     const id=Math.floor(gnow()/1000);   // 融合魔物の番号（作った時刻から）
-    try{ await withTO(DB.collection("fusemon").doc(String(id)).set({id, name:nm, img:PIC[r.id], uid:r.uid, req:r.id, reqAt:r.at, an:r.an||"", bn:r.bn||"", at:gnow()}));
+    try{ await withTO(DB.collection("fusemon").doc(String(id)).set({id, name:nm, img:PIC[r.id], uid:r.uid, req:r.id, reqAt:r.at, a:r.a, b:r.b, an:r.an||"", bn:r.bn||"", at:gnow()}));
       await withTO(DB.collection("items").add({att:MYID, def:r.uid, attP:S.plv, item:"fmon", fid:id, qty:1, coins:0, at:gnow()}));
       DONE[r.id]={img:PIC[r.id],id,name:nm}; FMON_CACHE[id]={name:nm,img:PIC[r.id]}; delete PIC[r.id]; bg.remove(); draw(); try{ SFX.coin(); }catch(e){} toast(`${r.nm}さんに「${nm}」を送りました！`); }
     catch(err){ btn.disabled=false; btn.textContent="📨 限定ランクで送る"; toast("送れませんでした。もう一度ためしてね"); } }; }
+// 同じ組み合わせ：前に作った魔物（同じ番号）をそのまま送る
+async function sendSame(r,btn){ const pv=r&&prevOf(r); if(!pv) return; const img=pv.img||(FMON_CACHE[pv.id]||{}).img; if(!img) return toast("前の魔物の絵が読みこめませんでした");
+  btn.disabled=true; btn.textContent="送信中…";
+  try{ await withTO(DB.collection("fusemon").doc(pv.id+"_"+r.id).set({id:pv.id, name:pv.name, img, uid:r.uid, req:r.id, reqAt:r.at, a:r.a, b:r.b, an:r.an||"", bn:r.bn||"", same:1, at:gnow()}));
+    await withTO(DB.collection("items").add({att:MYID, def:r.uid, attP:S.plv, item:"fmon", fid:pv.id, qty:1, coins:0, at:gnow()}));
+    DONE[r.id]={id:pv.id,name:pv.name,img}; draw(); try{ SFX.coin(); }catch(e){} toast(`${r.nm}さんに「${pv.name}」を送りました！`); }
+  catch(e){ btn.disabled=false; btn.textContent="同じ魔物を送る"; toast("送れませんでした。もう一度ためしてね"); } }
 function close(){ if(V){ V.remove(); V=null; } }
 function open(){ if(!isOp()) return; if(!DB||!MYID) return toast("ログインしてね"); close();
   V=document.createElement("div"); V.id="fzo"; V.setAttribute("role","dialog"); V.setAttribute("aria-label","融合依頼");
