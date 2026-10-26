@@ -84,9 +84,16 @@ function send(r){ if(!r||!PIC[r.id]) return; const def=`${r.an||"？"}×${r.bn||
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><img src="${PIC[r.id]}" alt="" style="width:140px;height:140px;margin:0 auto;image-rendering:pixelated;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/14px 14px;border-radius:10px">
     <p>${esc(r.nm)}さんに送る</p><div class="note" style="margin:0">融合した魔物の名前（あとから変えられません）</div>
     <input id="fzNm" type="text" maxlength="24" value="${esc(def)}" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:2px solid #3a2306;font:900 15px var(--f-body)">
+    <div class="note" id="fzDup" style="margin:0;color:#ff7a6a;min-height:1.2em"></div>
     <button class="btn gold" type="button" id="fzGo">📨 ${rkName(fuseRank(r.a,r.b))}ランクで送る</button><button class="btn ghost" type="button" id="fzNo">やめる</button></div>`;
   document.body.appendChild(bg); bg.querySelector("#fzNo").onclick=()=>bg.remove();
-  bg.querySelector("#fzGo").onclick=async e=>{ const nm=bg.querySelector("#fzNm").value.trim().slice(0,24); if(!nm) return toast("名前を入れてね");
+  // 名前がほかの魔物（図鑑の魔物・ほかの融合魔物）とかぶっていたら、送れないようにする
+  const nk=v=>String(v||"").normalize("NFKC").replace(/\s+/g,"").toLowerCase();
+  const taken=()=>{ const v=nk(bg.querySelector("#fzNm").value); if(!v) return "名前を入れてね";
+    const hit=MONSTERS.find(m=>nk(m.name)===v)||Object.values(FMON_CACHE).find(x=>nk(x.name)===v); return hit?`「${hit.name}」はもういる魔物の名前です。別の名前にしてね`:""; };
+  const chk=()=>{ const w=taken(); bg.querySelector("#fzDup").textContent=w; bg.querySelector("#fzGo").disabled=!!w; return !w; };
+  bg.querySelector("#fzNm").addEventListener("input",chk); chk();
+  bg.querySelector("#fzGo").onclick=async e=>{ const nm=bg.querySelector("#fzNm").value.trim().slice(0,24); if(!nm) return toast("名前を入れてね"); if(!chk()) return;
     const btn=e.currentTarget; btn.disabled=true; btn.textContent="送信中…";
     const id=Math.floor(gnow()/1000);   // 融合魔物の番号（作った時刻から）
     try{ await withTO(DB.collection("fusemon").doc(String(id)).set({id, name:nm, img:PIC[r.id], rk:fuseRank(r.a,r.b), fn:String(r.nm||"").slice(0,24), uid:r.uid, req:r.id, reqAt:r.at, a:r.a, b:r.b, an:r.an||"", bn:r.bn||"", at:gnow()}));
