@@ -3582,7 +3582,7 @@ async function startRemote(uid){
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
     try{ if(dexPeek() && !S.tk0_1026){ S.items=S.items||{}; S.items.ticket=0; S.tk0_1026=1; save(); } }catch(e){}   // 2026-10-26：ふっかーの所持ガチャチケットを1回だけ0にする
-    checkLoginBonus();
+    checkLoginBonus(); shieldNotice();
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
@@ -7169,6 +7169,18 @@ function anonWho(b){
   return lv<SAFE_LV?"🔰初心者冒険者":lv<=50?"中級冒険者":lv<=99?"上級冒険者":"猛者冒険者";
 }
 let itemBusy=false;
+// 盾のしくみが変わったお知らせ（全冒険者に1回だけ・2026-10-26）
+function shieldNotice(){ if(S.nShRefl) return;
+  const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
+    S.nShRefl=1; save();
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🛡</div><p>盾のしくみが変わりました！</p>
+      <div class="note" style="margin:0;text-align:left">盾を装備している冒険者にアイテム（コインマグネット・ファイヤーボール・爆弾）を使うと、盾で防がれたうえで<b>50%の確率で、使った自分にその効果が跳ね返ってきます</b>。<br><br>
+      ・🧲 コインマグネット → 自分のコインの${MAGNET*100}%が相手にうばわれる<br>・🔥 ファイヤーボール → 自分の配置中の魔物のレベルが下がる<br>・💣 爆弾 → 自分の冒険者レベルが下がる<br><br>
+      盾を持っている相手には気をつけて使おう！ 自分も盾を装備すれば、相手に跳ね返せます。</div>
+      <button class="btn gold" type="button">OK</button></div>`;
+    document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); };
+  setTimeout(show,2500); }
 const SHIELD_REFLECT = 0.5;   // 盾で防いだアイテムを、使った人に跳ね返す確率（2026-10-26）
 async function checkItems(){
   if(itemBusy) return; if(!DB||!MYID){ shExpireNow(); return; } itemBusy=true;
