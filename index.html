@@ -6293,8 +6293,8 @@ const PB_EN = t => LANG==="en";
 // p = { key（同じ報酬を2回入れないための名前）, ic, title, en, coins, lv, ticket, stone, mons:[{m:魔物id, k:鍵}], merge（同じ名前の未受け取りに足し合わせる） }
 function presentAdd(p){ const L=pbox(); S.pboxKeys=S.pboxKeys||[];
   if(p.key){ if(S.pboxKeys.includes(p.key)) return false; S.pboxKeys.push(p.key); if(S.pboxKeys.length>600) S.pboxKeys=S.pboxKeys.slice(-600); }
-  if(p.merge){ const o=L.find(x=>x.merge===p.merge); if(o){ for(const k of ["coins","lv","ticket","stone"]) o[k]=(o[k]||0)+(p[k]||0); o.t=gnow(); o.n=(o.n||1)+1; save(); pboxUI(); return true; } }
-  L.push({ id:"p"+gnow().toString(36)+Math.random().toString(36).slice(2,6), t:gnow(), ic:p.ic||"🎁", title:p.title||"プレゼント", en:p.en||"", coins:Math.floor(p.coins||0), lv:Math.floor(p.lv||0), ticket:p.ticket||0, stone:p.stone||0, mons:p.mons||[], merge:p.merge||null, n:1 });
+  if(p.merge){ const o=L.find(x=>x.merge===p.merge); if(o){ for(const k of ["coins","lv","ticket","stone","moko"]) o[k]=(o[k]||0)+(p[k]||0); o.t=gnow(); o.n=(o.n||1)+1; save(); pboxUI(); return true; } }
+  L.push({ id:"p"+gnow().toString(36)+Math.random().toString(36).slice(2,6), t:gnow(), ic:p.ic||"🎁", title:p.title||"プレゼント", en:p.en||"", coins:Math.floor(p.coins||0), lv:Math.floor(p.lv||0), ticket:p.ticket||0, stone:p.stone||0, moko:Math.floor(p.moko||0), mons:p.mons||[], merge:p.merge||null, n:1 });
   save(); pboxUI(); if(!p.quiet && pboxNoticed) setTimeout(()=>{ try{ toast(LANG==="en"?"🎁 A present arrived in your Present BOX":"🎁 プレゼントBOXにプレゼントが届きました"); }catch(e){} },800);
   return true; }
 function presentTxt(p, L=LANG==="en"){ const a=[];
@@ -6302,12 +6302,13 @@ function presentTxt(p, L=LANG==="en"){ const a=[];
   if(p.lv) a.push(`⭐ ${L?"Adventurer Lv":"冒険者Lv"}+${p.lv}`);
   if(p.ticket) a.push(`🎫 ${L?"Gacha Ticket":"ガチャチケット"} ×${p.ticket}`);
   if(p.stone) a.push(`💎 ${L?"Awakening Stone":"覚醒の石"} ×${p.stone}`);
+  if(p.moko) a.push(`<img src="moko.png" alt="" style="width:18px;height:18px;vertical-align:-4px"> ${mokoFmt(p.moko)}${L?" Moko":"モコ"}`);
   (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(m) a.push(`<span class="rk rk-${m.rank}">${m.rank==="L"?(L?"LTD":"限定"):m.rank}</span> 「${esc(m.name)}」`); });
   return a.join("<br>"); }
 function presentClaim(id){ const L=pbox(), i=L.findIndex(x=>x.id===id); if(i<0) return null; const p=L[i]; L.splice(i,1);
   if(p.coins){ S.coins=(S.coins||0)+p.coins; capCoins(); }
   if(p.lv){ S.plv=(S.plv||1)+p.lv; bumpMaxLv(); }
-  if(p.ticket) addItem("ticket",p.ticket); if(p.stone) addItem("stone",p.stone);
+  if(p.ticket) addItem("ticket",p.ticket); if(p.stone) addItem("stone",p.stone); if(p.moko) S.moko=(S.moko||0)+p.moko;
   (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(!m) return; S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:!!x.k,t:gnow()}); });
   save(); try{ renderCoins(); }catch(e){} if(p.lv) try{ queueProfile(true); }catch(e){} pboxUI(); return p; }
 function presentDrop(id){ const L=pbox(), i=L.findIndex(x=>x.id===id); if(i>=0){ L.splice(i,1); save(); pboxUI(); } }
@@ -6479,15 +6480,16 @@ const NAMED_GIFTS = [
   { id:"ng-2026-10-24-totoshinja", coins:100000, to:{ "トト神信者":1 } },
   { id:"ng-2026-10-25-toiro", coins:100000, to:{ "十色くん":1 } },
   { id:"ng-2026-10-25-fukka", coins:50000, to:{ "ふっかー":1 } },
+  { id:"ng-2026-10-26-fukka-moko", moko:100, to:{ "ふっかー":1 } },
   { id:"ng-2026-10-24-yoko-owabi", coins:50000, title:"🙏 お詫び：ランク戦が始まってすぐの1時間に、アイテムを使われてしまっていました🙏", en:"Apology: items were used on you during the first hour of the ranked match 🙏", to:{ "yoko★":1 } },   // 別のお知らせとして届く
 ];
 function checkNamedGift(){
   if(!MYID||isFreshSave(S)) return; S.ngift=S.ngift||[];
-  const me=normName(myName()); let tk=0, cn=0, stn=0; const ms=[];
-  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; if(g.title){ presentAdd({ic:"🙏", title:g.title, en:g.en||"", coins:(g.coins||0)*n, ticket:(g.ticket||0)*n, stone:(g.stone||0)*n}); return; } tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; (g.mons||[]).forEach(id=>{ if(mon(id)) ms.push({m:id,k:true}); }); });
+  const me=normName(myName()); let tk=0, cn=0, stn=0, mk=0; const ms=[];
+  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; if(g.title){ presentAdd({ic:"🙏", title:g.title, en:g.en||"", coins:(g.coins||0)*n, ticket:(g.ticket||0)*n, stone:(g.stone||0)*n, moko:(g.moko||0)*n}); return; } tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; mk+=(g.moko||0)*n; (g.mons||[]).forEach(id=>{ if(mon(id)) ms.push({m:id,k:true}); }); });
   if(ms.length) presentAdd({ic:"👑", title:"運営からのプレゼント：限定キャラ", en:"A present from the team: limited character", mons:ms});
-  if(!tk&&!cn&&!stn){ save(); return; }
-  presentAdd({ic:"🎁", title:"運営からのプレゼント", en:"A present from the team", coins:cn, ticket:tk, stone:stn}); return;
+  if(!tk&&!cn&&!stn&&!mk){ save(); return; }
+  presentAdd({ic:"🎁", title:"運営からのプレゼント", en:"A present from the team", coins:cn, ticket:tk, stone:stn, moko:mk}); return;
   const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
     const L=LANG==="en", g=document.createElement("div"); g.className="reveal"; g.setAttribute("translate","no");
     g.innerHTML=`<div class="burst"></div><h3>🎁 ${L?"A present for you!":"プレゼントが届きました！"}</h3><p class="note" style="text-align:center;max-width:320px">${(L?[tk&&`🎫 Gacha Ticket ×${tk}`, cn&&`💰 ${cn.toLocaleString()} coins`, stn&&`💎 Awakening Stone ×${stn}`]:[tk&&`🎫 ガチャチケット ×${tk}枚`, cn&&`💰 ${cn.toLocaleString()}コイン`, stn&&`💎 覚醒の石 ×${stn}個`]).filter(Boolean).join("<br>")}</p><button class="btn gold" type="button">OK</button>`;
