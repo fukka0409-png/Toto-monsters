@@ -13,7 +13,7 @@ const ref = () => DB.collection("vstate").doc("cur");
 const blank = r => ({ r:r||1, e:[], st:0, c:[0,0,0,0,0], q:[], pe:[] });
 const VT_USERS = ["ふっかー","🐴"];   // 試作を見せる冒険者（2026-10-26：🐴さんにも公開）
 const vtNm = t => normName(t).replace(/[\uFE0E\uFE0F\u200D]/g,"");   // 絵文字の見えない文字（異体字セレクタなど）は無視して比べる
-const vtOn = () => !!MYID;   // 2026-10-26：全員に公開（ログインしていれば見える）
+const vtOn = () => true;   // 2026-10-26：全員に公開。ボタンはすぐ出す（押したときにログインを確かめる）
 const vtk = () => (S.items||{}).vtk||0;   // エントリー予約チケット
 const isVoting = d => d && d.st>0 && d.e.length>=VT.N && now()<d.st+VT.MS;
 const isOver = d => d && d.st>0 && now()>=d.st+VT.MS;
@@ -158,18 +158,15 @@ async function vote(i){
 
 /* ---------- タイトルのボタンと吹き出し ---------- */
 async function titleTip(){ const b=document.getElementById("ttlVote"), tip=document.getElementById("ttlVoteTip"); if(!b) return;
-  const on=vtOn(); b.hidden=!on; if(!on){ tip.hidden=true; return; }
+  b.hidden=false; if(!DB||!MYID){ tip.hidden=true; return; }
   try{ const sn=await ref().get(); const d=sn.exists?sn.data():blank(1); if(isOver(d)) settle();
     if(isVoting(d)){ tip.textContent="投票して1000コインゲット！"; tip.hidden=(S.vtVoted||{})[d.r]!=null; }
     else { tip.textContent="エントリーして1モコゲット"; tip.hidden=d.e.some(x=>x.uid===MYID)||(d.pe||[]).includes(MYID); } }catch(e){ tip.hidden=true; } }
-function setup(){ const st=document.getElementById("ttlStage"); if(!st||document.getElementById("ttlVote")) return;
-  const b=document.createElement("button"); b.className="ttl-mini ttl-vote"; b.id="ttlVote"; b.type="button"; b.hidden=true;
-  b.innerHTML=`<img src="title/btn_en.png" alt="" draggable="false"><span>🗳 魔物投票<small></small></span>`;
-  const tip=document.createElement("div"); tip.className="ttl-vote-tip"; tip.id="ttlVoteTip"; tip.hidden=true;
-  st.appendChild(b); st.appendChild(tip);
+let setupDone=false;
+function setup(){ const b=document.getElementById("ttlVote"); if(!b||setupDone) return; setupDone=true;   // ボタンは index.html にあるので、タイトルが出たときからすぐ見える
   b.onclick=()=>{ try{ SFX.tap(); }catch(e){} open(); };
   titleTip(); setInterval(()=>{ if(document.querySelector("#title:not([hidden])")) titleTip(); }, 20000);
-  let was=null; setInterval(()=>{ const on=vtOn(); if(on!==was){ was=on; titleTip(); if(on){ checkWins(); clearTest(); } } }, 1500); }   // ログインしたらすぐボタンを出す
+  let was=null; setInterval(()=>{ const on=!!(DB&&MYID); if(on!==was){ was=on; titleTip(); if(on){ checkWins(); clearTest(); } } }, 1000); }   // ログインしたらすぐ吹き出しを出す   // ログインしたらすぐボタンを出す
 // ふっかーの試しエントリーを消す（1回だけ・2026-10-26）
 async function clearTest(){ try{ if(S.vtClr1||!DB||!MYID||!dexPeek()) return;
   await DB.runTransaction(async tx=>{ const sn=await tx.get(ref()); if(!sn.exists) return; const d=sn.data();
