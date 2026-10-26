@@ -5034,7 +5034,10 @@ function openDexHow(id){ const m=mon(id); if(!m) return;
 // 融合ランク：いちばん最初にその魔物を作った冒険者の名前「初代融合者」
 // 持っている融合魔物の説明：もとになった2匹（名前だけ）
 function fuseRecipeLine(m){ if(!m||!m.fuse) return ""; const r=Object.assign({},FMON_CACHE[m.id]||{},m.recipe||{}), an=r.an||(mon(r.a)||{}).name, bn=r.bn||(mon(r.b)||{}).name;
-  return an&&bn?`<p class="fu-first" style="color:inherit;opacity:.85">🧬 融合レシピ：${esc(an)} ＋ ${esc(bn)}</p>`:""; }
+  if(!(an&&bn)) return "";
+  if(dexPeek()){ const A=mon(r.a), B=mon(r.b), pic=(x,nm)=>`<span class="fu-rcp"><img src="${x?cardURL(x.id,0,120):""}" alt=""><b>${esc(nm)}</b></span>`;   // ふっかーには2匹の絵も出す
+    return `<div class="fu-first" style="color:inherit;opacity:.9">🧬 融合レシピ<div class="fu-rcps">${pic(A,an)}<i>＋</i>${pic(B,bn)}</div></div>`; }
+  return `<p class="fu-first" style="color:inherit;opacity:.85">🧬 融合レシピ：${esc(an)} ＋ ${esc(bn)}</p>`; }
 function firstFuser(m){ if(!m||!m.fuse) return ""; const f=FMON_CACHE[m.id]||{}; return `<p class="fu-first" data-ff="${m.id}">${f.fn?`👑 初代融合者 ${esc(f.fn)}`:""}</p>`; }
 async function fillFirstFuser(m){ if(!m||!m.fuse||!DB) return; const f=FMON_CACHE[m.id]=FMON_CACHE[m.id]||{}; const noRcp=f.a==null&&!(m.recipe&&m.recipe.a!=null); if(f.fn&&!noRcp) return;
   try{ if(!f.req){ const d=await withTO(DB.collection("fusemon").doc(String(m.id)).get()); if(d.exists){ const x=d.data(); f.req=x.req; f.fn=f.fn||x.fn; } }
