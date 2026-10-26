@@ -6089,7 +6089,7 @@ window.tsFightDone=(opp,res)=>{
 // 留守中の魔物合戦：勝っていたら通知＋冒険者Lv+1・1000コイン。
 // 負けていたら、配置はすべて取り消し（置くのに使ったコインの3分の1が返ってくる）＋お知らせ
 // 毎日ログインボーナス（2026-10-26）：ランキングのタイマー（シーズン）が新しくなるたびに、ログインした冒険者に3000コインと1モコ
-const LOGIN_BONUS = { coins:3000, moko:1 };
+const LOGIN_BONUS = { coins:3000, moko:10 };   // 2026-10-26：1モコ→10モコ
 function checkLoginBonus(){ try{ if(!MYID) return; const s=seasonNow(); if(S.lbS===s) return;
   S.lbS=s; S.coins=Math.min(COIN_MAX,(S.coins||0)+LOGIN_BONUS.coins); S.moko=(S.moko||0)+LOGIN_BONUS.moko; save(); render();
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
