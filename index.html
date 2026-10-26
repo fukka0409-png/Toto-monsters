@@ -4050,13 +4050,13 @@ function pullMonsters(n, ticket){
     res.push({img:cardURL(m.id,0),name:m.name,rank:m.rank,isNew,by:m.by,byUrl:m.byUrl,model:m.model,modelUrl:m.modelUrl,u:S.units[S.units.length-1].u}); }
   save(); renderCoins(); openPack(res,"mon","魔物があらわれた！");
 }
-// 魔物レアガチャ（2026-10-26）：A・S・Zランクだけ。モコで回す（1パック10モコ・10連パック80モコ）
+// 魔物レアガチャ（2026-10-26）：S・Zランクだけ。モコで回す（1パック10モコ・10連パック80モコ）
 // まだ図鑑で解放していない魔物は、出やすさが下がる（解放ずみの魔物の RARE_NEW_W 倍）
 const RARE_COST = {1:10, 10:80};
-const RARE_RATES = { Z:1, S:14, A:85 };   // %（ふつうの魔物ガチャよりずっと出やすい）
+const RARE_RATES = { Z:7, S:93 };   // %（ふつうの魔物ガチャよりずっと出やすい）
 const RARE_NEW_W = 0.3;
-function rollRare(){ let x=Math.random()*100, rank="A"; for(const r of ["Z","S","A"]){ if((x-=RARE_RATES[r])<0){ rank=r; break; } }
-  let p=NORMAL.filter(m=>m.rank===rank); if(!p.length) p=NORMAL.filter(m=>["A","S","Z"].includes(m.rank));
+function rollRare(){ let x=Math.random()*100, rank="S"; for(const r of ["Z","S"]){ if((x-=RARE_RATES[r])<0){ rank=r; break; } }
+  let p=NORMAL.filter(m=>m.rank===rank); if(!p.length) p=NORMAL.filter(m=>["S","Z"].includes(m.rank));
   const w=m=>(S.got[m.id]?1:RARE_NEW_W)*(m.by?COLLAB_W:1), tot=p.reduce((a,m)=>a+w(m),0); let k=Math.random()*tot;
   for(const m of p){ if((k-=w(m))<0) return m; } return p[p.length-1]; }
 function pullRare(n){
@@ -4409,7 +4409,7 @@ function renderGacha(){
   </section>
   <section class="g-banner rare">
     <div class="g-head"><img class="g-rare-img" src="${(mon(66)||{}).img||"moko.png"}" alt="">
-      <div><div class="g-tag">RARE</div><div class="g-title">魔物レアガチャ</div><div class="g-sub">Aランク・Sランク・Zランクだけが出る！<br>モコ所持：<img src="moko.png" alt="" style="width:18px;height:18px;vertical-align:-4px"> <b>${mokoFmt(S.moko||0)}モコ</b></div></div></div>
+      <div><div class="g-tag">RARE</div><div class="g-title">魔物レアガチャ</div><div class="g-sub">Sランク・Zランクだけが出る！<br>モコ所持：<img src="moko.png" alt="" style="width:18px;height:18px;vertical-align:-4px"> <b>${mokoFmt(S.moko||0)}モコ</b></div></div></div>
     <div class="pulls">
       <button class="pull" data-rare="1" type="button" ${(S.moko||0)<RARE_COST[1]?"disabled":""}>1パック<small>${RARE_COST[1]}モコ</small></button>
       <button class="pull ten" data-rare="10" type="button" ${(S.moko||0)<RARE_COST[10]?"disabled":""}>10連パック<small>${RARE_COST[10]}モコ</small></button></div>
