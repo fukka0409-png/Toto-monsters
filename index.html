@@ -3552,6 +3552,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
+    try{ if(dexPeek() && !S.tk0_1026){ S.items=S.items||{}; S.items.ticket=0; S.tk0_1026=1; save(); } }catch(e){}   // 2026-10-26：ふっかーの所持ガチャチケットを1回だけ0にする
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
