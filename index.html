@@ -5087,6 +5087,8 @@ function finishShopVisit(){
 }
 // ページが開き直された場合（iPhoneで戻ったときなど）
 try{ const v=JSON.parse(localStorage.getItem("toto-shop-visit")||"null"); if(v&&gnow()-v.at<6*HOUR_MS){ shopVisit=v; setTimeout(finishShopVisit,1500); } else localStorage.removeItem("toto-shop-visit"); }catch(err){}
+// ショップのモコ販売バナー（2026-10-26）：オンラインショップ（BASE）の商品ページへ
+const MOKO_SHOP=[{n:500,img:"shop/moko500.jpg",url:"https://fukka0409.base.shop/items/164201297"},{n:2000,img:"shop/moko2000.jpg",url:"https://fukka0409.base.shop/items/164201511"},{n:10000,img:"shop/moko10000.jpg",url:"https://fukka0409.base.shop/items/164201525"}];
 function renderMission(){
   const done=MISSIONS.filter((_,i)=>missionLeft(i)>0).length;
   $("#stage").innerHTML=`<h2>ショップ</h2>${!MISSIONS.length?"":`<p class="sub">達成したら「達成」を押してね。それぞれ1日1回、クリアから24時間でまた挑戦できます。</p>
@@ -5095,7 +5097,7 @@ function renderMission(){
     <div class="m-body"><div class="m-no">MISSION ${i+1}${big?" ・ スペシャル":""}</div><div class="m-text">${m.text}</div><div class="amt">+${m.coins}コイン</div></div>
     ${left?`<div class="cd">クリア済み<span class="t" data-mcd="${i}">${fmt(left)}</span><small>次の挑戦まで</small></div>`:`<button class="btn ${big?"gold":""}" type="button" data-mi="${i}">達成</button>`}
   </div>`}).join("")}</div>`}
-  ${!MISSIONS.length?`<div class="empty">いまはショップのお知らせはありません</div>`:""}${[].map(sh=>{ const left=shopLeft(sh.k); return `<a class="shop-banner" href="${sh.url}" target="_blank" rel="noopener" data-shop="${sh.k}"><img src="${sh.img}" alt="${sh.name}（オンラインショップ）"></a>
+  ${MOKO_SHOP.map(x=>`<a class="shop-banner moko-banner" href="${x.url}" target="_blank" rel="noopener"><img src="${x.img}" alt="${x.n}モコ（オンラインショップ）" loading="lazy"></a>`).join("")}${[].map(sh=>{ const left=shopLeft(sh.k); return `<a class="shop-banner" href="${sh.url}" target="_blank" rel="noopener" data-shop="${sh.k}"><img src="${sh.img}" alt="${sh.name}（オンラインショップ）"></a>
     <div class="shop-cd ${left?"":"ready"}">${left?`報酬は受け取り済み ・ 次の報酬まで <b data-shopcd="${sh.k}">${fmt(left)}</b>`:`🎁 タップしてショップを${SHOP_STAY/1000}秒見ると <b>+${SHOP_REWARD.toLocaleString()}コイン</b>`}</div>`; }).join("")}`;
   document.querySelectorAll("[data-mi]").forEach(b=>b.onclick=()=>confirmMission(+b.dataset.mi));
 }
