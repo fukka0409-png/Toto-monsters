@@ -38,7 +38,7 @@ const isOp=()=>{ try{ return dexPeek(); }catch(e){ return false; } };
 function zoom(src){ const z=document.createElement("div"); z.className="fz-zoom"; z.innerHTML=`<img src="${src}" alt="">`; z.onclick=()=>z.remove(); document.body.appendChild(z); }
 
 // 写真の白い背景を自動で透明にして、魔物だけを切り抜き、256×256にする
-function cutout(file){ return new Promise((ok,ng)=>{ const fr=new FileReader(); fr.onerror=ng; fr.onload=()=>{ const im=new Image(); im.onerror=ng; im.onload=()=>{
+function cutout(file){ return new Promise((ok,ng)=>{ const url=URL.createObjectURL(file); const fr={}; fr.onload=()=>{ const im=new Image(); im.onerror=()=>{ URL.revokeObjectURL(url); ng(); }; im.onload=()=>{ URL.revokeObjectURL(url);
   const mx=900, k=Math.min(1,mx/Math.max(im.width,im.height)), W=Math.max(1,Math.round(im.width*k)), H=Math.max(1,Math.round(im.height*k));
   const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const g=cv.getContext("2d"); g.drawImage(im,0,0,W,H);
   const d=g.getImageData(0,0,W,H), p=d.data, bg=new Uint8Array(W*H), st=[];
@@ -51,7 +51,7 @@ function cutout(file){ return new Promise((ok,ng)=>{ const fr=new FileReader(); 
   g.putImageData(d,0,0); if(x1<0){ x0=0;y0=0;x1=W-1;y1=H-1; }
   const w=x1-x0+1, h=y1-y0+1, s=Math.round(Math.max(w,h)*1.06), o=document.createElement("canvas"); o.width=o.height=256; const og=o.getContext("2d");
   og.imageSmoothingEnabled=true; const sc=256/s; og.drawImage(cv,x0,y0,w,h,(256-w*sc)/2,(256-h*sc)/2,w*sc,h*sc);
-  ok(o.toDataURL("image/png")); }; im.src=fr.result; }; fr.readAsDataURL(file); }); }
+  ok(o.toDataURL("image/png")); }; im.src=url; }; fr.onload(); }); }
 
 async function load(){ if(!DB) return;
   try{ const q=await withTO(DB.collection("fusereq").orderBy("at","desc").limit(100).get()); REQ=q.docs.map(d=>({id:d.id,...d.data()})); }catch(e){ REQ=[]; }
@@ -74,8 +74,12 @@ function draw(){ if(!V) return; const left=REQ.filter(r=>!DONE[r.id]).length;
       <button class="fz-send" type="button" data-send="${r.id}" ${d||!PIC[r.id]?"disabled":""}>${d?"送信<br>ずみ":"📨<br>送る"}</button></div>
       ${pv?`<div class="fz-prev"><img src="${pv.img||(FMON_CACHE[pv.id]||{}).img||""}" alt=""><span>この組み合わせは前に作った魔物があります：<b>${esc(pv.name||"")}</b></span><button type="button" data-same="${r.id}">同じ魔物を送る</button></div>`:""}`; }).join("");
   B.querySelectorAll("[data-z]").forEach(b=>b.onclick=()=>{ if(b.dataset.z) zoom(b.dataset.z); });
-  B.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ const id=b.dataset.pic; const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
-    inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; try{ PIC[id]=await cutout(f); draw(); }catch(e){ toast("絵を読みこめませんでした"); } }; inp.click(); });
+  // iPhoneでは、画面につないでいない<input>は写真をえらんだあとに消えてしまうことがあるので、画面の中に置いておく
+  B.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ const id=b.dataset.pic; let inp=document.getElementById("fzFile");
+    if(!inp){ inp=document.createElement("input"); inp.type="file"; inp.id="fzFile"; inp.accept="image/*"; inp.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0"; document.body.appendChild(inp); }
+    inp.value=""; inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; toast("絵を読みこんでいます…");
+      try{ PIC[id]=await cutout(f); draw(); toast("白い背景を透明にしました"); }catch(e){ toast("絵を読みこめませんでした（PNGかJPEGの写真をえらんでね）"); } };
+    inp.click(); });
   B.querySelectorAll("[data-send]").forEach(b=>b.onclick=()=>send(REQ.find(r=>r.id===b.dataset.send)));
   B.querySelectorAll("[data-same]").forEach(b=>b.onclick=()=>sendSame(REQ.find(r=>r.id===b.dataset.same), b));
 }
