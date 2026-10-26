@@ -695,6 +695,10 @@ html .ttl .ttl-mini span small:empty{display:none}
 html[lang=en] .ttl .ttl-mini span{font-size:36px}
 .ttl-mini:active{transform:scale(.96)}
 .ttl-mini.ttl-ts{top:1045px}
+/* 融合依頼（ふっかーだけ）：ほかのボタンや言語の切りかえと重ならないように、タイトルと「ガチャ・育成」の間に小さく置く */
+.ttl .ttl-mini.ttl-fz{left:398px;top:562px;width:250px;height:84px}
+html .ttl .ttl-mini.ttl-fz span{font-size:30px;gap:2px}
+html .ttl .ttl-mini.ttl-fz span small{font-size:16px}
 .mg-pick{display:flex;flex-direction:column;gap:10px;width:100%}
 .mg-pick button[hidden]{display:none!important}
 .mg-pick button{display:flex;align-items:center;gap:12px;text-align:left;border:3px solid #3a2306;border-radius:16px;background:#fff3d6;padding:12px 14px;cursor:pointer;font-family:var(--f-body);color:#3a2306;box-shadow:0 4px 0 #0005}
@@ -1215,7 +1219,7 @@ html[lang=en] .kn-bt span{font-size:38px}
     </div>
     <button class="ttl-mini ttl-ts" id="ttlTs" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧠 トトの戦略<small>試作（ふっかーだけに表示）</small></span></button>
     <button class="ttl-mini ttl-vote" id="ttlVote" type="button" style="top:1045px"><img src="title/btn_en.png" alt="" draggable="false"><span>🗳 魔物投票<small></small></span></button>
-    <button class="ttl-mini ttl-fz" id="ttlFz" type="button" hidden style="top:1290px"><img src="title/btn_en.png" alt="" draggable="false"><span>🧬 融合依頼<small id="ttlFzN"></small></span></button>
+    <button class="ttl-mini ttl-fz" id="ttlFz" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧬 融合依頼<small id="ttlFzN"></small></span></button>
     <div class="ttl-vote-tip" id="ttlVoteTip" hidden></div>
     <button class="ttl-mini" id="ttlMini" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
@@ -4523,7 +4527,8 @@ function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
       <button class="btn gold" type="button" id="fuSend" ${enough?"":"disabled"}>📨 送信</button><button class="btn ghost" type="button" id="fuNo">やめる</button></div>`:""}
     <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r==="F"?"融合":r}</button>`).join("")}</div>
     <p class="sub" style="margin:0 0 6px">融合したい種類の異なる魔物を2匹タップしてね</p>
-    ${list.length?`<div class="grid">${list.map(x=>unitCard(x,(x.k||x.u===S.guard?"dim":"")+(fuSel.includes(x.u)?" sel":""))).join("")}</div>`:`<div class="empty">魔物がいません</div>`}
+    <p class="note" style="margin:0 0 6px">🔒 鍵のかかった魔物は、タップすると鍵を外せます</p>
+    ${list.length?`<div class="grid">${list.map(x=>unitCard(x,(x.u===S.guard?"dim":"")+(fuSel.includes(x.u)?" sel":""))).join("")}</div>`:`<div class="empty">魔物がいません</div>`}
     ${fuMyReqs()}<div id="fuAdmin"></div>`;
   bindBoxTop(); fuAdmin();
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.onclick=()=>{ boxFilter=b.dataset.f; render(); });
@@ -4531,7 +4536,14 @@ function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
   document.querySelectorAll("[data-fs]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.fs; if(fuSel[i]!=null){ fuSel.splice(i,1); fuStep=0; keep(); } });
   document.querySelectorAll(".grid .card").forEach(b=>b.onclick=()=>{ const u=+b.dataset.u, x=S.units.find(z=>z.u===u); if(!x) return;
     if(fuSel.includes(u)){ fuSel=fuSel.filter(v=>v!==u); fuStep=0; return keep(); }
-    if(x.k) return toast("鍵のかかった魔物は融合に使えません（鍵を外してね）");
+    if(x.k){   // 鍵のかかった魔物：この画面で鍵を外せる
+      const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><img src="${cardURL(x.m,x.s)}" alt="" style="width:110px;height:110px;margin:0 auto"><p>🔒「${esc(mon(x.m).name)}」には鍵がかかっています</p>
+        <div class="note" style="margin:0">鍵を外すと、融合に使えるようになります（売却や合成の素材にも使えるようになります）</div>
+        <button class="btn gold" type="button" id="fuUnl">🔓 鍵を外す</button><button class="btn ghost" type="button" id="fuNoU">やめる</button></div>`;
+      document.body.appendChild(bg); bg.querySelector("#fuNoU").onclick=()=>bg.remove(); bg.onclick=e=>{ if(e.target===bg) bg.remove(); };
+      bg.querySelector("#fuUnl").onclick=()=>{ x.k=false; save(); bg.remove(); try{ SFX.tap(); }catch(e){} toast(`${mon(x.m).name}の鍵を外しました`); keep(); };
+      return; }
     if(x.u===S.guard) return toast("配置中の魔物は融合に使えません");
     if(fuSel.length>=2) return toast("えらべるのは2匹までです（上の枠をタップすると外せます）");
     if(fuSel.some(v=>(S.units.find(z=>z.u===v)||{}).m===x.m)) return toast("種類のちがう魔物をえらんでね");
