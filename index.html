@@ -416,6 +416,17 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 /* パック開封 */
 .pk-stage{position:fixed;inset:0;z-index:55;background:radial-gradient(circle at 50% 45%,#3a2c1c,#0b0906 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));overflow:hidden;transition:opacity .26s}
 .pk-stage.fade{opacity:0}
+/* 魔物レアガチャのパック：金色にかがやく */
+.pk-stage.rare{background:radial-gradient(circle at 50% 45%,#5a4210,#140d02 72%)}
+.pk-stage.rare .pk-title{color:#ffe27a;text-shadow:0 0 10px #ffc83d,0 0 22px #ff9d0088}
+.pk-stage.rare .pk-body,.pk-stage.rare .pk-strip,.pk-stage.rare .pk-ghost{filter:sepia(1) saturate(2.3) hue-rotate(-10deg) brightness(.98) contrast(1.2)}
+.pk-stage.rare .pk-ghost{filter:sepia(1) saturate(3.5) hue-rotate(-8deg) brightness(.7)}
+.pk-stage.rare .pk-wrap{filter:drop-shadow(0 0 14px #ffd23dcc) drop-shadow(0 0 34px #ffae0088);animation:pkIn .5s cubic-bezier(.2,1.4,.4,1),pkGold 2.2s ease-in-out .5s infinite}
+@keyframes pkGold{0%,100%{filter:drop-shadow(0 0 12px #ffd23dbb) drop-shadow(0 0 28px #ffae0066)}50%{filter:drop-shadow(0 0 22px #fff2a8ee) drop-shadow(0 0 46px #ffc400aa)}}
+.pk-stage.rare .pk-body::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:screen;background:linear-gradient(110deg,transparent 35%,#fff3b066 46%,#fffbe0aa 50%,#fff3b066 54%,transparent 65%) 0 0/250% 100% no-repeat;animation:pkSheen 2.4s ease-in-out infinite}
+@keyframes pkSheen{0%{background-position:150% 0}60%,100%{background-position:-60% 0}}
+.pk-stage.rare .pk-body::before{content:"✦  ✧   ✦\A  ✧    ✦ ✧\A ✦  ✧  ✦";white-space:pre;position:absolute;inset:8% 6% auto;color:#fff8d0;font-size:22px;line-height:2.4;text-align:center;text-shadow:0 0 8px #ffd23d;pointer-events:none;z-index:1;animation:pkTw 1.4s ease-in-out infinite alternate}
+@keyframes pkTw{from{opacity:.25}to{opacity:1}}
 .pk-title{font-family:var(--f-pix);font-size:18px;color:#f3e3c3;letter-spacing:.1em}
 .pk-wrap{position:relative;width:min(64vw,270px);aspect-ratio:540/755;animation:pkIn .5s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pkIn{from{transform:translateY(40px) scale(.9);opacity:0}}
@@ -1315,6 +1326,7 @@ const I18N_EN = {
 "⚔️ 合戦可能": "⚔️ Battle ready",
 "モコ": "Moko",
 "魔物レアガチャ": "Rare Monster Gacha",
+"✨ 魔物レアパック ✨": "✨ Rare Monster Pack ✨",
 "⚔️ 魔物合戦が追加されました！": "⚔️ Monster Battles are here!",
 "⚔️ 魔物合戦の遊び方": "⚔️ How to play Monster Battles",
 "⚔️ 魔物合戦": "⚔️ Monster Battle",
@@ -4055,7 +4067,7 @@ function pullRare(n){
   for(let i=0;i<n;i++){ const m=rollRare(); const isNew=!S.got[m.id]; if(isNew){ S.coins+=NEW_COIN; gainPExp(PXP.newMon); S.dm.nw=(S.dm.nw||0)+1; }
     S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:false,t:gnow()});
     res.push({img:cardURL(m.id,0),name:m.name,rank:m.rank,isNew,by:m.by,byUrl:m.byUrl,model:m.model,modelUrl:m.modelUrl,u:S.units[S.units.length-1].u}); }
-  save(); renderCoins(); openPack(res,"mon","魔物があらわれた！");
+  save(); renderCoins(); openPack(res,"mon","魔物があらわれた！",{rare:1});
 }
 function pullFrames(n, ticket){
   if(ticket){ if(!inv("ticket")) return toast("ガチャチケットがありません"); addItem("ticket",-1); n=TICKET_PACKS; }
@@ -4080,14 +4092,14 @@ const PACK_TEAR = 0.117;   // 切り込みの位置（パックの高さに対�
 function openPack(res, kind, title, opts={}){
   const n=res.length, best=res.reduce((a,b)=>RANKS.indexOf(b.rank)>RANKS.indexOf(a.rank)?b:a,res[0]);
   const shine=best.rank==="S"||best.rank==="Z";
-  const el=document.createElement("div"); el.className=`pk-stage ${kind}`; el.setAttribute("role","dialog"); el.setAttribute("aria-label","パックを開ける");
-  el.innerHTML=`<div class="pk-title">${kind==="mon"?"魔物パック":kind==="deco"?"装飾パック":"アイコン枠パック"}</div>
+  const el=document.createElement("div"); el.className=`pk-stage ${kind}${opts.rare?" rare":""}`; el.setAttribute("role","dialog"); el.setAttribute("aria-label","パックを開ける");
+  el.innerHTML=`<div class="pk-title">${opts.rare?"✨ 魔物レアパック ✨":kind==="mon"?"魔物パック":kind==="deco"?"装飾パック":"アイコン枠パック"}</div>
     <div class="pk-wrap" style="--pk:url('${PACK_IMG}')">
       ${n>=10?`<div class="pk-ghost g2"></div><div class="pk-ghost g1"></div>`:""}${n>=100?`<div class="pk-ghost g3"></div>`:""}
       <div class="pk">
         <div class="pk-glow ${best.rank==="Z"?"z":""}"></div>
         <img class="pk-card" src="${best.img}" alt="">
-        <div class="pk-body"><div class="pk-label">${kind==="mon"?"MONSTER PACK":kind==="deco"?"HOME DECO PACK":"ICON FRAME PACK"}<b>${n===1?"1パック":n+"連パック"}</b></div></div>
+        <div class="pk-body"><div class="pk-label">${opts.rare?"RARE MONSTER PACK":kind==="mon"?"MONSTER PACK":kind==="deco"?"HOME DECO PACK":"ICON FRAME PACK"}<b>${n===1?"1パック":n+"連パック"}</b></div></div>
         <div class="pk-strip"><div class="pk-cut"></div></div>
         <div class="pk-finger" aria-hidden="true">👆</div>
       </div>
