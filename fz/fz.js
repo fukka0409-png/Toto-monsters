@@ -107,7 +107,7 @@ async function sendSame(r,btn){ const pv=r&&prevOf(r); if(!pv) return; const img
     await withTO(DB.collection("items").add({att:MYID, def:r.uid, attP:S.plv, item:"fmon", fid:pv.id, qty:1, coins:0, at:gnow()}));
     DONE[r.id]={id:pv.id,name:pv.name,img}; draw(); try{ SFX.coin(); }catch(e){} toast(`${r.nm}さんに「${pv.name}」を送りました！`); }
   catch(e){ btn.disabled=false; btn.textContent="同じ魔物を送る"; toast("送れませんでした。もう一度ためしてね"); } }
-function close(){ if(V){ V.remove(); V=null; } }
+function close(){ if(V){ V.remove(); V=null; } count(); }
 function open(){ if(!isOp()) return; if(!DB||!MYID) return toast("ログインしてね"); close();
   V=document.createElement("div"); V.id="fzo"; V.setAttribute("role","dialog"); V.setAttribute("aria-label","融合依頼");
   V.innerHTML=`<div class="fz-top"><button class="fz-b" type="button">← タイトル画面に戻る</button><span class="fz-n">依頼数 …</span></div><div class="fz-body"><div class="fz-row" style="justify-content:center">読み込み中…</div></div>`;
@@ -115,12 +115,14 @@ function open(){ if(!isOp()) return; if(!DB||!MYID) return toast("ログイン�
 
 // タイトルのボタン（ふっかーだけ）と、未対応の数
 async function count(){ const n=document.getElementById("ttlFzN"); if(!n||!DB) return;
-  try{ const [a,b]=await Promise.all([DB.collection("fusereq").get(),DB.collection("fusemon").get()]); const done=new Set(b.docs.map(d=>d.data().req)); const left=a.docs.filter(d=>!done.has(d.id)).length; n.textContent=left?`未対応 ${left}件`:""; }catch(e){} }
+  try{ const [a,b]=await Promise.all([DB.collection("fusereq").get(),DB.collection("fusemon").get()]); const done=new Set(b.docs.map(d=>d.data().req)); const left=a.docs.filter(d=>!done.has(d.id)).length; n.textContent=left?`依頼 ${left}件`:"";
+    const bd=document.getElementById("ttlFzB"); if(bd){ bd.textContent=left>99?"99+":String(left); bd.hidden=!left; } }catch(e){} }
 // みんな：融合でできた魔物の絵を読みこんでおく（ほかの冒険者のプロフィールに出ても表示できるように）
 async function cache(){ if(!DB) return; try{ const q=await DB.collection("fusemon").get(); q.docs.forEach(d=>{ const x=d.data(); if(x&&x.id&&x.img) FMON_CACHE[x.id]=Object.assign(FMON_CACHE[x.id]||{},{name:x.name,img:x.img,rk:x.rk||"F"},x.a!=null?{a:x.a,b:x.b}:{},x.an?{an:x.an,bn:x.bn}:{},!x.same?{req:x.req,fn:x.fn,fat:x.at}:{}); }); }catch(e){} }
 let was=null;
 setInterval(()=>{ const b=document.getElementById("ttlFz"); if(!b) return; const on=!!(DB&&MYID); const op=on&&isOp(); b.hidden=!op;
   if(on!==was){ was=on; if(on){ cache(); if(op) count(); } } }, 1000);
+setInterval(()=>{ const b=document.getElementById("ttlFz"); if(b&&!b.hidden&&document.querySelector("#title:not([hidden])")) count(); }, 30000);   // タイトル画面を開いているあいだ、依頼の件数を30秒ごとに更新
 document.addEventListener("click",e=>{ if(e.target.closest("#ttlFz")){ try{ SFX.tap(); }catch(x){} open(); } });
 window.openFuseReq=open;
 })();

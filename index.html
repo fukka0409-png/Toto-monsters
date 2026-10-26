@@ -699,6 +699,8 @@ html[lang=en] .ttl .ttl-mini span{font-size:36px}
 .ttl .ttl-mini.ttl-fz{left:398px;top:562px;width:250px;height:84px}
 html .ttl .ttl-mini.ttl-fz span{font-size:30px;gap:2px}
 html .ttl .ttl-mini.ttl-fz span small{font-size:16px}
+.ttl-fz-badge{position:absolute;right:-14px;top:-16px;min-width:44px;height:44px;padding:0 10px;box-sizing:border-box;border-radius:999px;background:#e53935;color:#fff;border:4px solid #fff;font:900 26px/36px var(--f-body);text-align:center;box-shadow:0 3px 0 #3a1a08;animation:vtTip 1.6s ease-in-out infinite}
+.ttl-fz-badge[hidden]{display:none}
 .mg-pick{display:flex;flex-direction:column;gap:10px;width:100%}
 .mg-pick button[hidden]{display:none!important}
 .mg-pick button{display:flex;align-items:center;gap:12px;text-align:left;border:3px solid #3a2306;border-radius:16px;background:#fff3d6;padding:12px 14px;cursor:pointer;font-family:var(--f-body);color:#3a2306;box-shadow:0 4px 0 #0005}
@@ -1219,7 +1221,7 @@ html[lang=en] .kn-bt span{font-size:38px}
     </div>
     <button class="ttl-mini ttl-ts" id="ttlTs" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧠 トトの戦略<small>試作（ふっかーだけに表示）</small></span></button>
     <button class="ttl-mini ttl-vote" id="ttlVote" type="button" style="top:1045px"><img src="title/btn_en.png" alt="" draggable="false"><span>🗳 魔物投票<small></small></span></button>
-    <button class="ttl-mini ttl-fz" id="ttlFz" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧬 融合依頼<small id="ttlFzN"></small></span></button>
+    <button class="ttl-mini ttl-fz" id="ttlFz" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧬 融合依頼<small id="ttlFzN"></small></span><b class="ttl-fz-badge" id="ttlFzB" hidden></b></button>
     <div class="ttl-vote-tip" id="ttlVoteTip" hidden></div>
     <button class="ttl-mini" id="ttlMini" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
@@ -3613,7 +3615,7 @@ async function startRemote(uid){
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
     try{ if(dexPeek() && !S.tk0_1026){ S.items=S.items||{}; S.items.ticket=0; S.tk0_1026=1; save(); } }catch(e){}   // 2026-10-26：ふっかーの所持ガチャチケットを1回だけ0にする
-    checkLoginBonus(); shieldNotice();
+    checkLoginBonus(); shieldNotice(); fuseNotice();
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
@@ -4515,7 +4517,7 @@ const boxSeg=()=>{ const cur=[...BOX_MENU,["fusion","🧬","魔物オリジナ�
 function bindBoxTop(){ const b=document.getElementById("boxBack"); if(b) b.onclick=()=>{ boxMode="menu"; sellMode=false; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; };
   const h=document.getElementById("boxHelp"); if(h) h.onclick=()=>{ const x=BOX_HELP[boxMode]; const bg=sheet(`<div class="sheet-h"><h3>${x[0]}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div class="rules-body">${x[1]}</div>`); }; }
 // 魔物オリジナル融合（2026-10-26・全冒険者に公開。融合依頼の画面はふっかーだけ）：種類のちがう2匹＋1000モコ → 送信すると運営に届き、オリジナルの限定魔物が作られる
-const FUSE_MOKO = 500; let fuSel=[], fuStep=0;
+const FUSE_MOKO = 500; let fuSel=[], fuStep=0, fuMokoTip=0;
 function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
   const list=sortedUnits(), slot=i=>{ const x=S.units.find(z=>z.u===fuSel[i]); return x?`<img src="${cardURL(x.m,x.s)}" alt="">`:""; };
   const ready=fuSel.length===2, enough=(S.moko||0)>=FUSE_MOKO;
@@ -4551,6 +4553,14 @@ function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
   $("#fuGo").onclick=()=>{ if(fuSel.length!==2) return; fuStep=1; keep(); const s=$("#fuSend"); if(s) s.scrollIntoView({block:"center"}); };
   if($("#fuNo")) $("#fuNo").onclick=()=>{ fuStep=0; keep(); };
   if($("#fuSend")) $("#fuSend").onclick=e=>fuSend(e.currentTarget);
+  // モコが足りないときは、融合の画面に入るたびに知らせる
+  if(!fuMokoTip && (S.moko||0)<FUSE_MOKO){ fuMokoTip=1;
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><img src="moko.png" alt="" style="width:72px;height:72px;margin:0 auto"><p>モコが足りません</p>
+      <div class="note" style="margin:0">融合には <b>${FUSE_MOKO}モコ</b> 必要です（今 ${mokoFmt(S.moko||0)}モコ）。<br>モコはログインボーナスやランキング報酬の他にショップから購入することも可能です！</div>
+      <button class="btn gold" type="button" id="fmShop">ショップを見る</button><button class="btn ghost" type="button" id="fmOk">OK</button></div>`;
+    document.body.appendChild(bg); bg.querySelector("#fmOk").onclick=()=>bg.remove();
+    bg.querySelector("#fmShop").onclick=()=>{ bg.remove(); tab="mission"; render(); try{ $("#stage").scrollTop=0; }catch(e){} }; }
 }
 // 運営（ふっかー）用：届いた融合の一覧。これを見てオリジナル魔物の絵を作る
 async function fuAdmin(){ const el=$("#fuAdmin"); if(!el||!dexPeek()||!DB) return;
@@ -4587,7 +4597,7 @@ async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOK
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🧬</div><p>融合を送信しました！</p>
     <div class="note" style="margin:0">図鑑に載っていない魔物なので融合されるまでしばらくお待ちください✨<br><small>「${esc(req.an)}」＋「${esc(req.bn)}」。できあがったら<b>${rkName(fuseRank(A.m,B.m))}ランク</b>としてBOXに届きます</small></div><button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector("button").onclick=()=>{ bg.remove(); render(); }; }
-function renderBoxMenu(){
+function renderBoxMenu(){ fuMokoTip=0;
   $("#stage").innerHTML=`<h2>魔物</h2><p class="sub">${S.units.length}体の仲間（BOXは${BOX_MAX}体まで）。やりたいことをえらんでね。</p>
     <div class="box-menu">${true?`<button type="button" data-bm="fusion" class="fu-menu"><i>🧬</i><span><b>魔物オリジナル融合</b><small>種類のちがう魔物2匹で、オリジナルの融合魔物を作る</small></span></button>`:""}${BOX_MENU.map(([k,ic,nm,sub])=>`<button type="button" data-bm="${k}"><i>${ic}</i><span><b>${nm}</b><small>${sub}</small></span></button>`).join("")}
     <button type="button" data-bm="units" class="sm"><i>👾</i><span><b>手持ちの魔物を見る</b><small>魔物をタップして、配置・鍵・合成・進化など</small></span></button></div>`;
@@ -7319,6 +7329,21 @@ function anonWho(b){
   return lv<SAFE_LV?"🔰初心者冒険者":lv<=50?"中級冒険者":lv<=99?"上級冒険者":"猛者冒険者";
 }
 let itemBusy=false;
+// 魔物オリジナル融合のお知らせ（全冒険者に1回だけ・2026-10-27）
+function fuseNotice(){ if(S.nFuse1) return;
+  const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
+    S.nFuse1=1; save();
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🧬</div><p>魔物オリジナル融合ができるようになりました！</p>
+      <div class="note" style="margin:0;text-align:left">BOXメニューのいちばん上の「🧬 魔物オリジナル融合」から、<b>種類のちがう魔物2匹</b>と<b>${FUSE_MOKO}モコ</b>で、オリジナルの魔物を生み出せます。<br><br>
+      ・2匹のどちらかが限定ランクなら<b>限定ランク</b>、それ以外は新しい<b>融合ランク</b>の魔物が生まれます<br>
+      ・はじめての組み合わせは、運営が作るまで少しお待ちください。だれかがもう融合した組み合わせなら、すぐ手に入ります<br>
+      ・<b>みんなが生み出した融合ランクの魔物は、すでに図鑑で確認できます！</b>持っていない魔物はシルエットで、タップすると融合レシピがわかります<br>
+      ・いちばん最初に融合した冒険者は「👑 初代融合者」として図鑑にのります</div>
+      <button class="btn gold" type="button" id="fnGo">融合してみる</button><button class="btn ghost" type="button" id="fnOk">OK</button></div>`;
+    document.body.appendChild(bg); bg.querySelector("#fnOk").onclick=()=>bg.remove();
+    bg.querySelector("#fnGo").onclick=()=>{ bg.remove(); tab="box"; boxMode="fusion"; fuMokoTip=0; render(); try{ $("#stage").scrollTop=0; }catch(e){} }; };
+  setTimeout(show,3000); }
 // 盾のしくみが変わったお知らせ（全冒険者に1回だけ・2026-10-26）
 function shieldNotice(){ if(S.nShRefl) return;
   const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
@@ -9749,5 +9774,5 @@ async function titleRanks(){
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
-<script src="fz/fz.js?v=8" defer></script>
+<script src="fz/fz.js?v=9" defer></script>
 </body></html>
