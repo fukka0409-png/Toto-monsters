@@ -68,6 +68,7 @@ css.textContent=`
 #vto .vt-tk{max-width:520px;margin:12px auto 0}
 .vt-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;max-height:60vh;overflow-y:auto}
 .vt-pick button{border:3px solid #3a2306;border-radius:8px;background:#fffaf0;padding:4px;font:900 11px var(--f-body);color:#3a2306}
+.vt-pick button:disabled{opacity:.4}
 .vt-pick img{width:100%;aspect-ratio:1;object-fit:cover;image-rendering:pixelated;display:block}
 .ttl-mini.ttl-vote{top:1045px}
 .ttl-vote-tip{position:absolute;left:343px;top:1192px;width:360px;box-sizing:border-box;padding:10px 12px;background:#fff;border:4px solid #3a1a08;border-radius:18px;font:900 26px/1.2 var(--f-body);color:#c0392b;text-align:center;box-shadow:0 4px 0 #3a1a08;animation:vtTip 1.6s ease-in-out infinite;pointer-events:none}
@@ -110,15 +111,16 @@ function draw(){ if(!V) return; const B=V.querySelector("#vtBody"); const d=CUR|
   const tk=voting?`<div class="vt-panel vt-tk"><b>🎫 エントリー予約チケット（${vtk()}枚）</b><p class="vt-note">投票中に使うと、この投票が終わったあとの次の回のエントリーに先に入れます（モコはもらえません）。予約 ${(d.q||[]).length}人</p>
       <button class="vt-b gold" type="button" id="vtRes" ${vtk()&&!reserved&&!entrant?"":"disabled"} style="margin-top:6px">${reserved?"予約ずみ":entrant?"今回エントリー中なので予約できません":"チケットで次の回を予約"}</button></div>`:"";
   B.innerHTML=`<div class="vt-panel">${head}</div><div class="vt-rows">${rows}</div>${tk}`;
-  B.querySelectorAll("[data-ent]").forEach(b=>b.onclick=()=>pick(m=>enter(m)));
+  B.querySelectorAll("[data-ent]").forEach(b=>b.onclick=()=>pick(m=>enter(m), d.e.map(x=>x.m)));
   B.querySelectorAll("[data-vote]").forEach(b=>b.onclick=()=>vote(+b.dataset.vote));
-  const rb=B.querySelector("#vtRes"); if(rb) rb.onclick=()=>pick(m=>reserve(m));
+  const rb=B.querySelector("#vtRes"); if(rb) rb.onclick=()=>pick(m=>reserve(m), (d.q||[]).map(x=>x.m));
 }
-function pick(cb){ const ids=[...new Set((S.units||[]).map(z=>z.m))].map(mon).filter(Boolean).sort((a,b)=>(RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank))||(a.id-b.id));
+function pick(cb,taken){ taken=taken||[]; const ids=[...new Set((S.units||[]).map(z=>z.m))].map(mon).filter(Boolean).sort((a,b)=>(RANKS.indexOf(b.rank)-RANKS.indexOf(a.rank))||(a.id-b.id));
   if(!ids.length) return toast("BOXに魔物がいません");
   const bg=document.createElement("div"); bg.className="sheet-bg"; bg.style.zIndex=230;
   bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><div class="sheet-h"><h3>エントリーする魔物をえらぶ</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
-    <div class="vt-pick">${ids.map(m=>`<button type="button" data-m="${m.id}"><img src="${cardURL(m.id,0,120)}" alt="">${esc(m.name)}</button>`).join("")}</div></div>`;
+    <p class="note" style="margin:0 0 8px">同じ魔物はエントリーできません（ほかの冒険者がエントリーずみの魔物は選べません）</p>
+    <div class="vt-pick">${ids.map(m=>`<button type="button" data-m="${m.id}" ${taken.includes(m.id)?"disabled":""}><img src="${cardURL(m.id,0,120)}" alt="">${esc(m.name)}${taken.includes(m.id)?"<br><small>エントリーずみ</small>":""}</button>`).join("")}</div></div>`;
   document.body.appendChild(bg); const x=()=>bg.remove(); bg.querySelector(".x").onclick=x; bg.onclick=e=>{ if(e.target===bg) x(); };
   bg.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ x(); cb(+b.dataset.m); }); }
 async function enter(mid){
@@ -129,6 +131,7 @@ async function enter(mid){
     if(d.e.some(x=>x.uid===MYID)){ why="もうエントリーしています"; return; }
     if((d.pe||[]).includes(MYID)){ why="前の回にエントリーしたので、今回は休みです"; return; }
     if(d.e.length>=VT.N){ why="エントリー枠がうまりました"; return; }
+    if(d.e.some(x=>x.m===mid)){ why="その魔物はもうほかの冒険者がエントリーしています（同じ魔物はエントリーできません）"; return; }
     d.e.push({uid:MYID, nm:String(myName()).slice(0,12), m:mid}); if(d.e.length>=VT.N) d.st=now(); tx.set(ref(), d); ok=true; }); }
   catch(e){ why="通信できませんでした"; }
   if(!ok) return toast(why||"エントリーできませんでした");
@@ -140,6 +143,7 @@ async function reserve(mid){
     if(!d||!isVoting(d)){ why="予約チケットは投票中に使えます"; return; }
     if(d.e.some(x=>x.uid===MYID)){ why="今回エントリー中なので、次の回は休みです"; return; }
     d.q=d.q||[]; if(d.q.some(x=>x.uid===MYID)){ why="もう予約しています"; return; }
+    if(d.q.some(x=>x.m===mid)){ why="その魔物はもうほかの冒険者が予約しています（同じ魔物はエントリーできません）"; return; }
     d.q.push({uid:MYID, nm:String(myName()).slice(0,12), m:mid}); tx.set(ref(), d); ok=true; }); }
   catch(e){ why="通信できませんでした"; }
   if(!ok) return toast(why||"予約できませんでした");
