@@ -292,6 +292,12 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-lv{font-size:10px;margin-top:4px;background:#86bcbc;border-radius:8px;padding:1px 8px;white-space:nowrap}.hm-lv b{font-size:14px}
 .hm-rank{display:flex;flex-direction:column;align-items:center;background:#86bcbc;border-radius:10px;padding:3px 6px;border:2px solid #1d1d1d}.hm-rank small{font-size:9px}.hm-rank b{font-size:16px}
 .hm-card{grid-template-columns:auto 1fr auto auto!important}
+.hm-top2 .hm-card{grid-template-columns:auto minmax(0,auto) 1fr auto auto!important}
+.hm-top2 .hm-id{max-width:132px}
+.hm-moko{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;font-weight:900;color:#1d1d1d;white-space:nowrap}
+.hm-moko{overflow:hidden}
+.hm-moko img{width:30px;height:30px;flex:none}
+.hm-moko b{font-size:15px}.hm-moko small{font-size:10px}
 .sh-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .sh-item{display:flex;align-items:center;gap:10px;background:var(--bark);border:2px solid var(--line);border-radius:14px;padding:10px}
 .sh-item.on{border-color:var(--moss)}.sh-item.super{background:linear-gradient(135deg,var(--bark),#3a3214)}
@@ -1305,6 +1311,7 @@ const I18N_EN = {
 "次のランク戦が始まってから1時間は、だれでもひとことコメントを残せます！ 感想を他の冒険者と共有しよう！！✨": "For the first hour of the next ranked match, anyone can leave a short message! Share your thoughts with the other adventurers!! ✨",
 "📈 投資の素質": "📈 Investing skill",
 "⚔️ 合戦可能": "⚔️ Battle ready",
+"モコ": "Moko",
 "⚔️ 魔物合戦が追加されました！": "⚔️ Monster Battles are here!",
 "⚔️ 魔物合戦の遊び方": "⚔️ How to play Monster Battles",
 "⚔️ 魔物合戦": "⚔️ Monster Battle",
@@ -5334,6 +5341,9 @@ function tsHomeFit(){ try{ const hm=$(".home.ts"), ts=$("#hmTs"); if(!hm||!ts) r
   if(window.openTS) window.openTS({embed:ts}); }catch(e){} }
 addEventListener("resize",()=>{ if(tab==="home"&&$(".home.ts")) setTimeout(tsHomeFit,60); });
 addEventListener("orientationchange",()=>setTimeout(()=>{ if(tab==="home"&&$(".home.ts")) tsHomeFit(); },300));
+// モコ（新しいアイテム・2026-10-26）：S.moko に数をもつ。数え方は 1モコ・10モコ・100万モコ
+function mokoFmt(n){ n=Math.max(0,Math.floor(n||0)); if(n<10000) return n.toLocaleString();
+  const u=[[1e12,"兆"],[1e8,"億"],[1e4,"万"]]; let out="", r=n; for(const [v,k] of u){ if(r>=v){ out+=Math.floor(r/v)+k; r%=v; } } return out+(r?String(r):""); }
 function renderHome(){
   if(homeMode==="invest") return renderInvest();
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
@@ -5345,6 +5355,7 @@ function renderHome(){
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
         ${avatarImg(S.avatar,50)}
         <span class="hm-id"><b id="hmName"></b><span class="hm-lv">冒険者 Lv <b>${S.plv}</b></span></span>
+        <span class="hm-moko" aria-label="モコ"><img src="moko.png" alt=""><b>${mokoFmt(S.moko||0)}</b><small>モコ</small></span>
         <span class="hm-shield" id="hmShield" role="button" tabindex="0" aria-label="盾"><i>🛡</i><small>${shieldOn()?`耐久${shEquipped().dur}${S.shieldList.length>1?`+${S.shieldList.length-1}`:""}`:"盾"}</small></span>
         <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
       </button>
