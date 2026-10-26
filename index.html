@@ -5042,7 +5042,7 @@ async function fillFirstFuser(m){ if(!m||!m.fuse||!DB) return; const f=FMON_CACH
       if(noRcp&&q.a!=null){ f.a=q.a; f.b=q.b; f.an=q.an; f.bn=q.bn; m.recipe={a:q.a,b:q.b,an:q.an,bn:q.bn}; if(document.querySelector(`[data-ff="${m.id}"]`)&&!S.got[m.id]) return openDexHow(m.id); } } }   // 古い融合魔物は、最初の依頼からレシピをさがす
     const el=document.querySelector(`[data-ff="${m.id}"]`); if(el&&f.fn) el.textContent=`👑 初代融合者 ${f.fn}`; }catch(e){} }
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
-  if(!h && (!dexPeek() || m.fuse)) return openDexHow(id);   // 融合魔物は、持っていなければ（ふっかーでも）中もシルエット
+  if(!h && !dexPeek()) return openDexHow(id);   // 持っていない魔物は中もシルエット（ふっかーだけは見られる）
   const draw=()=>{ const c=S.got[id]||0, T=dexTotal(id), st=dexStats(), p=dexPrice(id);
     const bg=sheet(`<div class="sheet-h"><h3>${esc(m.name)}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="detail"><img src="${cardURL(id,0,320)}" alt="${esc(m.name)}"><div>
