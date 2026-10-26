@@ -6501,12 +6501,17 @@ const NAMED_GIFTS = [
   { id:"ng-2026-10-25-toiro", coins:100000, to:{ "十色くん":1 } },
   { id:"ng-2026-10-25-fukka", coins:50000, to:{ "ふっかー":1 } },
   { id:"ng-2026-10-26-fukka-moko", moko:100, to:{ "ふっかー":1 } },
+  { id:"ng-2026-10-26-goods-keeko", coins:10000, ic:"🔥", title:"購入してくれたグッズの報酬だよ🔥", en:"A reward for buying our goods 🔥", to:{ "ケエコ":1 } },
+  { id:"ng-2026-10-26-goods-rice", coins:320000, ic:"🔥", title:"購入してくれたグッズの報酬だよ🔥", en:"A reward for buying our goods 🔥", to:{ "ライス大好き":1 } },
+  { id:"ng-2026-10-26-goods-yoko", coins:10000, ic:"🔥", title:"購入してくれたグッズの報酬だよ🔥", en:"A reward for buying our goods 🔥", to:{ "yoko★":1 } },
+  { id:"ng-2026-10-26-goods-love", coins:130000, ic:"🔥", title:"購入してくれたグッズの報酬だよ🔥", en:"A reward for buying our goods 🔥", to:{ "love":1 } },
+  { id:"ng-2026-10-26-goods-ojina", coins:60000, ic:"🔥", title:"購入してくれたグッズの報酬だよ🔥", en:"A reward for buying our goods 🔥", to:{ "おじな":1 } },
   { id:"ng-2026-10-24-yoko-owabi", coins:50000, title:"🙏 お詫び：ランク戦が始まってすぐの1時間に、アイテムを使われてしまっていました🙏", en:"Apology: items were used on you during the first hour of the ranked match 🙏", to:{ "yoko★":1 } },   // 別のお知らせとして届く
 ];
 function checkNamedGift(){
   if(!MYID||isFreshSave(S)) return; S.ngift=S.ngift||[];
   const me=normName(myName()); let tk=0, cn=0, stn=0, mk=0; const ms=[];
-  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; if(g.title){ presentAdd({ic:"🙏", title:g.title, en:g.en||"", coins:(g.coins||0)*n, ticket:(g.ticket||0)*n, stone:(g.stone||0)*n, moko:(g.moko||0)*n}); return; } tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; mk+=(g.moko||0)*n; (g.mons||[]).forEach(id=>{ if(mon(id)) ms.push({m:id,k:true}); }); });
+  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; if(g.title){ presentAdd({ic:g.ic||"🙏", title:g.title, en:g.en||"", coins:(g.coins||0)*n, ticket:(g.ticket||0)*n, stone:(g.stone||0)*n, moko:(g.moko||0)*n}); return; } tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; mk+=(g.moko||0)*n; (g.mons||[]).forEach(id=>{ if(mon(id)) ms.push({m:id,k:true}); }); });
   if(ms.length) presentAdd({ic:"👑", title:"運営からのプレゼント：限定キャラ", en:"A present from the team: limited character", mons:ms});
   if(!tk&&!cn&&!stn&&!mk){ save(); return; }
   presentAdd({ic:"🎁", title:"運営からのプレゼント", en:"A present from the team", coins:cn, ticket:tk, stone:stn, moko:mk}); return;
