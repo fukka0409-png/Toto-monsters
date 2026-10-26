@@ -4351,7 +4351,7 @@ setInterval(()=>{
   document.querySelectorAll("[data-shopcd]").forEach(el=>{ const l=shopLeft(el.dataset.shopcd); if(!l&&tab==="mission") return render(); el.textContent=fmt(l); });
   document.querySelectorAll("[data-mcd]").forEach(el=>{ el.textContent=fmt(missionLeft(+el.dataset.mcd)); });
 },1000);
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ tab=b.dataset.tab; if(tab==="home") homeMode="scene"; if(tab==="box"){ boxMode="menu"; sellMode=false; lockMode=false; sellSel.clear(); } render(); $("#stage").scrollTop=0; });
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ tab=b.dataset.tab; if(tab==="home") homeMode="scene"; if(tab==="box"){ boxMode="menu"; sellMode=false; lockMode=false; sellSel.clear(); lockSel.clear(); } render(); $("#stage").scrollTop=0; });
 
 /* ===== PC向け：右側のランキング・フレンド欄 ===== */
 const isPC=()=>window.matchMedia("(min-width:1100px)").matches;
@@ -4481,18 +4481,26 @@ function renderBox(){
   const list=boxMode==="evo"?sortedUnits().filter(x=>mon(x.m).next).sort((a,b)=>evoReady(b)-evoReady(a)):sortedUnits();
   [...sellSel].forEach(u=>{ const x=S.units.find(z=>z.u===u); if(!x||x.k) sellSel.delete(u); });
   const total=[...sellSel].reduce((t,u)=>t+sellPrice(S.units.find(z=>z.u===u)),0);
-  $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}<p class="sub">${S.units.length} / ${BOX_MAX}体の仲間。${lockMode?"🔒 タップした魔物に鍵をかけたり外したりできます。鍵付きは合成の素材・売却に使われません。":sellMode?"売却する魔物をタップで選んでね（鍵付きは選べません）。":"タップして合成でレベルを上げよう。"}</p>
+  $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}<p class="sub">${S.units.length} / ${BOX_MAX}体の仲間。${lockMode?"🔒 魔物をタップしていくつでも選んで、下のボタンでまとめて鍵をかけたり外したりできます。鍵付きは合成の素材・売却に使われません。":sellMode?"売却する魔物をタップで選んでね（鍵付きは選べません）。":"タップして合成でレベルを上げよう。"}</p>
   <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r}</button>`).join("")}
     <button class="chip" id="lockToggle" type="button" aria-pressed="${lockMode}" style="margin-left:auto">${lockMode?"鍵をおわる":"🔒 鍵をかける"}</button>
     ${boxMode==="sell"?"":`<button class="chip" id="sellToggle" type="button" aria-pressed="${sellMode}">${sellMode?"売却をやめる":"まとめて売却"}</button>`}</div>
   ${sellMode?`<div class="sellbar"><span>${sellSel.size}体 ・ <b>+${total.toLocaleString()}</b>コイン</span>
     <button class="chip" type="button" data-sellr="C">Cを全部選ぶ</button><button class="chip" type="button" data-sellr="B">Bを全部選ぶ</button><button class="chip" type="button" data-sellr="A">Aを全部選ぶ</button><button class="chip" id="sellClear" type="button">解除</button>
     <button class="btn gold" id="sellGo" type="button" ${sellSel.size?"":"disabled"}>売却</button></div>`:""}
-  ${boxMode==="fuse"?`<p class="sub" style="margin:0 0 6px">育てたい魔物をタップしてね</p>`:boxMode==="evo"?`<p class="sub" style="margin:0 0 6px">「進化可」がついた魔物をタップして進化しよう</p>`:""}${list.length?`<div class="grid">${list.map(x=>unitCard(x,sellMode?((x.k?"dim":"")+(sellSel.has(x.u)?" sel":"")):"")).join("")}</div>`:`<div class="empty">${boxMode==="evo"?"進化できる魔物はまだいません（キノコ・たけしなど）":"このランクの魔物はまだいません"}</div>`}`;
+  ${lockMode?`<div class="sellbar"><span>${lockSel.size}体えらんだ</span>
+    <button class="chip" type="button" id="lockAll">表示中を全部選ぶ</button><button class="chip" id="lockClear" type="button">選ぶのをやめる</button>
+    <button class="btn gold" id="lockOn" type="button" ${lockSel.size?"":"disabled"}>🔒 鍵をかける</button><button class="btn" id="lockOff" type="button" ${lockSel.size?"":"disabled"}>🔓 鍵を外す</button></div>`:""}
+  ${boxMode==="fuse"?`<p class="sub" style="margin:0 0 6px">育てたい魔物をタップしてね</p>`:boxMode==="evo"?`<p class="sub" style="margin:0 0 6px">「進化可」がついた魔物をタップして進化しよう</p>`:""}${list.length?`<div class="grid">${list.map(x=>unitCard(x,sellMode?((x.k?"dim":"")+(sellSel.has(x.u)?" sel":"")):lockMode?(lockSel.has(x.u)?"sel":""):"")).join("")}</div>`:`<div class="empty">${boxMode==="evo"?"進化できる魔物はまだいません（キノコ・たけしなど）":"このランクの魔物はまだいません"}</div>`}`;
   bindBoxTop();
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.onclick=()=>{boxFilter=b.dataset.f;render()});
   if($("#sellToggle")) $("#sellToggle").onclick=()=>{ sellMode=!sellMode; lockMode=false; sellSel.clear(); render(); };
-  $("#lockToggle").onclick=()=>{ lockMode=!lockMode; if(boxMode==="sell"&&lockMode) boxMode="units"; sellMode=false; sellSel.clear(); render(); };
+  $("#lockToggle").onclick=()=>{ lockMode=!lockMode; if(boxMode==="sell"&&lockMode) boxMode="units"; sellMode=false; sellSel.clear(); lockSel.clear(); render(); };
+  if(lockMode){ const keep=()=>{ const y=$("#stage").scrollTop; render(); $("#stage").scrollTop=y; };
+    $("#lockAll").onclick=()=>{ list.forEach(x=>lockSel.add(x.u)); keep(); };
+    $("#lockClear").onclick=()=>{ lockSel.clear(); keep(); };
+    const setLock=on=>{ let n=0; S.units.forEach(x=>{ if(lockSel.has(x.u)&&!!x.k!==on){ x.k=on; n++; } }); lockSel.clear(); save(); try{ SFX.tap(); }catch(e){} keep(); toast(on?`${n}体に鍵をかけました`:`${n}体の鍵を外しました`); };
+    $("#lockOn").onclick=()=>setLock(true); $("#lockOff").onclick=()=>setLock(false); }
   if(sellMode){
     document.querySelectorAll("[data-sellr]").forEach(b=>b.onclick=()=>{ const rk=b.dataset.sellr; S.units.forEach(x=>{ if(!x.k && x.u!==S.guard && mon(x.m).rank===rk) sellSel.add(x.u); }); render(); });   // 鍵付き・配置中はえらばない
     $("#sellClear").onclick=()=>{ sellSel.clear(); render(); };
@@ -4500,14 +4508,14 @@ function renderBox(){
   }
   document.querySelectorAll(".card").forEach(b=>b.onclick=()=>{
     const u=+b.dataset.u;
-    if(lockMode){ const x=S.units.find(z=>z.u===u); x.k=!x.k; save(); SFX.tap(); const y=$("#stage").scrollTop; render(); $("#stage").scrollTop=y; return toast(x.k?`${mon(x.m).name}に鍵をかけました`:`${mon(x.m).name}の鍵を外しました`); }
+    if(lockMode){ lockSel.has(u)?lockSel.delete(u):lockSel.add(u); try{ SFX.tap(); }catch(e){} const y=$("#stage").scrollTop; render(); $("#stage").scrollTop=y; return; }   // 鍵：複数えらんでまとめてかける・外す
     if(!sellMode){ if(boxMode==="fuse") return openFuse(u); return openUnit(u); }
     const x=S.units.find(z=>z.u===u); if(x.k) return toast("保護中の魔物は売却できません");
     sellSel.has(u)?sellSel.delete(u):sellSel.add(u); render();
   });
 }
 
-let sellMode=false, lockMode=false; const sellSel=new Set();
+let sellMode=false, lockMode=false; const sellSel=new Set(), lockSel=new Set();
 /* ---------- 売却価格は図鑑の「獲得数の希少さ」で決まる（2026-10-21） ----------
    全冒険者の過去の獲得数の合計を T、ランキングの参加人数を N とすると、1体の価格 = N×1000÷T（最低1コイン）
    （自分1人だけが1体なら N×1000。1人が2体でも、2人が1体ずつでも同じ価値） */
