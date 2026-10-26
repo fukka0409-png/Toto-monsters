@@ -105,7 +105,7 @@ function draw(){ if(!V) return; const B=V.querySelector("#vtBody"); const d=CUR|
       <button class="vt-b gold" type="button" data-ent="${i}" ${entrant||rest||voting?"disabled":""}>エントリー</button></div>`;
     const m=mon(x.m), see=showAll||(entrant&&top.includes(i)), me=x.uid===MYID;
     return `<div class="vt-row"><div class="vt-slot"><img src="${m?cardURL(m.id,0,160):""}" alt=""></div>
-      <div class="vt-info"><b>${showAll&&top[0]===i&&d.c[i]>0?'<span class="vt-rank">1位</span>':""}${esc(m?m.name:"？？？")}</b><small>${esc(x.nm||"冒険者")}${x.res?"（予約）":""}${me?" ・ あなた":""}</small>
+      <div class="vt-info"><b>${showAll&&top[0]===i&&d.c[i]>0?'<span class="vt-rank">1位</span>':""}${esc(m?m.name:"？？？")}</b><small>${me?"あなたのエントリー":"エントリー"+(i+1)}${x.res?"（予約）":""}</small>
         ${see?`<span class="vt-cnt">${d.c[i]}票</span>`:voting?`<small>投票数：？？？</small>`:""}</div>
       ${voting?`<button class="vt-b" type="button" data-vote="${i}" ${voted!=null||me?"disabled":""}>${voted===i?"投票した！":"投票する"}</button>`:`<span></span>`}</div>`; }).join("");
   const tk=voting?`<div class="vt-panel vt-tk"><b>🎫 エントリー予約チケット（${vtk()}枚）</b><p class="vt-note">投票中に使うと、この投票が終わったあとの次の回のエントリーに先に入れます（モコはもらえません）。予約 ${(d.q||[]).length}人</p>
@@ -132,7 +132,7 @@ async function enter(mid){
     if((d.pe||[]).includes(MYID)){ why="前の回にエントリーしたので、今回は休みです"; return; }
     if(d.e.length>=VT.N){ why="エントリー枠がうまりました"; return; }
     if(d.e.some(x=>x.m===mid)){ why="その魔物はもうほかの冒険者がエントリーしています（同じ魔物はエントリーできません）"; return; }
-    d.e.push({uid:MYID, nm:String(myName()).slice(0,12), m:mid}); if(d.e.length>=VT.N) d.st=now(); tx.set(ref(), d); ok=true; }); }
+    d.e.push({uid:MYID, m:mid}); if(d.e.length>=VT.N) d.st=now(); tx.set(ref(), d); ok=true; }); }
   catch(e){ why="通信できませんでした"; }
   if(!ok) return toast(why||"エントリーできませんでした");
   S.moko=(S.moko||0)+VT.ENTRY_MOKO; save(); try{ SFX.coin(); }catch(e){} toast(`エントリーしました！ +${VT.ENTRY_MOKO}モコ`); }
@@ -144,7 +144,7 @@ async function reserve(mid){
     if(d.e.some(x=>x.uid===MYID)){ why="今回エントリー中なので、次の回は休みです"; return; }
     d.q=d.q||[]; if(d.q.some(x=>x.uid===MYID)){ why="もう予約しています"; return; }
     if(d.q.some(x=>x.m===mid)){ why="その魔物はもうほかの冒険者が予約しています（同じ魔物はエントリーできません）"; return; }
-    d.q.push({uid:MYID, nm:String(myName()).slice(0,12), m:mid}); tx.set(ref(), d); ok=true; }); }
+    d.q.push({uid:MYID, m:mid}); tx.set(ref(), d); ok=true; }); }
   catch(e){ why="通信できませんでした"; }
   if(!ok) return toast(why||"予約できませんでした");
   addItem("vtk",-1); save(); toast("次の回のエントリーを予約しました！"); }
