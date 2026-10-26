@@ -3693,6 +3693,10 @@ async function checkRefs(){ if(!DB||!MYID) return;
       <button class="btn gold" type="button">うけとる</button></div>`;
     document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>{ bg.remove(); try{ SFX.coin(); }catch(e){} render(); };
   }catch(e){} }
+// 「ふっかー」は製作者の名前。ふっかーという言葉が入った名前は、新しく登録・変更できない（カタカナ・半角・空白もまとめて調べる）
+const hira=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"").replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+const reservedName=n=>{ const h=hira(n).replace(/[〜~ｰ−-]/g,"ー"); return h.includes("ふっかー"); };
+const RESERVED_MSG="「ふっかー」の入った名前は使えません。別の名前にしてください";
 const nameKey=async n=>(await sha256(n.normalize("NFKC").trim().toLowerCase())).slice(0,40);
 const authEmail=k=>`u${k.slice(0,32)}@toto-monsters.app`;
 const authPass=pin=>`toto-${pin}-monsters`;
@@ -3720,6 +3724,7 @@ function openLogin(mode){
       const name=bg.querySelector("#lgName").value.replace(/\s+/g," ").trim().slice(0,12);
       const pin=bg.querySelector("#lgPin").value.trim();
       if(!name) return say("名前を入力してください");
+      if(m==="new" && reservedName(name)) return say(RESERVED_MSG);
       if(!/^[0-9]{4}$/.test(pin)) return say("数字を4桁で入力してください");
       const refName=m==="new"?((bg.querySelector("#lgRef")||{}).value||"").replace(/\s+/g," ").trim().slice(0,12):"";
       go.disabled=true; go.textContent="確認中…";
@@ -4497,7 +4502,7 @@ const boxSeg=()=>{ const cur=[...BOX_MENU,["fusion","🧬","魔物オリジナ�
   return `<div class="box-top"><button class="chip" type="button" id="boxBack">← BOXメニュー</button>${cur?`<b>${cur[1]} ${cur[2]}</b>`:"<b>手持ちの魔物</b>"}${h?`<button class="box-help" type="button" id="boxHelp">❓ ${h[0]}</button>`:""}</div>`; };
 function bindBoxTop(){ const b=document.getElementById("boxBack"); if(b) b.onclick=()=>{ boxMode="menu"; sellMode=false; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; };
   const h=document.getElementById("boxHelp"); if(h) h.onclick=()=>{ const x=BOX_HELP[boxMode]; const bg=sheet(`<div class="sheet-h"><h3>${x[0]}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div class="rules-body">${x[1]}</div>`); }; }
-// 魔物オリジナル融合（2026-10-26・ふっかーだけに表示）：種類のちがう2匹＋1000モコ → 送信すると運営に届き、オリジナルの限定魔物が作られる
+// 魔物オリジナル融合（2026-10-26・全冒険者に公開。融合依頼の画面はふっかーだけ）：種類のちがう2匹＋1000モコ → 送信すると運営に届き、オリジナルの限定魔物が作られる
 const FUSE_MOKO = 500; let fuSel=[], fuStep=0;
 function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
   const list=sortedUnits(), slot=i=>{ const x=S.units.find(z=>z.u===fuSel[i]); return x?`<img src="${cardURL(x.m,x.s)}" alt="">`:""; };
@@ -4548,14 +4553,14 @@ async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOK
   document.body.appendChild(bg); bg.querySelector("button").onclick=()=>{ bg.remove(); render(); }; }
 function renderBoxMenu(){
   $("#stage").innerHTML=`<h2>魔物</h2><p class="sub">${S.units.length}体の仲間（BOXは${BOX_MAX}体まで）。やりたいことをえらんでね。</p>
-    <div class="box-menu">${dexPeek()?`<button type="button" data-bm="fusion" class="fu-menu"><i>🧬</i><span><b>魔物オリジナル融合</b><small>種類のちがう魔物2匹で、世界に1体だけの限定魔物を作る</small></span></button>`:""}${BOX_MENU.map(([k,ic,nm,sub])=>`<button type="button" data-bm="${k}"><i>${ic}</i><span><b>${nm}</b><small>${sub}</small></span></button>`).join("")}
+    <div class="box-menu">${true?`<button type="button" data-bm="fusion" class="fu-menu"><i>🧬</i><span><b>魔物オリジナル融合</b><small>種類のちがう魔物2匹で、世界に1体だけの限定魔物を作る</small></span></button>`:""}${BOX_MENU.map(([k,ic,nm,sub])=>`<button type="button" data-bm="${k}"><i>${ic}</i><span><b>${nm}</b><small>${sub}</small></span></button>`).join("")}
     <button type="button" data-bm="units" class="sm"><i>👾</i><span><b>手持ちの魔物を見る</b><small>魔物をタップして、配置・鍵・合成・進化など</small></span></button></div>`;
   document.querySelectorAll("[data-bm]").forEach(b=>b.onclick=()=>{ try{ SFX.tap(); }catch(e){} boxMode=b.dataset.bm; sellMode=boxMode==="sell"; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; }); }
 function renderBox(){
   if(boxMode==="dexF") boxMode="dexM";   // 枠図鑑は終了
   if(boxMode==="menu") return renderBoxMenu();
   if(boxMode==="shield") return renderShieldBox();
-  if(boxMode==="fusion") return dexPeek()?renderFusion():(boxMode="menu",renderBoxMenu());
+  if(boxMode==="fusion") return renderFusion();   // 2026-10-26：全冒険者に公開
   if(boxMode==="dexM"){ dexMode="mon"; return renderDex(); }
   if(!["units","fuse","evo","sell"].includes(boxMode)) boxMode="units";
   if(boxMode==="sell") sellMode=true;
@@ -5918,6 +5923,7 @@ function editName(){
     const v=inp.value.replace(/\s+/g," ").trim().slice(0,12);
     if(!v){ msg.textContent="名前を入力してください"; return; }
     if(v===S.name){ bg.remove(); return; }
+    if(reservedName(v) && !reservedName(S.name)){ msg.textContent=RESERVED_MSG; return; }
     if(online){
       go.disabled=true; go.textContent="確認中…";
       try{
