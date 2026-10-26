@@ -83,7 +83,7 @@ function send(r){ if(!r||!PIC[r.id]) return; const def=`${r.an||"？"}×${r.bn||
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><img src="${PIC[r.id]}" alt="" style="width:140px;height:140px;margin:0 auto;image-rendering:pixelated;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/14px 14px;border-radius:10px">
     <p>${esc(r.nm)}さんに送る</p><div class="note" style="margin:0">融合した魔物の名前（あとから変えられません）</div>
     <input id="fzNm" type="text" maxlength="24" value="${esc(def)}" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:2px solid #3a2306;font:900 15px var(--f-body)">
-    <button class="btn gold" type="button" id="fzGo">📨 限定ランクで送る</button><button class="btn ghost" type="button" id="fzNo">やめる</button></div>`;
+    <button class="btn gold" type="button" id="fzGo">📨 融合ランクで送る</button><button class="btn ghost" type="button" id="fzNo">やめる</button></div>`;
   document.body.appendChild(bg); bg.querySelector("#fzNo").onclick=()=>bg.remove();
   bg.querySelector("#fzGo").onclick=async e=>{ const nm=bg.querySelector("#fzNm").value.trim().slice(0,24); if(!nm) return toast("名前を入れてね");
     const btn=e.currentTarget; btn.disabled=true; btn.textContent="送信中…";
@@ -91,7 +91,7 @@ function send(r){ if(!r||!PIC[r.id]) return; const def=`${r.an||"？"}×${r.bn||
     try{ await withTO(DB.collection("fusemon").doc(String(id)).set({id, name:nm, img:PIC[r.id], uid:r.uid, req:r.id, reqAt:r.at, a:r.a, b:r.b, an:r.an||"", bn:r.bn||"", at:gnow()}));
       await withTO(DB.collection("items").add({att:MYID, def:r.uid, attP:S.plv, item:"fmon", fid:id, qty:1, coins:0, at:gnow()}));
       DONE[r.id]={img:PIC[r.id],id,name:nm}; FMON_CACHE[id]={name:nm,img:PIC[r.id]}; delete PIC[r.id]; bg.remove(); draw(); try{ SFX.coin(); }catch(e){} toast(`${r.nm}さんに「${nm}」を送りました！`); }
-    catch(err){ btn.disabled=false; btn.textContent="📨 限定ランクで送る"; toast("送れませんでした。もう一度ためしてね"); } }; }
+    catch(err){ btn.disabled=false; btn.textContent="📨 融合ランクで送る"; toast("送れませんでした。もう一度ためしてね"); } }; }
 // 同じ組み合わせ：前に作った魔物（同じ番号）をそのまま送る
 async function sendSame(r,btn){ const pv=r&&prevOf(r); if(!pv) return; const img=pv.img||(FMON_CACHE[pv.id]||{}).img; if(!img) return toast("前の魔物の絵が読みこめませんでした");
   btn.disabled=true; btn.textContent="送信中…";

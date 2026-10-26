@@ -24,7 +24,7 @@ img{max-width:100%}
   --sky:#7fcbe3;        /* cloud shading */
   --berry:#e2546f;      /* blush / alerts */
   --line:#34493f;
-  --r-c:#9aa59e; --r-b:#5fb7e0; --r-a:#b78cf0; --r-s:#f0b440; --r-z:#ff5e8a; --r-l:#ffd75e;
+  --r-c:#9aa59e; --r-b:#5fb7e0; --r-a:#b78cf0; --r-s:#f0b440; --r-z:#ff5e8a; --r-l:#ffd75e; --r-f:#7ee8c8;
   --f-pix:"DotGothic16","Hiragino Kaku Gothic ProN","Noto Sans JP",monospace;
   --f-body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Noto Sans JP",system-ui,sans-serif;
   color-scheme:dark;
@@ -103,7 +103,7 @@ details.rates summary{cursor:pointer;font-weight:700}
 .rate-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums}
 .note{font-size:12px;color:var(--mist-dim);margin-top:8px}
 .rk{display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 4px;border-radius:5px;font-family:var(--f-pix);font-size:13px;color:#111;line-height:1}
-.rk-C{background:var(--r-c)}.rk-B{background:var(--r-b)}.rk-A{background:var(--r-a)}.rk-S{background:var(--r-s)}.rk-Z{background:linear-gradient(90deg,#ff5e8a,#ffb84d,#7ee08a,#5fb7e0,#b78cf0);color:#111}.rk-L{background:linear-gradient(135deg,#fff3c4,#ffd75e 45%,#ff9ed2);color:#5a2a00;font-size:0!important;box-shadow:0 0 6px #ffd75e}.rk-L::after{content:"限定";font-size:11px;font-family:var(--f-jp,inherit);font-weight:900;letter-spacing:0}html[lang=en] .rk-L::after{content:"LTD"}
+.rk-C{background:var(--r-c)}.rk-B{background:var(--r-b)}.rk-A{background:var(--r-a)}.rk-S{background:var(--r-s)}.rk-Z{background:linear-gradient(90deg,#ff5e8a,#ffb84d,#7ee08a,#5fb7e0,#b78cf0);color:#111}.rk-L{background:linear-gradient(135deg,#fff3c4,#ffd75e 45%,#ff9ed2);color:#5a2a00;font-size:0!important;box-shadow:0 0 6px #ffd75e}.rk-L::after{content:"限定";font-size:11px;font-family:var(--f-jp,inherit);font-weight:900;letter-spacing:0}html[lang=en] .rk-L::after{content:"LTD"}.rk-F{background:linear-gradient(135deg,#d6fff1,#7ee8c8 45%,#b78cf0);color:#1b3a33;font-size:0!important;box-shadow:0 0 6px #7ee8c8}.rk-F::after{content:"融合";font-size:11px;font-family:var(--f-jp,inherit);font-weight:900;letter-spacing:0}html[lang=en] .rk-F::after{content:"FUSE"}
 /* grids */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .card{position:relative;border:0;padding:0;background:none;border-radius:12px;text-align:left}
@@ -3179,13 +3179,14 @@ const DEX_MONS = MONSTERS.filter(m=>m.rank!=="L"&&!m.gift);   // 図鑑・コン
 const START_MONSTER = 1; // 最初から全員が持っている魔物
 
 /* ---------- ルール ---------- */
-const RANKS = ["C","B","A","S","Z","L"];   // L＝限定ランク（Zより上・配布限定）
+const RANKS = ["C","B","A","S","Z","L","F"];   // F＝融合ランク（魔物オリジナル融合で生まれた魔物・2026-10-26）
+   // L＝限定ランク（Zより上・配布限定）
 const RATES = { Z:0.0025, S:0.075, A:10, B:28, C:61.9225 };   // 2026-10-26 魔物ガチャのS・Zを20分の1に（前は Z:0.05, S:1.5）     // %
 const FRAME_RATES = { Z:0.05, S:1.5, A:10, B:28, C:60.45 };   // アイコン枠・装飾ガチャは前のまま
 const COST = 100, DAILY = 1000, MAX_STAGE = 9;
 const HOURLY = 100, HOURLY_MS = 15*60*1000;   // 15分おきのボーナス
 const FUSE_COIN = 10;
-const SELL = { L:20000, Z:10000, S:1000, A:100, B:50, C:10 };
+const SELL = { F:20000, L:20000, Z:10000, S:1000, A:100, B:50, C:10 };
 const LIMITED_SELL_LV = 50;   // 限定ランクを売ると、手持ちの魔物すべてのレベル+50
 /* ---------- アイテム ---------- */
 const ITEM_COST = 1000, MAGNET = 0.01, FIRE_LV = 30, BOMB_LV = 2;
@@ -3272,11 +3273,12 @@ const evoLocked = x => { const m=mon(x.m); return !!(m && m.cap!=null && isFinit
 // Lv → Lv+1 に必要な経験値: 後半ほど大きく、ランクが高いほど多い (Cランクは Lv1→100 で合計約10万)
 const RANK_STEP = 1.7;   // ランクが1つ上がるごとに、さらに1.7倍むずかしく
 const RANK_MUL = Object.fromEntries(Object.entries({ C:1, B:1.5, A:2, S:3, Z:5, L:7 }).map(([r,v],i)=>[r, v*Math.pow(RANK_STEP,i)]));   // L＝限定ランク（これがないと限定ランクの合成で経験値が計算できなかった）
+RANK_MUL.F = RANK_MUL.L;   // 融合ランクは限定ランクと同じ育ちやすさ
 const LV_HARD = 1;   // レベルアップの難しさ（2 = 以前の2倍の経験値が必要）
 const needExpR = (lv, rank) => Math.round((100 + 0.2744*lv*lv) * RANK_MUL[rank] * LV_HARD / 10) * 10;
 const needFor = u => needExpR(u.l, mon(u.m).rank);
 // ランクごとの枠 (ランクが高いほど豪華)
-const RANK_FRAME = { C:1, B:3, A:4, S:7, Z:8, L:9 };
+const RANK_FRAME = { C:1, B:3, A:4, S:7, Z:8, L:9, F:9 };
 const STAGES = [
   {name:"苔の枠",  a:"#5f7a3a", b:"#a6c24a", c:"#2f3f1e"},
   {name:"樫の枠",  a:"#7a5232", b:"#c08a55", c:"#3d2614"},
@@ -3337,7 +3339,7 @@ fixPlayer();
 // コンプ率：図鑑の魔物を持っている割合（0〜100%）。冒険者EXPの増え方の倍率：0%で1倍 → 100%で1.5倍（だんだん上がる）。魂と200%は2026-10-24になくした
 const COMP_EXP_MUL = 2, SOUL_MAX = 100;
 const compDone = () => DEX_MONS.every(m=>S.got[m.id]);
-const soulOf = id => { const m=mon(id); if(m&&m.rank==="L") return 0; return Math.min(SOUL_MAX, Math.floor(((S.soul||{})[id])||0)); };   // 限定ランクには魂はない
+const soulOf = id => { const m=mon(id); if(m&&(m.rank==="L"||m.rank==="F")) return 0; return Math.min(SOUL_MAX, Math.floor(((S.soul||{})[id])||0)); };   // 限定ランクには魂はない
 const soulPct = () => 0;   // 魂はなくした
 const compMul = c => 1 + 0.5*Math.max(0,Math.min(100,c))/100;
 const mulTxt = c => (Math.round(compMul(c)*100)/100).toString();
@@ -3846,7 +3848,7 @@ function loadImages(){
 // 融合で生まれたオリジナル魔物（2026-10-26）：MONSTERS にない番号は、セーブ（S.fmons）か読みこんだ一覧（FMON_CACHE）から追加する
 const FMON_CACHE = {};
 function fmonReg(id){ const f=((typeof S!=="undefined"&&S&&S.fmons)||{})[id]||FMON_CACHE[id]; if(!f||!f.img) return undefined;
-  const m={ id, name:f.name||"融合魔物", rank:"L", exp:10000, gift:1, fuse:1, img:f.img }; MONSTERS.push(m);
+  const m={ id, name:f.name||"融合魔物", rank:"F", exp:10000, gift:1, fuse:1, img:f.img }; MONSTERS.push(m);
   const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} }; im.src=f.img; return m; }
 const mon = id => MONSTERS.find(m=>m.id===id) || fmonReg(id);
 const rankColor = r => getComputedStyle(document.documentElement).getPropertyValue("--r-"+r.toLowerCase()).trim();
@@ -4052,7 +4054,7 @@ async function trimBox(){
   try{ if(DB) await loadDexStats(); }catch(e){}   // 売却価格は、いつもの売却と同じ（図鑑の獲得数で決まる）
   if(S.boxTrim===1) return; S.boxTrim=1;
   const over=(S.units||[]).length-BOX_MAX; if(over<=0){ save(); return; }
-  const cand=S.units.filter(u=>{ const m=mon(u.m); return m && m.rank!=="L" && u.u!==S.guard; })
+  const cand=S.units.filter(u=>{ const m=mon(u.m); return m && m.rank!=="L" && m.rank!=="F" && u.u!==S.guard; })
     .sort((a,b)=>(RANKS.indexOf(mon(a.m).rank)-RANKS.indexOf(mon(b.m).rank)) || ((a.k?1:0)-(b.k?1:0)) || (a.l-b.l) || (a.u-b.u)).slice(0,over);
   const del=new Set(cand.map(u=>u.u)); let coins=0; const byRank={};
   cand.forEach(u=>{ let c=0; try{ c=sellPrice(u)||0; }catch(e){} coins+=c; const rk=mon(u.m).rank; byRank[rk]=(byRank[rk]||0)+1; });
@@ -4188,7 +4190,7 @@ function showReveal(res,title,opts={}){
         if(!ok.length){ b.disabled=true; b.textContent=left.some(sellLockLeft)?(L?"⏳ No selling for 12h":"⏳12時間売却不可"):(L?"Can't sell":"売却できません"); return; }
         b.disabled=false; b.textContent=(L?"Sell ":"売却 ")+(ok.length>1?`×${ok.length} `:"")+"+"+ok.reduce((t,z)=>t+sellPrice(z),0).toLocaleString(); });
       const rk=el.querySelector("#rvRk"); if(rk){ const by={}; units(G.flatMap(g=>g.us)).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard).forEach(z=>{ const r=mon(z.m).rank; (by[r]=by[r]||[]).push(z.u); });
-        const rs=["C","B","A","S","Z","L"].filter(r=>by[r]); rk.innerHTML=rs.length?`<small>${L?"Sell by rank":"ランク別に売却"}</small>${rs.map(r=>`<button type="button" data-rks="${r}"><span class="rk rk-${r}">${r==="L"?(L?"Ltd":"限定"):r}</span>×${by[r].length}</button>`).join("")}`:"";
+        const rs=["C","B","A","S","Z","L","F"].filter(r=>by[r]); rk.innerHTML=rs.length?`<small>${L?"Sell by rank":"ランク別に売却"}</small>${rs.map(r=>`<button type="button" data-rks="${r}"><span class="rk rk-${r}">${r==="L"?(L?"Ltd":"限定"):r}</span>×${by[r].length}</button>`).join("")}`:"";
         rk.querySelectorAll("[data-rks]").forEach(b=>b.onclick=()=>confirmSell(by[b.dataset.rks],()=>{ upd(); renderCoins(); try{ drawPick(); }catch(e){} })); }
       const all=el.querySelector("#rvSellAll"); if(all){ const ok=units(G.flatMap(g=>g.us)).filter(z=>!sellLockLeft(z)&&!z.k&&z.u!==S.guard); all.disabled=!ok.length; } };
     el.querySelectorAll("[data-sell]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const g=G[+b.dataset.sell]; confirmSell(units(g.us).map(z=>z.u),()=>{ upd(); renderCoins(); }); });
@@ -4496,7 +4498,7 @@ const BOX_HELP={
   evo:["進化とは？","<ul><li>進化できる魔物（キノコ・たけしなど）は、<b>レベルの上限</b>まで育てた同じ魔物が<b>2体</b>そろうと、上のランクの魔物に進化できる。</li><li>進化でしか手に入らない魔物もいる（ガチャには出ない）。</li><li>ここには、進化できる魔物だけがならぶ。「進化可」がついた魔物をタップして進化しよう。</li></ul>"],
   sell:["売却とは？","<ul><li>魔物を<b>コイン</b>にかえる。売った魔物はいなくなる。</li><li>値段は、みんなの図鑑の<b>獲得数の少なさ</b>で決まる（めずらしい魔物ほど高い）。</li><li>S・Zランクを売ると、冒険者レベルも上がる。</li><li>🔒鍵のかかった魔物・配置中の魔物・新しく追加されてから48時間以内の新キャラは売れない。</li></ul>"],
   shield:["盾制作とは？","<ul><li><b>Sランクの魔物3体</b>で🛡盾、<b>Zランクの魔物1体</b>で🛡✨スーパー盾を作れる（使った魔物はいなくなる）。</li><li>盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げる。防いだときは50%の確率で、使った相手にその効果を跳ね返す。1回防ぐたびに耐久力が1へる。</li><li>盾は作ったランク戦の間だけ持てる。</li></ul>"],
-  fusion:["融合とは？","<ul><li><b>種類のちがう魔物を2匹</b>えらんで、<b>500モコ</b>で融合できる。</li><li>「送信」を押すと、2匹の魔物がまざった<b>オリジナル魔物</b>が生まれる（<b>限定ランク</b>）。</li><li><b>はじめての組み合わせ</b>は図鑑に載っていない魔物なので、運営が作るまでしばらく待つ。できあがったらBOXに届く。</li><li><b>だれかがもう融合した組み合わせ</b>なら、その場ですぐ受け取れる。</li><li>融合に使った2匹は、送信したときにBOXからいなくなる（鍵のかかった魔物・配置中の魔物は使えない）。</li></ul>"],
+  fusion:["融合とは？","<ul><li><b>種類のちがう魔物を2匹</b>えらんで、<b>500モコ</b>で融合できる。</li><li>「送信」を押すと、2匹の魔物がまざった<b>オリジナル魔物</b>が生まれる（<b>融合ランク</b>）。</li><li><b>はじめての組み合わせ</b>は図鑑に載っていない魔物なので、運営が作るまでしばらく待つ。できあがったらBOXに届く。</li><li><b>だれかがもう融合した組み合わせ</b>なら、その場ですぐ受け取れる。</li><li>融合に使った2匹は、送信したときにBOXからいなくなる（鍵のかかった魔物・配置中の魔物は使えない）。</li></ul>"],
   dexM:["魔物図鑑とは？","<ul><li>これまでに手に入れた魔物がのる。まだの魔物はシルエット。</li><li><b>コンプ率</b>（持っている魔物の割合）が上がるほど、冒険者EXPの増え方が上がる（100%で1.5倍）。</li><li>限定ランクの魔物は、手に入れた人の図鑑にだけ別の欄でのる。</li></ul>"] };
 const boxSeg=()=>{ const cur=[...BOX_MENU,["fusion","🧬","魔物オリジナル融合"]].find(x=>x[0]===boxMode); const h=BOX_HELP[boxMode];
   return `<div class="box-top"><button class="chip" type="button" id="boxBack">← BOXメニュー</button>${cur?`<b>${cur[1]} ${cur[2]}</b>`:"<b>手持ちの魔物</b>"}${h?`<button class="box-help" type="button" id="boxHelp">❓ ${h[0]}</button>`:""}</div>`; };
@@ -4513,7 +4515,7 @@ function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
       <button class="fu-go" type="button" id="fuGo" ${ready?"":"disabled"}><small>${FUSE_MOKO.toLocaleString()}モコで</small><b>融合</b></button></div>
     ${fuStep===1&&ready?`<div class="fu-send"><p>${esc(mon(S.units.find(z=>z.u===fuSel[0]).m).name)} ＋ ${esc(mon(S.units.find(z=>z.u===fuSel[1]).m).name)} を融合します。<br>${enough?`送信すると <b>${FUSE_MOKO.toLocaleString()}モコ</b> と2匹の魔物を使います。`:`<b style="color:var(--berry)">モコが足りません（${FUSE_MOKO.toLocaleString()}モコ必要）</b>`}</p>
       <button class="btn gold" type="button" id="fuSend" ${enough?"":"disabled"}>📨 送信</button><button class="btn ghost" type="button" id="fuNo">やめる</button></div>`:""}
-    <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r}</button>`).join("")}</div>
+    <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r==="F"?"融合":r}</button>`).join("")}</div>
     <p class="sub" style="margin:0 0 6px">融合したい種類の異なる魔物を2匹タップしてね</p>
     ${list.length?`<div class="grid">${list.map(x=>unitCard(x,(x.k||x.u===S.guard?"dim":"")+(fuSel.includes(x.u)?" sel":""))).join("")}</div>`:`<div class="empty">魔物がいません</div>`}
     ${fuMyReqs()}<div id="fuAdmin"></div>`;
@@ -4557,7 +4559,7 @@ async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOK
     S.fmons=S.fmons||{}; S.fmons[known.id]={name:known.name,img:known.img}; FMON_CACHE[known.id]=S.fmons[known.id]; mon(known.id);
     S.got[known.id]=(S.got[known.id]||0)+1; S.units.push({u:S.nextUid++,m:known.id,l:1,e:0,s:0,g:0,k:true,t:at}); fuSel=[]; fuStep=0; save();
     const g=document.createElement("div"); g.className="reveal";
-    g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${known.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(an)}」と「${esc(bn)}」が融合して<br><b style="font-size:18px">${esc(known.name)}</b><br>が生まれました！<br><span class="rk rk-L">限定</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
+    g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${known.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(an)}」と「${esc(bn)}」が融合して<br><b style="font-size:18px">${esc(known.name)}</b><br>が生まれました！<br><span class="rk rk-F">融合</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
     document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; return; }
   const req={uid:MYID, nm:String(myName()).slice(0,24), a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, al:A.l, bl:B.l, at:gnow()};
   try{ await withTO(DB.collection("fusereq").add(req)); }catch(e){ btn.disabled=false; btn.textContent="📨 送信"; return toast("送信できませんでした。もう一度ためしてね"); }
@@ -4565,11 +4567,11 @@ async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOK
   try{ SFX.reveal("S"); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🧬</div><p>融合を送信しました！</p>
-    <div class="note" style="margin:0">図鑑に載っていない魔物なので融合されるまでしばらくお待ちください✨<br><small>「${esc(req.an)}」＋「${esc(req.bn)}」。できあがったら<b>限定ランク</b>としてBOXに届きます</small></div><button class="btn gold" type="button">OK</button></div>`;
+    <div class="note" style="margin:0">図鑑に載っていない魔物なので融合されるまでしばらくお待ちください✨<br><small>「${esc(req.an)}」＋「${esc(req.bn)}」。できあがったら<b>融合ランク</b>としてBOXに届きます</small></div><button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector("button").onclick=()=>{ bg.remove(); render(); }; }
 function renderBoxMenu(){
   $("#stage").innerHTML=`<h2>魔物</h2><p class="sub">${S.units.length}体の仲間（BOXは${BOX_MAX}体まで）。やりたいことをえらんでね。</p>
-    <div class="box-menu">${true?`<button type="button" data-bm="fusion" class="fu-menu"><i>🧬</i><span><b>魔物オリジナル融合</b><small>種類のちがう魔物2匹で、世界に1体だけの限定魔物を作る</small></span></button>`:""}${BOX_MENU.map(([k,ic,nm,sub])=>`<button type="button" data-bm="${k}"><i>${ic}</i><span><b>${nm}</b><small>${sub}</small></span></button>`).join("")}
+    <div class="box-menu">${true?`<button type="button" data-bm="fusion" class="fu-menu"><i>🧬</i><span><b>魔物オリジナル融合</b><small>種類のちがう魔物2匹で、オリジナルの融合魔物を作る</small></span></button>`:""}${BOX_MENU.map(([k,ic,nm,sub])=>`<button type="button" data-bm="${k}"><i>${ic}</i><span><b>${nm}</b><small>${sub}</small></span></button>`).join("")}
     <button type="button" data-bm="units" class="sm"><i>👾</i><span><b>手持ちの魔物を見る</b><small>魔物をタップして、配置・鍵・合成・進化など</small></span></button></div>`;
   document.querySelectorAll("[data-bm]").forEach(b=>b.onclick=()=>{ try{ SFX.tap(); }catch(e){} boxMode=b.dataset.bm; sellMode=boxMode==="sell"; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; }); }
 function renderBox(){
@@ -4584,7 +4586,7 @@ function renderBox(){
   [...sellSel].forEach(u=>{ const x=S.units.find(z=>z.u===u); if(!x||x.k) sellSel.delete(u); });
   const total=[...sellSel].reduce((t,u)=>t+sellPrice(S.units.find(z=>z.u===u)),0);
   $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}<p class="sub">${S.units.length} / ${BOX_MAX}体の仲間。${lockMode?"🔒 魔物をタップしていくつでも選んで、下のボタンでまとめて鍵をかけたり外したりできます。鍵付きは合成の素材・売却に使われません。":sellMode?"売却する魔物をタップで選んでね（鍵付きは選べません）。":"タップして合成でレベルを上げよう。"}</p>
-  <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r}</button>`).join("")}
+  <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r==="F"?"融合":r}</button>`).join("")}
     <button class="chip" id="lockToggle" type="button" aria-pressed="${lockMode}" style="margin-left:auto">${lockMode?"鍵をおわる":"🔒 鍵をかける"}</button>
     ${boxMode==="sell"?"":`<button class="chip" id="sellToggle" type="button" aria-pressed="${sellMode}">${sellMode?"売却をやめる":"まとめて売却"}</button>`}</div>
   ${sellMode?`<div class="sellbar"><span>${sellSel.size}体 ・ <b>+${total.toLocaleString()}</b>コイン</span>
@@ -4665,12 +4667,12 @@ function confirmSell(uids,onDone,fresh){
   if(!list.length) return toast(locked.length?`新しい魔物は、手に入れてから12時間は売却できません（あと${lockTxt(Math.min(...locked.map(sellLockLeft)))}）`:"配置中・保護中の魔物は売却できません");
   uids=list.map(z=>z.u);
   const total=list.reduce((t,u)=>t+sellPrice(u),0);
-  const rare=list.filter(u=>["S","Z","L"].includes(mon(u.m).rank));
+  const rare=list.filter(u=>["S","Z","L","F"].includes(mon(u.m).rank));
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;   // ガチャ結果の画面の上にも出す
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="sellT">
     <p id="sellT">${list.length===1?mon(list[0].m).name+" (Lv"+list[0].l+")":list.length+"体"}を売却しますか？</p>
     <div class="m-text" style="color:var(--staff);font-family:var(--f-pix);font-size:20px">+${total.toLocaleString()}コイン</div>${sellLv(list)?`<div class="m-text" style="color:#5fd36a;font-weight:900;font-size:17px">冒険者Lv +${sellLv(list)}</div>`:""}${list.some(u=>mon(u.m).rank==="L")?`<div class="m-text" style="color:#ffd75e;font-weight:900;font-size:16px">✨ 手持ちの魔物すべてのLv +${list.filter(u=>mon(u.m).rank==="L").length*LIMITED_SELL_LV}（Lv${MAX_LV}を超えてもそのまま上がる）</div>`:""}
-    ${rare.length?`<div class="note" style="color:var(--berry);margin:0">${rare.map(u=>(mon(u.m).rank==="L"?"限定":mon(u.m).rank)+"ランク「"+mon(u.m).name+"」").join("・")} が含まれています</div>`:""}
+    ${rare.length?`<div class="note" style="color:var(--berry);margin:0">${rare.map(u=>(mon(u.m).rank==="L"?"限定":mon(u.m).rank==="F"?"融合":mon(u.m).rank)+"ランク「"+mon(u.m).name+"」").join("・")} が含まれています</div>`:""}
     ${locked.length?`<div class="note" style="margin:0;color:#ffb35c">⏳ 新しい魔物${locked.length}体は、手に入れてから12時間たつまで売却できないので、のぞきました</div>`:""}
     <div class="note" style="margin:0">売却した魔物は戻りません。図鑑の記録は残ります。売却価格は、全冒険者の図鑑の獲得数で決まります（多く獲得されている魔物ほど安い）。</div>
     <button class="btn gold" id="sellOk" type="button">売却する</button><button class="btn ghost" id="sellNo" type="button">やめる</button></div>`;
@@ -4944,7 +4946,7 @@ function openFuse(uid){
   bg.querySelector("#doFuse").onclick=()=>{
     const total=[...sel].reduce((s,u)=>s+matExp(base,S.units.find(z=>z.u===u)),0);
     const cost=fuseCost(base); if(!sel.size || S.coins<cost) return toast("コインが足りません"); S.coins-=cost;
-    const same=mon(base.m).rank==="L"?0:[...sel].filter(u=>(S.units.find(z=>z.u===u)||{}).m===base.m).length, soul0=soulOf(base.m);   // 限定ランクには魂はない   // 同じ魔物どうしの合成で「魂」が上がる（100体で100%）
+    const same=(mon(base.m).rank==="L"||mon(base.m).rank==="F")?0:[...sel].filter(u=>(S.units.find(z=>z.u===u)||{}).m===base.m).length, soul0=soulOf(base.m);   // 限定ランクには魂はない   // 同じ魔物どうしの合成で「魂」が上がる（100体で100%）
     S.units=S.units.filter(z=>!sel.has(z.u));
     if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=base.m;
     S.stats.fuses++; gainPExp(PXP.fuse);
@@ -4965,7 +4967,7 @@ function renderDex(){
     const cell=m=>{const got=S.got[m.id], h=got||peek;return `<div class="cell ${h?"has":"unk"}" data-dexm="${m.id}" role="button" tabindex="0"${!got&&peek?' style="opacity:.6"':""}>
       <img src="${h?cardURL(m.id,0,160):silhouette(m.id)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${h?m.name:"？？？"}</div>${h?byLine(m):""}</div>`};
     // 限定ランクは図鑑には公開しない。手に入れた冒険者の図鑑にだけ、別の欄で載っていく
-    const lim=MONSTERS.filter(m=>m.rank==="L"&&(S.got[m.id]||peek));
+    const lim=MONSTERS.filter(m=>(m.rank==="L"||m.rank==="F")&&(S.got[m.id]||peek));
     const sortBar=`<div class="dex-sort" translate="no">${[["no","No.順"],["rank","ランク別"]].map(([k,l])=>`<button type="button" data-ds="${k}" aria-pressed="${dexSort===k}">${LANG==="en"?(k==="no"?"By No.":"By rank"):l}</button>`).join("")}</div>`;
     const main = dexSort==="rank"
       ? ["Z","S","A","B","C"].map(rk=>{ const L=DEX_MONS.filter(m=>m.rank===rk); if(!L.length) return ""; const c=L.filter(m=>S.got[m.id]).length;
@@ -4990,7 +4992,8 @@ const tsHome = () => true;
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 // 図鑑：まだ出会っていない魔物の入手方法
 function howToGet(m){ const L=[];
-  if(m.rank==="L"||m.gift) L.push("🎁 運営からのプレゼント・イベントの限定キャラ（ガチャには出ません）");
+  if(m.rank==="F") L.push("🧬 魔物オリジナル融合（BOXメニューから）");
+  else if(m.rank==="L"||m.gift) L.push("🎁 運営からのプレゼント・イベントの限定キャラ（ガチャには出ません）");
   else if(m.evoOnly){ const from=MONSTERS.filter(x=>x.next===m.id); L.push(`🔄 進化でだけ手に入ります：${from.map(x=>S.got[x.id]?`「${esc(x.name)}」`:"「？？？」").join("・")||"ほかの魔物"} を進化させよう（BOXの「進化」から）`); }
   else if(m.rate) L.push("🎰 魔物ガチャ（とてもまれ）");
   else { L.push("🎰 魔物ガチャ"); if(m.rank==="S"||m.rank==="Z") L.push("✨ 魔物レアガチャ（モコで回す・S・Zだけが出る）"); }
@@ -4999,7 +5002,7 @@ function openDexHow(id){ const m=mon(id); if(!m) return;
   sheet(`<div class="sheet-h"><h3>？？？</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="detail"><img src="${silhouette(id)}" alt=""><div>
       <div class="stat"><span>No.</span><b>${String(id).padStart(3,"0")}</b></div>
-      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank}</span></div>
+      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank}</span></div>
       <p class="note" style="margin:8px 0 4px"><b>まだ出会っていない魔物です。ここで手に入ります：</b></p>
       <ul class="note" style="margin:0;padding-left:1.1em">${howToGet(m).map(t=>`<li>${t}</li>`).join("")}</ul></div></div>`); }
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
@@ -5007,7 +5010,7 @@ function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
   const draw=()=>{ const c=S.got[id]||0, T=dexTotal(id), st=dexStats(), p=dexPrice(id);
     const bg=sheet(`<div class="sheet-h"><h3>${esc(m.name)}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="detail"><img src="${cardURL(id,0,320)}" alt="${esc(m.name)}"><div>
-      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank}</span></div>${byLine(m,"by by-unit")}
+      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank}</span></div>${byLine(m,"by by-unit")}
       <div class="stat"><span>あなたが過去に獲得した数</span><b>${c.toLocaleString()}体</b></div>
       <div class="stat"><span>全冒険者の獲得数</span><b>${T!=null?T.toLocaleString()+"体":"…"}</b></div>
       <div class="stat"><span>今の売却価格（1体）</span><b style="color:var(--staff)">${p!=null?p.toLocaleString()+"コイン":"…"}</b></div>
@@ -6441,7 +6444,7 @@ function presentTxt(p, L=LANG==="en"){ const a=[];
   if(p.ticket) a.push(`🎫 ${L?"Gacha Ticket":"ガチャチケット"} ×${p.ticket}`);
   if(p.stone) a.push(`💎 ${L?"Awakening Stone":"覚醒の石"} ×${p.stone}`);
   if(p.moko) a.push(`<img src="moko.png" alt="" style="width:18px;height:18px;vertical-align:-4px"> ${mokoFmt(p.moko)}${L?" Moko":"モコ"}`);
-  (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(m) a.push(`<span class="rk rk-${m.rank}">${m.rank==="L"?(L?"LTD":"限定"):m.rank}</span> 「${esc(m.name)}」`); });
+  (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(m) a.push(`<span class="rk rk-${m.rank}">${m.rank==="L"?(L?"LTD":"限定"):m.rank==="F"?(L?"FUSE":"融合"):m.rank}</span> 「${esc(m.name)}」`); });
   return a.join("<br>"); }
 function presentClaim(id){ const L=pbox(), i=L.findIndex(x=>x.id===id); if(i<0) return null; const p=L[i]; L.splice(i,1);
   if(p.coins){ S.coins=(S.coins||0)+p.coins; capCoins(); }
@@ -7339,7 +7342,7 @@ async function checkItems(){
       }
       save(); render();
       fuseDone.forEach(x=>{ const g=document.createElement("div"); g.className="reveal";
-        g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${x.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(x.a||"")}」と「${esc(x.b||"")}」が融合して<br><b style="font-size:18px">${esc(x.name)}</b><br>が生まれました！<br><span class="rk rk-L">限定</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
+        g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${x.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(x.a||"")}」と「${esc(x.b||"")}」が融合して<br><b style="font-size:18px">${esc(x.name)}</b><br>が生まれました！<br><span class="rk rk-F">融合</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
         document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; });
       Object.entries(artGot).forEach(([k,q])=>{ const x=ARTS.find(z=>z.k===k); const g=document.createElement("div"); g.className="reveal";
         g.innerHTML=`<div class="burst"></div><h3>🎁 特別イラストが届いた！</h3><img src="${x.img}" alt="" style="width:min(64vw,280px);height:auto;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">神から「${esc(x.name)}」が${q>1?q+"枚":""}届きました！<br>アイコン作りとホームの魔物で使えます（持っている数：${S.arts[k]}）</p><button class="btn gold" type="button">OK</button>`;
@@ -9701,5 +9704,5 @@ async function titleRanks(){
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
-<script src="fz/fz.js?v=2" defer></script>
+<script src="fz/fz.js?v=3" defer></script>
 </body></html>
