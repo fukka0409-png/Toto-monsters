@@ -5046,7 +5046,7 @@ function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
   const draw=()=>{ const c=S.got[id]||0, T=dexTotal(id), st=dexStats(), p=dexPrice(id);
     const bg=sheet(`<div class="sheet-h"><h3>${esc(m.name)}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="detail"><img src="${cardURL(id,0,320)}" alt="${esc(m.name)}"><div>
-      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank}</span></div>${byLine(m,"by by-unit")}${firstFuser(m)}
+      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank}</span></div>${byLine(m,"by by-unit")}${firstFuser(m)}${fuseRecipeLine(m)}
       <div class="stat"><span>あなたが過去に獲得した数</span><b>${c.toLocaleString()}体</b></div>
       <div class="stat"><span>全冒険者の獲得数</span><b>${T!=null?T.toLocaleString()+"体":"…"}</b></div>
       <div class="stat"><span>今の売却価格（1体）</span><b style="color:var(--staff)">${p!=null?p.toLocaleString()+"コイン":"…"}</b></div>
