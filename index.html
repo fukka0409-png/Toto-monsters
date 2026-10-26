@@ -321,6 +321,19 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-top2>.hm-card{flex:none;width:100%;box-sizing:border-box}
 .hm-row{display:flex;gap:8px;align-items:flex-start}
 .hm-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.fu-menu{background:linear-gradient(135deg,#ffe58a,#ffb84d)!important;border-color:#5a3a06!important;color:#3a2306!important}
+.fu-moko{margin:4px 0 10px auto;width:max-content;max-width:100%}
+.fu-moko small{display:block;font-size:11px;opacity:.85}
+.fu-moko div{display:flex;align-items:center;gap:6px;min-width:180px;padding:6px 10px;background:#fff;color:#1d1d1d;border:3px solid #888;justify-content:flex-end}
+.fu-moko img{width:26px;height:26px;margin-right:auto}.fu-moko b{font-size:20px}.fu-moko span{font-size:12px}
+.fu-row{display:flex;align-items:center;gap:6px;margin:0 0 12px}
+.fu-slot{flex:1;max-width:92px;aspect-ratio:1;background:#1b1b1b;border:3px solid #eee;display:grid;place-items:center;overflow:hidden;cursor:pointer}
+.fu-slot img{width:100%;height:100%;object-fit:cover}
+.fu-plus{font:900 34px/1 var(--f-body);color:#eee}.fu-arrow{font:900 30px/1 var(--f-body);color:#d33}
+.fu-go{flex:1.3;max-width:120px;aspect-ratio:1;border:4px solid #fff;background:#f2c21b;color:#1d1d1d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:900 12px var(--f-body);box-shadow:0 4px 0 #8a6a00}
+.fu-go b{font:900 34px/1 var(--f-pix,var(--f-body))}.fu-go:disabled{opacity:.45}
+.fu-send{margin:0 0 12px;padding:12px;border:2px solid var(--line);border-radius:14px;background:#00000033;text-align:center}
+.fu-send p{margin:0 0 8px;font-size:13px}.fu-send .btn{width:100%;margin-top:6px}
 .hm-tsnew{align-self:flex-start;display:flex;align-items:center;gap:6px;margin-top:8px;padding:9px 14px;border-radius:12px;background:linear-gradient(#ff6b4a,#c0392b);border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#fff;font:inherit;font-weight:900;font-size:14px;text-shadow:0 1px 0 #0006;animation:tsnew 1.6s ease-in-out infinite}
 @keyframes tsnew{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .ts-help li{margin:0 0 6px}
@@ -4472,20 +4485,71 @@ const BOX_HELP={
   evo:["進化とは？","<ul><li>進化できる魔物（キノコ・たけしなど）は、<b>レベルの上限</b>まで育てた同じ魔物が<b>2体</b>そろうと、上のランクの魔物に進化できる。</li><li>進化でしか手に入らない魔物もいる（ガチャには出ない）。</li><li>ここには、進化できる魔物だけがならぶ。「進化可」がついた魔物をタップして進化しよう。</li></ul>"],
   sell:["売却とは？","<ul><li>魔物を<b>コイン</b>にかえる。売った魔物はいなくなる。</li><li>値段は、みんなの図鑑の<b>獲得数の少なさ</b>で決まる（めずらしい魔物ほど高い）。</li><li>S・Zランクを売ると、冒険者レベルも上がる。</li><li>🔒鍵のかかった魔物・配置中の魔物・新しく追加されてから48時間以内の新キャラは売れない。</li></ul>"],
   shield:["盾制作とは？","<ul><li><b>Sランクの魔物3体</b>で🛡盾、<b>Zランクの魔物1体</b>で🛡✨スーパー盾を作れる（使った魔物はいなくなる）。</li><li>盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げる。防いだときは50%の確率で、使った相手にその効果を跳ね返す。1回防ぐたびに耐久力が1へる。</li><li>盾は作ったランク戦の間だけ持てる。</li></ul>"],
+  fusion:["融合とは？","<ul><li><b>種類のちがう魔物を2匹</b>えらんで、<b>1000モコ</b>で融合できる。</li><li>「送信」を押すと、2匹の魔物がまざった<b>世界に1体だけのオリジナル魔物</b>を運営が作る。</li><li>できあがった魔物は<b>限定ランク</b>として、プレゼントBOXに届く。</li><li>融合に使った2匹は、送信したときにBOXからいなくなる（鍵のかかった魔物・配置中の魔物は使えない）。</li></ul>"],
   dexM:["魔物図鑑とは？","<ul><li>これまでに手に入れた魔物がのる。まだの魔物はシルエット。</li><li><b>コンプ率</b>（持っている魔物の割合）が上がるほど、冒険者EXPの増え方が上がる（100%で1.5倍）。</li><li>限定ランクの魔物は、手に入れた人の図鑑にだけ別の欄でのる。</li></ul>"] };
-const boxSeg=()=>{ const cur=BOX_MENU.find(x=>x[0]===boxMode); const h=BOX_HELP[boxMode];
+const boxSeg=()=>{ const cur=[...BOX_MENU,["fusion","🧬","魔物オリジナル融合"]].find(x=>x[0]===boxMode); const h=BOX_HELP[boxMode];
   return `<div class="box-top"><button class="chip" type="button" id="boxBack">← BOXメニュー</button>${cur?`<b>${cur[1]} ${cur[2]}</b>`:"<b>手持ちの魔物</b>"}${h?`<button class="box-help" type="button" id="boxHelp">❓ ${h[0]}</button>`:""}</div>`; };
 function bindBoxTop(){ const b=document.getElementById("boxBack"); if(b) b.onclick=()=>{ boxMode="menu"; sellMode=false; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; };
   const h=document.getElementById("boxHelp"); if(h) h.onclick=()=>{ const x=BOX_HELP[boxMode]; const bg=sheet(`<div class="sheet-h"><h3>${x[0]}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div class="rules-body">${x[1]}</div>`); }; }
+// 魔物オリジナル融合（2026-10-26・ふっかーだけに表示）：種類のちがう2匹＋1000モコ → 送信すると運営に届き、オリジナルの限定魔物が作られる
+const FUSE_MOKO = 1000; let fuSel=[], fuStep=0;
+function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
+  const list=sortedUnits(), slot=i=>{ const x=S.units.find(z=>z.u===fuSel[i]); return x?`<img src="${cardURL(x.m,x.s)}" alt="">`:""; };
+  const ready=fuSel.length===2, enough=(S.moko||0)>=FUSE_MOKO;
+  $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}
+    <div class="fu-moko"><small>所持モコ数</small><div><img src="moko.png" alt=""><b>${mokoFmt(S.moko||0)}</b><span>モコ</span></div></div>
+    <div class="fu-row"><div class="fu-slot" data-fs="0">${slot(0)}</div><span class="fu-plus">＋</span><div class="fu-slot" data-fs="1">${slot(1)}</div><span class="fu-arrow">➜</span>
+      <button class="fu-go" type="button" id="fuGo" ${ready?"":"disabled"}><small>${FUSE_MOKO.toLocaleString()}モコで</small><b>融合</b></button></div>
+    ${fuStep===1&&ready?`<div class="fu-send"><p>${esc(mon(S.units.find(z=>z.u===fuSel[0]).m).name)} ＋ ${esc(mon(S.units.find(z=>z.u===fuSel[1]).m).name)} を融合します。<br>${enough?`送信すると <b>${FUSE_MOKO.toLocaleString()}モコ</b> と2匹の魔物を使います。`:`<b style="color:var(--berry)">モコが足りません（${FUSE_MOKO.toLocaleString()}モコ必要）</b>`}</p>
+      <button class="btn gold" type="button" id="fuSend" ${enough?"":"disabled"}>📨 送信</button><button class="btn ghost" type="button" id="fuNo">やめる</button></div>`:""}
+    <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r}</button>`).join("")}</div>
+    <p class="sub" style="margin:0 0 6px">融合したい種類の異なる魔物を2匹タップしてね</p>
+    ${list.length?`<div class="grid">${list.map(x=>unitCard(x,(x.k||x.u===S.guard?"dim":"")+(fuSel.includes(x.u)?" sel":""))).join("")}</div>`:`<div class="empty">魔物がいません</div>`}
+    ${fuMyReqs()}<div id="fuAdmin"></div>`;
+  bindBoxTop(); fuAdmin();
+  document.querySelectorAll(".chip[data-f]").forEach(b=>b.onclick=()=>{ boxFilter=b.dataset.f; render(); });
+  const keep=()=>{ const y=$("#stage").scrollTop; render(); $("#stage").scrollTop=y; };
+  document.querySelectorAll("[data-fs]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.fs; if(fuSel[i]!=null){ fuSel.splice(i,1); fuStep=0; keep(); } });
+  document.querySelectorAll(".grid .card").forEach(b=>b.onclick=()=>{ const u=+b.dataset.u, x=S.units.find(z=>z.u===u); if(!x) return;
+    if(fuSel.includes(u)){ fuSel=fuSel.filter(v=>v!==u); fuStep=0; return keep(); }
+    if(x.k) return toast("鍵のかかった魔物は融合に使えません（鍵を外してね）");
+    if(x.u===S.guard) return toast("配置中の魔物は融合に使えません");
+    if(fuSel.length>=2) return toast("えらべるのは2匹までです（上の枠をタップすると外せます）");
+    if(fuSel.some(v=>(S.units.find(z=>z.u===v)||{}).m===x.m)) return toast("種類のちがう魔物をえらんでね");
+    fuSel.push(u); fuStep=0; try{ SFX.tap(); }catch(e){} keep(); });
+  $("#fuGo").onclick=()=>{ if(fuSel.length!==2) return; fuStep=1; keep(); const s=$("#fuSend"); if(s) s.scrollIntoView({block:"center"}); };
+  if($("#fuNo")) $("#fuNo").onclick=()=>{ fuStep=0; keep(); };
+  if($("#fuSend")) $("#fuSend").onclick=e=>fuSend(e.currentTarget);
+}
+// 運営（ふっかー）用：届いた融合の一覧。これを見てオリジナル魔物の絵を作る
+async function fuAdmin(){ const el=$("#fuAdmin"); if(!el||!dexPeek()||!DB) return;
+  try{ const q=await withTO(DB.collection("fusereq").orderBy("at","desc").limit(30).get()); const L=q.docs.map(d=>d.data());
+    if(!$("#fuAdmin")) return;
+    $("#fuAdmin").innerHTML=`<div class="el-head" style="margin-top:16px">🛠 運営用：届いた融合（新しい順・${L.length}件）</div>${L.length?`<div class="note" style="text-align:left;margin:0">${L.map(r=>`・<b>${esc(r.nm)}</b>：No.${r.a} ${esc(r.an)}（Lv${r.al}）＋ No.${r.b} ${esc(r.bn)}（Lv${r.bl}）<br>　<small>${new Date(r.at).toLocaleString("ja-JP")}</small>`).join("<br>")}</div>`:`<div class="note" style="margin:0">まだありません</div>`}`; }catch(e){} }
+function fuMyReqs(){ const L=(S.fuReqs||[]).slice().reverse(); if(!L.length) return "";
+  return `<div class="el-head" style="margin-top:16px">📨 送信した融合</div><div class="note" style="text-align:left;margin:0">${L.map(r=>`・${esc(r.a)} ＋ ${esc(r.b)}（${new Date(r.at).toLocaleDateString("ja-JP")}）… オリジナル魔物を制作中。できあがったらプレゼントBOXに届きます`).join("<br>")}</div>`; }
+async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOKO) return toast("モコが足りません");
+  const A=S.units.find(z=>z.u===fuSel[0]), B=S.units.find(z=>z.u===fuSel[1]); if(!A||!B||A.m===B.m||A.k||B.k) return toast("えらびなおしてね");
+  if(!DB||!MYID) return toast("ログインすると融合できます");
+  btn.disabled=true; btn.textContent="送信中…";
+  const req={uid:MYID, nm:String(myName()).slice(0,24), a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, al:A.l, bl:B.l, at:gnow()};
+  try{ await withTO(DB.collection("fusereq").add(req)); }catch(e){ btn.disabled=false; btn.textContent="📨 送信"; return toast("送信できませんでした。もう一度ためしてね"); }
+  S.moko-=FUSE_MOKO; S.units=S.units.filter(z=>z.u!==A.u&&z.u!==B.u); S.fuReqs=(S.fuReqs||[]).concat({a:req.an,b:req.bn,at:req.at}); fuSel=[]; fuStep=0; save();
+  try{ SFX.reveal("S"); }catch(e){}
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🧬</div><p>融合を送信しました！</p>
+    <div class="note" style="margin:0">「${esc(req.an)}」と「${esc(req.bn)}」がまざった、世界に1体だけのオリジナル魔物を作っています。<br>できあがったら<b>限定ランク</b>としてプレゼントBOXに届きます！</div><button class="btn gold" type="button">OK</button></div>`;
+  document.body.appendChild(bg); bg.querySelector("button").onclick=()=>{ bg.remove(); render(); }; }
 function renderBoxMenu(){
   $("#stage").innerHTML=`<h2>魔物</h2><p class="sub">${S.units.length}体の仲間（BOXは${BOX_MAX}体まで）。やりたいことをえらんでね。</p>
-    <div class="box-menu">${BOX_MENU.map(([k,ic,nm,sub])=>`<button type="button" data-bm="${k}"><i>${ic}</i><span><b>${nm}</b><small>${sub}</small></span></button>`).join("")}
+    <div class="box-menu">${dexPeek()?`<button type="button" data-bm="fusion" class="fu-menu"><i>🧬</i><span><b>魔物オリジナル融合</b><small>種類のちがう魔物2匹で、世界に1体だけの限定魔物を作る</small></span></button>`:""}${BOX_MENU.map(([k,ic,nm,sub])=>`<button type="button" data-bm="${k}"><i>${ic}</i><span><b>${nm}</b><small>${sub}</small></span></button>`).join("")}
     <button type="button" data-bm="units" class="sm"><i>👾</i><span><b>手持ちの魔物を見る</b><small>魔物をタップして、配置・鍵・合成・進化など</small></span></button></div>`;
   document.querySelectorAll("[data-bm]").forEach(b=>b.onclick=()=>{ try{ SFX.tap(); }catch(e){} boxMode=b.dataset.bm; sellMode=boxMode==="sell"; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; }); }
 function renderBox(){
   if(boxMode==="dexF") boxMode="dexM";   // 枠図鑑は終了
   if(boxMode==="menu") return renderBoxMenu();
   if(boxMode==="shield") return renderShieldBox();
+  if(boxMode==="fusion") return dexPeek()?renderFusion():(boxMode="menu",renderBoxMenu());
   if(boxMode==="dexM"){ dexMode="mon"; return renderDex(); }
   if(!["units","fuse","evo","sell"].includes(boxMode)) boxMode="units";
   if(boxMode==="sell") sellMode=true;
