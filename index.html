@@ -4491,14 +4491,14 @@ const BOX_HELP={
   evo:["進化とは？","<ul><li>進化できる魔物（キノコ・たけしなど）は、<b>レベルの上限</b>まで育てた同じ魔物が<b>2体</b>そろうと、上のランクの魔物に進化できる。</li><li>進化でしか手に入らない魔物もいる（ガチャには出ない）。</li><li>ここには、進化できる魔物だけがならぶ。「進化可」がついた魔物をタップして進化しよう。</li></ul>"],
   sell:["売却とは？","<ul><li>魔物を<b>コイン</b>にかえる。売った魔物はいなくなる。</li><li>値段は、みんなの図鑑の<b>獲得数の少なさ</b>で決まる（めずらしい魔物ほど高い）。</li><li>S・Zランクを売ると、冒険者レベルも上がる。</li><li>🔒鍵のかかった魔物・配置中の魔物・新しく追加されてから48時間以内の新キャラは売れない。</li></ul>"],
   shield:["盾制作とは？","<ul><li><b>Sランクの魔物3体</b>で🛡盾、<b>Zランクの魔物1体</b>で🛡✨スーパー盾を作れる（使った魔物はいなくなる）。</li><li>盾を装備すると、ほかの冒険者からのアイテム攻撃（コインマグネット・ファイヤーボール・爆弾）を防げる。防いだときは50%の確率で、使った相手にその効果を跳ね返す。1回防ぐたびに耐久力が1へる。</li><li>盾は作ったランク戦の間だけ持てる。</li></ul>"],
-  fusion:["融合とは？","<ul><li><b>種類のちがう魔物を2匹</b>えらんで、<b>1000モコ</b>で融合できる。</li><li>「送信」を押すと、2匹の魔物がまざった<b>世界に1体だけのオリジナル魔物</b>を運営が作る。</li><li>できあがった魔物は<b>限定ランク</b>として、プレゼントBOXに届く。</li><li>融合に使った2匹は、送信したときにBOXからいなくなる（鍵のかかった魔物・配置中の魔物は使えない）。</li></ul>"],
+  fusion:["融合とは？","<ul><li><b>種類のちがう魔物を2匹</b>えらんで、<b>500モコ</b>で融合できる。</li><li>「送信」を押すと、2匹の魔物がまざった<b>世界に1体だけのオリジナル魔物</b>を運営が作る。</li><li>できあがった魔物は<b>限定ランク</b>として、プレゼントBOXに届く。</li><li>融合に使った2匹は、送信したときにBOXからいなくなる（鍵のかかった魔物・配置中の魔物は使えない）。</li></ul>"],
   dexM:["魔物図鑑とは？","<ul><li>これまでに手に入れた魔物がのる。まだの魔物はシルエット。</li><li><b>コンプ率</b>（持っている魔物の割合）が上がるほど、冒険者EXPの増え方が上がる（100%で1.5倍）。</li><li>限定ランクの魔物は、手に入れた人の図鑑にだけ別の欄でのる。</li></ul>"] };
 const boxSeg=()=>{ const cur=[...BOX_MENU,["fusion","🧬","魔物オリジナル融合"]].find(x=>x[0]===boxMode); const h=BOX_HELP[boxMode];
   return `<div class="box-top"><button class="chip" type="button" id="boxBack">← BOXメニュー</button>${cur?`<b>${cur[1]} ${cur[2]}</b>`:"<b>手持ちの魔物</b>"}${h?`<button class="box-help" type="button" id="boxHelp">❓ ${h[0]}</button>`:""}</div>`; };
 function bindBoxTop(){ const b=document.getElementById("boxBack"); if(b) b.onclick=()=>{ boxMode="menu"; sellMode=false; lockMode=false; sellSel.clear(); render(); $("#stage").scrollTop=0; };
   const h=document.getElementById("boxHelp"); if(h) h.onclick=()=>{ const x=BOX_HELP[boxMode]; const bg=sheet(`<div class="sheet-h"><h3>${x[0]}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div class="rules-body">${x[1]}</div>`); }; }
 // 魔物オリジナル融合（2026-10-26・ふっかーだけに表示）：種類のちがう2匹＋1000モコ → 送信すると運営に届き、オリジナルの限定魔物が作られる
-const FUSE_MOKO = 1000; let fuSel=[], fuStep=0;
+const FUSE_MOKO = 500; let fuSel=[], fuStep=0;
 function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
   const list=sortedUnits(), slot=i=>{ const x=S.units.find(z=>z.u===fuSel[i]); return x?`<img src="${cardURL(x.m,x.s)}" alt="">`:""; };
   const ready=fuSel.length===2, enough=(S.moko||0)>=FUSE_MOKO;
