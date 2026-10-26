@@ -55,7 +55,7 @@ function cutout(file){ return new Promise((ok,ng)=>{ const fr=new FileReader(); 
 
 async function load(){ if(!DB) return;
   try{ const q=await withTO(DB.collection("fusereq").orderBy("at","desc").limit(100).get()); REQ=q.docs.map(d=>({id:d.id,...d.data()})); }catch(e){ REQ=[]; }
-  try{ const q=await withTO(DB.collection("fusemon").get()); DONE={}; q.docs.forEach(d=>{ const x=d.data(); if(x&&x.req) DONE[x.req]=x; if(x&&x.id&&x.img) FMON_CACHE[x.id]={name:x.name,img:x.img,rk:x.rk||"F"}; }); }catch(e){}
+  try{ const q=await withTO(DB.collection("fusemon").get()); DONE={}; q.docs.forEach(d=>{ const x=d.data(); if(x&&x.req) DONE[x.req]=x; if(x&&x.id&&x.img) FMON_CACHE[x.id]=Object.assign(FMON_CACHE[x.id]||{},{name:x.name,img:x.img,rk:x.rk||"F"},x.a!=null?{a:x.a,b:x.b}:{},x.an?{an:x.an,bn:x.bn}:{}); }); }catch(e){}
   draw(); }
 // 同じ組み合わせ（2匹の順番は問わない）で前に作った魔物をさがす
 const pairKey=r=>[r.a,r.b].sort((x,y)=>x-y).join("+");
@@ -109,7 +109,7 @@ function open(){ if(!isOp()) return; if(!DB||!MYID) return toast("ログイン�
 async function count(){ const n=document.getElementById("ttlFzN"); if(!n||!DB) return;
   try{ const [a,b]=await Promise.all([DB.collection("fusereq").get(),DB.collection("fusemon").get()]); const done=new Set(b.docs.map(d=>d.data().req)); const left=a.docs.filter(d=>!done.has(d.id)).length; n.textContent=left?`未対応 ${left}件`:""; }catch(e){} }
 // みんな：融合でできた魔物の絵を読みこんでおく（ほかの冒険者のプロフィールに出ても表示できるように）
-async function cache(){ if(!DB) return; try{ const q=await DB.collection("fusemon").get(); q.docs.forEach(d=>{ const x=d.data(); if(x&&x.id&&x.img) FMON_CACHE[x.id]={name:x.name,img:x.img,rk:x.rk||"F"}; }); }catch(e){} }
+async function cache(){ if(!DB) return; try{ const q=await DB.collection("fusemon").get(); q.docs.forEach(d=>{ const x=d.data(); if(x&&x.id&&x.img) FMON_CACHE[x.id]=Object.assign(FMON_CACHE[x.id]||{},{name:x.name,img:x.img,rk:x.rk||"F"},x.a!=null?{a:x.a,b:x.b}:{},x.an?{an:x.an,bn:x.bn}:{}); }); }catch(e){} }
 let was=null;
 setInterval(()=>{ const b=document.getElementById("ttlFz"); if(!b) return; const on=!!(DB&&MYID); const op=on&&isOp(); b.hidden=!op;
   if(on!==was){ was=on; if(on){ cache(); if(op) count(); } } }, 1000);

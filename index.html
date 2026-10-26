@@ -3851,8 +3851,8 @@ const FMON_CACHE = {};
 const fuseRank=(a,b)=>((mon(a)||{}).rank==='L'||(mon(b)||{}).rank==='L')?'L':'F';
 const rkName=r=>r==='L'?'限定':'融合';
 function fmonReg(id){ const f=((typeof S!=="undefined"&&S&&S.fmons)||{})[id]||FMON_CACHE[id]; if(!f||!f.img) return undefined;
-  const m={ id, name:f.name||"融合魔物", rank:f.rk==="L"?"L":"F", exp:10000, gift:1, fuse:1, img:f.img }; MONSTERS.push(m);
-  const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} }; im.src=f.img; return m; }
+  const m={ id, name:f.name||"融合魔物", rank:f.rk==="L"?"L":"F", exp:10000, gift:1, fuse:1, img:f.img, recipe:{a:f.a, b:f.b, an:f.an, bn:f.bn} }; MONSTERS.push(m);
+  const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} try{ if(tab==="box"&&boxMode==="dexM"){ clearTimeout(fmonReg.t); fmonReg.t=setTimeout(()=>{ const y=$("#stage").scrollTop; render(); $("#stage").scrollTop=y; },150); } }catch(e){} }; im.src=f.img; return m; }
 const mon = id => MONSTERS.find(m=>m.id===id) || fmonReg(id);
 const rankColor = r => getComputedStyle(document.documentElement).getPropertyValue("--r-"+r.toLowerCase()).trim();
 
@@ -4970,13 +4970,17 @@ function renderDex(){
     const cell=m=>{const got=S.got[m.id], h=got||peek;return `<div class="cell ${h?"has":"unk"}" data-dexm="${m.id}" role="button" tabindex="0"${!got&&peek?' style="opacity:.6"':""}>
       <img src="${h?cardURL(m.id,0,160):silhouette(m.id)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${h?m.name:"？？？"}</div>${h?byLine(m):""}</div>`};
     // 限定ランクは図鑑には公開しない。手に入れた冒険者の図鑑にだけ、別の欄で載っていく
-    const lim=MONSTERS.filter(m=>(m.rank==="L"||m.rank==="F")&&(S.got[m.id]||peek));
+    const lim=MONSTERS.filter(m=>m.rank==="L"&&(S.got[m.id]||peek));
+    // 融合ランク：みんなが融合で生み出した魔物。持っていない魔物は黒い影（タップすると融合レシピがわかる）
+    const fus=[...new Set([...Object.keys(FMON_CACHE),...Object.keys(S.fmons||{})].map(Number))].map(mon).filter(m=>m&&m.rank==="F").sort((a,b)=>a.id-b.id);
     const sortBar=`<div class="dex-sort" translate="no">${[["no","No.順"],["rank","ランク別"]].map(([k,l])=>`<button type="button" data-ds="${k}" aria-pressed="${dexSort===k}">${LANG==="en"?(k==="no"?"By No.":"By rank"):l}</button>`).join("")}</div>`;
     const main = dexSort==="rank"
       ? ["Z","S","A","B","C"].map(rk=>{ const L=DEX_MONS.filter(m=>m.rank===rk); if(!L.length) return ""; const c=L.filter(m=>S.got[m.id]).length;
           return `<div class="el-head"><span class="rk rk-${rk}">${rk}</span>${LANG==="en"?"Rank":"ランク"} <span>${c}/${L.length}</span></div><div class="dex">${L.map(cell).join("")}</div>`; }).join("")
       : `<div class="dex">${DEX_MONS.map(cell).join("")}</div>`;
-    body=`${sortBar}${main}${lim.length?`<div class="el-head" style="margin-top:16px">✨ 限定ランク（あなたが手に入れた魔物） <span>${lim.length}種</span></div><div class="dex">${lim.map(cell).join("")}</div>`:""}`;
+    const fusHtml=fus.length?`<div class="el-head" style="margin-top:16px">🧬 融合ランク <span>${fus.filter(m=>S.got[m.id]).length}/${fus.length}種</span></div><div class="dex">${fus.map(m=>{ const got=S.got[m.id];
+      return `<div class="cell ${got?"has":"unk"}" data-dexm="${m.id}" role="button" tabindex="0"><img src="${got?cardURL(m.id,0,160):silhouette(m.id)}" alt=""><div class="no"><span class="rk rk-F">融合</span></div><div class="nm">${got?esc(m.name):"？？？"}</div></div>`; }).join("")}</div>`:"";
+    body=`${sortBar}${main}${fusHtml}${lim.length?`<div class="el-head" style="margin-top:16px">✨ 限定ランク（あなたが手に入れた魔物） <span>${lim.length}種</span></div><div class="dex">${lim.map(cell).join("")}</div>`:""}`;
   } else {
     body=ELEMENTS.map((e,ei)=>{ const fs=FRAMES.filter(f=>f.el===ei); const c=fs.filter(f=>S.frames[f.id]).length;
       return `<div class="el-head">${e.n}の枠 <span>${c}/10</span></div><div class="dex">${fs.map(f=>{const h=S.frames[f.id];return `<div class="cell ${h?"has":"unk"}">
@@ -4995,7 +4999,9 @@ const tsHome = () => true;
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 // 図鑑：まだ出会っていない魔物の入手方法
 function howToGet(m){ const L=[];
-  if(m.rank==="F") L.push("🧬 魔物オリジナル融合（BOXメニューから）");
+  if(m.rank==="F"||m.fuse){ const r=m.recipe||{}, an=r.an||(mon(r.a)||{}).name, bn=r.bn||(mon(r.b)||{}).name;
+    L.push(an&&bn?`🧬 融合レシピ：「${esc(an)}」＋「${esc(bn)}」をBOXの「魔物オリジナル融合」で融合すると、すぐ手に入ります`:"🧬 魔物オリジナル融合（BOXメニューから）"); }
+  else if(m.rank==="L"&&m.fuse) {}
   else if(m.rank==="L"||m.gift) L.push("🎁 運営からのプレゼント・イベントの限定キャラ（ガチャには出ません）");
   else if(m.evoOnly){ const from=MONSTERS.filter(x=>x.next===m.id); L.push(`🔄 進化でだけ手に入ります：${from.map(x=>S.got[x.id]?`「${esc(x.name)}」`:"「？？？」").join("・")||"ほかの魔物"} を進化させよう（BOXの「進化」から）`); }
   else if(m.rate) L.push("🎰 魔物ガチャ（とてもまれ）");
@@ -5031,7 +5037,7 @@ function profDexHtml(r){ const gc=r.id===MYID?gotCounts():(r.gc&&typeof r.gc==="
   return `<details class="pdex"><summary>📖 図鑑（${have}/${DEX_MONS.length}種）</summary><div class="dex pdex-g">${list.map(m=>`<div class="cell has"><img src="${cardURL(m.id,0,120)}" alt=""><div class="no">No.${String(m.id).padStart(3,"0")} <span class="rk rk-${m.rank}">${m.rank}</span></div><div class="nm">${esc(m.name)}</div><div class="pdex-c">×${(+gc[m.id]).toLocaleString()}</div></div>`).join("")||`<p class="note">まだ魔物がいません</p>`}</div></details>`; }
 const silCache={};
 function silhouette(mid){ if(silCache[mid]) return silCache[mid]; const cv=document.createElement("canvas"); cv.width=cv.height=160; const c=cv.getContext("2d");
-  if(IMG[mid]){ c.drawImage(IMG[mid],10,10,140,140); c.globalCompositeOperation="source-in"; c.fillStyle="#0e1613"; c.fillRect(0,0,160,160); } return silCache[mid]=cv.toDataURL(); }
+  if(IMG[mid]){ c.drawImage(IMG[mid],10,10,140,140); c.globalCompositeOperation="source-in"; c.fillStyle="#0e1613"; c.fillRect(0,0,160,160); return silCache[mid]=cv.toDataURL(); } return cv.toDataURL(); }   // 絵がまだ読みこめていないときは覚えておかない（融合魔物など）
 let lockedURL; function lockedFrame(){ if(lockedURL) return lockedURL; const cv=document.createElement("canvas"); cv.width=cv.height=160; const c=cv.getContext("2d");
   c.strokeStyle="#34493f"; c.lineWidth=10; c.setLineDash([10,8]); c.beginPath(); c.arc(80,80,54,0,7); c.stroke(); c.setLineDash([]); c.fillStyle="#34493f"; c.font="bold 44px sans-serif"; c.textAlign="center"; c.textBaseline="middle"; c.fillText("?",80,82); return lockedURL=cv.toDataURL(); }
 
@@ -9707,5 +9713,5 @@ async function titleRanks(){
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
-<script src="fz/fz.js?v=4" defer></script>
+<script src="fz/fz.js?v=5" defer></script>
 </body></html>
