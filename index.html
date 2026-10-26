@@ -153,6 +153,9 @@ details.rates summary{cursor:pointer;font-weight:700}
 .reveal .rv-btns .btn{min-width:150px}
 /* sheet */
 .sheet-bg{position:fixed;inset:0;background:#000a;z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.fuse-dock{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));z-index:5;margin:10px -4px 8px;padding:8px 8px 10px;background:var(--bark);border:2px solid var(--line);border-radius:14px;box-shadow:0 -6px 14px #0007}
+.fuse-dock .fuse-sum{margin:0 0 6px}
+.fuse-dock #doFuse{width:100%}
 .sheet{background:var(--bark);width:100%;max-width:720px;max-height:92%;overflow-y:auto;border-radius:20px 20px 0 0;border-top:2px solid var(--line);padding-block:14px calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sheet-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .sheet-h h3{flex:1;margin:0;font-family:var(--f-pix);font-weight:400;font-size:20px;min-width:0}
@@ -4812,11 +4815,11 @@ function openFuse(uid){
   const base=S.units.find(z=>z.u===uid); const m=mon(base.m); const sel=new Set();
   const mats=S.units.filter(z=>z.u!==uid && z.u!==S.guard).sort((a,b)=>(RANKS.indexOf(mon(a.m).rank)-RANKS.indexOf(mon(b.m).rank))||(a.l-b.l));
   const bg=sheet(`<div class="sheet-h"><h3>${m.name} に合成</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
-    <div id="fsum" class="fuse-sum"></div>
     ${mats.some(x=>x.m===base.m&&!x.k)?`<button class="btn gold" id="fuseSame" type="button" style="width:100%;margin-bottom:10px">同じ魔物をまとめて合成（${mats.filter(x=>x.m===base.m&&!x.k).length}体・経験値2倍）</button>`:""}
     <div class="toolbar"><button class="chip" id="selAll" type="button">保護以外をすべて選ぶ</button><button class="chip" id="selNone" type="button">選択を解除</button></div>
+    <div class="toolbar">${RANKS.filter(r=>mats.some(x=>!x.k&&mon(x.m).rank===r)).map(r=>`<button class="chip" type="button" data-fr="${r}"><span class="rk rk-${r}">${r==="L"?"限定":r}</span> を全部選ぶ</button>`).join("")}</div>
     ${mats.length?`<div class="grid" id="mats">${mats.map(x=>unitCard(x,(x.k?"dim":"")+(x.m===base.m?" same-m":""))).join("")}</div>`:`<div class="empty">素材にできる魔物がいません。ガチャで仲間を増やそう</div>`}
-    <div class="row"><button class="btn gold" id="doFuse" type="button" disabled>合成する（${fuseCost(base)}コイン）</button></div>
+    <div class="fuse-dock"><div id="fsum" class="fuse-sum"></div><button class="btn gold" id="doFuse" type="button" disabled>合成する（${fuseCost(base)}コイン）</button></div>
     <div class="row"><button class="btn" id="fuseAw" type="button" ${inv("stone")?"":"disabled"}>💎 覚醒の石を合成（${inv("stone").toLocaleString()}個）</button></div>
     <p class="note" style="margin:0">覚醒の石は1個で1レベル上がります（Lv100の上限も突破）。</p>`);
   bg.querySelector("#fuseAw").onclick=()=>openAwaken(uid,()=>openFuse(uid));
@@ -4833,6 +4836,7 @@ function openFuse(uid){
   };
   bg.querySelectorAll("#mats .card").forEach(c=>c.onclick=()=>{ const u=+c.dataset.u, x=S.units.find(z=>z.u===u); if(x.k) return toast("保護中の魔物は素材にできません"); sel.has(u)?sel.delete(u):sel.add(u); upd(); });
   bg.querySelector("#selAll").onclick=()=>{ mats.forEach(x=>{if(!x.k) sel.add(x.u)}); upd(); };
+  bg.querySelectorAll("[data-fr]").forEach(b=>b.onclick=()=>{ const rk=b.dataset.fr; mats.forEach(x=>{ if(!x.k&&mon(x.m).rank===rk) sel.add(x.u); }); upd(); });   // ランク別にまとめて選ぶ
   const fs=bg.querySelector("#fuseSame");
   if(fs) fs.onclick=()=>{ sel.clear(); mats.forEach(x=>{ if(x.m===base.m && !x.k) sel.add(x.u); }); upd();
     if(S.coins<fuseCost(base)) return toast(`合成には${fuseCost(base)}コイン必要です`);
@@ -4885,8 +4889,22 @@ function renderDex(){
 // 魔物合戦（ホームにトトの戦略の配置画面）：みんなに公開（2026-10-25）
 const tsHome = () => true;
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
+// 図鑑：まだ出会っていない魔物の入手方法
+function howToGet(m){ const L=[];
+  if(m.rank==="L"||m.gift) L.push("🎁 運営からのプレゼント・イベントの限定キャラ（ガチャには出ません）");
+  else if(m.evoOnly){ const from=MONSTERS.filter(x=>x.next===m.id); L.push(`🔄 進化でだけ手に入ります：${from.map(x=>S.got[x.id]?`「${esc(x.name)}」`:"「？？？」").join("・")||"ほかの魔物"} を進化させよう（BOXの「進化」から）`); }
+  else if(m.rate) L.push("🎰 魔物ガチャ（とてもまれ）");
+  else { L.push("🎰 魔物ガチャ"); if(m.rank==="S"||m.rank==="Z") L.push("✨ 魔物レアガチャ（モコで回す・S・Zだけが出る）"); }
+  return L; }
+function openDexHow(id){ const m=mon(id); if(!m) return;
+  sheet(`<div class="sheet-h"><h3>？？？</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <div class="detail"><img src="${silhouette(id)}" alt=""><div>
+      <div class="stat"><span>No.</span><b>${String(id).padStart(3,"0")}</b></div>
+      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank}</span></div>
+      <p class="note" style="margin:8px 0 4px"><b>まだ出会っていない魔物です。ここで手に入ります：</b></p>
+      <ul class="note" style="margin:0;padding-left:1.1em">${howToGet(m).map(t=>`<li>${t}</li>`).join("")}</ul></div></div>`); }
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
-  if(!h && !dexPeek()) return toast("まだ出会っていない魔物です");
+  if(!h && !dexPeek()) return openDexHow(id);
   const draw=()=>{ const c=S.got[id]||0, T=dexTotal(id), st=dexStats(), p=dexPrice(id);
     const bg=sheet(`<div class="sheet-h"><h3>${esc(m.name)}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="detail"><img src="${cardURL(id,0,320)}" alt="${esc(m.name)}"><div>
