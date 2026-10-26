@@ -12,7 +12,8 @@ const now = () => (typeof gnow==="function" ? gnow() : Date.now());
 const ref = () => DB.collection("vstate").doc("cur");
 const blank = r => ({ r:r||1, e:[], st:0, c:[0,0,0,0,0], q:[], pe:[] });
 const VT_USERS = ["ふっかー","🐴"];   // 試作を見せる冒険者（2026-10-26：🐴さんにも公開）
-const vtOn = () => { try{ return !!MYID && VT_USERS.some(n=>normName(n)===normName(myName())); }catch(e){ return false; } };
+const vtNm = t => normName(t).replace(/[\uFE0E\uFE0F\u200D]/g,"");   // 絵文字の見えない文字（異体字セレクタなど）は無視して比べる
+const vtOn = () => { try{ return !!MYID && VT_USERS.some(n=>vtNm(n)===vtNm(myName())); }catch(e){ return false; } };
 const vtk = () => (S.items||{}).vtk||0;   // エントリー予約チケット
 const isVoting = d => d && d.st>0 && d.e.length>=VT.N && now()<d.st+VT.MS;
 const isOver = d => d && d.st>0 && now()>=d.st+VT.MS;
