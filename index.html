@@ -321,6 +321,9 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-top2>.hm-card{flex:none;width:100%;box-sizing:border-box}
 .hm-row{display:flex;gap:8px;align-items:flex-start}
 .hm-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.fu-rcps{display:flex;align-items:center;gap:6px;margin:6px 0}.fu-rcps i{font-style:normal;font-weight:900}
+.fu-rcp{display:flex;flex-direction:column;align-items:center;gap:2px;width:72px}.fu-rcp img{width:64px;height:64px;border-radius:8px;background:#0003}.fu-rcp b{font-size:10.5px;text-align:center;line-height:1.2}
+.fu-first{margin:6px 0 0;font-size:11px;opacity:.85;color:var(--staff)}
 .fu-menu{background:linear-gradient(135deg,#ffe58a,#ffb84d)!important;border-color:#5a3a06!important;color:#3a2306!important}
 .fu-moko{margin:4px 0 10px auto;width:max-content;max-width:100%}
 .fu-moko small{display:block;font-size:11px;opacity:.85}
@@ -4999,8 +5002,10 @@ const tsHome = () => true;
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 // 図鑑：まだ出会っていない魔物の入手方法
 function howToGet(m){ const L=[];
-  if(m.rank==="F"||m.fuse){ const r=m.recipe||{}, an=r.an||(mon(r.a)||{}).name, bn=r.bn||(mon(r.b)||{}).name;
-    L.push(an&&bn?`🧬 融合レシピ：「${esc(an)}」＋「${esc(bn)}」をBOXの「魔物オリジナル融合」で融合すると、すぐ手に入ります`:"🧬 魔物オリジナル融合（BOXメニューから）"); }
+  if(m.rank==="F"||m.fuse){ const r=Object.assign({},FMON_CACHE[m.id]||{},m.recipe||{}), A=mon(r.a), B=mon(r.b), an=r.an||(A||{}).name, bn=r.bn||(B||{}).name;
+    // レシピの魔物も、持っていなければ黒い影（名前だけ出す）
+    const pic=(x,nm)=>`<span class="fu-rcp"><img src="${x?(S.got[x.id]?cardURL(x.id,0,120):silhouette(x.id)):""}" alt=""><b>${esc(nm||"？？？")}</b></span>`;
+    L.push(an&&bn?`🧬 融合レシピ<div class="fu-rcps">${pic(A,an)}<i>＋</i>${pic(B,bn)}</div>BOXの「魔物オリジナル融合」でこの2匹を融合すると、すぐ手に入ります`:"🧬 魔物オリジナル融合（BOXメニューから）"); }
   else if(m.rank==="L"&&m.fuse) {}
   else if(m.rank==="L"||m.gift) L.push("🎁 運営からのプレゼント・イベントの限定キャラ（ガチャには出ません）");
   else if(m.evoOnly){ const from=MONSTERS.filter(x=>x.next===m.id); L.push(`🔄 進化でだけ手に入ります：${from.map(x=>S.got[x.id]?`「${esc(x.name)}」`:"「？？？」").join("・")||"ほかの魔物"} を進化させよう（BOXの「進化」から）`); }
@@ -5013,13 +5018,19 @@ function openDexHow(id){ const m=mon(id); if(!m) return;
       <div class="stat"><span>No.</span><b>${String(id).padStart(3,"0")}</b></div>
       <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank}</span></div>
       <p class="note" style="margin:8px 0 4px"><b>まだ出会っていない魔物です。ここで手に入ります：</b></p>
-      <ul class="note" style="margin:0;padding-left:1.1em">${howToGet(m).map(t=>`<li>${t}</li>`).join("")}</ul></div></div>`); }
+      <ul class="note" style="margin:0;padding-left:1.1em">${howToGet(m).map(t=>`<li>${t}</li>`).join("")}</ul>${firstFuser(m)}</div></div>`); fillFirstFuser(m); }
+// 融合ランク：いちばん最初にその魔物を作った冒険者の名前「初代融合者」
+function firstFuser(m){ if(!m||!m.fuse) return ""; const f=FMON_CACHE[m.id]||{}; return `<p class="fu-first" data-ff="${m.id}">${f.fn?`👑 初代融合者 ${esc(f.fn)}`:""}</p>`; }
+async function fillFirstFuser(m){ if(!m||!m.fuse||!DB) return; const f=FMON_CACHE[m.id]=FMON_CACHE[m.id]||{}; if(f.fn) return;
+  try{ if(!f.req){ const d=await withTO(DB.collection("fusemon").doc(String(m.id)).get()); if(d.exists){ const x=d.data(); f.req=x.req; f.fn=x.fn; } }
+    if(!f.fn&&f.req){ const r=await withTO(DB.collection("fusereq").doc(f.req).get()); if(r.exists) f.fn=r.data().nm; }
+    const el=document.querySelector(`[data-ff="${m.id}"]`); if(el&&f.fn) el.textContent=`👑 初代融合者 ${f.fn}`; }catch(e){} }
 function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
   if(!h && !dexPeek()) return openDexHow(id);
   const draw=()=>{ const c=S.got[id]||0, T=dexTotal(id), st=dexStats(), p=dexPrice(id);
     const bg=sheet(`<div class="sheet-h"><h3>${esc(m.name)}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <div class="detail"><img src="${cardURL(id,0,320)}" alt="${esc(m.name)}"><div>
-      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank}</span></div>${byLine(m,"by by-unit")}
+      <div class="stat"><span>ランク</span><span class="rk rk-${m.rank}">${m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank}</span></div>${byLine(m,"by by-unit")}${firstFuser(m)}
       <div class="stat"><span>あなたが過去に獲得した数</span><b>${c.toLocaleString()}体</b></div>
       <div class="stat"><span>全冒険者の獲得数</span><b>${T!=null?T.toLocaleString()+"体":"…"}</b></div>
       <div class="stat"><span>今の売却価格（1体）</span><b style="color:var(--staff)">${p!=null?p.toLocaleString()+"コイン":"…"}</b></div>
@@ -5028,7 +5039,7 @@ function openDexMon(id){ const m=mon(id); if(!m) return; const h=S.got[id]||0;
     <p class="note" style="margin:0 0 8px">${c<=1?"獲得数は1より少なくできません（図鑑の記録は残ります）":"獲得数が減ると、全冒険者の合計も減るので、この魔物の売却価格が上がります。"}</p>`);
     bg.querySelector("#dxFix").onclick=()=>{ const cc=S.got[id]||0; if(cc<=1) return; if(S.coins<DEX_FIX_COST) return toast("コインが足りません");
       S.coins-=DEX_FIX_COST; S.got[id]=cc-1; save(); queueProfile(true); try{ SFX.coin(); }catch(e){} renderCoins(); toast(`${m.name}の獲得数を1減らしました（${cc}→${cc-1}体）`); closeSheet(); draw(); }; };
-  draw(); if(DB && (!dexStats()||gnow()-dexStats().at>=DEX_STALE_MS)) loadDexStats(true).then(()=>{ if(document.querySelector(".sheet-bg #dxFix")){ closeSheet(); draw(); } });
+  draw(); fillFirstFuser(m); if(DB && (!dexStats()||gnow()-dexStats().at>=DEX_STALE_MS)) loadDexStats(true).then(()=>{ if(document.querySelector(".sheet-bg #dxFix")){ closeSheet(); draw(); } });
 }
 // ほかの冒険者の図鑑（プロフィールで共有）
 function profDexHtml(r){ const gc=r.id===MYID?gotCounts():(r.gc&&typeof r.gc==="object"?r.gc:null);
@@ -9713,5 +9724,5 @@ async function titleRanks(){
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
-<script src="fz/fz.js?v=5" defer></script>
+<script src="fz/fz.js?v=6" defer></script>
 </body></html>
