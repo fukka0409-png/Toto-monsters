@@ -6729,7 +6729,7 @@ const NAMED_GIFTS = [
 ];
 // チーター行為の疑いでアカウントを初期化する冒険者（名前で指定・1回だけ）。{id:"cr-日付-名前", name:"冒険者名"}
 const CHEAT_RESET = [
-  { id:"cr-2026-10-27-dragon", name:"ＤＲＡＧＯＮ" },
+  // { id:"cr-2026-10-27-dragon", name:"ＤＲＡＧＯＮ" },   // 2026-10-27 17:00 誤解だったので取り消し（元にもどす）
 ];
 // 初期化で消すもの（魔物・コイン・アイテム・モコ・レベル・成績など）。受け取り済みの記録（プレゼント・呪文など）は残して、もう一度もらえないようにする
 const CR_WIPE = ["items","moko","pbox","fmons","arts","shieldList","shieldEq","wing","hs","plv","pexp","stats","best","firsts","guard","lvHist","_lastLv","fuReqs","useCnt","atkLog","itemBanSS"];
@@ -6751,7 +6751,9 @@ function checkCheatReset(){ if(!MYID) return; S.crDone=S.crDone||[];
   setTimeout(show,500); }
 // 誤解だった冒険者のデータを元にもどす（名前で指定）。{id:"crr-日付-名前", name:"冒険者名", at:決めた日時(ms)}
 // 初期化から3日（CR_KEEP）をすぎてから決めたものは、元にもどさない
-const CHEAT_RESTORE = [], CR_KEEP = 3*DAY_MS;
+const CHEAT_RESTORE = [
+  { id:"crr-2026-10-27-dragon", name:"ＤＲＡＧＯＮ", at:1793088000000 },   // 2026-10-27 17:00
+], CR_KEEP = 3*DAY_MS;
 async function checkCheatRestore(){ if(!DB||!MYID) return; S.crrDone=S.crrDone||[];
   let me; try{ me=normName(myName()); }catch(e){ return; }
   const hit=CHEAT_RESTORE.find(c=>!S.crrDone.includes(c.id) && normName(c.name)===me); if(!hit) return;
