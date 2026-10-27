@@ -6073,7 +6073,7 @@ function myStatsHtml(){
 function renderMe(segHtml){
   const need=pNeed(S.plv), owned=DEX_MONS.filter(m=>S.got[m.id]).length, frames=FRAMES.filter(f=>S.frames[f.id]).length;
   $("#stage").innerHTML=`${segHtml}
-  <div class="prof">
+  <div class="prof">${tsMyBox()}
     <div class="prof-top">${avatarImg(S.avatar,108)}
       <div class="prof-id"><div class="prof-name" id="pName" translate="no"></div>
         <button class="chip" id="editName" type="button">名前を変える</button></div>
