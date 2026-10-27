@@ -304,6 +304,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-moko{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;font-weight:900;color:#1d1d1d;white-space:nowrap}
 .hm-moko{overflow:hidden}
 /* 魔物サバイバル（ふっかーだけ・試作）のホーム */
+.home.io .hm-stand{bottom:40%}   /* 魔物サバイバルのホーム：真ん中の魔物を少し上に */
+.home.io .io-stats,.home.io .io-go{bottom:7%}
 .io-bg{position:absolute;inset:0;background:url(io/home.jpg) center bottom/cover no-repeat;border-radius:inherit}
 .io-btn{position:absolute;z-index:3;border:5px solid #1d1d1d;font:inherit;font-weight:900;color:#1d1d1d;box-shadow:0 4px 0 #1d1d1d}
 .io-ch{left:4%;bottom:24%;background:#fff;font-size:26px;padding:8px 18px}
@@ -5651,7 +5653,7 @@ function renderHome(){
   if(homeMode==="invest") return renderInvest();
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
   const h=homeCfg(), m=isArt(h.m)?artOf(h.m):mon(h.m);
-  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":""}">
+  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":dexPeek()?" io":""}">
     ${tsInHome()?"":dexPeek()?`<div class="io-bg"></div>`:`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
     <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>`}
     <div class="hm-top hm-top2">
