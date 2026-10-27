@@ -5974,7 +5974,7 @@ function renderRankTab(){
   bindSeg(k=>{ profMode=k; if(k==="rank") loadRanking(); if(k==="bank") loadBankRank(true); render(); $("#stage").scrollTop=0; });
 }
 // 貯金（2026-10-27）：所持コインは10億まで、貯金に上限はない。貯金ランキングは上位10人だけ
-let BANK_RK=null, BANK_AT=0, bankErr=false;
+let BANK_RK=null, BANK_AT=0, bankErr=false; const BANK_OUT_MAX=10000000;   // 1回に引き出せるのは1000万コインまで
 async function loadBankRank(force){ if(!DB) return; if(!force&&BANK_RK&&gnow()-BANK_AT<60000) return;
   try{ const q=await withTO(DB.collection("profiles").orderBy("bk","desc").limit(10).get()); BANK_RK=q.docs.map(d=>({id:d.id,...d.data()})).filter(r=>(r.bk||0)>0); BANK_AT=gnow(); bankErr=false; }
   catch(e){ bankErr=true; } if(tab==="rank"&&profMode==="bank") render(); }
@@ -5984,19 +5984,19 @@ function renderBank(segHtml){
   $("#stage").innerHTML=`${segHtml}<h2>貯金ランキング</h2>
     <div class="season-box"><div><small>🏦 あなたの貯金</small><b translate="no">${n(bk)}</b></div>
 </div>
-    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>10億</b>まで。貯金には<b>上限がありません</b>。所持コインが10億をこえた分は、自動で貯金に入ります。</div>
+    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>10億</b>まで。貯金には<b>上限がありません</b>。所持コインが10億をこえた分は、自動で貯金に入ります。<br>貯金はいくらでもできますが、<b>引き出しは1回1000万コインまで</b>です。</div>
       <div class="bank-in"><input id="bkAmt" type="number" inputmode="numeric" min="1" placeholder="コインの数" class="fr-ta" style="width:100%;box-sizing:border-box;margin:8px 0 6px">
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn gold" type="button" id="bkIn" style="flex:1">貯金する</button><button class="btn" type="button" id="bkOut" style="flex:1">引き出す</button></div>
-      <div style="display:flex;gap:6px;margin-top:6px"><button class="chip" type="button" id="bkAllIn">所持コインを全部貯金</button><button class="chip" type="button" id="bkAllOut">引き出せるだけ引き出す</button></div></div>
+      <div style="display:flex;gap:6px;margin-top:6px"><button class="chip" type="button" id="bkAllIn">所持コインを全部貯金</button><button class="chip" type="button" id="bkAllOut">1000万コイン引き出す</button></div></div>
     <p class="sub" style="margin:10px 0 4px">貯金の多い冒険者の上位10人です。 <button class="chip" type="button" id="bkR">更新</button></p>
     ${!DB?`<div class="empty">ログインすると貯金ランキングが見られます</div>`:bankErr?`<div class="empty">読み込めませんでした</div>`:!BANK_RK?`<div class="empty">読み込み中…</div>`:!BANK_RK.length?`<div class="empty">まだ貯金している冒険者はいません</div>`:
       `<ol class="sd-list">${BANK_RK.map((r,i)=>`<li class="sd-row ${r.id===MYID?"me":""}" data-bkr="${esc(r.id)}"><span class="no ${i<3?"t"+(i+1):""}">${i+1}</span>${avatarImg(r.icon,34)}<span class="nm">${uname(r.name)}</span><span class="lv" translate="no">🏦 ${n(r.bk)}</span></li>`).join("")}</ol>`}`;
   const amt=()=>Math.floor(Number($("#bkAmt").value)||0);
   const done=t=>{ save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(t); setTimeout(()=>loadBankRank(true),1500); render(); };
   const dep=a=>{ a=Math.min(a,Math.floor(S.coins)); if(a<=0) return toast("貯金できるコインがありません"); S.coins-=a; S.bank=(S.bank||0)+a; done(`🏦 ${a.toLocaleString()}コインを貯金しました`); };
-  const wd=a=>{ a=Math.min(a,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（10億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
+  const wd=a=>{ a=Math.min(a,BANK_OUT_MAX,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（10億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
   $("#bkIn").onclick=()=>{ const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>S.coins) return toast("所持コインが足りません"); dep(a); };
-  $("#bkOut").onclick=()=>{ const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>(S.bank||0)) return toast("貯金が足りません"); if(a>room) return toast(`所持コインは10億までなので、引き出せるのは ${room.toLocaleString()}コイン までです`); wd(a); };
+  $("#bkOut").onclick=()=>{ const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>BANK_OUT_MAX) return toast("1回に引き出せるのは1000万コインまでです"); if(a>(S.bank||0)) return toast("貯金が足りません"); if(a>room) return toast(`所持コインは10億までなので、引き出せるのは ${room.toLocaleString()}コイン までです`); wd(a); };
   $("#bkAllIn").onclick=()=>dep(Math.floor(S.coins));
   $("#bkAllOut").onclick=()=>wd(Math.floor(S.bank||0));
   $("#bkR").onclick=()=>loadBankRank(true);
