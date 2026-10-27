@@ -6717,6 +6717,7 @@ const NAMED_GIFTS = [
   { id:"ng-2026-10-27-love-moko2000", moko:2000, to:{ "love":1 } },
   { id:"ng-2026-10-27-love-moko2000b", moko:2000, to:{ "love":1 } },
   { id:"ng-2026-10-27-eastblue-moko500", moko:500, to:{ "EASTBLUE🦁":1 } },
+  { id:"ng-2026-10-27-dragon-owabi", coins:100000, ic:"🙏", title:"誤解で初期化してしまったお詫びです🙏", en:"Our apology for resetting your account by mistake 🙏", to:{ "ＤＲＡＧＯＮ":1 } },
   { id:"ng-2026-10-26-goods-keeko", coins:10000, ic:"🔥", title:"購入してくれたグッズの報酬だよ🔥", en:"A reward for buying our goods 🔥", to:{ "ケエコ":1 } },
   { id:"ng-2026-10-26-goods-rice", coins:320000, ic:"🔥", title:"購入してくれたグッズの報酬だよ🔥", en:"A reward for buying our goods 🔥", to:{ "ライス大好き":1 } },
   { id:"ng-2026-10-26-goods-yoko", coins:10000, ic:"🔥", title:"購入してくれたグッズの報酬だよ🔥", en:"A reward for buying our goods 🔥", to:{ "yoko★":1 } },
@@ -6761,7 +6762,7 @@ async function checkCheatRestore(){ if(!DB||!MYID) return; S.crrDone=S.crrDone||
   if(!b||!b.json||(hit.at||0)-(b.at||0)>CR_KEEP){ S.crrDone.push(hit.id); save(); return; }
   let o=null; try{ o=JSON.parse(b.json); }catch(e){} if(!o||!Array.isArray(o.units)){ S.crrDone.push(hit.id); save(); return; }
   o.crDone=Array.from(new Set([...(o.crDone||[]),...(S.crDone||[])])); o.crrDone=(S.crrDone||[]).concat(hit.id); o.owner=S.owner; o.updated=gnow();
-  S=o; fixPlayer(); save(); try{ queueProfile(true); }catch(e){} render();
+  S=o; fixPlayer(); save(); try{ queueProfile(true); }catch(e){} try{ checkNamedGift(); }catch(e){} render();
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=90;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🙏</div><p>運営からのお知らせ</p>
     <div class="note" style="margin:0;font-size:15px">確認の結果、誤解だったことがわかりました。<br>アカウントのデータを元にもどしました。ご迷惑をおかけしました🙏</div>
