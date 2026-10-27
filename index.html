@@ -3,6 +3,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#16211d">
 <link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="トトと魔物たち">
 <title>トトと魔物たち</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
@@ -3636,6 +3640,20 @@ async function startRemote(uid){
   }catch(e){ console.warn(e); remoteDoc = null; }
 }
 let giftTimer=null, LOGIN_NAME=null;
+/* ---------- ホーム画面に追加（2026-10-27：新規登録のあとに案内） ---------- */
+let A2HS=null;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); A2HS=e; });
+try{ if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch(e){}
+const isStandalone=()=>{ try{ return window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true; }catch(e){ return false; } };
+function openA2HS(){ if(isStandalone()) return;
+  const ua=navigator.userAgent||"", ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=240;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><img src="icon.png" alt="" style="width:72px;height:72px;border-radius:16px;margin:0 auto"><p>📲 ホーム画面に追加しよう！</p>
+    <div class="note" style="margin:0;text-align:left">ホーム画面にアイコンを置くと、アプリのようにすぐ遊べます。${A2HS?"":ios?`<br><br><b>やり方（iPhone・iPad）</b><br>① Safariの下（または上）の <b>共有ボタン</b>（□に↑のマーク）を押す<br>② 「<b>ホーム画面に追加</b>」を押す<br>③ 右上の「<b>追加</b>」を押す<br><small>※Safari以外のアプリの中で開いているときは、Safariで開き直してください</small>`:`<br><br><b>やり方</b><br>ブラウザの <b>︙（メニュー）</b> から「<b>ホーム画面に追加</b>」または「<b>アプリをインストール</b>」を押してください`}</div>
+    ${A2HS?`<button class="btn gold" type="button" id="a2Go">ホーム画面に追加する</button>`:""}<button class="btn ${A2HS?"ghost":"gold"}" type="button" id="a2No">${A2HS?"あとで":"OK"}</button></div>`;
+  document.body.appendChild(bg); bg.querySelector("#a2No").onclick=()=>bg.remove();
+  const g=bg.querySelector("#a2Go"); if(g) g.onclick=async()=>{ try{ A2HS.prompt(); await A2HS.userChoice; }catch(e){} A2HS=null; bg.remove(); }; }
+
 if(FBA){
   FBA.onAuthStateChanged(async u=>{
     if(u){ if(!LOGIN_NAME){ try{ const p=await FDB.doc("profiles/"+u.uid).get(); if(p.exists) LOGIN_NAME=p.data().name||null; }catch(e){} }
@@ -3770,6 +3788,7 @@ function openLogin(mode){
             try{ await FDB.collection("refs").doc(cred.user.uid).set({from:cred.user.uid, to:refUid, nm:name, at:gnow()}); }catch(e){} }
           save();
           toast(refUid?`ようこそ、${name}さん！ 紹介ボーナス +${REF_BONUS.toLocaleString()}コイン`:`ようこそ、${name}さん！`);
+          setTimeout(()=>{ try{ openA2HS(); }catch(e){} },1800);
         } else {
           LOGIN_NAME=name;
           let email=authEmail(k);

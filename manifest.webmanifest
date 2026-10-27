@@ -1,0 +1,13 @@
+{
+  "name": "トトと魔物たち",
+  "short_name": "トトと魔物たち",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#16211d",
+  "theme_color": "#16211d",
+  "icons": [
+    { "src": "icon192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
