@@ -7253,15 +7253,20 @@ const SEASON_USE_MAX = { bomb:30, magnet:30 };
 const useCnt = () => { const s=seasonNow(); if(!S.useCnt||S.useCnt.s!==s) S.useCnt={s}; return S.useCnt; };
 const useLeft = k => SEASON_USE_MAX[k]==null ? Infinity : Math.max(0, SEASON_USE_MAX[k]-(useCnt()[k]||0));
 const useLimitTxt = k => `${itemOf(k).name}は1シーズンに${SEASON_USE_MAX[k]}回まで使えます（今シーズンはもう使えません）`;
+// 2026-10-27：マグネットは、同じ相手には1シーズンに10個まで
+const MAGNET_PER_TARGET = 10;
+const magLeft = id => { const u=useCnt(); return Math.max(0, MAGNET_PER_TARGET-((u.mt||{})[id]||0)); };
+const magLimitTxt = () => `マグネットは同じ冒険者に1シーズン${MAGNET_PER_TARGET}個までしか使えません（今シーズン、この冒険者にはもう使えません）`;
 function confirmItem(r,k,direct){
   if(k==="bomb" && !direct) return bombChoice(r);
   if(noAct()) return toast(FREEZE_TXT);
   if(useLeft(k)<=0) return toast(useLimitTxt(k));
+  if(k==="magnet" && magLeft(r.id)<=0) return toast(magLimitTxt());
   if(itemRest()) return toast(ITEM_REST_TXT);
   const i=itemOf(k), who=esc(r.name||"名無しの召喚士");
   if(SENDABLE.includes(k)) return qtyDialog({img:i.img, title:`${who}さんに${i.name}を贈る`, max:inv(k), ok:"贈る！",
     desc:n=>(k==="gift"?`${who}さんに <b>${(GIFT_COIN*n).toLocaleString()}コイン</b> がプレゼントされます。`:`${who}さんに <b>ガチャチケット${n}枚</b> が届きます。`)+"<br>相手には次にアプリを開いたときに届きます。"}, n=>useItem(r,k,n));
-  const what=k==="shbomb"?`${who}さんの盾を${SHBOMB_BREAK}つこわします。（使うのに${USE_COST.shbomb}コイン）`:k==="gift"?`${who}さんに${GIFT_COIN.toLocaleString()}コインをプレゼントします。`:k==="magnet"?`${who}さんの所持コインの1%をうばいます。`:k==="fire"?`${who}さんの配置魔物（${esc(mon(r.gm)?.name||"魔物")}）のレベルを${FIRE_LV}下げます。（使うのに${USE_COST.fire}コイン）`:`${who}さんの冒険者レベルを${BOMB_LV}下げます。（使うのに${USE_COST.bomb.toLocaleString()}コイン）`;
+  const what=k==="shbomb"?`${who}さんの盾を${SHBOMB_BREAK}つこわします。（使うのに${USE_COST.shbomb}コイン）`:k==="gift"?`${who}さんに${GIFT_COIN.toLocaleString()}コインをプレゼントします。`:k==="magnet"?`${who}さんの所持コインの1%をうばいます。<br><small>この冒険者には、今シーズンあと${magLeft(r.id)}個使えます</small>`:k==="fire"?`${who}さんの配置魔物（${esc(mon(r.gm)?.name||"魔物")}）のレベルを${FIRE_LV}下げます。（使うのに${USE_COST.fire}コイン）`:`${who}さんの冒険者レベルを${BOMB_LV}下げます。（使うのに${USE_COST.bomb.toLocaleString()}コイン）`;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="iuT"><img src="${i.img}" alt="" style="width:96px;height:96px;margin:0 auto;image-rendering:pixelated"><p id="iuT">${i.name}を使いますか？</p>
     <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。あなたの名前は出ず「中級冒険者」のように、レベル帯だけが伝わります。（残り ${inv(k)}個）</div>
@@ -7283,12 +7288,13 @@ async function useItem(r,k,qty=1){
   if(k==="bomb"&&S.plv<BOMB_MIN_LV) { toast(`爆弾は冒険者Lv${BOMB_MIN_LV}から使えます`); return false; }
   const cost=USE_COST[k]||0; if(S.coins<cost) { toast(`使うのに${cost.toLocaleString()}コイン必要です`); return false; }
   if(useLeft(k)<=0) { toast(useLimitTxt(k)); return false; }
+  if(k==="magnet" && magLeft(r.id)<qty) { toast(magLimitTxt()); return false; }
   const coins = k==="magnet" ? Math.floor(Math.max(0,d.cn||0)*MAGNET) : 0;
   try{
     await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
       item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:gnow()}));
   }catch(e){ { toast("アイテムを使えませんでした。少し時間をおいてためしてください"); return false; } }
-  addItem(k,-qty); S.coins-=cost; if(SEASON_USE_MAX[k]!=null){ const u=useCnt(); u[k]=(u[k]||0)+qty; } save(); closeSheet(); render();   // マグネットのコインは、相手が開いたときに（盾で防がれなければ）届く
+  addItem(k,-qty); S.coins-=cost; if(SEASON_USE_MAX[k]!=null){ const u=useCnt(); u[k]=(u[k]||0)+qty; if(k==="magnet"){ u.mt=u.mt||{}; u.mt[r.id]=(u.mt[r.id]||0)+qty; } } save(); closeSheet(); render();   // マグネットのコインは、相手が開いたときに（盾で防がれなければ）届く
   const i=itemOf(k), who=esc(d.name||"相手");
   const msg=k==="gift"?`${who}さんに <b style="color:var(--staff)">${(GIFT_COIN*qty).toLocaleString()}コイン</b> をプレゼントした！`:k==="ticket"?`${who}さんに <b style="color:var(--staff)">ガチャチケット${qty}枚</b> を贈った！`:k==="magnet"?`${who}さんにコインマグネットを使った！<br>うばったコイン（約${coins.toLocaleString()}コイン）は、相手が次にアプリを開いたときに届きます`
           :k==="fire"?`${who}さんの${esc(mon(d.gm).name)}にファイヤーボールを放った！<br>${cost?`（−${cost.toLocaleString()}コイン）`:""}`
