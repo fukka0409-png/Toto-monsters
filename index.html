@@ -299,6 +299,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-top2 .hm-id{max-width:132px}
 .hm-moko{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;font-weight:900;color:#1d1d1d;white-space:nowrap}
 .hm-moko{overflow:hidden}
+.hm-moko.op{flex-wrap:wrap;row-gap:0}.hm-login{flex-basis:100%;text-align:center;font-size:11px;color:#c0392b;font-weight:900}.hm-login b{font-size:13px!important}
 .hm-moko img{width:30px;height:30px;flex:none}
 .hm-moko b{font-size:15px}.hm-moko small{font-size:10px}
 .sh-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
@@ -5341,6 +5342,12 @@ async function sha256(t){ const b=await crypto.subtle.digest("SHA-256",new TextE
 
 /* ---------- プロフィール・ランキング ---------- */
 let RANK_TOTAL=0;
+// ふっかーだけ：今のランク戦（シーズン）が始まってからログインした冒険者の人数（プロフィールの更新時刻で数える）
+let LOGIN_N={s:null,n:null,at:0};
+async function loadLoginN(){ if(!DB||!dexPeek()) return; const s=seasonNow(); if(LOGIN_N.s===s&&gnow()-LOGIN_N.at<60*1000) return;
+  try{ const q=DB.collection("profiles").where("pub",">=",seasonEnd(s-1)); const n=q.count?(await withTO(q.count().get())).data().count:(await withTO(q.get())).size;
+    LOGIN_N={s,n,at:gnow()}; const el=document.getElementById("hmLogin"); if(el) el.innerHTML=`👥ログイン <b>${n.toLocaleString()}</b>人`; }catch(e){} }
+setInterval(()=>{ if(document.getElementById("hmLogin")) loadLoginN(); }, 3000);
 let SIGNED=false, VIEWONLY=false, DB=null, MYID=null, profMode="rank", profTimer=null, lastPub="", RANK=null, myRank=null, myRankAt=0, myRankSafe=null, top3Seen=0, rankErr=false;
 
 const loginBox=msg=>`<div class="login-box"><p>${msg}</p>
@@ -5617,7 +5624,7 @@ function renderHome(){
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
         ${avatarImg(S.avatar,50)}
         <span class="hm-id"><b id="hmName"></b><span class="hm-lv">冒険者 Lv <b>${S.plv}</b></span></span>
-        <span class="hm-moko" aria-label="モコ"><img src="moko.png" alt=""><b>${mokoFmt(S.moko||0)}</b><small>モコ</small></span>
+        <span class="hm-moko ${dexPeek()?"op":""}" aria-label="モコ">${dexPeek()?`<span class="hm-login" id="hmLogin">👥ログイン <b>${LOGIN_N.s===seasonNow()&&LOGIN_N.n!=null?LOGIN_N.n.toLocaleString():"…"}</b>人</span>`:""}<img src="moko.png" alt=""><b>${mokoFmt(S.moko||0)}</b><small>モコ</small></span>
         <span class="hm-shield" id="hmShield" role="button" tabindex="0" aria-label="盾"><i>🛡</i><small>${shieldOn()?`耐久${shEquipped().dur}${S.shieldList.length>1?`+${S.shieldList.length-1}`:""}`:"盾"}</small></span>
         <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
       </button>
