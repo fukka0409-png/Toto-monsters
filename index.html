@@ -3617,7 +3617,7 @@ async function startRemote(uid){
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
     try{ if(dexPeek() && !S.tk0_1026){ S.items=S.items||{}; S.items.ticket=0; S.tk0_1026=1; save(); } }catch(e){}   // 2026-10-26：ふっかーの所持ガチャチケットを1回だけ0にする
-    checkLoginBonus(); shieldNotice(); fuseNotice(); checkMokoPay();
+    checkLoginBonus(); shieldNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
@@ -7362,6 +7362,17 @@ function anonWho(b){
 }
 let itemBusy=false;
 // 魔物オリジナル融合のお知らせ（全冒険者に1回だけ・2026-10-27）
+// 2026-10-27：融合1回無料のお知らせ（1回だけ。まだ無料を使っていない冒険者に）
+function fuFreeNotice(){ if(S.nFuFree1027||!fuFree()) return;
+  const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
+    if(S.nFuFree1027||!fuFree()) return; S.nFuFree1027=1; save();
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎁</div><p>融合が1回無料！</p>
+      <div class="note" style="margin:0">全冒険者が、<b>モコを使わずに1回だけ</b>融合できます！<br>すでに融合したことがある冒険者も、1回無料です✨<br><small>BOXメニューの「🧬 魔物オリジナル融合」から</small></div>
+      <button class="btn gold" type="button" id="ffGo">融合してみる</button><button class="btn ghost" type="button" id="ffOk">OK</button></div>`;
+    document.body.appendChild(bg); try{ SFX.coin(); }catch(e){} bg.querySelector("#ffOk").onclick=()=>bg.remove();
+    bg.querySelector("#ffGo").onclick=()=>{ bg.remove(); tab="box"; boxMode="fusion"; fuMokoTip=0; render(); try{ $("#stage").scrollTop=0; }catch(e){} }; };
+  setTimeout(show,1200); }
 function fuseNotice(){ if(S.nFuse1) return;
   const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
     S.nFuse1=1; save();
