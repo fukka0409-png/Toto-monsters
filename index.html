@@ -304,6 +304,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-moko{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;font-weight:900;color:#1d1d1d;white-space:nowrap}
 .hm-moko{overflow:hidden}
 /* 魔物サバイバル（ふっかーだけ・試作）のホーム */
+.io-bg{position:absolute;inset:0;background:url(io/home.jpg) center bottom/cover no-repeat;border-radius:inherit}
 .io-btn{position:absolute;z-index:3;border:5px solid #1d1d1d;font:inherit;font-weight:900;color:#1d1d1d;box-shadow:0 4px 0 #1d1d1d}
 .io-ch{left:4%;bottom:24%;background:#fff;font-size:26px;padding:8px 18px}
 .io-go{right:4%;bottom:5%;width:42%;background:#f2dc3a;font-size:30px;padding:20px 6px;outline:5px solid #555;outline-offset:-12px}
@@ -5651,7 +5652,7 @@ function renderHome(){
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
   const h=homeCfg(), m=isArt(h.m)?artOf(h.m):mon(h.m);
   $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":""}">
-    ${tsInHome()?"":`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
+    ${tsInHome()?"":dexPeek()?`<div class="io-bg"></div>`:`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
     <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>`}
     <div class="hm-top hm-top2">
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
@@ -10062,7 +10063,7 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=3" defer></script>
+<script src="io/io.js?v=4" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
 <script src="fz/fz.js?v=12" defer></script>
 </body></html>

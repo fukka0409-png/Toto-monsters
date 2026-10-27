@@ -15,8 +15,8 @@ const sf=id=>{ let h=(Number(id)||7)*2654435761>>>0; h^=h>>>13; return 0.75+((h%
 // 勝ち負け：①武器の数が多い方 → ②同じならレベル（サイズ）が高い方。どちらも同じなら押し合うだけ
 const cmp=(a,b)=>((a.w||0)-(b.w||0))||(a.lv-b.lv);
 const radius=(lv,f)=>IO.R0*f*(1+0.06*(lv-1));
-// 足の速さ：レベルが高くなるほど少しずつ遅くなる（Lv100で約半分）。体の大きさに合わせて画面の見た目の速さをそろえたうえで、レベルで遅くする
-const speedOf=(r,lv)=>170*Math.pow(r/IO.R0,0.65)/(1+0.012*((lv||1)-1));
+// 足の速さ：体が大きくなるほど遅くなる（画面の見た目の速さは Lv10で約75%・Lv50で約40%・Lv100で約25%）。敵も同じ
+const speedOf=(r,lv)=>170*Math.pow(IO.R0/r,0.05);
 // 武器の絵は3種類（io/w1〜w3.png）からランダム
 const WEAPONS=[1,2,3].map(n=>{ const im=new Image(); im.src="io/w"+n+".png"; return im; });
 const imgCache={};
