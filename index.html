@@ -5982,6 +5982,7 @@ function renderBank(segHtml){
   const n=v=>Math.floor(v||0).toLocaleString(), bk=Math.floor(S.bank||0), room=Math.max(0,COIN_MAX-S.coins);
   if(!BANK_RK&&!bankErr) loadBankRank();
   $("#stage").innerHTML=`${segHtml}<h2>貯金ランキング</h2>
+    <div style="margin:0 0 10px;padding:12px 14px;border-radius:14px;background:linear-gradient(#ffe16b,#f2b631);border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font-weight:900;text-align:center;font-size:15px;line-height:1.5">🛡🧲 貯金したコインは<br><span style="font-size:19px">コインマグネットで取られません！</span></div>
     <div class="season-box"><div><small>🏦 あなたの貯金</small><b translate="no">${n(bk)}</b></div>
 </div>
     <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>10億</b>まで。貯金には<b>上限がありません</b>。所持コインが10億をこえた分は、自動で貯金に入ります。<br>貯金はいくらでもできますが、<b>引き出しは1回1000万コインまで</b>です。</div>
