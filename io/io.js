@@ -15,7 +15,8 @@ const sf=id=>{ let h=(Number(id)||7)*2654435761>>>0; h^=h>>>13; return 0.75+((h%
 // 勝ち負け：①武器の数が多い方 → ②同じならレベル（サイズ）が高い方。どちらも同じなら押し合うだけ
 const cmp=(a,b)=>((a.w||0)-(b.w||0))||(a.lv-b.lv);
 const radius=(lv,f)=>IO.R0*f*(1+0.06*(lv-1));
-const speedOf=r=>170*Math.pow(r/IO.R0,0.5);
+// 足の速さ：レベルが高くなるほど少しずつ遅くなる（Lv100で約半分）。体の大きさに合わせて画面の見た目の速さをそろえたうえで、レベルで遅くする
+const speedOf=(r,lv)=>170*Math.pow(r/IO.R0,0.65)/(1+0.012*((lv||1)-1));
 // 武器の絵は3種類（io/w1〜w3.png）からランダム
 const WEAPONS=[1,2,3].map(n=>{ const im=new Image(); im.src="io/w"+n+".png"; return im; });
 const imgCache={};
@@ -104,11 +105,11 @@ function step(dt){ const P=G.P;
   // 歩く動き：右へ動くときはそのまま、左へ動くときは絵を左右反転。動いているあいだは少しはねる
   if(G.dir.x>0.15) P.face=1; else if(G.dir.x<-0.15) P.face=-1; P.mv=Math.hypot(G.dir.x,G.dir.y)>0.1; if(P.mv) P.ph=(P.ph||0)+dt*11;
   for(const e of G.E){ if(e.vx>0.15) e.face=1; else if(e.vx<-0.15) e.face=-1; e.mv=true; e.ph=(e.ph||rnd(0,6))+dt*9; }
-  const sp=speedOf(P.r); P.x=Math.max(P.r*0.5,Math.min(IO.W-P.r*0.5,P.x+G.dir.x*sp*dt)); P.y=Math.max(P.r*0.5,Math.min(IO.H-P.r*0.5,P.y+G.dir.y*sp*dt));
+  const sp=speedOf(P.r,P.lv); P.x=Math.max(P.r*0.5,Math.min(IO.W-P.r*0.5,P.x+G.dir.x*sp*dt)); P.y=Math.max(P.r*0.5,Math.min(IO.H-P.r*0.5,P.y+G.dir.y*sp*dt));
   for(const e of G.E){ e.turn-=dt; const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, near=d<Math.max(420,P.r*6);
     if(near&&cmp(e,P)>0){ e.vx=dx/d; e.vy=dy/d; } else if(near&&cmp(e,P)<0){ e.vx=-dx/d; e.vy=-dy/d; }
     else if(e.turn<=0){ const a=rnd(0,Math.PI*2); e.vx=Math.cos(a); e.vy=Math.sin(a); e.turn=rnd(1,3); }
-    const es=speedOf(e.r)*(near&&cmp(e,P)>0?0.8:0.6); e.x+=e.vx*es*dt; e.y+=e.vy*es*dt;
+    const es=speedOf(e.r,e.lv)*(near&&cmp(e,P)>0?0.8:0.6); e.x+=e.vx*es*dt; e.y+=e.vy*es*dt;
     if(e.x<e.r*0.5||e.x>IO.W-e.r*0.5){ e.vx*=-1; e.x=Math.max(e.r*0.5,Math.min(IO.W-e.r*0.5,e.x)); }
     if(e.y<e.r*0.5||e.y>IO.H-e.r*0.5){ e.vy*=-1; e.y=Math.max(e.r*0.5,Math.min(IO.H-e.r*0.5,e.y)); } }
   // 敵どうし：ふれたら高い方が勝ってLv+1、負けた方は別の場所に出なおす
