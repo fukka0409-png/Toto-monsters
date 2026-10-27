@@ -299,7 +299,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-top2 .hm-id{max-width:132px}
 .hm-moko{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;font-weight:900;color:#1d1d1d;white-space:nowrap}
 .hm-moko{overflow:hidden}
-.seg button[data-k=bank]{font-size:13px;white-space:nowrap}
+.seg button[data-k=bank],.seg button[data-k=rank]{font-size:13px;white-space:nowrap}
 .hm-moko.op{flex-wrap:wrap;row-gap:0}.hm-login{flex-basis:100%;text-align:center;font-size:11px;color:#c0392b;font-weight:900}.hm-login b{font-size:13px!important}
 .hm-moko img{width:30px;height:30px;flex:none}
 .hm-moko b{font-size:15px}.hm-moko small{font-size:10px}
@@ -5966,7 +5966,7 @@ async function doInvest(r,a){
 }
 function renderRankTab(){
   if(profMode!=="dress"&&profMode!=="bank") profMode="rank";
-  const segHtml=seg([["rank","ランキング"],["bank","貯金ランキング"],["dress","アイコン"]],profMode);
+  const segHtml=seg([["rank","魔物ランキング"],["bank","貯金ランキング"],["dress","アイコン"]],profMode);
   if(profMode==="dress"){ renderDress(); $("#stage").insertAdjacentHTML("afterbegin",segHtml); }
   else if(profMode==="bank") renderBank(segHtml);
   else if(profMode==="rank") renderRanking(segHtml);
@@ -6107,7 +6107,7 @@ function renderRanking(segHtml){
         ${(cmtOpen()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div><button type="button" class="rk-rep" data-rep="${i}">💬 ${LANG==="en"?"Reply":"返信"}</button>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
-  $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>ランキング</h2>
+  $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>魔物ランキング</h2>
     ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のランク戦の順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
     ${rankless()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🕐 順位がつくまで</small><b id="rlCd">${fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow())}</b></div><div class="note" style="display:block;margin:2px 0 0">ランク戦が始まってから1時間は順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます</div></div>`:""}
     <div class="season-box"><div><small>ランク戦終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
