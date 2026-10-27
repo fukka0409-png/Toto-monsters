@@ -3624,7 +3624,7 @@ async function startRemote(uid){
     queueProfile(true); loadRanking();
     try{ if(dexPeek() && !S.tk0_1026){ S.items=S.items||{}; S.items.ticket=0; S.tk0_1026=1; save(); } }catch(e){}   // 2026-10-26：ふっかーの所持ガチャチケットを1回だけ0にする
     checkLoginBonus(); shieldNotice(); cheatNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -6726,6 +6726,24 @@ const NAMED_GIFTS = [
   { id:"ng-2026-10-27-ojina-nabekinoko", mons:[112], to:{ "おじな":1 } },
   { id:"ng-2026-10-24-yoko-owabi", coins:50000, title:"🙏 お詫び：ランク戦が始まってすぐの1時間に、アイテムを使われてしまっていました🙏", en:"Apology: items were used on you during the first hour of the ranked match 🙏", to:{ "yoko★":1 } },   // 別のお知らせとして届く
 ];
+// チーター行為の疑いでアカウントを初期化する冒険者（名前で指定・1回だけ）。{id:"cr-日付-名前", name:"冒険者名"}
+const CHEAT_RESET = [];
+// 初期化で消すもの（魔物・コイン・アイテム・モコ・レベル・成績など）。受け取り済みの記録（プレゼント・呪文など）は残して、もう一度もらえないようにする
+const CR_WIPE = ["items","moko","pbox","fmons","arts","shieldList","shieldEq","wing","hs","plv","pexp","stats","best","firsts","guard","lvHist","_lastLv","fuReqs","useCnt","atkLog","itemBanSS"];
+function checkCheatReset(){ if(!MYID) return; S.crDone=S.crDone||[];
+  let me; try{ me=normName(myName()); }catch(e){ return; }
+  const hit=CHEAT_RESET.find(c=>!S.crDone.includes(c.id) && normName(c.name)===me); if(!hit) return;
+  const old=S, n=fresh();
+  Object.keys(old).forEach(k=>{ if(!(k in n) && !CR_WIPE.includes(k)) n[k]=old[k]; });
+  n.codes=old.codes||[]; n.crDone=(old.crDone||[]).concat(hit.id); n.updated=gnow();
+  S=n; fixPlayer(); save(); try{ queueProfile(true); }catch(e){} render();
+  const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=90;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">😢</div><p>運営からのお知らせ</p>
+      <div class="note" style="margin:0;font-size:15px">チーター行為の疑いでアカウントが初期化されました😢<br><br>もし誤解がある場合は<b>TikTok</b>もしくは<b>インスタ</b>のＤＭにて異議申し立てのメッセージを送ってください！</div>
+      <button class="btn gold" type="button">OK</button></div>`;
+    document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); };
+  setTimeout(show,500); }
 function checkNamedGift(){
   if(!MYID||isFreshSave(S)) return; S.ngift=S.ngift||[];
   const me=normName(myName()); let tk=0, cn=0, stn=0, mk=0; const ms=[];
