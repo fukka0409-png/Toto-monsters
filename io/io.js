@@ -44,6 +44,7 @@ function open(){ if(G) return;
 #ioG .esc small{position:absolute;left:6px;top:3px;font-size:11px;color:#e53935;background:#0003;padding:0 3px}
 #ioG .esc.ok{background:#f2dc3a;cursor:pointer}
 #ioG .esc.ok small{display:none}
+#ioG .stick[hidden]{display:none}
 #ioG .stick{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);width:150px;height:150px;border-radius:50%;background:#2a4a1a55;pointer-events:none}
 #ioG .knob{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:#ffffffcc}
 #ioG .dlg{position:absolute;inset:0;display:grid;place-items:center;background:#0009;z-index:5}
@@ -56,7 +57,7 @@ function open(){ if(G) return;
 <canvas id="ioCv"></canvas>
 <div class="hud"><div class="bx" style="grid-column:1;justify-content:center"><b id="ioLv" style="font-size:24px">Lv.1</b></div><div class="bx rk"><small>順位</small><b id="ioRk">1</b><small>位</small></div><button class="gear" type="button" id="ioGear" aria-label="設定">⚙</button>
 <div class="bx" style="grid-column:1;grid-row:2"><span>武器数</span><b id="ioWp">0</b><span>個</span></div><button class="esc" type="button" id="ioEsc"><small>武器を${IO.NEED}個以上集めて</small>脱出する</button></div>
-<div class="stick"><div class="knob" id="ioKnob"></div></div>`;
+<div class="stick" hidden><div class="knob" id="ioKnob"></div></div>`;
   document.body.appendChild(root);
   const cv=root.querySelector("#ioCv"), c=cv.getContext("2d");
   G={root,cv,c,pool,t:performance.now(),over:false,pause:false,
@@ -82,7 +83,7 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物は画面スライドで移動できます！</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 function spawnEnemy(first){ const P=G.P, id=G.pool[ri(0,G.pool.length-1)]||18, f=sf(id);
   let lv; const r=Math.random();
