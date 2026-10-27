@@ -483,6 +483,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .pk-stage.deco .pk-body,.pk-stage.deco .pk-strip{filter:hue-rotate(70deg) saturate(.8)}.pk-stage.deco .pk-ghost{filter:hue-rotate(70deg) saturate(.8) brightness(.5)}
 .rv.shine img{animation:rvShine 1.1s ease-in-out infinite alternate}
 @keyframes rvShine{from{filter:drop-shadow(0 0 4px #ffe27a)}to{filter:drop-shadow(0 0 14px #ffd54a) brightness(1.08)}}
+.shop-law{margin:0 0 12px;text-align:center;font-size:12px}.shop-law a{color:var(--staff);text-decoration:underline}
 .shop-views{margin:-2px 0 8px;text-align:center;font-weight:900;font-size:13px;color:var(--staff);min-height:1.2em}
 .shop-banner{display:block;margin:18px auto 8px;border-radius:14px;overflow:hidden;animation:shopBob 2.8s ease-in-out infinite;-webkit-tap-highlight-color:transparent}
 .shop-banner img{display:block;width:100%;height:auto}
@@ -5150,7 +5151,7 @@ function renderMission(){
     <div class="m-body"><div class="m-no">MISSION ${i+1}${big?" ・ スペシャル":""}</div><div class="m-text">${m.text}</div><div class="amt">+${m.coins}コイン</div></div>
     ${left?`<div class="cd">クリア済み<span class="t" data-mcd="${i}">${fmt(left)}</span><small>次の挑戦まで</small></div>`:`<button class="btn ${big?"gold":""}" type="button" data-mi="${i}">達成</button>`}
   </div>`}).join("")}</div>`}
-  ${MOKO_SHOP.map(x=>`<a class="shop-banner moko-banner" href="${mokoHref(x)}" target="_blank" rel="noopener" data-mshop="${x.n}"><img src="${x.img}" alt="${x.n}モコ（オンラインショップ）" loading="lazy"></a><div class="shop-views" data-mview="${x.n}">${mviewTxt(x.n)}</div>`).join("")}${[].map(sh=>{ const left=shopLeft(sh.k); return `<a class="shop-banner" href="${sh.url}" target="_blank" rel="noopener" data-shop="${sh.k}"><img src="${sh.img}" alt="${sh.name}（オンラインショップ）"></a>
+  ${MOKO_SHOP.map(x=>`<a class="shop-banner moko-banner" href="${mokoHref(x)}" target="_blank" rel="noopener" data-mshop="${x.n}"><img src="${x.img}" alt="${x.n}モコ（オンラインショップ）" loading="lazy"></a><div class="shop-views" data-mview="${x.n}">${mviewTxt(x.n)}</div>`).join("")}<p class="shop-law"><a href="tokushoho.html" target="_blank" rel="noopener">特定商取引法に基づく表記</a></p>${[].map(sh=>{ const left=shopLeft(sh.k); return `<a class="shop-banner" href="${sh.url}" target="_blank" rel="noopener" data-shop="${sh.k}"><img src="${sh.img}" alt="${sh.name}（オンラインショップ）"></a>
     <div class="shop-cd ${left?"":"ready"}">${left?`報酬は受け取り済み ・ 次の報酬まで <b data-shopcd="${sh.k}">${fmt(left)}</b>`:`🎁 タップしてショップを${SHOP_STAY/1000}秒見ると <b>+${SHOP_REWARD.toLocaleString()}コイン</b>`}</div>`; }).join("")}`;
   document.querySelectorAll("[data-mi]").forEach(b=>b.onclick=()=>confirmMission(+b.dataset.mi));
   loadMview();
