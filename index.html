@@ -7257,14 +7257,18 @@ const useLeft = k => SEASON_USE_MAX[k]==null ? Infinity : Math.max(0, SEASON_USE
 const useLimitTxt = k => `${itemOf(k).name}は1シーズンに${SEASON_USE_MAX[k]}回まで使えます（今シーズンはもう使えません）`;
 // 2026-10-27：運営がブロックした冒険者は、ほかの冒険者にアイテムを使えない（名前で指定。大文字・小文字は区別しない）
 const ITEM_BLOCKED = [];
-const itemBlocked = () => { try{ const me=normName(myName()); return ITEM_BLOCKED.some(n=>normName(n)===me); }catch(e){ return false; } };
-const ITEM_BLOCK_TXT = "⛔ 運営により、アイテムの使用が制限されています";
+// 2026-10-27：同じ冒険者に1時間に10回以上攻撃アイテムを使うと、今のランク戦の残り＋次の2シーズンのあいだアイテムを使えない
+const BAN_N = 10, BAN_SS = 2;
+const itemBanned = () => S.itemBanSS!=null && seasonNow()<=S.itemBanSS;
+const itemBlocked = () => { if(itemBanned()) return true; try{ const me=normName(myName()); return ITEM_BLOCKED.some(n=>normName(n)===me); }catch(e){ return false; } };
+const ITEM_BLOCK_TXT0 = "⛔ 運営により、アイテムの使用が制限されています";
+const itemBlockTxt = () => itemBanned() ? `⛔ 同じ冒険者に連続でアイテムを使いすぎたため、アイテムが使えません（あと${fmtDays(seasonEnd(S.itemBanSS)-gnow())}）` : ITEM_BLOCK_TXT0;
 // 2026-10-27：マグネットは、同じ相手には1シーズンに10個まで
 const MAGNET_PER_TARGET = 10;
 const magLeft = id => { const u=useCnt(); return Math.max(0, MAGNET_PER_TARGET-((u.mt||{})[id]||0)); };
 const magLimitTxt = () => `マグネットは同じ冒険者に1シーズン${MAGNET_PER_TARGET}個までしか使えません（今シーズン、この冒険者にはもう使えません）`;
 function confirmItem(r,k,direct){
-  if(itemBlocked()) return toast(ITEM_BLOCK_TXT);
+  if(itemBlocked()) return toast(itemBlockTxt());
   if(k==="bomb" && !direct) return bombChoice(r);
   if(noAct()) return toast(FREEZE_TXT);
   if(useLeft(k)<=0) return toast(useLimitTxt(k));
@@ -7276,7 +7280,7 @@ function confirmItem(r,k,direct){
   const what=k==="shbomb"?`${who}さんの盾を${SHBOMB_BREAK}つこわします。（使うのに${USE_COST.shbomb}コイン）`:k==="gift"?`${who}さんに${GIFT_COIN.toLocaleString()}コインをプレゼントします。`:k==="magnet"?`${who}さんの所持コインの1%をうばいます。<br><small>この冒険者には、今シーズンあと${magLeft(r.id)}個使えます</small>`:k==="fire"?`${who}さんの配置魔物（${esc(mon(r.gm)?.name||"魔物")}）のレベルを${FIRE_LV}下げます。（使うのに${USE_COST.fire}コイン）`:`${who}さんの冒険者レベルを${BOMB_LV}下げます。（使うのに${USE_COST.bomb.toLocaleString()}コイン）`;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="iuT"><img src="${i.img}" alt="" style="width:96px;height:96px;margin:0 auto;image-rendering:pixelated"><p id="iuT">${i.name}を使いますか？</p>
-    <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。${ATK_ITEMS.includes(k)&&atkRecent(r.id)+1>=CONSEC_N?`<b style="color:var(--berry)">⚠️ 同じ冒険者に連続で使っているので、今回は<u>あなたの名前が相手に伝わります</u></b>`:`あなたの名前は出ず「中級冒険者」のように、レベル帯だけが伝わります。<br><small>※同じ冒険者に1時間に${CONSEC_N}回以上使うと、名前が伝わります</small>`}（残り ${inv(k)}個）</div>
+    <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。${ATK_ITEMS.includes(k)&&atkRecent(r.id)+1>=BAN_N?`<b style="color:var(--berry)">⛔ 今回使うと、同じ冒険者に連続${BAN_N}回になるため、このランク戦の残りと次の${BAN_SS}シーズンのあいだ<u>アイテムが使えなくなります</u></b><br>`:""}${ATK_ITEMS.includes(k)&&atkRecent(r.id)+1>=CONSEC_N?`<b style="color:var(--berry)">⚠️ 同じ冒険者に連続で使っているので、今回は<u>あなたの名前が相手に伝わります</u></b>`:`あなたの名前は出ず「中級冒険者」のように、レベル帯だけが伝わります。<br><small>※同じ冒険者に1時間に${CONSEC_N}回以上使うと、名前が伝わります</small>`}（残り ${inv(k)}個）</div>
     <button class="btn gold" id="iuGo" type="button">使う！</button><button class="btn ghost" id="iuNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#iuNo").onclick=()=>bg.remove();
@@ -7284,7 +7288,7 @@ function confirmItem(r,k,direct){
 }
 async function useItem(r,k,qty=1){
   if(!DB||!MYID||inv(k)<qty) return false;
-  if(itemBlocked()){ toast(ITEM_BLOCK_TXT); return false; }
+  if(itemBlocked()){ toast(itemBlockTxt()); return false; }
   if(noAct()){ toast(FREEZE_TXT); return false; }
   if(itemRest()){ toast(ITEM_REST_TXT); return false; }
   // 相手の最新プロフィールを読む。読めなかったときも、贈り物（神からの贈り物・チケット）は相手の情報がいらないので、手元のランキングの情報で贈れるようにする
@@ -7298,11 +7302,11 @@ async function useItem(r,k,qty=1){
   if(useLeft(k)<=0) { toast(useLimitTxt(k)); return false; }
   if(k==="magnet" && magLeft(r.id)<qty) { toast(magLimitTxt()); return false; }
   const coins = k==="magnet" ? Math.floor(Math.max(0,d.cn||0)*MAGNET) : 0;
-  const atk=ATK_ITEMS.includes(k), reveal=atk && atkRecent(r.id)+1>=CONSEC_N;   // 連続で使うと名前が相手に伝わる
+  let banHit=false; const atk=ATK_ITEMS.includes(k), reveal=atk && atkRecent(r.id)+1>=CONSEC_N;   // 連続で使うと名前が相手に伝わる
   try{
     await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
       item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:gnow(), ...(reveal?{an:String(myName()).slice(0,24)}:{})}));
-    if(atk){ S.atkLog[r.id]=(S.atkLog[r.id]||[]).concat(gnow()); }
+    if(atk){ S.atkLog[r.id]=(S.atkLog[r.id]||[]).concat(gnow()); if(S.atkLog[r.id].length>=BAN_N){ S.itemBanSS=seasonNow()+BAN_SS; S.atkLog={}; banHit=true; } }
   }catch(e){ { toast("アイテムを使えませんでした。少し時間をおいてためしてください"); return false; } }
   addItem(k,-qty); S.coins-=cost; if(SEASON_USE_MAX[k]!=null){ const u=useCnt(); u[k]=(u[k]||0)+qty; if(k==="magnet"){ u.mt=u.mt||{}; u.mt[r.id]=(u.mt[r.id]||0)+qty; } } save(); closeSheet(); render();   // マグネットのコインは、相手が開いたときに（盾で防がれなければ）届く
   const i=itemOf(k), who=esc(d.name||"相手");
@@ -7310,8 +7314,9 @@ async function useItem(r,k,qty=1){
           :k==="fire"?`${who}さんの${esc(mon(d.gm).name)}にファイヤーボールを放った！<br>${cost?`（−${cost.toLocaleString()}コイン）`:""}`
           :k==="shbomb"?`${who}さんに対盾爆弾を投げた！<br>${cost?`（−${cost.toLocaleString()}コイン）`:""}`
           :`${who}さんに爆弾を投げた！<br>${cost?`（−${cost.toLocaleString()}コイン）`:""}`;
+  const msg2=banHit?msg+`<br><br><b style="color:var(--berry)">⛔ 同じ冒険者に連続で${BAN_N}回アイテムを使ったため、このランク戦の残りと次の${BAN_SS}シーズンのあいだ、アイテムが使えなくなりました</b>`:msg;
   const el=document.createElement("div"); el.className="reveal";
-  el.innerHTML=`<div class="burst"></div><h3>${SENDABLE.includes(k)?"プレゼント！":i.name+"！"}</h3><img src="${i.img}" alt="" class="iu-big"><p class="note" style="text-align:center;max-width:320px">${msg}<br><small>相手が次にアプリを開いたときに反映されます${SENDABLE.includes(k)?"":"（盾で防がれることもあります）"}</small></p><button class="btn" type="button">OK</button>`;
+  el.innerHTML=`<div class="burst"></div><h3>${SENDABLE.includes(k)?"プレゼント！":i.name+"！"}</h3><img src="${i.img}" alt="" class="iu-big"><p class="note" style="text-align:center;max-width:320px">${msg2}<br><small>相手が次にアプリを開いたときに反映されます${SENDABLE.includes(k)?"":"（盾で防がれることもあります）"}</small></p><button class="btn" type="button">OK</button>`;
   document.body.appendChild(el); SFX.reveal("S");
   el.querySelector(".btn").onclick=()=>{ el.remove(); render(); };
   return true;
