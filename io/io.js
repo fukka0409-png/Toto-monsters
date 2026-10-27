@@ -110,7 +110,7 @@ function hud(){ $id("ioLv").textContent="Lv."+lvT(G.P.lv); $id("ioWp").textConte
 function loop(now){ if(!G) return; const dt=Math.min(0.05,(now-G.t)/1000); G.t=now;
   if(!G.pause&&!G.over) step(dt); draw(); G.raf=requestAnimationFrame(loop); }
 function step(dt){ const P=G.P;
-  // 歩く動き：右へ動くときはそのまま、左へ動くときは絵を左右反転。動いているあいだは少しはねる
+  // 歩く動き：右へ動くときは絵を左右反転して右向きに、左へ動くときはそのまま（絵はもともと左向き）。動いているあいだは少しはねる
   if(G.dir.x>0.15) P.face=1; else if(G.dir.x<-0.15) P.face=-1; P.mv=Math.hypot(G.dir.x,G.dir.y)>0.1; if(P.mv) P.ph=(P.ph||0)+dt*11;
   for(const e of G.E){ if(e.vx>0.15) e.face=1; else if(e.vx<-0.15) e.face=-1; e.mv=true; e.ph=(e.ph||rnd(0,6))+dt*9; }
   const sp=speedOf(P.r,P.lv)*wSpd(P.w); P.x=Math.max(P.r*0.5,Math.min(IO.W-P.r*0.5,P.x+G.dir.x*sp*dt)); P.y=Math.max(P.r*0.5,Math.min(IO.H-P.r*0.5,P.y+G.dir.y*sp*dt));
@@ -145,7 +145,7 @@ function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
   for(const e of L){ const im=img(e.id), s=e.r*2;
     c.fillStyle="#0003"; c.beginPath(); c.ellipse(e.x,e.y+e.r*0.62,e.r*0.6,e.r*0.18,0,0,Math.PI*2); c.fill();
     if(im.complete&&im.naturalWidth){ c.imageSmoothingEnabled=false; const ph=e.ph||0, hop=e.mv?Math.abs(Math.sin(ph))*e.r*0.1:0, tilt=e.mv?Math.sin(ph)*0.06:0;
-      c.save(); c.translate(e.x,e.y+e.r); c.rotate(tilt); c.scale(e.face||1,e.mv?1-Math.abs(Math.sin(ph))*0.03:1); c.drawImage(im,-e.r,-s-hop,s,s); c.restore(); }
+      c.save(); c.translate(e.x,e.y+e.r); c.rotate(tilt); c.scale(-(e.face||1),e.mv?1-Math.abs(Math.sin(ph))*0.03:1); c.drawImage(im,-e.r,-s-hop,s,s); c.restore(); }
     const fs=Math.max(12/ppu*d, e.r*0.28); c.font=`900 ${fs}px sans-serif`; c.lineWidth=fs*0.25; c.strokeStyle="#fff"; const k=cmp(e,P); c.fillStyle=e.me?"#1d6fd1":(k>0?"#d32f2f":k<0?"#2e7d32":"#555");
     const t="Lv."+lvT(e.lv)+(e.w?" ⚔"+e.w:""); c.strokeText(t,e.x,e.y-e.r*0.95); c.fillText(t,e.x,e.y-e.r*0.95); } }
 function dlg(html,cb){ const d=document.createElement("div"); d.className="dlg"; d.innerHTML=`<div>${html}</div>`; G.root.appendChild(d);
