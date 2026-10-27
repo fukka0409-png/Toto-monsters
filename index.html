@@ -7222,7 +7222,7 @@ async function openReportBox(){ if(!DB||!dexPeek()) return;
         <span translate="no">${esc(x.reason||"").replace(/\n/g,"<br>")}</span><br><small>${new Date(x.at||0).toLocaleString("ja-JP")}</small></div>`).join("")
         :`<div class="empty">通報はまだありません</div>`;
       S.rpSeen=Math.max(S.rpSeen||0,...L.map(x=>x.at||0),0); save(); rptCount(); }
-    catch(e){ el.innerHTML=`<div class="note" style="margin:0;text-align:left">読み込めませんでした${e&&e.code?`（${esc(e.code)}）`:""}。<br>運営として読むには、Firestore の <b>admins</b> に、あなたのIDの書類が必要です。<br>あなたのID：<b translate="no" style="user-select:all;word-break:break-all">${esc(MYID)}</b></div>`; }
+    catch(e){ el.innerHTML=`<div class="note" style="margin:0;text-align:left">読み込めませんでした${e&&e.code?`（${esc(e.code)}）`:""}。<br>Firestoreのルールが最新か確かめてください。</div>`; }
   };
   bg.querySelector("#rbR").onclick=load; load();
 }
