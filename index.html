@@ -5119,8 +5119,8 @@ function finishShopVisit(){
 try{ const v=JSON.parse(localStorage.getItem("toto-shop-visit")||"null"); if(v&&gnow()-v.at<6*HOUR_MS){ shopVisit=v; setTimeout(finishShopVisit,1500); } else localStorage.removeItem("toto-shop-visit"); }catch(err){}
 // ショップのモコ販売バナー（2026-10-26）：オンラインショップ（BASE）の商品ページへ
 const MOKO_SHOP=[{n:500,img:"shop/moko500.jpg",url:"https://fukka0409.base.shop/items/164201297",pay:"https://buy.stripe.com/9B65kx6FY29ldTA6Qh24003"},{n:2000,img:"shop/moko2000.jpg",url:"https://fukka0409.base.shop/items/164201511",pay:"https://buy.stripe.com/aFa00d7K24ht9DkgqR24002"},{n:10000,img:"shop/moko10000.jpg",url:"https://fukka0409.base.shop/items/164201525",pay:"https://buy.stripe.com/cNi28l7K2bJV8zg3E524001"}];
-// Stripeで直接買う（2026-10-27）：本番リンク。公開前の確認中なので、まだふっかーだけStripeになる
-const STRIPE_ALL=false;
+// Stripeで直接買う（2026-10-27）：本番リンク。ログインしている冒険者は全員Stripe（ログインしていないときはBASE）
+const STRIPE_ALL=true;
 function mokoHref(x){ try{ if(x.pay && MYID && (STRIPE_ALL||dexPeek())) return x.pay+"?client_reference_id="+encodeURIComponent(MYID); }catch(e){} return x.url; }
 // 支払いが終わったモコを受け取る：mokopay/{支払いID} に { uid, moko, claimed } がサーバーから届く
 let mokoPayBusy=false;
