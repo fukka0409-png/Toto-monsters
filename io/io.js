@@ -1,6 +1,6 @@
 /* 魔物サバイバル（試作・ふっかーだけ・2026-10-28）
    ホーム：えらんだ魔物・チェンジ・記録・スタート
-   ゲーム：スティックで動く。ふれた相手と勝負：①武器の数が多い方の勝ち ②同じならレベル（サイズ）が高い方の勝ち（両方同じなら押し合うだけ）
+   ゲーム：スティックで動く。ふれた相手とレベルで勝負（高い方の勝ち・同じなら押し合うだけ）。武器が多いほど少しずつ速くなる
            勝つとLv+1で体が大きくなる。武器を10個以上集めると脱出できる
            脱出：そのゲームのLvぶん冒険者Lvが上がる。4位以内で脱出すると四天王回数+1
            負け：記録は残らず、そのゲームのLvぶん冒険者Lvが下がる（1より下にはならない） */
@@ -12,8 +12,10 @@ const escH=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;
 const rnd=(a,b)=>a+Math.random()*(b-a), ri=(a,b)=>Math.floor(rnd(a,b+1));
 // 体の大きさの個体差はなし（2026-10-28）：大きさはレベルだけで決まる
 const sf=id=>1;
-// 勝ち負け：①武器の数が多い方 → ②同じならレベル（サイズ）が高い方。どちらも同じなら押し合うだけ
-const cmp=(a,b)=>((a.w||0)-(b.w||0))||(a.lv-b.lv);
+// 勝ち負け（2026-10-28 変更）：レベルが高い方の勝ち。同じなら押し合うだけ
+const cmp=(a,b)=>a.lv-b.lv;
+// 武器1個ごとに足が1.5%ずつ速くなる（10個で約15%）
+const wSpd=w=>1+0.015*(w||0);
 const radius=(lv,f)=>IO.R0*f*(1+0.09*(lv-1));   // Lv100で約10倍の大きさ
 // 足の速さ：体が大きくなるほど遅くなる（画面の見た目の速さは Lv10で約75%・Lv50で約40%・Lv100で約25%）。敵も同じ
 const speedOf=(r,lv)=>170*Math.pow(IO.R0/r,0.05);
@@ -105,11 +107,11 @@ function step(dt){ const P=G.P;
   // 歩く動き：右へ動くときはそのまま、左へ動くときは絵を左右反転。動いているあいだは少しはねる
   if(G.dir.x>0.15) P.face=1; else if(G.dir.x<-0.15) P.face=-1; P.mv=Math.hypot(G.dir.x,G.dir.y)>0.1; if(P.mv) P.ph=(P.ph||0)+dt*11;
   for(const e of G.E){ if(e.vx>0.15) e.face=1; else if(e.vx<-0.15) e.face=-1; e.mv=true; e.ph=(e.ph||rnd(0,6))+dt*9; }
-  const sp=speedOf(P.r,P.lv); P.x=Math.max(P.r*0.5,Math.min(IO.W-P.r*0.5,P.x+G.dir.x*sp*dt)); P.y=Math.max(P.r*0.5,Math.min(IO.H-P.r*0.5,P.y+G.dir.y*sp*dt));
+  const sp=speedOf(P.r,P.lv)*wSpd(P.w); P.x=Math.max(P.r*0.5,Math.min(IO.W-P.r*0.5,P.x+G.dir.x*sp*dt)); P.y=Math.max(P.r*0.5,Math.min(IO.H-P.r*0.5,P.y+G.dir.y*sp*dt));
   for(const e of G.E){ e.turn-=dt; const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, near=d<Math.max(420,P.r*6);
     if(near&&cmp(e,P)>0){ e.vx=dx/d; e.vy=dy/d; } else if(near&&cmp(e,P)<0){ e.vx=-dx/d; e.vy=-dy/d; }
     else if(e.turn<=0){ const a=rnd(0,Math.PI*2); e.vx=Math.cos(a); e.vy=Math.sin(a); e.turn=rnd(1,3); }
-    const es=speedOf(e.r,e.lv)*(near&&cmp(e,P)>0?0.8:0.6); e.x+=e.vx*es*dt; e.y+=e.vy*es*dt;
+    const es=speedOf(e.r,e.lv)*wSpd(e.w)*(near&&cmp(e,P)>0?0.8:0.6); e.x+=e.vx*es*dt; e.y+=e.vy*es*dt;
     if(e.x<e.r*0.5||e.x>IO.W-e.r*0.5){ e.vx*=-1; e.x=Math.max(e.r*0.5,Math.min(IO.W-e.r*0.5,e.x)); }
     if(e.y<e.r*0.5||e.y>IO.H-e.r*0.5){ e.vy*=-1; e.y=Math.max(e.r*0.5,Math.min(IO.H-e.r*0.5,e.y)); } }
   // 敵どうし：ふれたら高い方が勝ってLv+1、負けた方は別の場所に出なおす
