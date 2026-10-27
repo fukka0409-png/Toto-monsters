@@ -3656,7 +3656,7 @@ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); A2HS=e; }
 try{ if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch(e){}
 // ブラウザから開いた人には、開くたびに（1回の起動につき1回）ホーム画面に追加の案内を出す。ほかの画面やお知らせが出ていないときに出す
 (function a2Loop(){ let n=0; const t=()=>{ if(a2Shown||isStandalone()) return; if(++n>400) return;
-  if(document.querySelector(".sheet-bg,.reveal")) return setTimeout(t,1500); try{ openA2HS(); }catch(e){} }; setTimeout(t,4000); })();
+  if(document.querySelector(".sheet-bg,.reveal,#ioG,#tso:not(.embed)")) return setTimeout(t,1500); try{ openA2HS(); }catch(e){} }; setTimeout(t,4000); })();
 const isStandalone=()=>{ try{ return window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true; }catch(e){ return false; } };
 let a2Shown=false;
 function openA2HS(){ if(isStandalone()||a2Shown) return; a2Shown=true;
@@ -10066,7 +10066,7 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=8" defer></script>
+<script src="io/io.js?v=9" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
 <script src="fz/fz.js?v=12" defer></script>
 </body></html>

@@ -78,6 +78,9 @@ function open(){ if(G) return;
     dlg(`<h3>⚙ 一時停止</h3><p>やめると<b>負け</b>になります（冒険者Lvが今のLvぶん下がります）</p><button type="button" data-a="go">つづける</button><button type="button" class="g" data-a="quit">やめる（負け）</button>`,a=>{ if(a==="go"){ G.pause=false; G.t=performance.now(); } else lose("やめました"); }); };
   root.querySelector("#ioEsc").onclick=()=>{ if(G.over||G.weap<IO.NEED) return; escape(); };
   hud(); G.raf=requestAnimationFrame(loop);
+  // 始まった直後の説明（読んでから「スタート！」で動き出す）
+  G.pause=true;
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 function spawnEnemy(first){ const P=G.P, id=G.pool[ri(0,G.pool.length-1)]||18, f=sf(id);
   let lv; const r=Math.random();
