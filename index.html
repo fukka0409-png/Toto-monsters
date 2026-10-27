@@ -3644,8 +3644,12 @@ let giftTimer=null, LOGIN_NAME=null;
 let A2HS=null;
 window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); A2HS=e; });
 try{ if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch(e){}
+// ブラウザから開いた人には、開くたびに（1回の起動につき1回）ホーム画面に追加の案内を出す。ほかの画面やお知らせが出ていないときに出す
+(function a2Loop(){ let n=0; const t=()=>{ if(a2Shown||isStandalone()) return; if(++n>400) return;
+  if(document.querySelector(".sheet-bg,.reveal")) return setTimeout(t,1500); try{ openA2HS(); }catch(e){} }; setTimeout(t,4000); })();
 const isStandalone=()=>{ try{ return window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true; }catch(e){ return false; } };
-function openA2HS(){ if(isStandalone()) return;
+let a2Shown=false;
+function openA2HS(){ if(isStandalone()||a2Shown) return; a2Shown=true;
   const ua=navigator.userAgent||"", ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=240;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><img src="icon.png" alt="" style="width:72px;height:72px;border-radius:16px;margin:0 auto"><p>📲 ホーム画面に追加しよう！</p>
@@ -3788,7 +3792,6 @@ function openLogin(mode){
             try{ await FDB.collection("refs").doc(cred.user.uid).set({from:cred.user.uid, to:refUid, nm:name, at:gnow()}); }catch(e){} }
           save();
           toast(refUid?`ようこそ、${name}さん！ 紹介ボーナス +${REF_BONUS.toLocaleString()}コイン`:`ようこそ、${name}さん！`);
-          setTimeout(()=>{ try{ openA2HS(); }catch(e){} },1800);
         } else {
           LOGIN_NAME=name;
           let email=authEmail(k);
