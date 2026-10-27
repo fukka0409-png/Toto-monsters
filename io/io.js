@@ -50,7 +50,7 @@ function open(){ if(G) return;
 #ioG .dlg button.g{background:#eee}
 </style>
 <canvas id="ioCv"></canvas>
-<div class="hud"><div class="bx" style="grid-column:1"><span id="ioLv">Lv.1</span></div><div class="bx rk"><small>順位</small><b id="ioRk">1</b><small>位</small></div><button class="gear" type="button" id="ioGear" aria-label="設定">⚙</button>
+<div class="hud"><div class="bx" style="grid-column:1;justify-content:center"><b id="ioLv" style="font-size:24px">Lv.1</b></div><div class="bx rk"><small>順位</small><b id="ioRk">1</b><small>位</small></div><button class="gear" type="button" id="ioGear" aria-label="設定">⚙</button>
 <div class="bx" style="grid-column:1;grid-row:2"><span>武器数</span><b id="ioWp">0</b><span>個</span></div><button class="esc" type="button" id="ioEsc"><small>武器を${IO.NEED}個以上集めて</small>脱出する</button></div>
 <div class="stick"><div class="knob" id="ioKnob"></div></div>`;
   document.body.appendChild(root);
