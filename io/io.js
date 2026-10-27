@@ -14,6 +14,8 @@ const rnd=(a,b)=>a+Math.random()*(b-a), ri=(a,b)=>Math.floor(rnd(a,b+1));
 const sf=id=>1;
 // 勝ち負け（2026-10-28 変更）：レベルが高い方の勝ち。同じなら押し合うだけ
 const cmp=(a,b)=>a.lv-b.lv;
+// ポリポリの武器は1個＝0.1レベル（10個で1レベル）。レベルは小数第1位まで
+const r1=x=>Math.round(x*10)/10, lvT=x=>{ x=r1(x); return Number.isInteger(x)?String(x):x.toFixed(1); };
 // 武器1個ごとに足が1.5%ずつ速くなる（10個で約15%）
 const wSpd=w=>1+0.015*(w||0);
 const radius=(lv,f)=>IO.R0*f*(1+0.09*(lv-1));   // Lv100で約10倍の大きさ
@@ -91,6 +93,7 @@ function spawnEnemy(first){ const P=G.P, id=G.pool[ri(0,G.pool.length-1)]||18, f
   let x,y,t=0; do{ x=rnd(60,IO.W-60); y=rnd(60,IO.H-60); t++; }while(t<30&&Math.hypot(x-P.x,y-P.y)<700);
   img(id); const a=rnd(0,Math.PI*2);
   const w=(first&&P.lv<=1)?(Math.random()<0.1?1:0):(Math.random()<0.6?0:ri(0,(P.w||0)+2));   // 敵も武器を持っていることがある（はじめはほとんど持っていない）
+  lv=r1(lv+w*0.1);
   return {id,f,lv,w,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3)}; }
 function spawnWeapon(){ return {x:rnd(40,IO.W-40),y:rnd(40,IO.H-40),im:WEAPONS[ri(0,WEAPONS.length-1)],a:rnd(-0.5,0.5)}; }
 // 地面：草原のドット絵をタイルにする
@@ -101,7 +104,7 @@ function grass(){ const t=document.createElement("canvas"); t.width=t.height=128
   for(let i=0;i<2;i++){ const x=ri(6,118),y=ri(6,118); g.fillStyle="#fff"; g.fillRect(x,y,4,4); g.fillStyle="#f6d44a"; g.fillRect(x+1,y+1,2,2); }
   if(Math.random()<1){ const x=ri(10,110),y=ri(10,110); g.fillStyle="#8d8d8d"; g.fillRect(x,y,10,6); g.fillStyle="#b9b9b9"; g.fillRect(x+2,y,6,3); g.fillStyle="#5c5c5c"; g.fillRect(x,y+6,10,2); }
   G.pat=G.c.createPattern(t,"repeat"); }
-function hud(){ $id("ioLv").textContent="Lv."+G.P.lv; $id("ioWp").textContent=G.weap;
+function hud(){ $id("ioLv").textContent="Lv."+lvT(G.P.lv); $id("ioWp").textContent=G.weap;
   const rk=1+G.E.filter(e=>cmp(e,G.P)>0).length; G.rank=rk; $id("ioRk").textContent=rk;
   $id("ioEsc").classList.toggle("ok",G.weap>=IO.NEED); }
 function loop(now){ if(!G) return; const dt=Math.min(0.05,(now-G.t)/1000); G.t=now;
@@ -119,15 +122,15 @@ function step(dt){ const P=G.P;
     if(e.y<e.r*0.5||e.y>IO.H-e.r*0.5){ e.vy*=-1; e.y=Math.max(e.r*0.5,Math.min(IO.H-e.r*0.5,e.y)); } }
   // 敵どうし：ふれたら高い方が勝ってLv+1、負けた方は別の場所に出なおす
   for(let i=0;i<G.E.length;i++) for(let j=i+1;j<G.E.length;j++){ const a=G.E[i], b=G.E[j], d=Math.hypot(a.x-b.x,a.y-b.y);
-    if(d<(a.r+b.r)*0.5&&cmp(a,b)!==0){ const w=cmp(a,b)>0?a:b, l=w===a?j:i; w.lv++; w.r=radius(w.lv,w.f); G.E[l]=spawnEnemy(false); } }
+    if(d<(a.r+b.r)*0.5&&cmp(a,b)!==0){ const w=cmp(a,b)>0?a:b, l=w===a?j:i; w.lv=r1(w.lv+1); w.r=radius(w.lv,w.f); G.E[l]=spawnEnemy(false); } }
   // 自分とふれた敵
   for(let i=0;i<G.E.length;i++){ const e=G.E[i], d=Math.hypot(e.x-P.x,e.y-P.y); if(d>=(e.r+P.r)*0.5) continue;
     const r0=cmp(P,e);
-    if(r0>0){ P.lv++; P.r=radius(P.lv,P.f); G.kills++; G.E[i]=spawnEnemy(false); try{ SFX.coin(); }catch(x){} }
-    else if(r0<0){ return lose(`${escH((typeof mon==="function"&&mon(e.id)||{}).name||"魔物")}（Lv.${e.lv}・武器${e.w}個）に負けた…`); }
+    if(r0>0){ P.lv=r1(P.lv+1); P.r=radius(P.lv,P.f); G.kills++; G.E[i]=spawnEnemy(false); try{ SFX.coin(); }catch(x){} }
+    else if(r0<0){ return lose(`${escH((typeof mon==="function"&&mon(e.id)||{}).name||"魔物")}（Lv.${lvT(e.lv)}）に負けた…`); }
     else { const k=((e.r+P.r)*0.5-d)/(d||1)*0.5; e.x+=(e.x-P.x)*k; e.y+=(e.y-P.y)*k; } }
-  for(const e of G.E) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; G.WP[i]=spawnWeapon(); } }
-  for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.6+17*G.dpr/G.ppu){ G.weap++; P.w=G.weap; G.WP[i]=spawnWeapon(); try{ SFX.tap(); }catch(x){} } }
+  for(const e of G.E) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; e.lv=r1(e.lv+0.1); e.r=radius(e.lv,e.f); G.WP[i]=spawnWeapon(); } }
+  for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.6+17*G.dpr/G.ppu){ G.weap++; P.w=G.weap; P.lv=r1(P.lv+0.1); P.r=radius(P.lv,P.f); G.WP[i]=spawnWeapon(); try{ SFX.tap(); }catch(x){} } }
   hud(); }
 function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
   const ppu=G.ppu=d*Math.min(innerWidth,600)/390*1.25*Math.pow(IO.R0/P.r,0.65);   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
@@ -144,13 +147,13 @@ function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
     if(im.complete&&im.naturalWidth){ c.imageSmoothingEnabled=false; const ph=e.ph||0, hop=e.mv?Math.abs(Math.sin(ph))*e.r*0.1:0, tilt=e.mv?Math.sin(ph)*0.06:0;
       c.save(); c.translate(e.x,e.y+e.r); c.rotate(tilt); c.scale(e.face||1,e.mv?1-Math.abs(Math.sin(ph))*0.03:1); c.drawImage(im,-e.r,-s-hop,s,s); c.restore(); }
     const fs=Math.max(12/ppu*d, e.r*0.28); c.font=`900 ${fs}px sans-serif`; c.lineWidth=fs*0.25; c.strokeStyle="#fff"; const k=cmp(e,P); c.fillStyle=e.me?"#1d6fd1":(k>0?"#d32f2f":k<0?"#2e7d32":"#555");
-    const t="Lv."+e.lv+(e.w?" ⚔"+e.w:""); c.strokeText(t,e.x,e.y-e.r*0.95); c.fillText(t,e.x,e.y-e.r*0.95); } }
+    const t="Lv."+lvT(e.lv)+(e.w?" ⚔"+e.w:""); c.strokeText(t,e.x,e.y-e.r*0.95); c.fillText(t,e.x,e.y-e.r*0.95); } }
 function dlg(html,cb){ const d=document.createElement("div"); d.className="dlg"; d.innerHTML=`<div>${html}</div>`; G.root.appendChild(d);
   d.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{ d.remove(); cb&&cb(b.dataset.a); }); }
-function lose(why){ if(G.over) return; G.over=true; const n=G.P.lv, before=S.plv;
+function lose(why){ if(G.over) return; G.over=true; const n=Math.floor(G.P.lv), before=S.plv;
   S.plv=Math.max(1,(S.plv||1)-n); try{ save(); queueProfile(true); }catch(e){}
   dlg(`<div style="font-size:48px">💀</div><h3>負けてしまった…</h3><p>${why}</p><p>このゲームのLv <b>${n}</b> ・ 武器 ${G.weap}個<br>記録は残りません</p><p style="color:#d32f2f">冒険者Lv ${before} → <b>${S.plv}</b>（−${before-S.plv}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
-function escape(){ if(G.over) return; G.over=true; const n=G.P.lv, rk=G.rank, before=S.plv;
+function escape(){ if(G.over) return; G.over=true; const n=Math.floor(G.P.lv), rk=G.rank, before=S.plv;
   S.plv=(S.plv||1)+n; try{ bumpMaxLv(); }catch(e){}
   S.io=S.io||{k:0,b:0,s:0}; S.io.k+=G.kills; if(n>(S.io.b||0)) S.io.b=n; const top=rk<=4; if(top) S.io.s=(S.io.s||0)+1;
   try{ save(); queueProfile(true); }catch(e){}
