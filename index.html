@@ -701,6 +701,8 @@ html[lang=en] .ttl .ttl-mini span{font-size:36px}
 .ttl .ttl-mini.ttl-fz{left:398px;top:562px;width:250px;height:84px}
 html .ttl .ttl-mini.ttl-fz span{font-size:30px;gap:2px}
 html .ttl .ttl-mini.ttl-fz span small{font-size:16px}
+.ttl .ttl-mini.ttl-rp{left:178px;width:220px}   /* 通報箱（ふっかーだけ）：融合依頼の左 */
+.ttl .ttl-mini.ttl-fz:not(.ttl-rp){left:418px;width:220px}
 .ttl-fz-badge{position:absolute;right:-14px;top:-16px;min-width:44px;height:44px;padding:0 10px;box-sizing:border-box;border-radius:999px;background:#e53935;color:#fff;border:4px solid #fff;font:900 26px/36px var(--f-body);text-align:center;box-shadow:0 3px 0 #3a1a08;animation:vtTip 1.6s ease-in-out infinite}
 .ttl-fz-badge[hidden]{display:none}
 .mg-pick{display:flex;flex-direction:column;gap:10px;width:100%}
@@ -1224,6 +1226,7 @@ html[lang=en] .kn-bt span{font-size:38px}
     <button class="ttl-mini ttl-ts" id="ttlTs" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧠 トトの戦略<small>試作（ふっかーだけに表示）</small></span></button>
     <button class="ttl-mini ttl-vote" id="ttlVote" type="button" style="top:1045px"><img src="title/btn_en.png" alt="" draggable="false"><span>🗳 魔物投票<small></small></span></button>
     <button class="ttl-mini ttl-fz" id="ttlFz" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧬 融合依頼<small id="ttlFzN"></small></span><b class="ttl-fz-badge" id="ttlFzB" hidden></b></button>
+    <button class="ttl-mini ttl-fz ttl-rp" id="ttlRp" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🚨 通報箱</span><b class="ttl-fz-badge" id="ttlRpB" hidden></b></button>
     <div class="ttl-vote-tip" id="ttlVoteTip" hidden></div>
     <button class="ttl-mini" id="ttlMini" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
@@ -7250,6 +7253,51 @@ async function openSupList(){
   };
   bg.querySelector("#slR").onclick=load; load();
 }
+// 冒険者の通報（2026-10-27）：reports/{id}：{from, fromNm, to, toNm, reason, at}。読めるのは運営だけ
+const RPT_MIN = 5, RPT_MAX = 300;
+function openReport(r){ if(!DB||!MYID) return toast("ログインすると通報できます");
+  S.rptAt=S.rptAt||{}; const last=S.rptAt[r.id]||0;
+  if(gnow()-last<DAY_MS) return toast("この冒険者は、もう通報しています（同じ冒険者への通報は1日1回までです）");
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🚨</div><p>${uname(r.name)}さんを通報する</p>
+    <div class="note" style="margin:0">通報の理由を書いてください（${RPT_MIN}〜${RPT_MAX}文字）。<br><small>通報した内容は運営だけが確認します。相手やほかの冒険者には伝わりません。</small></div>
+    <textarea id="rpT" class="fr-ta" maxlength="${RPT_MAX}" rows="4" style="width:100%;box-sizing:border-box" placeholder="例：同じ相手に何度もアイテムを使っている、ありえない数のコインを持っている など"></textarea>
+    <button class="btn gold" type="button" id="rpGo" disabled>通報を送信</button><button class="btn ghost" type="button" id="rpNo">やめる</button></div>`;
+  document.body.appendChild(bg);
+  const ta=bg.querySelector("#rpT"), go=bg.querySelector("#rpGo");
+  ta.oninput=()=>{ go.disabled=ta.value.trim().length<RPT_MIN; };
+  bg.querySelector("#rpNo").onclick=()=>bg.remove();
+  go.onclick=async e=>{ const t=ta.value.trim().slice(0,RPT_MAX); if(t.length<RPT_MIN) return toast(`理由を${RPT_MIN}文字以上書いてください`);
+    const ok=await busyRun(e.currentTarget,"送信中…",async()=>{ try{
+      await withTO(DB.collection("reports").add({from:MYID, fromNm:String(myName()).slice(0,24), to:r.id, toNm:String(r.name||"").slice(0,24), reason:t, at:gnow()})); return true; }
+      catch(err){ toast("送信できませんでした"+(err&&err.code?`（${err.code}）`:"")); return false; } });
+    if(ok){ S.rptAt[r.id]=gnow(); save(); bg.remove(); toast("通報を送信しました。ご協力ありがとうございます🙏"); } };
+}
+// 運営（ふっかー）用：タイトル画面の「通報箱」
+async function openReportBox(){ if(!DB||!dexPeek()) return;
+  const bg=document.createElement("div"); bg.className="sheet-bg chat-sheet"; bg.style.zIndex=235;
+  bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><div class="sheet-h"><h3>🚨 通報箱</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <div class="note" style="margin:0 0 8px">運営（ふっかー）だけが見られます。新しい順。🆕は前に開いたあとに届いた通報です。 <button class="chip" type="button" id="rbR" style="margin-left:6px">🔄 更新</button></div>
+    <div id="rbL"><div class="empty">読み込み中…</div></div></div>`;
+  document.body.appendChild(bg);
+  const close=()=>bg.remove(); bg.querySelector(".x").onclick=close; bg.onclick=e=>{ if(e.target===bg) close(); };
+  const el=bg.querySelector("#rbL"), seen=S.rpSeen||0;
+  const load=async()=>{
+    try{ const q=await withTO(DB.collection("reports").orderBy("at","desc").limit(100).get()); const L=q.docs.map(d=>d.data());
+      const cnt={}; L.forEach(x=>{ cnt[x.to]=(cnt[x.to]||0)+1; });
+      el.innerHTML=L.length?L.map(x=>`<div class="note" style="margin:0 0 8px;text-align:left">${(x.at||0)>seen?"🆕 ":""}<b translate="no">${esc(x.fromNm||"?")}</b> さん → <b translate="no" style="color:var(--berry)">${esc(x.toNm||"?")}</b> さん<small>（この人への通報 ${cnt[x.to]}件）</small><br>
+        <span translate="no">${esc(x.reason||"").replace(/\n/g,"<br>")}</span><br><small>${new Date(x.at||0).toLocaleString("ja-JP")}</small></div>`).join("")
+        :`<div class="empty">通報はまだありません</div>`;
+      S.rpSeen=Math.max(S.rpSeen||0,...L.map(x=>x.at||0),0); save(); rptCount(); }
+    catch(e){ el.innerHTML=`<div class="note" style="margin:0;text-align:left">読み込めませんでした${e&&e.code?`（${esc(e.code)}）`:""}。<br>運営として読むには、Firestore の <b>admins</b> に、あなたのIDの書類が必要です。<br>あなたのID：<b translate="no" style="user-select:all;word-break:break-all">${esc(MYID)}</b></div>`; }
+  };
+  bg.querySelector("#rbR").onclick=load; load();
+}
+async function rptCount(){ const b=document.getElementById("ttlRpB"); if(!b||!DB||!dexPeek()) return;
+  try{ const q=await withTO(DB.collection("reports").where("at",">",S.rpSeen||0).get()); const n=q.size; b.textContent=n>99?"99+":String(n); b.hidden=!n; }catch(e){} }
+setInterval(()=>{ const b=document.getElementById("ttlRp"); if(!b) return; const on=!!(DB&&MYID)&&dexPeek(); if(b.hidden===on){ b.hidden=!on; if(on) rptCount(); } }, 1500);
+setInterval(()=>{ const b=document.getElementById("ttlRp"); if(b&&!b.hidden&&document.querySelector("#title:not([hidden])")) rptCount(); }, 30000);
+document.addEventListener("click",e=>{ if(e.target.closest("#ttlRp")){ try{ SFX.tap(); }catch(x){} openReportBox(); } });
 // フレンドとだけ使える掲示板
 async function openChat(id){
   const f=FR.friends.find(x=>x.id===id); if(!f) return toast("フレンドではありません");
@@ -7647,9 +7695,11 @@ function openOtherProfile(r,rank){
       ${(r.kw||r.kc)?`<div><i class="st-ic" aria-hidden="true">🏯</i><small>魔ノ国の称号</small><b translate="no">${esc(knTitleText(r.kw||0,r.kc||0))}</b></div>`:""}
       <div><i class="st-ic" aria-hidden="true">⭐</i><small>最高冒険者Lv</small><b>${n(Math.max(r.mp||0,r.lv||1))}</b></div>
     </div>
+    ${DB&&MYID&&r.id&&r.id!==MYID?`<button type="button" class="btn ghost" id="profRpt" style="margin:14px auto 0;display:block;font-size:13px">🚨 この冒険者を通報する</button>`:""}
   </div>`);
   try{ defRecInto(bg.querySelector("#defRec"),r); }catch(e){}
   const pr=bg.querySelector("#profRep"); if(pr) pr.onclick=()=>openReplies(r);
+  const rp=bg.querySelector("#profRpt"); if(rp) rp.onclick=()=>openReport(r);
 }
 // レーダーチャート：ガチャ回数・合成回数・魔物コンプ率・手持ちの魔物を、ランキングの平均と重ねて表示
 // 回数は人によって差が大きいので、ランキング内の最大値を外側として平方根でならす（コンプ率は0〜100%そのまま）
