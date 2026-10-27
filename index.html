@@ -1723,9 +1723,9 @@ const I18N_EN = {
 "🏆 毎日のランク戦": "🏆 Daily seasons",
 "毎日0:00（日本時間）にランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。": "Every day at 0:00 (JST) the ranking is tallied and you get prizes based on your rank! Check the time left on the Ranking page.",
 "⏰ 景品をもらうには、終了前の6時間以内（18:00〜24:00）に1度ログインしておく必要があります。": "⏰ To receive prizes, you must log in at least once within the last 6 hours before the season ends (18:00–24:00).",
-"🥇1位 10,000コイン＋覚醒の石20個": "🥇1st: 10,000 coins + 20 Awakening Stones",
-"🥈2位 7,777コイン＋覚醒の石10個": "🥈2nd: 7,777 coins + 10 Awakening Stones",
-"🥉3位 5,000コイン＋覚醒の石5個": "🥉3rd: 5,000 coins + 5 Awakening Stones",
+"🥇1位 500,000コイン＋覚醒の石50個＋50モコ": "🥇1st: 500,000 coins + 50 Awakening Stones + 50 Moko",
+"🥈2位 250,000コイン＋覚醒の石40個＋25モコ": "🥈2nd: 250,000 coins + 40 Awakening Stones + 25 Moko",
+"🥉3位 100,000コイン＋覚醒の石30個＋10モコ": "🥉3rd: 100,000 coins + 30 Awakening Stones + 10 Moko",
 "4〜10位 2,000コイン＋覚醒の石2個": "4th–10th: 2,000 coins + 2 Awakening Stones",
 "⚔️ 勝率でも景品！（5戦以上）": "⚔️ Win-rate prizes too! (5+ battles)",
 "勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個": "100% win rate: 100 Awakening Stones / 50%+: 50 / 30%+: 30",
@@ -2284,6 +2284,7 @@ const I18N_EN = {
 "1位×{0}": "1st ×{0}",
 "⏰ 終了前の6時間以内にログインしていなかったので、景品はもらえませんでした": "⏰ You didn't log in within the last 6 hours before the end, so no prizes this time",
 "🏆 {0}位の賞品：{1}コイン＋覚醒の石{2}個": "🏆 #{0} prize: {1} coins + {2} Awakening Stones",
+"🏆 {0}位の賞品：{1}コイン＋覚醒の石{2}個＋{3}モコ": "🏆 #{0} prize: {1} coins + {2} Awakening Stones + {3} Moko",
 "⚔️ 勝率{0}%の賞品：覚醒の石{1}個": "⚔️ {0}% win-rate prize: {1} Awakening Stones",
 "ランク戦終了！": "Season over!",
 "冒険者Lv{0} ・ 勝率 {1}（{2}勝{3}敗{4}分）": "Adventurer Lv{0} · Win rate {1} ({2}W {3}L {4}D)",
@@ -3653,7 +3654,7 @@ function openNews(force){
       <p>⚔️ 相手の配置魔物が変われば、同じ相手とまた戦えます。</p>
       <h4 style="margin-top:18px">🏆 毎日のランク戦</h4>
       <p>ランク戦タイマーが0になるとランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
-      <p>🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個</p>
+      <p>🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 2,000コイン＋覚醒の石2個</p>
       <p>⚔️ 勝率でも景品！（5戦以上）<br>勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個</p>
       <p>集計のあと、冒険者レベルと勝率はリセット。プロフィールには今までの最高順位が残ります。</p>
       <h4 style="margin-top:18px">🎰 アイテムガチャ</h4>
@@ -4740,7 +4741,7 @@ function openRules(){
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
     ["⚔️","バトル",`<ul><li>ランキングで相手をタップ →「戦う」。</li><li>勝ち負けは<b>①配置魔物のレベル</b> → 同じなら<b>②ランク</b> → 同じなら<b>③図鑑No.が古い方</b>。まったく同じ魔物・同じレベルなら引き分け。</li><li>🏆 勝ち：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分のコイン")}</b>、<b>${U("冒険者Lv+"+WIN_LV)}</b></li><li>💀 負け：魔物のレベルが<b>${U("区切りまで下がる")}</b>（1桁は−1／22→20／216→200）、<b>${U("冒険者Lv−"+LOSE_LV,"v")}</b>。${U("一度届いた10刻みのチェックポイント（10・20・30…）より下には、そのランク戦の間は下がらない")}</li><li>🤝 引き分け：おたがい魔物のレベルが区切りまで下がる、冒険者Lv−${DRAW_LV}</li><li>同じ相手の<b>同じ魔物とは1日1回</b>。${U("相手の魔物が変わればまた戦える")}。</li><li>守る側でも同じルール。留守中のバトルは、次に開いたときにお知らせ。</li><li>🔰 冒険者<b>Lv${SAFE_LV}未満</b>の人は、バトルでもアイテムでも攻撃されない（神からの贈り物はOK）。</li><li>相手には名前は出ず、レベル帯だけが伝わる（🔰初心者／Lv10〜50 中級／51〜99 上級／100〜 猛者）。</li></ul>`],
     ["🎁","アイテム",`<ul><li>🧲 <b>コインマグネット</b>：相手の所持コインの${MAGNET*100}%をうばう</li><li>🔥 <b>ファイヤーボール</b>：相手の配置魔物のレベル−${FIRE_LV}</li><li>💣 <b>爆弾</b>：相手の冒険者Lv−${BOMB_LV}（チェックポイントより下には下がらない）</li><li>${U(`🔥ファイヤーボールは使うのに${USE_COST.fire}コイン、💣爆弾は${USE_COST.bomb.toLocaleString()}コイン必要。爆弾は冒険者Lv${BOMB_MIN_LV}から使える`,"s")}</li><li>この3つはランキングで相手をタップして使う。</li><li>${U(`💥 <b>対盾爆弾</b>：爆弾${SHBOMB_NEED}個で1個作れる（ランキングで相手の「爆弾」をタップ →「${SHBOMB_NEED}個合体させて対盾爆弾作成」）。使うのに${USE_COST.shbomb}コイン。使われた人は、装備している盾から順に<b>盾が${SHBOMB_BREAK}つこわれる</b>（盾では防げない）`,"y")}</li><li>${U(`🛡 <b>盾</b>：BOXでSランクの魔物3体と交換（アイテム攻撃を5回防ぐ）。<b>スーパー盾</b>はZランク1体と交換（5回防ぐ）。BOXの「🛡 盾」で確認。こわれたら持っている盾を自動で装備（鍵をかけた盾は使われない）。盾の情報は自分にしか見えない`,"z")}${U("。<b>盾は作ったランク戦の間だけ</b>持てる（ランク戦終了で消える・次のランク戦に持ち越せない）","x")}</li><li>💎 <b>覚醒の石</b>：自分の魔物に合成して1個で1レベルアップ</li><li>${U(`🍄 <b>進化</b>：「始まりキノコ」はレベルで進化する（C Lv1〜10 → B Lv11〜30 → A Lv31〜70 → S Lv71〜100 → Z Lv101〜）。段階の最大レベルになった同じ魔物を2体そろえ、1体を合成すると次の段階へ。最大レベルになると進化するまで合成ではレベルは上がらない（覚醒の石はどのレベルでも使える）`,"v")}</li><li>${U(`✨ <b>限定ランク</b>：Zランクより上の、配布でしか手に入らないランク。売却すると<b>希少さに応じたコイン</b>＋<b>手持ちの魔物すべてのLv+${LIMITED_SELL_LV}</b>（Lv${MAX_LV}を超えてもそのまま上がる）`,"y")}</li></ul>`],
-    ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("<b>ランク戦タイマー</b>が0になると終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
+    ["🏆","ランキングとランク戦",`<ul><li>冒険者レベルの高い順。</li><li>${U("レベルの横の矢印は最近3時間の動き：<b style=\"color:#5fd36a\">▲上昇中</b>／<b style=\"color:#ff5a5a\">▼下降中</b>／<b style=\"color:#5fb7e0\">▶上がったり下がったり</b>","g")}</li><li>${U("<b>ランク戦タイマー</b>が0になると終了","p")}。全員の最新の状態（留守中のバトルや爆弾もふくむ）で正式な順位を決めて、<b>すぐに結果発表＆報酬</b>。${U("ランキングは、ログインしていない人の分も最新の状態に更新される","p")}。${U(`⏱ 10分ごとの<b>上位キープボーナス</b>：1〜10位は冒険者Lv+1＆${TOP10_COIN}コイン、11〜30位は${TOP30_COIN}コイン（ログインしたときにまとめて受け取れる）`,"t")}。<b>1位</b> ${n(RANK_PRIZE[1].c)}コイン＋石${RANK_PRIZE[1].st}個＋${RANK_PRIZE[1].mk}モコ／<b>2位</b> ${n(RANK_PRIZE[2].c)}＋石${RANK_PRIZE[2].st}個＋${RANK_PRIZE[2].mk}モコ／<b>3位</b> ${n(RANK_PRIZE[3].c)}＋石${RANK_PRIZE[3].st}個＋${RANK_PRIZE[3].mk}モコ／<b>4〜10位</b> ${n(RANK_PRIZE_10.c)}＋石${RANK_PRIZE_10.st}個</li><li>勝率の景品（${WR_MIN_BATTLES}戦以上）：100%で石100個／50%以上で50個／30%以上で30個</li><li>集計のあと<b>冒険者Lvと勝率はリセット</b>。最高順位は記録に残る。</li></ul>`],
     ["💰","投資",U(`<ul><li>ホームの<b>「冒険者に投資する」</b>から、ほかの冒険者に投資できる（1回のランク戦で2人まで・金額は自由・<b>ランク戦終了の10時間前まで</b>）。自分には投資できない。</li><li>ランク戦終了時の投資先の順位で：<b>1位 7倍</b>もらえる／<b>2位 5倍</b>／<b>3位 2倍</b>／<b>4位 1.5倍</b>／<b>5位以下 10倍を失う</b>（0コインまで）。</li><li>👑 自分がランク戦終了時に<b>3位以内</b>なら、投資先が<b>4位以内</b>で順位に関係なく<b>2倍</b>。3位以内の冒険者も投資できる。</li><li>投資した時点でコインが減る。5位以下のときは、投資した分もふくめて合計10倍を失う。結果はランク戦終了のあと、次に開いたときに反映。</li><li>投資された冒険者は、投資されたときに、すぐに投資額の<b>${invPct()}%</b>をもらえる。</li></ul>`,"w")],
     ["🤝","フレンド",U(`<ul><li>ホームの「🤝 フレンド」から、フレンド一覧とフレンド申請を見られる。フレンド機能はON/OFFできる。</li><li>ランキングで冒険者をタップ →「フレンド申請」。3文字以上のコメントが必要。</li><li>届いた申請は「フレンド申請」にたまる。許可するとフレンドになる。フレンドはいつでも解除できる。</li><li>フレンドの人数は、ほかの人からは見えない。</li><li>フレンドとは、2人だけの掲示板でメッセージをやりとりできる。</li><li>羽根つきハート石は最大10個。ランク戦が変わるたびに10個に補充。ランキングの誰にでも、好きな数ずつ送れる。</li><li>送った羽根つきハート石は、相手にハート石として届く。送った数・届いた数の合計がその人との親密度（上限なし）。</li><li>親密度が500になったフレンドとは、魔物のトレードが解放される（準備中）。</li></ul>`,"z")],
     ["📈","冒険者レベル",`<ul><li>上がる：ガチャ1回+${PXP.pull}EXP／合成1回+${PXP.fuse}EXP／新しい魔物+${PXP.newMon}EXP／${U("バトルに勝つとLv+"+WIN_LV)}</li><li>${U(`📖 魔物のコンプ率が上がるほど、ガチャ・合成・新しい魔物でもらえる<b>冒険者EXPが増える</b>（コンプ率0%で1倍→100%で<b>1.5倍</b>）`,"w2")}</li><li>下がる：バトルで負け−${LOSE_LV}／引き分け−${DRAW_LV}（バトル・爆弾ではチェックポイントより下に下がらない）／爆弾−${BOMB_LV}／${U("枠が空で30分ごと−1（チェックポイント関係なし）","j")}</li></ul>`],
@@ -6064,7 +6065,7 @@ function renderRanking(segHtml){
       <div class="note" style="display:block;margin:2px 0 0">ランク戦タイマーが0になると終了。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
       ${rankless()?`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスは、順位がつきはじめてから</div>`:`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>`}
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
-      🥇1位 10,000コイン＋覚醒の石20個<br>🥈2位 7,777コイン＋覚醒の石10個<br>🥉3位 5,000コイン＋覚醒の石5個<br>4〜10位 2,000コイン＋覚醒の石2個<br>
+      🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button><button class="chip" id="rkGuard" type="button" style="margin-left:auto">🛡 魔物を配置${guardUnit()?`（${esc(mon(guardUnit().m).name)} Lv${guardUnit().l}）`:""}</button></div>
@@ -6312,7 +6313,8 @@ const ITEM_REST_TXT = "🏁 ランク戦が始まってから1時間は、アイ
 const itemRest = () => gnow() < seasonEnd(seasonNow()-1) + HOUR_MS;
 const noAct = () => inFreeze() || (!!DB && !!MYID && S.season!=null && S.season<seasonNow());
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
-const RANK_PRIZE = [ null, {c:10000,st:20}, {c:7777,st:10}, {c:5000,st:5} ];   // 1〜3位
+const RANK_PRIZE = [ null, {c:500000,st:50,mk:50}, {c:250000,st:40,mk:25}, {c:100000,st:30,mk:10} ];   // 1〜3位（2026-10-27〜：モコも）
+const RANK_PRIZE_OLD = [ null, {c:10000,st:20}, {c:7777,st:10}, {c:5000,st:5} ], PRIZE_NEW_SS = 10;   // シーズン9以前は前の賞品（シーズン10＝2026-10-27のランク戦から新しい賞品）
 const RANK_PRIZE_10 = {c:2000, st:2};                                          // 4〜10位
 const WR_MIN_BATTLES = 5;                                                       // 勝率賞品に必要なバトル数
 const WR_PRIZE = [ [100,100], [50,50], [30,30] ];                               // [勝率%, 覚醒の石]
@@ -6470,11 +6472,11 @@ async function checkSeason(){
       rank=effRank(mine, prizeOk(old), others);
     }
     const w=S.stats.win||0, l=S.stats.lose||0, dr=S.stats.draw||0, t=w+l+dr, wr=t?w/t*100:0;
-    let coins=0, stones=0; const lines=[];
+    let coins=0, stones=0, mokos=0; const lines=[];
     const eligible = prizeOk(old);
     if(!eligible) lines.push(S.lateSeen!==old?"⏰ 終了前の6時間以内にログインしていなかったので、ランキング外あつかいになり、景品はもらえませんでした":"⏰ 終了前の1時間以内にログインしていなかったので、ランキング外あつかいになり、景品はもらえませんでした");
-    if(rank && eligible){ const pz=RANK_PRIZE[rank] || (rank<=10?RANK_PRIZE_10:null);
-      if(pz){ coins+=pz.c; stones+=pz.st; lines.push(`🏆 ${rank}位の賞品：${pz.c.toLocaleString()}コイン＋覚醒の石${pz.st}個`); } }
+    if(rank && eligible){ const pz=(old>=PRIZE_NEW_SS?RANK_PRIZE:RANK_PRIZE_OLD)[rank] || (rank<=10?RANK_PRIZE_10:null);
+      if(pz){ coins+=pz.c; stones+=pz.st; mokos+=pz.mk||0; lines.push(`🏆 ${rank}位の賞品：${pz.c.toLocaleString()}コイン＋覚醒の石${pz.st}個${pz.mk?`＋${pz.mk}モコ`:""}`); } }
     if(eligible && t>=WR_MIN_BATTLES){ const wp=WR_PRIZE.find(([th])=>wr>=th);
       if(wp){ stones+=wp[1]; lines.push(`⚔️ 勝率${Math.round(wr*10)/10}%の賞品：覚醒の石${wp[1]}個`); } }
     if(rank){ if(!S.best||rank<S.best) S.best=rank; if(rank===1) S.firsts=(S.firsts||0)+1; }
@@ -6484,7 +6486,7 @@ async function checkSeason(){
     // 投資の精算（自分が投資した分・自分に投資された分）
     const iv=await settleInvest(old, rank, q, mine, coins); coins+=iv.delta; lines.push(...iv.lines);
     if(S!==S0 || (S.season??0)>=cur){ seasonBusy=false; return; }   // 途中で記録が入れかわったら何もしない
-    S.coins=Math.max(0,S.coins+coins); if(stones) addItem("stone",stones);
+    S.coins=Math.max(0,S.coins+coins); if(stones) addItem("stone",stones); if(mokos) S.moko=(S.moko||0)+mokos;
     // リセット
     const beforeLv=S.plv;
     S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1;
@@ -6494,7 +6496,7 @@ async function checkSeason(){
     bg.innerHTML=`${rank&&rank<=3&&eligible?'<div class="burst"></div>':""}<h3>🏁 ランク戦結果発表！</h3>
       <p class="season-rank">${rank?`あなたの順位 <b>${rank}位</b>`:"順位の集計期間が過ぎていました"}</p>${limGift?`<img src="${cardURL(limGift.id,0)}" alt="" style="width:min(52vw,220px);height:auto;margin:4px 0 6px">`:""}
       <p class="note" style="text-align:center;max-width:330px">冒険者Lv${beforeLv} ・ 勝率 ${t?Math.round(wr*10)/10+"%":"―"}（${w}勝${l}敗${dr}分）<br><br>
-      ${coins>0||stones||limGift?"":(eligible&&!lines.length?"今回は賞品はありませんでした<br>":"")}${lines.join("<br>")}<br><br>
+      ${coins>0||stones||mokos||limGift?"":(eligible&&!lines.length?"今回は賞品はありませんでした<br>":"")}${lines.join("<br>")}<br><br>
       冒険者レベルと勝率がリセットされました。新しいランク戦のはじまり！<br>最高順位：<b>${bestText()}</b></p>
       <button class="btn gold" type="button">OK</button>`;
     document.body.appendChild(bg); limGift?SFX.reveal("Z"):(coins||stones)?SFX.reveal("S"):SFX.coin();
@@ -6771,7 +6773,7 @@ async function checkComp1019(){
   if(S.comp1019||!DB||!MYID||(S.season||0)<=COMP_SS) return;
   const nm=normName(myName()), isU=nm===normName("🦄"), isY=nm===normName("yoko★");
   if(!isU&&!isY){ S.comp1019=1; save(); return; }
-  const pz=RANK_PRIZE[1], L=LANG==="en"; let lines=[], gotMaid=false;
+  const pz={c:10000,st:20}, L=LANG==="en"; let lines=[], gotMaid=false;   // 当時の1位の賞品
   try{
     if(isU){
       S.coins+=pz.c; addItem("stone",pz.st); S.firsts=(S.firsts||0)+1; S.best=1;
