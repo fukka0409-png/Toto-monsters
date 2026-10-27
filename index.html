@@ -7255,11 +7255,16 @@ const SEASON_USE_MAX = { bomb:30, magnet:30 };
 const useCnt = () => { const s=seasonNow(); if(!S.useCnt||S.useCnt.s!==s) S.useCnt={s}; return S.useCnt; };
 const useLeft = k => SEASON_USE_MAX[k]==null ? Infinity : Math.max(0, SEASON_USE_MAX[k]-(useCnt()[k]||0));
 const useLimitTxt = k => `${itemOf(k).name}は1シーズンに${SEASON_USE_MAX[k]}回まで使えます（今シーズンはもう使えません）`;
+// 2026-10-27：運営がブロックした冒険者は、ほかの冒険者にアイテムを使えない（名前で指定。大文字・小文字は区別しない）
+const ITEM_BLOCKED = [];
+const itemBlocked = () => { try{ const me=normName(myName()); return ITEM_BLOCKED.some(n=>normName(n)===me); }catch(e){ return false; } };
+const ITEM_BLOCK_TXT = "⛔ 運営により、アイテムの使用が制限されています";
 // 2026-10-27：マグネットは、同じ相手には1シーズンに10個まで
 const MAGNET_PER_TARGET = 10;
 const magLeft = id => { const u=useCnt(); return Math.max(0, MAGNET_PER_TARGET-((u.mt||{})[id]||0)); };
 const magLimitTxt = () => `マグネットは同じ冒険者に1シーズン${MAGNET_PER_TARGET}個までしか使えません（今シーズン、この冒険者にはもう使えません）`;
 function confirmItem(r,k,direct){
+  if(itemBlocked()) return toast(ITEM_BLOCK_TXT);
   if(k==="bomb" && !direct) return bombChoice(r);
   if(noAct()) return toast(FREEZE_TXT);
   if(useLeft(k)<=0) return toast(useLimitTxt(k));
@@ -7279,6 +7284,7 @@ function confirmItem(r,k,direct){
 }
 async function useItem(r,k,qty=1){
   if(!DB||!MYID||inv(k)<qty) return false;
+  if(itemBlocked()){ toast(ITEM_BLOCK_TXT); return false; }
   if(noAct()){ toast(FREEZE_TXT); return false; }
   if(itemRest()){ toast(ITEM_REST_TXT); return false; }
   // 相手の最新プロフィールを読む。読めなかったときも、贈り物（神からの贈り物・チケット）は相手の情報がいらないので、手元のランキングの情報で贈れるようにする
