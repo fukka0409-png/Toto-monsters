@@ -4506,7 +4506,7 @@ function renderGacha(){
       <button class="pull ten" data-pull="item" data-n="10" type="button" ${S.coins<ITEM_COST*10?"disabled":""}>10連まわす<small>${(ITEM_COST*10).toLocaleString()}コイン</small></button>
       ${tkBtn("tk-item",`チケットで${TICKET_ITEMS}回まわす`)}</div>
   </section>
-  ${tsHome()?"":`<section class="g-banner deco">
+  ${tsInHome()?"":`<section class="g-banner deco">
     <div class="g-head"><canvas id="cvDeco" width="200" height="200" aria-hidden="true"></canvas>
       <div><div class="g-tag">HOME DECO</div><div class="g-title">装飾ガチャ</div><div class="g-sub">ホームの背景・床・装飾 全${DECO_POOL.length}種（持っているものが出たら🪙10コインか💎覚醒の石1個に）</div></div></div>
     <div class="pulls">
@@ -5061,6 +5061,8 @@ function renderDex(){
 // 図鑑の魔物をタップ：過去に獲得した数・全冒険者の獲得数・今の売却価格。10万コインで自分の獲得数を1減らせる
 // 魔物合戦（ホームにトトの戦略の配置画面）：みんなに公開（2026-10-25）
 const tsHome = () => true;
+// 2026-10-28（ふっかーだけ・試作）：魔物合戦はランキングの自分のプロフィールから開く。ホームは前の（魔物を飾る）ホームにもどす
+const tsInHome = () => !dexPeek();
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 // 図鑑：まだ出会っていない魔物の入手方法
 function howToGet(m){ const L=[];
@@ -5642,8 +5644,8 @@ function renderHome(){
   if(homeMode==="invest") return renderInvest();
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
   const h=homeCfg(), m=isArt(h.m)?artOf(h.m):mon(h.m);
-  $("#stage").innerHTML=`<div class="home${tsHome()?" ts":""}">
-    ${tsHome()?"":`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
+  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":""}">
+    ${tsInHome()?"":`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
     <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>`}
     <div class="hm-top hm-top2">
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
@@ -5655,14 +5657,14 @@ function renderHome(){
       </button>
       <div class="hm-row"><div class="hm-left">
       <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${activeInvs().length?`<small>投資中 ${activeInvs().length}/${INV_MAX}</small>`:""}</button>
-      ${tsHome()?`<button class="hm-tsnew" type="button" id="hmTsNew">⚔️ 魔物合戦が追加されました！</button>`:""}</div>
+      ${tsInHome()?`<button class="hm-tsnew" type="button" id="hmTsNew">⚔️ 魔物合戦が追加されました！</button>`:""}</div>
       <div class="hm-btns">
         <button class="hm-btn" type="button" id="hmTitle">🏠 タイトル画面に戻る</button>
         <button class="hm-btn" type="button" id="hmFriend">🤝 フレンド${DB&&MYID&&frBadge()?`<span class="rules-new fr-badge">${frBadge()}</span>`:""}</button>
         <button class="hm-btn ${pbox().length?"new":""}" type="button" id="hmPbox">🎁 プレゼントBOX${pbox().length?`<span class="rules-new fr-badge">${pbox().length}</span>`:""}</button>
       </div></div>
     </div>
-    ${tsHome()?`<div class="hm-ts" id="hmTs"></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
+    ${tsInHome()?`<div class="hm-ts" id="hmTs"></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
     <div class="hm-stand ${isArt(h.m)?"art":""}"><img class="hm-mon" src="${m.img}" alt="${esc(m.name)}"></div>
     <div class="hm-name">${esc(m.name)}</div>
     <button class="hm-change" type="button" id="hmChange">🎨「魔物／装飾」変更</button>`}
@@ -6194,11 +6196,24 @@ function openTsHelp(){
     <li><b>留守中の合戦</b><br>留守中にしかけられて勝っていたら、次に来たときにお知らせが出て、ごほうびが自動でもらえます。負けていたら、配置が取り消されたお知らせが出ます。</li>
   </ol></div>`);
 }
+// 魔物合戦の配置を全画面で開く（ホームに入れていたときと同じ配置画面）
+function openTsFull(){ document.getElementById("tsFull")?.remove();
+  const w=document.createElement("div"); w.id="tsFull"; w.style.cssText="position:fixed;inset:0;z-index:120;background:#7fc4ef";
+  w.innerHTML=`<div class="hm-ts" id="tsFullHost" style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 58px);bottom:0"></div>
+    <button class="btn" type="button" id="tsFullX" style="position:absolute;left:10px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:2;padding:8px 14px">← 閉じる</button>`;
+  document.body.appendChild(w); w.querySelector("#tsFullX").onclick=()=>{ w.remove(); try{ render(); }catch(e){} };
+  const go=()=>{ if(window.openTS) window.openTS({embed:w.querySelector("#tsFullHost")}); else setTimeout(go,200); }; go(); }
+function tsMyBox(){ if(!DB||tsInHome()) return "";
+  return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">⚔️ 魔物合戦</div>
+    <div class="note" style="margin:0 0 6px">${S.tsRd?`✅ 準備完了（配置の強さ <b>${(S.tsPow||0).toLocaleString()}</b>）。ほかの冒険者のプロフィールから合戦できます`:`⚠️ まだ準備完了していません（魔物5体で出られます）`}</div>
+    <button class="btn gold" type="button" data-tsmy="1">⚔️ 魔物合戦の配置を開く</button> <button class="btn ghost" type="button" data-tshelp="1">遊び方</button></div></div>`; }
+document.addEventListener("click",e=>{ if(e.target.closest("[data-tsmy]")){ try{ SFX.tap(); }catch(x){} document.querySelectorAll(".sheet-bg").forEach(x=>x.remove()); openTsFull(); }
+  if(e.target.closest("[data-tshelp]")){ try{ openTsHelp(); }catch(x){} } });
 function tsFightBox(r){
   if(!DB||!tsHome()||r.id===MYID) return "";
   let body;
   if(!tsReadyOf(r)) body=`<div class="note" style="margin:0">この冒険者は、まだ魔物合戦の準備ができていません</div>`;
-  else if(!S.tsRd) body=`<div class="note" style="margin:0;color:var(--berry)">戦うには、ホームで魔物を置いて「準備完了」を押してください</div>`;
+  else if(!S.tsRd) body=`<div class="note" style="margin:0;color:var(--berry)">戦うには、${tsInHome()?"ホーム":"ランキングの自分のプロフィール"}で魔物を置いて「準備完了」を押してください</div>`;
   else body=`<button class="btn gold" type="button" data-tsfight="${esc(r.id)}">⚔️ 魔物合戦</button>`;
   return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">${tsReadyOf(r)?(()=>{ const t=tsTier(r.tp); return `相手の配置の強さ <b>${(r.tp||0).toLocaleString()}</b> → 勝つと冒険者Lv+${t.lv}・${t.c.toLocaleString()}コイン`; })():"勝つと、相手の配置の強さに合わせて冒険者Lv+1〜5・100〜10,000コイン"}。負けた相手の配置は取り消される</div>${body}</div></div>`;
 }
@@ -7750,7 +7765,7 @@ function openOtherProfile(r,rank){
       <div class="gb-body"><div class="pick-label" style="margin:0">配置中の魔物</div>
       ${r.gm&&mon(r.gm)?`<b>${esc(mon(r.gm).name)}</b><div class="note" style="margin:0">レベルは ？？？</div>`:`<div class="note" style="margin:0">配置なし（戦えません）</div>`}
       ${fightButton(r)}</div></div>${tsFightBox(r)}${itemBox(r)}${friendBox(r)}`}
-    ${r.id===MYID?itemBox(r):""}
+    ${r.id===MYID?tsMyBox()+itemBox(r):""}
     ${(rank==null||rank<=50)&&r.comment?`<div class="rk-cmt" translate="no" style="font-size:14px;margin-top:6px">「${esc(r.comment)}」</div><button type="button" class="rk-rep" id="profRep">💬 ${LANG==="en"?"See / write replies":"返信を見る・書く"}</button>`:""}
     ${radarHtml(r)}
     ${profDexHtml(r)}
