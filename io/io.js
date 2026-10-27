@@ -10,11 +10,11 @@ const IO={ W:3200, H:3200, N:70, WEAP:60, NEED:10, R0:40 };
 const $id=id=>document.getElementById(id);
 const escH=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const rnd=(a,b)=>a+Math.random()*(b-a), ri=(a,b)=>Math.floor(rnd(a,b+1));
-// 魔物の種類ごとの体の大きさの個体差（0.75〜1.35）：番号から決める
-const sf=id=>{ let h=(Number(id)||7)*2654435761>>>0; h^=h>>>13; return 0.75+((h%1000)/1000)*0.6; };
+// 魔物の種類ごとの体の大きさの個体差（0.5〜2.0倍）：番号から決める。小さい魔物も大きい魔物もいる
+const sf=id=>{ let h=(Number(id)||7)*2654435761>>>0; h^=h>>>13; return 0.5*Math.pow(4,(h%1000)/1000); };
 // 勝ち負け：①武器の数が多い方 → ②同じならレベル（サイズ）が高い方。どちらも同じなら押し合うだけ
 const cmp=(a,b)=>((a.w||0)-(b.w||0))||(a.lv-b.lv);
-const radius=(lv,f)=>IO.R0*f*(1+0.06*(lv-1));
+const radius=(lv,f)=>IO.R0*f*(1+0.09*(lv-1));   // Lv100で約10倍の大きさ
 // 足の速さ：体が大きくなるほど遅くなる（画面の見た目の速さは Lv10で約75%・Lv50で約40%・Lv100で約25%）。敵も同じ
 const speedOf=(r,lv)=>170*Math.pow(IO.R0/r,0.05);
 // 武器の絵は3種類（io/w1〜w3.png）からランダム
