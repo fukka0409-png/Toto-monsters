@@ -5187,12 +5187,12 @@ async function checkMokoPay(){ if(!DB||!MYID||mokoPayBusy) return; mokoPayBusy=t
       document.body.appendChild(bg); try{ SFX.coin(); }catch(e){} bg.querySelector("button").onclick=()=>bg.remove(); }
   }catch(e){} mokoPayBusy=false; }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") checkMokoPay(); });
-// モコ販売バナーを見た冒険者の人数（1人1回だけ数える）：shopcnt/moko に { v500, v2000, v10000 }
+// モコ販売バナーを見た冒険者の人数（1シーズンに1人1回だけ数える・シーズンごとにリセット）：shopcnt/moko_{シーズン} に { v500, v2000, v10000 }
 let MVIEW=null;
 const mviewTxt=n=>MVIEW&&MVIEW["v"+n]?`👀 ${Number(MVIEW["v"+n]).toLocaleString()}人の冒険者が閲覧しました！`:"";
-async function loadMview(){ if(!DB) return; try{ const d=await withTO(DB.collection("shopcnt").doc("moko").get()); MVIEW=d.exists?d.data():{}; document.querySelectorAll("[data-mview]").forEach(e=>e.textContent=mviewTxt(+e.dataset.mview)); }catch(e){} }
-document.addEventListener("click",e=>{ const a=e.target.closest("[data-mshop]"); if(!a||!DB||!MYID) return; const n=a.dataset.mshop; S.mview=S.mview||{}; if(S.mview[n]) return;
-  S.mview[n]=1; save(); try{ DB.collection("shopcnt").doc("moko").set({["v"+n]:firebase.firestore.FieldValue.increment(1)},{merge:true}).then(loadMview).catch(()=>{}); }catch(err){} });
+async function loadMview(){ if(!DB) return; try{ const d=await withTO(DB.collection("shopcnt").doc("moko_"+seasonNow()).get()); MVIEW=d.exists?d.data():{}; document.querySelectorAll("[data-mview]").forEach(e=>e.textContent=mviewTxt(+e.dataset.mview)); }catch(e){} }
+document.addEventListener("click",e=>{ const a=e.target.closest("[data-mshop]"); if(!a||!DB||!MYID) return; const n=a.dataset.mshop; if(!S.mview||S.mview.s!==seasonNow()) S.mview={s:seasonNow()}; if(S.mview[n]) return;
+  S.mview[n]=1; save(); try{ DB.collection("shopcnt").doc("moko_"+seasonNow()).set({["v"+n]:firebase.firestore.FieldValue.increment(1)},{merge:true}).then(loadMview).catch(()=>{}); }catch(err){} });
 function renderMission(){
   const done=MISSIONS.filter((_,i)=>missionLeft(i)>0).length;
   $("#stage").innerHTML=`<h2>ショップ</h2>${!MISSIONS.length?"":`<p class="sub">達成したら「達成」を押してね。それぞれ1日1回、クリアから24時間でまた挑戦できます。</p>
