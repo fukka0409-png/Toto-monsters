@@ -16,7 +16,8 @@ const sf=id=>{ let h=(Number(id)||7)*2654435761>>>0; h^=h>>>13; return 0.75+((h%
 const cmp=(a,b)=>((a.w||0)-(b.w||0))||(a.lv-b.lv);
 const radius=(lv,f)=>IO.R0*f*(1+0.06*(lv-1));
 const speedOf=r=>170*Math.pow(r/IO.R0,0.5);
-const WEAPONS=["🗡️","⚔️","🏹","🪓","🔨","🔱","🪃","🛡️"];
+// 武器の絵は3種類（io/w1〜w3.png）からランダム
+const WEAPONS=[1,2,3].map(n=>{ const im=new Image(); im.src="io/w"+n+".png"; return im; });
 const imgCache={};
 function img(id){ if(imgCache[id]) return imgCache[id]; const m=typeof mon==="function"&&mon(id); const im=new Image(); if(m&&m.img) im.src=m.img; return imgCache[id]=im; }
 function enemyPool(){ try{ return (typeof MONSTERS!=="undefined"?MONSTERS:[]).filter(m=>m&&m.img&&m.rank!=="L"&&m.rank!=="F"&&!m.gift).map(m=>m.id); }catch(e){ return [18]; } }
@@ -85,7 +86,7 @@ function spawnEnemy(first){ const P=G.P, id=G.pool[ri(0,G.pool.length-1)]||18, f
   img(id); const a=rnd(0,Math.PI*2);
   const w=(first&&P.lv<=1)?(Math.random()<0.1?1:0):(Math.random()<0.6?0:ri(0,(P.w||0)+2));   // 敵も武器を持っていることがある（はじめはほとんど持っていない）
   return {id,f,lv,w,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3)}; }
-function spawnWeapon(){ return {x:rnd(40,IO.W-40),y:rnd(40,IO.H-40),e:WEAPONS[ri(0,WEAPONS.length-1)]}; }
+function spawnWeapon(){ return {x:rnd(40,IO.W-40),y:rnd(40,IO.H-40),im:WEAPONS[ri(0,WEAPONS.length-1)],a:rnd(-0.5,0.5)}; }
 // 地面：草原のドット絵をタイルにする
 function grass(){ const t=document.createElement("canvas"); t.width=t.height=128; const g=t.getContext("2d");
   g.fillStyle="#7ccf4f"; g.fillRect(0,0,128,128);
@@ -130,7 +131,7 @@ function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
   c.strokeStyle="#2b4d1c"; c.lineWidth=12; c.strokeRect(0,0,IO.W,IO.H);
   c.font="28px sans-serif"; c.textAlign="center"; c.textBaseline="middle";
   const ws=34*d/ppu; c.font=`${ws}px sans-serif`;   // 武器は画面上でいつも同じくらいの大きさ
-  for(const wp of G.WP) c.fillText(wp.e,wp.x,wp.y);
+  c.imageSmoothingEnabled=false; for(const wp of G.WP){ const im=wp.im; if(!im.complete||!im.naturalWidth) continue; const hh=ws*1.5, ww=hh*im.naturalWidth/im.naturalHeight; c.save(); c.translate(wp.x,wp.y); c.rotate(wp.a); c.drawImage(im,-ww/2,-hh/2,ww,hh); c.restore(); }
   const L=[...G.E,P].sort((a,b)=>a.r-b.r);
   for(const e of L){ const im=img(e.id), s=e.r*2;
     c.fillStyle="#0003"; c.beginPath(); c.ellipse(e.x,e.y+e.r*0.62,e.r*0.6,e.r*0.18,0,0,Math.PI*2); c.fill();
