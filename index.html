@@ -303,6 +303,12 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .hm-top2 .hm-id{max-width:132px}
 .hm-moko{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;font-weight:900;color:#1d1d1d;white-space:nowrap}
 .hm-moko{overflow:hidden}
+/* 魔物サバイバル（ふっかーだけ・試作）のホーム */
+.io-btn{position:absolute;z-index:3;border:5px solid #1d1d1d;font:inherit;font-weight:900;color:#1d1d1d;box-shadow:0 4px 0 #1d1d1d}
+.io-ch{left:4%;bottom:24%;background:#fff;font-size:26px;padding:8px 18px}
+.io-go{right:4%;bottom:5%;width:42%;background:#f2dc3a;font-size:30px;padding:20px 6px;outline:5px solid #555;outline-offset:-12px}
+.home .hm-name.io-hide{display:none}
+.io-stats{position:absolute;z-index:3;left:4%;bottom:5%;width:50%;box-sizing:border-box;background:#fff;border:4px solid #1d1d1d;padding:6px 8px;font-weight:900;font-size:12px;line-height:1.7;color:#1d1d1d}
 .seg button[data-k=bank],.seg button[data-k=rank]{font-size:13px;white-space:nowrap}
 .hm-moko.op{flex-wrap:wrap;row-gap:0}.hm-login{flex-basis:100%;text-align:center;font-size:11px;color:#c0392b;font-weight:900}.hm-login b{font-size:13px!important}
 .hm-moko img{width:30px;height:30px;flex:none}
@@ -5393,7 +5399,7 @@ function profilePayload(){
     comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0), tr:S.tsRd?1:0, tp:S.tsRd?(S.tsPow||0):0,
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
 }
 function queueProfile(now){
@@ -5666,14 +5672,18 @@ function renderHome(){
     </div>
     ${tsInHome()?`<div class="hm-ts" id="hmTs"></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
     <div class="hm-stand ${isArt(h.m)?"art":""}"><img class="hm-mon" src="${m.img}" alt="${esc(m.name)}"></div>
-    <div class="hm-name">${esc(m.name)}</div>
-    <button class="hm-change" type="button" id="hmChange">🎨「魔物／装飾」変更</button>`}
+    <div class="hm-name ${dexPeek()?"io-hide":""}">${esc(m.name)}</div>
+    ${dexPeek()?`<button class="io-btn io-ch" type="button" id="ioChange">チェンジ</button><div class="io-stats" id="ioStats">倒した敵 …<br>最高脱出レベル …<br>四天王回数 …</div><button class="io-btn io-go" type="button" id="ioStart">スタート</button>`
+      :`<button class="hm-change" type="button" id="hmChange">🎨「魔物／装飾」変更</button>`}`}
   </div>`;
   $("#hmName").textContent=myName();
   $("#hmProf").onclick=e=>{ if(e.target.closest("#hmShield")) return openShield(); if(e.target.closest("#hmRank")){ tab="rank"; profMode="rank"; loadRanking(); render(); return; } homeMode="me"; render(); $("#stage").scrollTop=0; };
   $("#hmTitle").onclick=()=>{ try{ SFX.tap(); }catch(e){} window.showTitle&&window.showTitle(); };
   if($("#hmStats")) $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   if($("#hmChange")) $("#hmChange").onclick=()=>openHomeEdit("m");
+  if($("#ioChange")) $("#ioChange").onclick=()=>{ try{ SFX.tap(); }catch(e){} openHomeEdit("m"); };
+  if($("#ioStart")) $("#ioStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.ioOpen) window.ioOpen(); };
+  if($("#ioStats")) setTimeout(()=>{ try{ window.ioFillStats&&window.ioFillStats(); }catch(e){} },50);
   if($("#hmTsNew")) $("#hmTsNew").onclick=()=>{ try{ SFX.tap(); }catch(e){} openTsHelp(); };
   if($("#hmTs")){ const tp=$(".hm-top"); if(tp) $("#hmTs").style.top=(tp.offsetTop+tp.offsetHeight+8)+"px";
     tsHomeFit(); const go=()=>{ if(window.openTS) window.openTS({embed:$("#hmTs")}); else setTimeout(go,200); }; go(); }   // 魔物合戦の配置画面（ts/ts.js）
@@ -10052,6 +10062,7 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
+<script src="io/io.js?v=1" defer></script>
 <script src="vt/vt.js?v=12" defer></script>
 <script src="fz/fz.js?v=12" defer></script>
 </body></html>
