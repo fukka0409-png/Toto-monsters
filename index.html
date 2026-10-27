@@ -4601,7 +4601,10 @@ async function fuSend(btn){ if(fuSel.length!==2) return; const cost=fuCost(); if
     g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${known.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(an)}」と「${esc(bn)}」が融合して<br><b style="font-size:18px">${esc(known.name)}</b><br>が生まれました！<br><span class="rk rk-${krk}">${rkName(krk)}</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
     document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; return; }
   const req={uid:MYID, nm:String(myName()).slice(0,24), a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, al:A.l, bl:B.l, at:gnow()};
-  try{ await withTO(DB.collection("fusereq").add(req)); }catch(e){ btn.disabled=false; btn.textContent="📨 送信"; return toast("送信できませんでした。もう一度ためしてね"); }
+  // 2026-10-27：電波が弱いと「送信できませんでした」と出ても、実は届いていることがあった → 先にIDを決めて、失敗したときは届いたかを確かめる
+  const rref=DB.collection("fusereq").doc();
+  try{ await withTO(rref.set(req),20000); }catch(e){ let ok=false; try{ const g=await withTO(rref.get({source:"server"}),10000); ok=g.exists; }catch(x){}
+    if(!ok){ btn.disabled=false; btn.textContent="📨 送信"; return toast("送信できませんでした。電波のよい所でもう一度ためしてね"); } }
   S.moko-=cost; if(!cost) S.fuFree1027=1; S.units=S.units.filter(z=>z.u!==A.u&&z.u!==B.u); S.fuReqs=(S.fuReqs||[]).concat({a:req.an,b:req.bn,at:req.at}); fuSel=[]; fuStep=0; save();
   try{ SFX.reveal("S"); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
@@ -6580,6 +6583,7 @@ const APOLOGIES = [
   { id:"fix-2026-10-25-tsanim", coins:1000 },
   { id:"fix-2026-10-25-tskinds", coins:1000 },
   { id:"fix-2026-10-25-tshome", coins:1000 },
+  { id:"fix-2026-10-27-fzsend", coins:1000 },   // 融合：送信できなかったと出たのに、実は届いていて依頼が何回も送られることがあった
   { id:"fix-2026-10-27-fzpic", coins:1000 },   // 融合依頼：「絵をえらぶ」で写真が置けないことがあった   // ホームの魔物合戦：画面を移動するとボタンが見切れていた   // 魔物合戦：5種類のきまりができる前に準備完了した配置（6種類以上）と戦えてしまっていた   // トトの戦略（試作）：No.4・63・88・93 の歩き・攻撃のアニメが消えていた   // トトの戦略（試作）：iPhoneで下の操作パネルが小さく表示されていた
   { id:"fix-2026-10-25-dblloss", coins:1000 },   // 留守中に続けて攻撃されると、もうBOXにもどった魔物のレベルが何回も下がっていた（2002→2000→1000）
   { id:"fix-2026-10-24-mbstat", coins:1000 },   // 魔物バトル：レベルが上がると攻撃力と体力が1.5倍ずつ増えて、ものすごく大きな数になっていた
