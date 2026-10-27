@@ -3,7 +3,9 @@
    依頼した冒険者に送ると、その冒険者のBOXに限定ランクとして届き「融合に成功しました！」と出る
    データ：fusereq（依頼）・fusemon/{番号}（できた魔物の絵と名前）・items（item:"fmon" で届ける） */
 (()=>{
-let V=null, REQ=[], DONE={}, PIC={};   // PIC[依頼ID] = 当てはめた絵（透明にしたPNG）
+let V=null, REQ=[], DONE={}, PIC={};
+// チーターの疑いで初期化した冒険者の依頼は一覧に出さない（2026-10-27）
+const crSkip=nm=>{ try{ return typeof CHEAT_RESET!=="undefined" && CHEAT_RESET.some(c=>normName(c.name)===normName(nm)); }catch(e){ return false; } };   // PIC[依頼ID] = 当てはめた絵（透明にしたPNG）
 const css=document.createElement("style");
 css.textContent=`
 #fzo{position:fixed;inset:0;z-index:210;background:#f4ead2;display:flex;flex-direction:column;font-family:var(--f-body,sans-serif);color:#3a2306}
@@ -54,7 +56,7 @@ function cutout(file){ return new Promise((ok,ng)=>{ const url=URL.createObjectU
   ok(o.toDataURL("image/png")); }; im.src=url; }; fr.onload(); }); }
 
 async function load(){ if(!DB) return;
-  try{ const q=await withTO(DB.collection("fusereq").orderBy("at","desc").limit(100).get()); REQ=q.docs.map(d=>({id:d.id,...d.data()})); }catch(e){ REQ=[]; }
+  try{ const q=await withTO(DB.collection("fusereq").orderBy("at","desc").limit(100).get()); REQ=q.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!crSkip(r.nm)); }catch(e){ REQ=[]; }
   try{ const q=await withTO(DB.collection("fusemon").get()); DONE={}; q.docs.forEach(d=>{ const x=d.data(); if(x&&x.req) DONE[x.req]=x; if(x&&x.id&&x.img) FMON_CACHE[x.id]=Object.assign(FMON_CACHE[x.id]||{},{name:x.name,img:x.img,rk:x.rk||"F"},x.a!=null?{a:x.a,b:x.b}:{},x.an?{an:x.an,bn:x.bn}:{},!x.same?{req:x.req,fn:x.fn,fat:x.at}:{}); }); }catch(e){}
   draw(); }
 // 同じ組み合わせ（2匹の順番は問わない）で前に作った魔物をさがす
@@ -119,7 +121,7 @@ function open(){ if(!isOp()) return; if(!DB||!MYID) return toast("ログイン�
 
 // タイトルのボタン（ふっかーだけ）と、未対応の数
 async function count(){ const n=document.getElementById("ttlFzN"); if(!n||!DB) return;
-  try{ const [a,b]=await Promise.all([DB.collection("fusereq").get(),DB.collection("fusemon").get()]); const done=new Set(b.docs.map(d=>d.data().req)); const left=a.docs.filter(d=>!done.has(d.id)).length; n.textContent=left?`依頼 ${left}件`:"";
+  try{ const [a,b]=await Promise.all([DB.collection("fusereq").get(),DB.collection("fusemon").get()]); const done=new Set(b.docs.map(d=>d.data().req)); const left=a.docs.filter(d=>!done.has(d.id)&&!crSkip(d.data().nm)).length; n.textContent=left?`依頼 ${left}件`:"";
     const bd=document.getElementById("ttlFzB"); if(bd){ bd.textContent=left>99?"99+":String(left); bd.hidden=!left; } }catch(e){} }
 // みんな：融合でできた魔物の絵を読みこんでおく（ほかの冒険者のプロフィールに出ても表示できるように）
 async function cache(){ if(!DB) return; try{ const q=await DB.collection("fusemon").get(); q.docs.forEach(d=>{ const x=d.data(); if(x&&x.id&&x.img) FMON_CACHE[x.id]=Object.assign(FMON_CACHE[x.id]||{},{name:x.name,img:x.img,rk:x.rk||"F"},x.a!=null?{a:x.a,b:x.b}:{},x.an?{an:x.an,bn:x.bn}:{},!x.same?{req:x.req,fn:x.fn,fat:x.at}:{}); }); }catch(e){} }
