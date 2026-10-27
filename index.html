@@ -4520,14 +4520,16 @@ function bindBoxTop(){ const b=document.getElementById("boxBack"); if(b) b.oncli
   const h=document.getElementById("boxHelp"); if(h) h.onclick=()=>{ const x=BOX_HELP[boxMode]; const bg=sheet(`<div class="sheet-h"><h3>${x[0]}</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div class="rules-body">${x[1]}</div>`); }; }
 // 魔物オリジナル融合（2026-10-26・全冒険者に公開。融合依頼の画面はふっかーだけ）：種類のちがう2匹＋1000モコ → 送信すると運営に届き、オリジナルの限定魔物が作られる
 const FUSE_MOKO = 500; let fuSel=[], fuStep=0, fuMokoTip=0;
+// 2026-10-27：全冒険者、融合が1回だけ無料（すでに融合したことがある人も1回）
+const fuFree=()=>!S.fuFree1027, fuCost=()=>fuFree()?0:FUSE_MOKO;
 function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
   const list=sortedUnits(), slot=i=>{ const x=S.units.find(z=>z.u===fuSel[i]); return x?`<img src="${cardURL(x.m,x.s)}" alt="">`:""; };
-  const ready=fuSel.length===2, enough=(S.moko||0)>=FUSE_MOKO;
+  const ready=fuSel.length===2, free=fuFree(), enough=(S.moko||0)>=fuCost();
   $("#stage").innerHTML=`<h2>魔物</h2>${boxSeg()}
-    <div class="fu-moko"><small>所持モコ数</small><div><img src="moko.png" alt=""><b>${mokoFmt(S.moko||0)}</b><span>モコ</span></div></div>
+    ${free?`<div class="note" style="margin:0 0 8px;text-align:center;font-weight:900">🎁 今なら融合が<b>1回無料</b>！モコを使わずに融合できます</div>`:""}<div class="fu-moko"><small>所持モコ数</small><div><img src="moko.png" alt=""><b>${mokoFmt(S.moko||0)}</b><span>モコ</span></div></div>
     <div class="fu-row"><div class="fu-slot" data-fs="0">${slot(0)}</div><span class="fu-plus">＋</span><div class="fu-slot" data-fs="1">${slot(1)}</div><span class="fu-arrow">➜</span>
-      <button class="fu-go" type="button" id="fuGo" ${ready?"":"disabled"}><small>${FUSE_MOKO.toLocaleString()}モコで</small><b>融合</b></button></div>
-    ${fuStep===1&&ready?`<div class="fu-send"><p>${esc(mon(S.units.find(z=>z.u===fuSel[0]).m).name)} ＋ ${esc(mon(S.units.find(z=>z.u===fuSel[1]).m).name)} を融合します。<br>${enough?`送信すると <b>${FUSE_MOKO.toLocaleString()}モコ</b> と2匹の魔物を使います。`:`<b style="color:var(--berry)">モコが足りません（${FUSE_MOKO.toLocaleString()}モコ必要）</b>`}</p>
+      <button class="fu-go" type="button" id="fuGo" ${ready?"":"disabled"}><small>${free?"1回無料で":FUSE_MOKO.toLocaleString()+"モコで"}</small><b>融合</b></button></div>
+    ${fuStep===1&&ready?`<div class="fu-send"><p>${esc(mon(S.units.find(z=>z.u===fuSel[0]).m).name)} ＋ ${esc(mon(S.units.find(z=>z.u===fuSel[1]).m).name)} を融合します。<br>${free?`送信すると2匹の魔物を使います（<b>今回は無料</b>・モコは使いません）。`:enough?`送信すると <b>${FUSE_MOKO.toLocaleString()}モコ</b> と2匹の魔物を使います。`:`<b style="color:var(--berry)">モコが足りません（${FUSE_MOKO.toLocaleString()}モコ必要）</b>`}</p>
       <button class="btn gold" type="button" id="fuSend" ${enough?"":"disabled"}>📨 送信</button><button class="btn ghost" type="button" id="fuNo">やめる</button></div>`:""}
     <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r==="F"?"融合":r}</button>`).join("")}</div>
     <p class="sub" style="margin:0 0 6px">融合したい種類の異なる魔物を2匹タップしてね</p>
@@ -4556,7 +4558,7 @@ function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
   if($("#fuNo")) $("#fuNo").onclick=()=>{ fuStep=0; keep(); };
   if($("#fuSend")) $("#fuSend").onclick=e=>fuSend(e.currentTarget);
   // モコが足りないときは、融合の画面に入るたびに知らせる
-  if(!fuMokoTip && (S.moko||0)<FUSE_MOKO){ fuMokoTip=1;
+  if(!fuMokoTip && !free && (S.moko||0)<FUSE_MOKO){ fuMokoTip=1;
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><img src="moko.png" alt="" style="width:72px;height:72px;margin:0 auto"><p>モコが足りません</p>
       <div class="note" style="margin:0">融合には <b>${FUSE_MOKO}モコ</b> 必要です（今 ${mokoFmt(S.moko||0)}モコ）。<br>モコはログインボーナスやランキング報酬の他にショップから購入することも可能です！</div>
@@ -4571,7 +4573,7 @@ async function fuAdmin(){ const el=$("#fuAdmin"); if(!el||!dexPeek()||!DB) retur
     $("#fuAdmin").innerHTML=`<div class="el-head" style="margin-top:16px">🛠 運営用：届いた融合（新しい順・${L.length}件）</div>${L.length?`<div class="note" style="text-align:left;margin:0">${L.map(r=>`・<b>${esc(r.nm)}</b>：No.${r.a} ${esc(r.an)}（Lv${r.al}）＋ No.${r.b} ${esc(r.bn)}（Lv${r.bl}）<br>　<small>${new Date(r.at).toLocaleString("ja-JP")}</small>`).join("<br>")}</div>`:`<div class="note" style="margin:0">まだありません</div>`}`; }catch(e){} }
 function fuMyReqs(){ const L=(S.fuReqs||[]).slice().reverse(); if(!L.length) return "";
   return `<div class="el-head" style="margin-top:16px">📨 送信した融合</div><div class="note" style="text-align:left;margin:0">${L.map(r=>`・${esc(r.a)} ＋ ${esc(r.b)}（${new Date(r.at).toLocaleDateString("ja-JP")}）… 図鑑に載っていない魔物なので融合されるまでしばらくお待ちください✨`).join("<br>")}</div>`; }
-async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOKO) return toast("モコが足りません");
+async function fuSend(btn){ if(fuSel.length!==2) return; const cost=fuCost(); if((S.moko||0)<cost) return toast("モコが足りません");
   const A=S.units.find(z=>z.u===fuSel[0]), B=S.units.find(z=>z.u===fuSel[1]); if(!A||!B||A.m===B.m||A.k||B.k) return toast("えらびなおしてね");
   if(!DB||!MYID) return toast("ログインすると融合できます");
   btn.disabled=true; btn.textContent="送信中…";
@@ -4585,7 +4587,7 @@ async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOK
     try{ const ref=await withTO(DB.collection("fusereq").add({uid:MYID, nm:String(myName()).slice(0,24), a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, al:A.l, bl:B.l, at, auto:1}));
       DB.collection("fusemon").doc(known.id+"_"+ref.id).set({id:known.id, name:known.name, img:known.img, rk:known.rk||fuseRank(A.m,B.m), uid:MYID, req:ref.id, reqAt:at, a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, same:1, auto:1, at}).catch(()=>{}); }catch(e){}
     const an=mon(A.m).name, bn=mon(B.m).name;
-    S.moko-=FUSE_MOKO; S.units=S.units.filter(z=>z.u!==A.u&&z.u!==B.u);
+    S.moko-=cost; if(!cost) S.fuFree1027=1; S.units=S.units.filter(z=>z.u!==A.u&&z.u!==B.u);
     const krk=known.rk||fuseRank(A.m,B.m); S.fmons=S.fmons||{}; S.fmons[known.id]={name:known.name,img:known.img,rk:krk}; FMON_CACHE[known.id]=S.fmons[known.id]; mon(known.id);
     S.got[known.id]=(S.got[known.id]||0)+1; S.units.push({u:S.nextUid++,m:known.id,l:1,e:0,s:0,g:0,k:true,t:at}); fuSel=[]; fuStep=0; save();
     const g=document.createElement("div"); g.className="reveal";
@@ -4593,7 +4595,7 @@ async function fuSend(btn){ if(fuSel.length!==2) return; if((S.moko||0)<FUSE_MOK
     document.body.appendChild(g); try{ SFX.reveal("Z"); }catch(e){} g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; return; }
   const req={uid:MYID, nm:String(myName()).slice(0,24), a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, al:A.l, bl:B.l, at:gnow()};
   try{ await withTO(DB.collection("fusereq").add(req)); }catch(e){ btn.disabled=false; btn.textContent="📨 送信"; return toast("送信できませんでした。もう一度ためしてね"); }
-  S.moko-=FUSE_MOKO; S.units=S.units.filter(z=>z.u!==A.u&&z.u!==B.u); S.fuReqs=(S.fuReqs||[]).concat({a:req.an,b:req.bn,at:req.at}); fuSel=[]; fuStep=0; save();
+  S.moko-=cost; if(!cost) S.fuFree1027=1; S.units=S.units.filter(z=>z.u!==A.u&&z.u!==B.u); S.fuReqs=(S.fuReqs||[]).concat({a:req.an,b:req.bn,at:req.at}); fuSel=[]; fuStep=0; save();
   try{ SFX.reveal("S"); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🧬</div><p>融合を送信しました！</p>
