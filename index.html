@@ -7271,7 +7271,7 @@ function confirmItem(r,k,direct){
   const what=k==="shbomb"?`${who}さんの盾を${SHBOMB_BREAK}つこわします。（使うのに${USE_COST.shbomb}コイン）`:k==="gift"?`${who}さんに${GIFT_COIN.toLocaleString()}コインをプレゼントします。`:k==="magnet"?`${who}さんの所持コインの1%をうばいます。<br><small>この冒険者には、今シーズンあと${magLeft(r.id)}個使えます</small>`:k==="fire"?`${who}さんの配置魔物（${esc(mon(r.gm)?.name||"魔物")}）のレベルを${FIRE_LV}下げます。（使うのに${USE_COST.fire}コイン）`:`${who}さんの冒険者レベルを${BOMB_LV}下げます。（使うのに${USE_COST.bomb.toLocaleString()}コイン）`;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="iuT"><img src="${i.img}" alt="" style="width:96px;height:96px;margin:0 auto;image-rendering:pixelated"><p id="iuT">${i.name}を使いますか？</p>
-    <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。あなたの名前は出ず「中級冒険者」のように、レベル帯だけが伝わります。（残り ${inv(k)}個）</div>
+    <div class="note" style="margin:0">${what}<br>相手には、次にアプリを開いたときに反映されます。${ATK_ITEMS.includes(k)&&atkRecent(r.id)+1>=CONSEC_N?`<b style="color:var(--berry)">⚠️ 同じ冒険者に連続で使っているので、今回は<u>あなたの名前が相手に伝わります</u></b>`:`あなたの名前は出ず「中級冒険者」のように、レベル帯だけが伝わります。<br><small>※同じ冒険者に1時間に${CONSEC_N}回以上使うと、名前が伝わります</small>`}（残り ${inv(k)}個）</div>
     <button class="btn gold" id="iuGo" type="button">使う！</button><button class="btn ghost" id="iuNo" type="button">やめる</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#iuNo").onclick=()=>bg.remove();
@@ -7292,9 +7292,11 @@ async function useItem(r,k,qty=1){
   if(useLeft(k)<=0) { toast(useLimitTxt(k)); return false; }
   if(k==="magnet" && magLeft(r.id)<qty) { toast(magLimitTxt()); return false; }
   const coins = k==="magnet" ? Math.floor(Math.max(0,d.cn||0)*MAGNET) : 0;
+  const atk=ATK_ITEMS.includes(k), reveal=atk && atkRecent(r.id)+1>=CONSEC_N;   // 連続で使うと名前が相手に伝わる
   try{
     await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
-      item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:gnow()}));
+      item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:gnow(), ...(reveal?{an:String(myName()).slice(0,24)}:{})}));
+    if(atk){ S.atkLog[r.id]=(S.atkLog[r.id]||[]).concat(gnow()); }
   }catch(e){ { toast("アイテムを使えませんでした。少し時間をおいてためしてください"); return false; } }
   addItem(k,-qty); S.coins-=cost; if(SEASON_USE_MAX[k]!=null){ const u=useCnt(); u[k]=(u[k]||0)+qty; if(k==="magnet"){ u.mt=u.mt||{}; u.mt[r.id]=(u.mt[r.id]||0)+qty; } } save(); closeSheet(); render();   // マグネットのコインは、相手が開いたときに（盾で防がれなければ）届く
   const i=itemOf(k), who=esc(d.name||"相手");
@@ -7363,7 +7365,11 @@ function openGiftSelf(q){
   document.body.appendChild(g); SFX.reveal("S"); SFX.coin(); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); };
 }
 // 相手には名前を出さず、冒険者レベルの帯だけ伝える（🔰Lv10未満＝初心者／10〜50＝中級／51〜99＝上級／100〜＝猛者）
+// 2026-10-27：同じ相手に攻撃アイテムを連続で使った冒険者は、名前が相手に伝わる（1時間に3回目から）
+const CONSEC_N = 3, CONSEC_MS = HOUR_MS, ATK_ITEMS = ["magnet","fire","bomb","shbomb"];
+function atkRecent(id){ const t=gnow(); S.atkLog=S.atkLog||{}; Object.keys(S.atkLog).forEach(k=>{ S.atkLog[k]=(S.atkLog[k]||[]).filter(x=>t-x<CONSEC_MS); if(!S.atkLog[k].length) delete S.atkLog[k]; }); return (S.atkLog[id]||[]).length; }
 function anonWho(b){
+  if(b&&b.an) return `「${esc(String(b.an).slice(0,24))}」さん（連続使用）`;
   const lv=Number(b&&b.attP);
   if(!lv) return "ある冒険者";
   return lv<SAFE_LV?"🔰初心者冒険者":lv<=50?"中級冒険者":lv<=99?"上級冒険者":"猛者冒険者";
