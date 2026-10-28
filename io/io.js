@@ -6,7 +6,7 @@
            負け：記録は残らず、そのゲームのLvぶん冒険者Lvが下がる（1より下にはならない） */
 (function(){
 "use strict";
-const IO={ W:3200, H:3200, N:70, WEAP:180, NEED:10, R0:40 };
+const IO={ W:3200, H:3200, N:70, WEAP:150, NEED:10, R0:40 };
 const $id=id=>document.getElementById(id);
 const escH=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const rnd=(a,b)=>a+Math.random()*(b-a), ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -139,9 +139,12 @@ function throwW(){ if(!G||G.over||G.pause) return; if(G.weap<=0){ flash("武器�
 function stepThrow(dt){ if(!G.TH||!G.TH.length) return; const hitR=26*(G.dpr||1)/(G.ppu||1);
   for(const t of G.TH){ t.t+=dt; t.x+=t.vx*dt; t.y+=t.vy*dt; t.a+=dt*14;
     for(let i=0;i<G.E.length;i++){ const e=G.E[i]; if(Math.hypot(e.x-t.x,e.y-t.y)<e.r*0.7+hitR){ t.dead=1;
-      if(Math.floor(r1(e.lv))<=1){ const P=G.P; G.E[i]=spawnEnemy(false); P.lv=Math.min(LV_MAX,r1(P.lv+1)); P.r=radius(P.lv,P.f); G.kills++; try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX){ escape(true); return; } break; }   // Lv1の魔物は倒せる（自分のレベル+1）
+      if(Math.floor(r1(e.lv))<=1){ const P=G.P; dropWeapons(e); G.E[i]=spawnEnemy(false); P.lv=Math.min(LV_MAX,r1(P.lv+1)); P.r=radius(P.lv,P.f); G.kills++; try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX){ escape(true); return; } break; }   // Lv1の魔物は倒せる（自分のレベル+1）
       if(e.ghost) e.dl=(e.dl||0)-1; else { e.lv=Math.max(1,r1(e.lv-1)); e.r=radius(e.lv,e.f); } e.hitT=0.35; if(e.ghost) ghostPos(e); break; } } }
   G.TH=G.TH.filter(t=>!t.dead&&t.t<1.4&&t.x>-50&&t.y>-50&&t.x<IO.W+50&&t.y<IO.H+50); }
+// 2026-10-28：倒した敵が持っていた武器は、その周りに全部散らばる（拾われたら消える。数のうちには入れない）
+function dropWeapons(e){ const n=Math.min(40,Math.floor(e.w||0)); for(let k=0;k<n;k++){ const a=Math.random()*Math.PI*2, d=e.r*0.6+rnd(10,e.r*1.4+60);
+  G.WP.push({x:Math.max(20,Math.min(IO.W-20,e.x+Math.cos(a)*d)), y:Math.max(20,Math.min(IO.H-20,e.y+Math.sin(a)*d)), k:null, im:WEAPONS[ri(0,WEAPONS.length-1)], a:rnd(-0.5,0.5), drop:1}); } }
 function spawnWeapon(){ const u=Math.random(), k=u<WSP.r.p?"r":u<WSP.r.p+WSP.g.p?"g":null;
   return {x:rnd(40,IO.W-40),y:rnd(40,IO.H-40),k,im:k?WSP[k].im:WEAPONS[ri(0,WEAPONS.length-1)],a:rnd(-0.5,0.5)}; }
 // 地面：草原のドット絵をタイルにする
@@ -176,11 +179,12 @@ function step(dt){ const P=G.P;
   // 自分とふれた敵
   for(let i=0;i<G.E.length;i++){ const e=G.E[i], d=Math.hypot(e.x-P.x,e.y-P.y); if(d>=(e.r+P.r)*0.5) continue;
     const r0=cmp(P,e);
-    if(r0>0){ P.lv=r1(P.lv+1); P.r=radius(P.lv,P.f); G.kills++; G.E[i]=spawnEnemy(false); try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX) return escape(true); }
+    if(r0>0){ P.lv=r1(P.lv+1); P.r=radius(P.lv,P.f); G.kills++; dropWeapons(e); G.E[i]=spawnEnemy(false); try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX) return escape(true); }
     else if(r0<0){ const mn=escH((typeof mon==="function"&&mon(e.id)||{}).name||"魔物"); return lose(e.ghost?`${escH(e.nm||"冒険者")}さんの${mn}に負けた…`:`${mn}に負けた…`); }
     else if(!e.ghost){ const k=((e.r+P.r)*0.5-d)/(d||1)*0.5; e.x+=(e.x-P.x)*k; e.y+=(e.y-P.y)*k; } }
-  for(const e of G.E) if(!e.ghost) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; e.lv=Math.min(LV_MAX-1,r1(e.lv+wLv(w))); e.r=radius(e.lv,e.f); G.WP[i]=spawnWeapon(); } }
-  for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.9+30*G.dpr/(G.ppu||1)){ /* 2026-10-28：絵が少しでも重なれば拾えるように（前は真ん中近くまで行かないと拾えなかった） */ G.weap++; P.w=G.weap; P.lv=Math.min(LV_MAX,r1(P.lv+wLv(w))); P.r=radius(P.lv,P.f); G.WP[i]=spawnWeapon(); try{ w.k?SFX.coin():SFX.tap(); }catch(x){} if(w.k) flash(w.k==='r'?'🌈 虹の武器！ +10レベル':'✨ 金の武器！ +3レベル'); else { const b=$id("ioWp"); if(b){ b.style.transition="none"; b.style.transform="scale(1.6)"; b.style.color="#e53935"; setTimeout(()=>{ b.style.transition="transform .3s"; b.style.transform=""; b.style.color=""; },120); } } if(P.lv>=LV_MAX) return escape(true); } }
+  for(const e of G.E) if(!e.ghost) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; e.lv=Math.min(LV_MAX-1,r1(e.lv+wLv(w))); e.r=radius(e.lv,e.f); G.WP[i]=w.drop?{dead:1,x:-9999,y:-9999,im:w.im}:spawnWeapon(); } }
+  for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.9+30*G.dpr/(G.ppu||1)){ /* 2026-10-28：絵が少しでも重なれば拾えるように（前は真ん中近くまで行かないと拾えなかった） */ G.weap++; P.w=G.weap; P.lv=Math.min(LV_MAX,r1(P.lv+wLv(w))); P.r=radius(P.lv,P.f); G.WP[i]=w.drop?{dead:1,x:-9999,y:-9999,im:w.im}:spawnWeapon(); try{ w.k?SFX.coin():SFX.tap(); }catch(x){} if(w.k) flash(w.k==='r'?'🌈 虹の武器！ +10レベル':'✨ 金の武器！ +3レベル'); else { const b=$id("ioWp"); if(b){ b.style.transition="none"; b.style.transform="scale(1.6)"; b.style.color="#e53935"; setTimeout(()=>{ b.style.transition="transform .3s"; b.style.transform=""; b.style.color=""; },120); } } if(P.lv>=LV_MAX) return escape(true); } }
+  G.WP=G.WP.filter(w=>!w.dead);
   stepThrow(dt); for(const e of G.E) if(e.hitT) e.hitT=Math.max(0,e.hitT-dt);
   hud(); }
 function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
