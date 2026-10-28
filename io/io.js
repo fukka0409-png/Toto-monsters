@@ -28,7 +28,7 @@ const speedOf=(r,lv)=>75*Math.pow(IO.R0/r,0.05)*lvSpd(lv);
 const WEAPONS=[1,2,3].map(n=>{ const im=new Image(); im.src="io/w"+n+".png"; return im; });
 // 特別な武器（2026-10-28）：金の武器＝1個で+3レベル（出る確率5%・2026-10-28に1%から変更）・虹の武器＝1個で+10レベル（0.01%）。ふつうの武器は+0.1レベル
 const WSP={g:{lv:3,p:0.05,im:(()=>{ const i=new Image(); i.src="io/wg.png"; return i; })()}, r:{lv:10,p:0.0001,im:(()=>{ const i=new Image(); i.src="io/wr.png"; return i; })()}};
-const wLv=w=>w.k?WSP[w.k].lv:0.1;
+const wLv=w=>w.k?WSP[w.k].lv:0;   // 2026-10-28：ふつうの武器を拾ってもレベルは上がらない（金・虹の武器はそのまま）
 const imgCache={};
 function img(id){ if(imgCache[id]) return imgCache[id]; const m=typeof mon==="function"&&mon(id); const im=new Image(); if(m&&m.img) im.src=m.img; return imgCache[id]=im; }
 function enemyPool(){ try{ return (typeof MONSTERS!=="undefined"?MONSTERS:[]).filter(m=>m&&m.img&&m.rank!=="L"&&m.rank!=="F"&&!m.gift).map(m=>m.id); }catch(e){ return [18]; } }
@@ -67,7 +67,6 @@ function open(){ if(G) return;
 <canvas id="ioCv"></canvas>
 <div class="hud"><div class="bx" style="grid-column:1;justify-content:center"><b id="ioLv" style="font-size:24px">Lv.1</b></div><div class="bx rk"><small>順位</small><b id="ioRk">1</b><small>位</small></div><button class="gear" type="button" id="ioGear" aria-label="設定">⚙</button>
 <div class="bx" style="grid-column:1;grid-row:2"><span>武器数</span><b id="ioWp">0</b><span>個</span></div><button class="esc" type="button" id="ioEsc"><small>武器を${IO.NEED}個以上集めて</small>脱出する</button></div>
-<button class="atk l" type="button" data-atk="1">⚔ 攻撃</button><button class="atk r" type="button" data-atk="1">⚔ 攻撃</button>
 <div class="stick" hidden><div class="knob" id="ioKnob"></div></div>`;
   document.body.appendChild(root);
   const cv=root.querySelector("#ioCv"), c=cv.getContext("2d");
@@ -86,23 +85,23 @@ function open(){ if(G) return;
   // 操作：画面のどこでも、さわったところから指を動かした方向へ進む（スティックの絵は右下）
   const knob=root.querySelector("#ioKnob");
   // 2026-10-28：ゆっくりオート移動。いつも向いている方向へ進み、画面を指でスライドすると、その方向へ向きを変える
-  const AUTO=0.45; G.head={x:Math.random()<0.5?1:-1,y:0}; G.dir={x:G.head.x*AUTO,y:0};
-  const setDir=(dx,dy)=>{ const l=Math.hypot(dx,dy); if(l<12) return; G.head={x:dx/l,y:dy/l}; G.dir={x:G.head.x*AUTO,y:G.head.y*AUTO}; };
+  // 2026-10-28：オート移動はなし。画面をスライドしているあいだだけ動き、指をはなすと進んでいた方向へ武器を1つ投げる
+  const AUTO=0.45; G.head={x:1,y:0}; G.dir={x:0,y:0};
+  const setDir=(dx,dy)=>{ const l=Math.hypot(dx,dy); if(l<8){ G.dir={x:0,y:0}; return; } G.head={x:dx/l,y:dy/l}; const m=Math.min(1,l/60)*AUTO; G.dir={x:G.head.x*m,y:G.head.y*m}; };
   root.addEventListener("pointerdown",e=>{ if(e.target.closest("button,.dlg")) return; G.touch={id:e.pointerId,x:e.clientX,y:e.clientY}; });
   root.addEventListener("pointermove",e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; setDir(e.clientX-G.touch.x,e.clientY-G.touch.y); });
-  const up=e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; G.touch=null; };   // 指をはなしても、その方向へ進みつづける
+  const up=e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; G.touch=null; G.dir={x:0,y:0}; if(G.weap>0) throwW(); };   // 指をはなすと止まって、武器を1つ投げる
   root.addEventListener("pointerup",up); root.addEventListener("pointercancel",up);
-  G.kd=e=>{ if(!G) return; G.keys[e.key]=e.type==="keydown"; const k=G.keys, dx=(k.ArrowRight?1:0)-(k.ArrowLeft?1:0), dy=(k.ArrowDown?1:0)-(k.ArrowUp?1:0); if(dx||dy) setDir(dx*50,dy*50); };
+  G.kd=e=>{ if(!G) return; G.keys[e.key]=e.type==="keydown"; const k=G.keys, dx=(k.ArrowRight?1:0)-(k.ArrowLeft?1:0), dy=(k.ArrowDown?1:0)-(k.ArrowUp?1:0); setDir(dx*60,dy*60); if(e.type==="keyup"&&e.key===" "&&G.weap>0) throwW(); };
   addEventListener("keydown",G.kd); addEventListener("keyup",G.kd);
   root.querySelector("#ioGear").onclick=()=>{ if(G.over) return; G.pause=true;
     dlg(`<h3>⚙ 一時停止</h3><p>やめると<b>負け</b>になります（冒険者Lvが今のLvぶん下がります）</p><button type="button" data-a="go">つづける</button><button type="button" class="g" data-a="quit">やめる（負け）</button>`,a=>{ if(a==="go"){ G.pause=false; G.t=performance.now(); } else lose("やめました"); }); };
   // 攻撃（2026-10-28）：進んでいる方向へ、拾った武器を1つ投げる（武器数−1）。当たった魔物はレベル−1
-  root.querySelectorAll("[data-atk]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); throwW(); }));
   root.querySelector("#ioEsc").onclick=()=>{ if(G.over||G.weap<IO.NEED) return; escape(); };
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物はゆっくり自動で進みます。画面をスライドすると向きを変えられます！<br>・「⚔ 攻撃」で進んでいる方向に武器を投げられます（武器−1）。当たった魔物はレベル−1！Lv1の魔物なら倒せます！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドしているあいだ、魔物が動きます！<br>・指をはなすと、進んでいた方向へ武器を1つ投げます（武器−1）。当たった魔物はレベル−1！Lv1の魔物なら倒せます！<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -182,7 +181,7 @@ function grass(){ const t=document.createElement("canvas"); t.width=t.height=128
   G.pat=G.c.createPattern(t,"repeat"); }
 function hud(){ $id("ioLv").textContent="Lv."+Math.floor(r1(G.P.lv)); /* 表示は整数だけ（中では0.1刻みで数えている） */ $id("ioWp").textContent=G.weap;
   const rk=1+G.E.filter(e=>cmp(e,G.P)>0).length; G.rank=rk; $id("ioRk").textContent=rk;
-  $id("ioEsc").classList.toggle("ok",G.weap>=IO.NEED); G.root.querySelectorAll("[data-atk]").forEach(b=>b.disabled=G.weap<=0); }
+  $id("ioEsc").classList.toggle("ok",G.weap>=IO.NEED); }
 function loop(now){ if(!G) return; const dt=Math.max(0,Math.min(0.05,(now-G.t)/1000)); G.t=now; G.fdt=dt;
   if(!G.pause&&!G.over) step(dt); draw(); G.raf=requestAnimationFrame(loop); }
 function step(dt){ const P=G.P;
