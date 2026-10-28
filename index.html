@@ -573,7 +573,12 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .rank li.bkg{border:3px solid #ffd54a!important;background:linear-gradient(120deg,#5a4510,#8a6a14 40%,#d9b13a 50%,#8a6a14 60%,#5a4510);background-size:250% 100%;animation:bkgShine 2.6s linear infinite,bkgGlow 1.6s ease-in-out infinite alternate}
 @keyframes bkgShine{from{background-position:120% 0}to{background-position:-120% 0}}
 @keyframes bkgGlow{from{box-shadow:0 0 6px 1px #ffd54a99}to{box-shadow:0 0 16px 4px #ffe680}}
-@media (prefers-reduced-motion:reduce){.rank li.bkg{animation:none;box-shadow:0 0 12px 3px #ffd54acc}}
+/* 2位はシルバー、3位はブロンズ */
+.rank li.bkg.bk2{border-color:#e6edf3!important;background:linear-gradient(120deg,#3a4048,#6b7682 40%,#c9d3dc 50%,#6b7682 60%,#3a4048);background-size:250% 100%;animation:bkgShine 2.6s linear infinite,bkgGlow2 1.6s ease-in-out infinite alternate}
+@keyframes bkgGlow2{from{box-shadow:0 0 6px 1px #dfe7ee99}to{box-shadow:0 0 16px 4px #f2f7fb}}
+.rank li.bkg.bk3{border-color:#e0954f!important;background:linear-gradient(120deg,#4a2a12,#7d4a20 40%,#c98447 50%,#7d4a20 60%,#4a2a12);background-size:250% 100%;animation:bkgShine 2.6s linear infinite,bkgGlow3 1.6s ease-in-out infinite alternate}
+@keyframes bkgGlow3{from{box-shadow:0 0 6px 1px #e0954f99}to{box-shadow:0 0 16px 4px #f0b07a}}
+@media (prefers-reduced-motion:reduce){.rank li.bkg,.rank li.bkg.bk2,.rank li.bkg.bk3{animation:none;box-shadow:0 0 12px 3px #ffd54acc}}
 .rank li.top1{border-color:#f0c040}.rank li.top2{border-color:#c8d0d8}.rank li.top3{border-color:#c88a50}
 .rk-no{font-family:var(--f-pix);font-size:18px;width:30px;text-align:center;flex:0 0 auto}
 .rank li.top1 .rk-no{color:#f0c040}.rank li.top2 .rk-no{color:#c8d0d8}.rank li.top3 .rk-no{color:#c88a50}
@@ -6042,7 +6047,7 @@ async function bankRankAt(ss,mine){ try{
   const m={}; for(const q of [a,b]) if(q) q.docs.forEach(d=>{ if(d.id!==MYID) m[d.id]=d.data(); });
   let n=0; for(const id in m){ const r=m[id], v=(r.bkpS===ss&&r.bkp!=null)?r.bkp:(r.bk||0); if(v>mine) n++; }
   return n+1; }catch(e){ return null; } }   // シーズン12（2026-10-28 22:00〜10-29 22:00 のランク戦）から   // 引き出しは1シーズン（ランク戦）に1回・1000万コインまで
-const bankTop3=()=>new Set((BANK_RK||[]).slice(0,3).map(r=>r.id));   // 貯金ランキング1〜3位の冒険者
+const bankTop3=()=>new Map((BANK_RK||[]).slice(0,3).map((r,i)=>[r.id,i+1]));   // 貯金ランキング1〜3位の冒険者（id→順位）
 const bankOutDone=()=>S.bankOutSS===seasonNow();
 async function loadBankRank(force){ if(!DB) return; if(!force&&BANK_RK&&gnow()-BANK_AT<60000) return;
   try{ const q=await withTO(DB.collection("profiles").orderBy("bk","desc").limit(10).get()); BANK_RK=q.docs.map(d=>({id:d.id,...d.data()})).filter(r=>(r.bk||0)>0); BANK_AT=gnow(); bankErr=false; }
@@ -6170,7 +6175,7 @@ function renderRanking(segHtml){
   else if(rankErr) body=`<div class="empty">ランキングを読み込めませんでした。少し時間をおいて開き直してください。</div>`;
   else if(!RANK) body=`<div class="empty">読み込み中…</div>`;
   else if(!RANK.length) body=`<div class="empty">まだ誰もいません</div>`;
-  else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3&&!rankless()?"top"+(i+1):""} ${bankTop3().has(r.id)?"bkg":""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
+  else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3&&!rankless()?"top"+(i+1):""} ${bankTop3().has(r.id)?"bkg bk"+bankTop3().get(r.id):""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
       <span class="rk-no">${rkNo(i+1)}</span>${avatarImg(r.icon,56)}
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${tsReadyOf(r)?`<div class="rk-ts">⚔️ 合戦可能</div>`:""}${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
