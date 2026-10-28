@@ -3527,12 +3527,22 @@ function myTrend(){
   return up&&dn?"mix":up?"up":dn?"down":"";
 }
 const TREND_ICON = { up:'<span class="tr up" title="上昇中">▲</span>', down:'<span class="tr down" title="下降中">▼</span>', mix:'<span class="tr mix" title="上がったり下がったり">▶</span>' };
-// 所持コインの上限：10億コイン（こえた分はもらえない）（2026-10-25に1億から変更）
-const COIN_MAX = 1000000000;
-let coinCapToastAt=0;
-function capCoins(){ if(S.coins>COIN_MAX){ const over=S.coins-COIN_MAX; S.bank=(S.bank||0)+over; S.coins=COIN_MAX;   // 2026-10-27：こえた分は貯金へ（貯金に上限はない）
-    if(Date.now()-coinCapToastAt>60000){ coinCapToastAt=Date.now(); setTimeout(()=>{ try{ toast(`💰 所持コインの上限（10億）をこえた ${over.toLocaleString()}コイン は貯金に入りました`); }catch(e){} },300); } return; }
-}
+// 所持コインの上限：5億コイン（こえた分は貯金するように知らせる）
+const COIN_MAX = 500000000;   // 2026-10-28：所持できるコインは5億まで（前は10億）
+let coinCapToastAt=0, overNagOpen=false;
+// 5億をこえたら、こえた分を貯金するように知らせる（貯金するまで、1分ごとにまた出す）
+function capCoins(){ if(S.coins>COIN_MAX && Date.now()-coinCapToastAt>60000 && !overNagOpen){ coinCapToastAt=Date.now(); setTimeout(overNag,400); } }
+function overNag(){ if(overNagOpen||!(S.coins>COIN_MAX)) return;
+  if(document.querySelector(".reveal,.sheet-bg.center,#ioG,#tsFull")||document.querySelector("#title:not([hidden])")) return setTimeout(overNag,2000);
+  overNagOpen=true; const over=Math.floor(S.coins-COIN_MAX);
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=85;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏦</div><p>所持コインが上限をこえています！</p>
+    <div class="note" style="margin:0">所持できるコインは<b>5億コイン</b>までです。<br>こえている <b style="color:var(--berry)">${over.toLocaleString()}コイン</b> を貯金してください。<br><small>貯金するまで、このお知らせが出ます</small></div>
+    <button class="btn gold" type="button" id="onGo">🏦 こえた分を貯金する</button><button class="btn ghost" type="button" id="onNo">あとで</button></div>`;
+  document.body.appendChild(bg);
+  bg.querySelector("#onNo").onclick=()=>{ bg.remove(); overNagOpen=false; coinCapToastAt=Date.now(); };
+  bg.querySelector("#onGo").onclick=()=>{ const o=Math.max(0,Math.floor(S.coins-COIN_MAX)); S.coins-=o; S.bank=(S.bank||0)+o; bg.remove(); overNagOpen=false; save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(`🏦 ${o.toLocaleString()}コインを貯金しました`); try{ render(); }catch(e){} }; }
+setInterval(()=>{ try{ if(S&&S.coins>COIN_MAX) capCoins(); }catch(e){} }, 15000);
 function save(){
   capCoins();
   trackLv();
@@ -5857,7 +5867,7 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
   for(const iv of invFix().filter(x=>x.ss===old)){ if(iv.void){ ivNet=(ivNet||0)-iv.amt; continue; }
     if(ivNet==null) ivNet=0;
     const nm=esc(iv.name||"相手");
-    if(!invNew(old) && rank && rank<=3){ ivNet-=iv.amt; const lose=iv.paid?0:Math.min(iv.amt, S.coins+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${(iv.paid?iv.amt:lose).toLocaleString()}コイン没収）`); }
+    if(!invNew(old) && rank && rank<=3){ ivNet-=iv.amt; const lose=iv.paid?0:Math.min(iv.amt, S.coins+(S.bank||0)+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${(iv.paid?iv.amt:lose).toLocaleString()}コイン没収）`); }
     else if(q){
       const d=q.docs.find(x=>x.id===iv.def), ts=d?finalScore(d.id,d.data(),old):null;
       let tr=null; if(ts!=null){
@@ -5866,7 +5876,7 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
         tr=effRank(ts, profOk(d.data(),old), others); }
       const mul=invMulOf(tr, old, !!(rank&&rank<=3));
       if(mul){ ivNet+=iv.amt*(mul-1); out.delta+=Math.floor(iv.amt*mul); out.lines.push(`💰 投資先の${nm}さんが${tr}位！ ${invNew(old)&&rank&&rank<=3?`（あなたが${rank}位なので2倍）`:""}+${Math.floor(iv.amt*mul).toLocaleString()}コイン`); }
-      else { ivNet-=iv.amt*INV_LOSE; const more=Math.min(iv.amt*(INV_LOSE-(iv.paid?1:0)), S.coins+coinsSoFar+out.delta); out.delta-=more; out.lines.push(`💸 投資先の${nm}さんは${tr?tr+"位":"順位なし"}…（−${((iv.paid?iv.amt:0)+more).toLocaleString()}コイン）`); }
+      else { ivNet-=iv.amt*INV_LOSE; const more=Math.min(iv.amt*(INV_LOSE-(iv.paid?1:0)), S.coins+(S.bank||0)+coinsSoFar+out.delta); out.delta-=more; out.lines.push(`💸 投資先の${nm}さんは${tr?tr+"位":"順位なし"}…（−${((iv.paid?iv.amt:0)+more).toLocaleString()}コイン）`); }
     }
   }
   if(ivNet!=null) ivRecord(old, ivNet>0);
@@ -5967,22 +5977,24 @@ function investStatusHtml(iv){
     <div class="inv-box" style="margin-top:12px"><small>投資コイン</small><span class="amt">${a.toLocaleString()}コイン</span>${res}</div>
     <p class="sub">${iv.paid?"投資したコインはすでに支払い済みです。":""}結果はランク戦終了のあと、次にアプリを開いたときに反映されます。</p>`;
 }
+// 2026-10-28：投資だけは、所持コインに加えて貯金も使える
+const invAvail=()=>Math.floor(S.coins||0)+Math.floor(S.bank||0);
 function openInvestForm(r){
   const bg=sheet(`<div class="sheet-h"><h3>投資する</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <ol class="rank" style="margin-bottom:10px"><li>${avatarImg(r.icon,56)}<div class="rk-body"><div class="rk-name">${uname(r.name)}</div><div class="rk-sub">現在${rkNo(r._rank)}${rankless()?"":"位"} ・ Lv${esc(r.lv||1)}</div></div></li></ol>
-    <p class="pick-label" style="margin:0 0 4px">投資金額（持っているコイン：${S.coins.toLocaleString()}）</p>
-    <input class="inv-amt" id="ivAmt" type="number" inputmode="numeric" min="1" max="${S.coins}" step="1" placeholder="0" aria-label="投資金額">
+    <p class="pick-label" style="margin:0 0 4px">投資金額（使えるコイン：${invAvail().toLocaleString()}＝所持${Math.floor(S.coins).toLocaleString()}＋貯金${Math.floor(S.bank||0).toLocaleString()}）</p>
+    <input class="inv-amt" id="ivAmt" type="number" inputmode="numeric" min="1" max="${invAvail()}" step="1" placeholder="0" aria-label="投資金額">
     <div class="toolbar" style="margin:8px 0"><button class="chip" type="button" data-ia="100">+100</button><button class="chip" type="button" data-ia="1000">+1,000</button><button class="chip" type="button" data-ia="10000">+10,000</button><button class="chip" type="button" data-ia="all">ぜんぶ</button><button class="chip" type="button" data-ia="0">クリア</button></div>
     <div class="note" id="ivPrev" style="margin:0 0 10px"></div>
     <button class="btn gold" id="ivGo" type="button" style="width:100%">この冒険者に投資する</button>`);
   const inp=bg.querySelector("#ivAmt"), prev=bg.querySelector("#ivPrev"), go=bg.querySelector("#ivGo");
   const val=()=>Math.floor(Number(inp.value)||0);
-  const upd=()=>{ const a=val(); go.disabled=!(a>=1&&a<=S.coins);
-    prev.innerHTML=a>S.coins?`<span style="color:#ff6a5a">持っているコインより多くは投資できません</span>`:a>=1?`1位 <b style="color:#5fd36a">+${(a*INV_MUL[1]).toLocaleString()}</b> ／ 2位 <b style="color:#5fd36a">+${(a*INV_MUL[2]).toLocaleString()}</b> ／ 3位 <b style="color:#5fd36a">+${(a*2).toLocaleString()}</b> ／ 4位 <b style="color:#5fd36a">+${Math.floor(a*1.5).toLocaleString()}</b> ／ 5位以下 <b style="color:#ff6a5a">−${(a*INV_LOSE).toLocaleString()}</b>${myRankSafe&&myRankSafe<=3?`<br><small>👑 あなたが3位以内のまま終われば、4位以内で+${(a*2).toLocaleString()}</small>`:""}`:"金額を入力してね";
-    if(a>=1&&a<=S.coins) prev.innerHTML+=`<br><small>投資するとすぐに ${a.toLocaleString()}コイン 減ります</small>`; };
+  const upd=()=>{ const a=val(); go.disabled=!(a>=1&&a<=invAvail());
+    prev.innerHTML=a>invAvail()?`<span style="color:#ff6a5a">持っているコイン（所持＋貯金）より多くは投資できません</span>`:a>=1?`1位 <b style="color:#5fd36a">+${(a*INV_MUL[1]).toLocaleString()}</b> ／ 2位 <b style="color:#5fd36a">+${(a*INV_MUL[2]).toLocaleString()}</b> ／ 3位 <b style="color:#5fd36a">+${(a*2).toLocaleString()}</b> ／ 4位 <b style="color:#5fd36a">+${Math.floor(a*1.5).toLocaleString()}</b> ／ 5位以下 <b style="color:#ff6a5a">−${(a*INV_LOSE).toLocaleString()}</b>${myRankSafe&&myRankSafe<=3?`<br><small>👑 あなたが3位以内のまま終われば、4位以内で+${(a*2).toLocaleString()}</small>`:""}`:"金額を入力してね";
+    if(a>=1&&a<=invAvail()) prev.innerHTML+=`<br><small>投資するとすぐに ${a.toLocaleString()}コイン 減ります${a>S.coins?`（所持コインで足りない ${(a-Math.floor(S.coins)).toLocaleString()}コインは貯金から）`:""}</small>`; };
   inp.oninput=upd;
-  bg.querySelectorAll("[data-ia]").forEach(b=>b.onclick=()=>{ const v=b.dataset.ia; inp.value=v==="all"?S.coins:v==="0"?"":Math.min(S.coins,val()+(+v)); upd(); });
-  go.onclick=async e=>{ const a=val(); if(!(a>=1&&a<=S.coins)) return;
+  bg.querySelectorAll("[data-ia]").forEach(b=>b.onclick=()=>{ const v=b.dataset.ia; inp.value=v==="all"?invAvail():v==="0"?"":Math.min(invAvail(),val()+(+v)); upd(); });
+  go.onclick=async e=>{ const a=val(); if(!(a>=1&&a<=invAvail())) return;
     if(await busyRun(e.currentTarget,"投資しています…",()=>doInvest(r,a))){ closeSheet(); render(); $("#stage").scrollTop=0; } };
   upd();
 }
@@ -5997,8 +6009,8 @@ async function doInvest(r,a){
   const ss=seasonNow(), base=MYID+"_"+ss, doc=mine.some(x=>invDocId(x)===base)?base+"_2":base;   // 空いている方の枠を使う
   try{ await withTO(DB.doc("invests/"+doc).set({att:MYID, def:r.id, amt:a, ss, at:gnow(), defName:String(r.name||"").slice(0,12)})); }
   catch(e){ toast("投資できませんでした。少し時間をおいてためしてください"); return false; }
-  if(a>S.coins){ toast("コインが足りません"); return false; }
-  S.coins-=a; renderCoins();
+  if(a>invAvail()){ toast("コインが足りません"); return false; }
+  { const fc=Math.min(a,Math.floor(S.coins)); S.coins-=fc; S.bank=Math.max(0,(S.bank||0)-(a-fc)); } renderCoins();   // 所持コインから先に使い、足りない分は貯金から
   invFix().push({ss, doc, def:r.id, name:String(r.name||""), icon:r.icon||"", amt:a, at:gnow(), paid:1}); save();
   INV_CNT[r.id]=(INV_CNT[r.id]||0)+1; SFX.coin(); toast(`${r.name||"名無しの召喚士"}さんに${a.toLocaleString()}コイン投資しました！`);
   return true;
@@ -6025,7 +6037,7 @@ function renderBank(segHtml){
     <div style="margin:0 0 10px;padding:12px 14px;border-radius:14px;background:linear-gradient(#ffe16b,#f2b631);border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font-weight:900;text-align:center;font-size:15px;line-height:1.5">🛡🧲 貯金したコインは<br><span style="font-size:19px">コインマグネットで取られません！</span></div>
     <div class="season-box"><div><small>🏦 あなたの貯金</small><b translate="no">${n(bk)}</b></div>
 </div>
-    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>10億</b>まで。貯金には<b>上限がありません</b>。所持コインが10億をこえた分は、自動で貯金に入ります。<br>貯金は<b>いつでも・いくらでも</b>できます。<br><b style="color:var(--berry)">⚠️ 次のランク戦（10/28 22:00〜）から、貯金が1億コインをこえている冒険者は、魔物ランキングで5位以内に入らないと、ランク戦が終わるたびに貯金から500万コイン減ります</b><br><b>引き出しは1シーズン（ランク戦）に1回、1000万コインまで</b>です。<br>${bankOutDone()?`<b style="color:var(--berry)">今シーズンはもう引き出しました（次のランク戦から引き出せます）</b>`:`<b>今シーズンはまだ引き出せます</b>`}</div>
+    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>5億</b>まで。貯金には<b>上限がありません</b>。所持コインが5億をこえたら、こえた分を貯金してください。<br>💰 <b>投資</b>には、所持コインに加えて<b>貯金も使えます</b>（投資で所持コインより多くマイナスになったときは、貯金から引かれます）。<br>貯金は<b>いつでも・いくらでも</b>できます。<br><b style="color:var(--berry)">⚠️ 次のランク戦（10/28 22:00〜）から、貯金が1億コインをこえている冒険者は、魔物ランキングで5位以内に入らないと、ランク戦が終わるたびに貯金から500万コイン減ります</b><br><b>引き出しは1シーズン（ランク戦）に1回、1000万コインまで</b>です。<br>${bankOutDone()?`<b style="color:var(--berry)">今シーズンはもう引き出しました（次のランク戦から引き出せます）</b>`:`<b>今シーズンはまだ引き出せます</b>`}</div>
       <div class="bank-in"><input id="bkAmt" type="number" inputmode="numeric" min="1" placeholder="コインの数" class="fr-ta" style="width:100%;box-sizing:border-box;margin:8px 0 6px">
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn gold" type="button" id="bkIn" style="flex:1">貯金する</button><button class="btn" type="button" id="bkOut" style="flex:1">引き出す</button></div>
       <div style="display:flex;gap:6px;margin-top:6px"><button class="chip" type="button" id="bkAllIn">所持コインを全部貯金</button><button class="chip" type="button" id="bkAllOut">1000万コイン引き出す</button></div></div>
@@ -6035,9 +6047,9 @@ function renderBank(segHtml){
   const amt=()=>Math.floor(Number($("#bkAmt").value)||0);
   const done=t=>{ save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(t); setTimeout(()=>loadBankRank(true),1500); render(); };
   const dep=a=>{ a=Math.min(a,Math.floor(S.coins)); if(a<=0) return toast("貯金できるコインがありません"); S.coins-=a; S.bank=(S.bank||0)+a; done(`🏦 ${a.toLocaleString()}コインを貯金しました`); };
-  const wd=a=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); a=Math.min(a,BANK_OUT_MAX,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（10億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; S.bankOutSS=seasonNow(); done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
+  const wd=a=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); a=Math.min(a,BANK_OUT_MAX,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（5億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; S.bankOutSS=seasonNow(); done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
   $("#bkIn").onclick=()=>{ const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>S.coins) return toast("所持コインが足りません"); dep(a); };
-  $("#bkOut").onclick=()=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>BANK_OUT_MAX) return toast("引き出せるのは1000万コインまでです"); if(a>(S.bank||0)) return toast("貯金が足りません"); if(a>room) return toast(`所持コインは10億までなので、引き出せるのは ${room.toLocaleString()}コイン までです`); wd(a); };
+  $("#bkOut").onclick=()=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>BANK_OUT_MAX) return toast("引き出せるのは1000万コインまでです"); if(a>(S.bank||0)) return toast("貯金が足りません"); if(a>room) return toast(`所持コインは5億までなので、引き出せるのは ${room.toLocaleString()}コイン までです`); wd(a); };
   $("#bkAllIn").onclick=()=>dep(Math.floor(S.coins));
   $("#bkAllOut").onclick=()=>wd(Math.floor(S.bank||0));
   $("#bkR").onclick=()=>loadBankRank(true);
@@ -6589,7 +6601,8 @@ async function checkSeason(){
     // 投資の精算（自分が投資した分・自分に投資された分）
     const iv=await settleInvest(old, rank, q, mine, coins); coins+=iv.delta; lines.push(...iv.lines);
     if(S!==S0 || (S.season??0)>=cur){ seasonBusy=false; return; }   // 途中で記録が入れかわったら何もしない
-    S.coins=Math.max(0,S.coins+coins); if(stones) addItem("stone",stones); if(mokos) S.moko=(S.moko||0)+mokos;
+    { const nc=S.coins+coins; if(nc<0){ S.bank=Math.max(0,(S.bank||0)+nc); S.coins=0; } else S.coins=nc; }   // 2026-10-28：所持コインで足りないマイナスは貯金から引く
+    if(stones) addItem("stone",stones); if(mokos) S.moko=(S.moko||0)+mokos;
     // 2026-10-28：貯金が1億コインより多い冒険者は、魔物ランキングで5位以内に入らなければ、シーズンごとに貯金から500万コイン減る
     if(old>=BANK_TAX_SS && (S.bank||0)>BANK_TAX_OVER && !(rank&&rank<=5)){ const t=Math.min(S.bank,BANK_TAX); S.bank-=t; lines.push(`🏦 貯金が1億コインをこえていて5位以内に入らなかったので、貯金から −${t.toLocaleString()}コイン`); }
     // リセット
