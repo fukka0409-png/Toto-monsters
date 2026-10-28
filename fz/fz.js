@@ -35,13 +35,16 @@ css.textContent=`
 #fzo .fz-prev span{flex:1;min-width:0}
 #fzo .fz-prev button{flex:none;padding:8px 10px;border-radius:8px;border:3px solid #5a3a06;background:#e3a321;font:900 12px var(--f-body);color:#3a2306;box-shadow:0 2px 0 #5a3a06}
 .fz-zoom{position:fixed;inset:0;z-index:240;background:#000c;display:grid;place-items:center;padding:20px}
-.fz-zoom img{width:min(86vw,420px);height:auto;image-rendering:pixelated;background:#fff3;border-radius:12px}
+.fz-zoom{grid-auto-flow:row;gap:10px;align-content:center}
+.fz-zoom img{width:min(86vw,420px,calc((100vh - 80px)/2));height:auto;image-rendering:pixelated;background:#fff3;border-radius:12px}
+.fz-zoom b{color:#fff;font-size:28px;text-align:center;line-height:1}
 .ttl-mini.ttl-fz[hidden]{display:none}
 `;
 document.head.appendChild(css);
 
 const isOp=()=>{ try{ return dexPeek(); }catch(e){ return false; } };
-function zoom(src){ const z=document.createElement("div"); z.className="fz-zoom"; z.innerHTML=`<img src="${src}" alt="">`; z.onclick=()=>z.remove(); document.body.appendChild(z); }
+// 2026-10-28：どちらかをタップすると、2匹を縦に並べて同時に大きく出す
+function zoom(a,b){ const z=document.createElement("div"); z.className="fz-zoom"; z.innerHTML=[a,b].filter(Boolean).map(s=>`<img src="${s}" alt="">`).join(`<b>＋</b>`); z.onclick=()=>z.remove(); document.body.appendChild(z); }
 
 // 写真の白い背景を自動で透明にして、魔物だけを切り抜き、256×256にする
 function cutout(file){ return new Promise((ok,ng)=>{ const url=URL.createObjectURL(file); const fr={}; fr.onload=()=>{ const im=new Image(); im.onerror=()=>{ URL.revokeObjectURL(url); ng(); }; im.onload=()=>{ URL.revokeObjectURL(url);
@@ -79,7 +82,7 @@ function draw(){ if(!V) return; const left=REQ.filter(r=>!DONE[r.id]).length;
       <button class="fz-pic" type="button" data-pic="${r.id}" ${d?"disabled":""}>${pic?`<img src="${pic}" alt="">`:"絵を<br>えらぶ"}</button>
       <button class="fz-send" type="button" data-send="${r.id}" ${d||!PIC[r.id]?"disabled":""}>${d?"送信<br>ずみ":"📨<br>送る"}</button></div>
       ${pv?`<div class="fz-prev"><img src="${pv.img||(FMON_CACHE[pv.id]||{}).img||""}" alt=""><span>この組み合わせは前に作った魔物があります：<b>${esc(pv.name||"")}</b></span><button type="button" data-same="${r.id}">同じ魔物を送る</button></div>`:""}`; }).join("");
-  B.querySelectorAll("[data-z]").forEach(b=>b.onclick=()=>{ if(b.dataset.z) zoom(b.dataset.z); });
+  B.querySelectorAll("[data-z]").forEach(b=>b.onclick=()=>{ const row=b.closest(".fz-row")||b.parentElement; const L=[...row.querySelectorAll("[data-z]")].map(x=>x.dataset.z).filter(Boolean); if(L.length) zoom(L[0],L[1]); });
   // iPhoneでは、画面につないでいない<input>は写真をえらんだあとに消えてしまうことがあるので、画面の中に置いておく
   B.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ const id=b.dataset.pic; let inp=document.getElementById("fzFile");
     if(!inp){ inp=document.createElement("input"); inp.type="file"; inp.id="fzFile"; inp.accept="image/*"; inp.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0"; document.body.appendChild(inp); }
