@@ -51,6 +51,10 @@ function open(){ if(G) return;
 #ioG .esc.ok{background:#f2dc3a;cursor:pointer}
 #ioG .esc.ok small{display:none}
 #ioG .stick[hidden]{display:none}
+#ioG .atk{position:absolute;top:calc(env(safe-area-inset-top,0px) + 130px);width:110px;height:64px;border:4px solid #1d1d1d;border-radius:12px;background:#e53935;color:#fff;font:900 22px/1 var(--f-body,sans-serif);box-shadow:0 4px 0 #1d1d1d;text-shadow:0 2px 0 #0006;z-index:3}
+#ioG .atk:active{transform:translateY(3px);box-shadow:0 1px 0 #1d1d1d}
+#ioG .atk[disabled]{background:#999;opacity:.7}
+#ioG .atk.l{left:10px}#ioG .atk.r{right:10px}
 #ioG .stick{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);width:150px;height:150px;border-radius:50%;background:#2a4a1a55;pointer-events:none}
 #ioG .knob{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:#ffffffcc}
 #ioG .dlg{position:absolute;inset:0;display:grid;place-items:center;background:#0009;z-index:5}
@@ -63,6 +67,7 @@ function open(){ if(G) return;
 <canvas id="ioCv"></canvas>
 <div class="hud"><div class="bx" style="grid-column:1;justify-content:center"><b id="ioLv" style="font-size:24px">Lv.1</b></div><div class="bx rk"><small>順位</small><b id="ioRk">1</b><small>位</small></div><button class="gear" type="button" id="ioGear" aria-label="設定">⚙</button>
 <div class="bx" style="grid-column:1;grid-row:2"><span>武器数</span><b id="ioWp">0</b><span>個</span></div><button class="esc" type="button" id="ioEsc"><small>武器を${IO.NEED}個以上集めて</small>脱出する</button></div>
+<button class="atk l" type="button" data-atk="1">⚔ 攻撃</button><button class="atk r" type="button" data-atk="1">⚔ 攻撃</button>
 <div class="stick" hidden><div class="knob" id="ioKnob"></div></div>`;
   document.body.appendChild(root);
   const cv=root.querySelector("#ioCv"), c=cv.getContext("2d");
@@ -88,11 +93,13 @@ function open(){ if(G) return;
   addEventListener("keydown",G.kd); addEventListener("keyup",G.kd);
   root.querySelector("#ioGear").onclick=()=>{ if(G.over) return; G.pause=true;
     dlg(`<h3>⚙ 一時停止</h3><p>やめると<b>負け</b>になります（冒険者Lvが今のLvぶん下がります）</p><button type="button" data-a="go">つづける</button><button type="button" class="g" data-a="quit">やめる（負け）</button>`,a=>{ if(a==="go"){ G.pause=false; G.t=performance.now(); } else lose("やめました"); }); };
+  // 攻撃（2026-10-28）：進んでいる方向へ、拾った武器を1つ投げる（武器数−1）。当たった魔物はレベル−1
+  root.querySelectorAll("[data-atk]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); throwW(); }));
   root.querySelector("#ioEsc").onclick=()=>{ if(G.over||G.weap<IO.NEED) return; escape(); };
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物はゆっくり自動で進みます。画面をスライドすると向きを変えられます！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物はゆっくり自動で進みます。画面をスライドすると向きを変えられます！<br>・「⚔ 攻撃」で進んでいる方向に武器を投げられます（武器−1）。当たった魔物はレベル−1！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -119,10 +126,21 @@ async function loadGhosts(){ if(typeof DB==="undefined"||!DB) return;
       const k=G.E.findIndex(e=>!e.ghost); if(k>=0) G.E[k]=g; else G.E.push(g); } }catch(e){} }
 function ghostPos(g){ const t=Math.max(0,g.gt/REC_DT), i=Math.min(g.path.length-1,Math.floor(t)), j=Math.min(g.path.length-1,i+1), u=Math.min(1,t-i), A=g.path[i], B=g.path[j];
   const cx=IO.W/2, cy=IO.H/2, x=A[0]+(B[0]-A[0])*u, y=A[1]+(B[1]-A[1])*u, px=g.x;
-  g.x=Math.max(30,Math.min(IO.W-30, cx+(x-cx)*g.mx+g.ox)); g.y=Math.max(30,Math.min(IO.H-30, y+g.oy)); g.lv=A[2]; g.r=radius(g.lv,g.f);
+  g.x=Math.max(30,Math.min(IO.W-30, cx+(x-cx)*g.mx+g.ox)); g.y=Math.max(30,Math.min(IO.H-30, y+g.oy)); g.lv=Math.max(1,A[2]+(g.dl||0)); g.r=radius(g.lv,g.f);
   if(px!=null){ const dx=g.x-px; if(dx>0.5) g.vx=1; else if(dx<-0.5) g.vx=-1; else g.vx=0; } return i>=g.path.length-1; }
 function saveGhost(){ try{ if(typeof DB==="undefined"||!DB||!MYID||!G||G.rec.length<40) return; const d=G.rec.map(v=>v.join(",")).join(",");
   DB.collection("ioghost").add({uid:MYID, nm:String(myName()).slice(0,12), m:G.P.id, d, n:G.rec.length, at:Date.now()}).catch(()=>{}); }catch(e){} }
+const RED=[1,2,3].map(n=>{ const im=new Image(); im.src="io/r"+n+".png"; return im; });
+function throwW(){ if(!G||G.over||G.pause) return; if(G.weap<=0){ flash("武器を持っていません"); return; }
+  const P=G.P, h=G.head||{x:1,y:0}; G.weap--; P.w=G.weap; G.TH=G.TH||[];
+  const sp=900*(G.dpr||1)/(G.ppu||1);   // 画面の上でいつも同じくらいの速さで飛ぶ
+  G.TH.push({x:P.x+h.x*P.r*0.6, y:P.y+h.y*P.r*0.6, vx:h.x*sp, vy:h.y*sp, t:0, a:Math.atan2(h.y,h.x)+Math.PI/2, im:RED[ri(0,RED.length-1)]});
+  try{ SFX.tap(); }catch(x){} hud(); }
+function stepThrow(dt){ if(!G.TH||!G.TH.length) return; const hitR=26*(G.dpr||1)/(G.ppu||1);
+  for(const t of G.TH){ t.t+=dt; t.x+=t.vx*dt; t.y+=t.vy*dt; t.a+=dt*14;
+    for(const e of G.E){ if(Math.hypot(e.x-t.x,e.y-t.y)<e.r*0.7+hitR){ t.dead=1;
+      if(e.ghost) e.dl=(e.dl||0)-1; else { e.lv=Math.max(1,r1(e.lv-1)); e.r=radius(e.lv,e.f); } e.hitT=0.35; if(e.ghost) ghostPos(e); break; } } }
+  G.TH=G.TH.filter(t=>!t.dead&&t.t<1.4&&t.x>-50&&t.y>-50&&t.x<IO.W+50&&t.y<IO.H+50); }
 function spawnWeapon(){ const u=Math.random(), k=u<WSP.r.p?"r":u<WSP.r.p+WSP.g.p?"g":null;
   return {x:rnd(40,IO.W-40),y:rnd(40,IO.H-40),k,im:k?WSP[k].im:WEAPONS[ri(0,WEAPONS.length-1)],a:rnd(-0.5,0.5)}; }
 // 地面：草原のドット絵をタイルにする
@@ -135,7 +153,7 @@ function grass(){ const t=document.createElement("canvas"); t.width=t.height=128
   G.pat=G.c.createPattern(t,"repeat"); }
 function hud(){ $id("ioLv").textContent="Lv."+Math.floor(r1(G.P.lv)); /* 表示は整数だけ（中では0.1刻みで数えている） */ $id("ioWp").textContent=G.weap;
   const rk=1+G.E.filter(e=>cmp(e,G.P)>0).length; G.rank=rk; $id("ioRk").textContent=rk;
-  $id("ioEsc").classList.toggle("ok",G.weap>=IO.NEED); }
+  $id("ioEsc").classList.toggle("ok",G.weap>=IO.NEED); G.root.querySelectorAll("[data-atk]").forEach(b=>b.disabled=G.weap<=0); }
 function loop(now){ if(!G) return; const dt=Math.max(0,Math.min(0.05,(now-G.t)/1000)); G.t=now; G.fdt=dt;
   if(!G.pause&&!G.over) step(dt); draw(); G.raf=requestAnimationFrame(loop); }
 function step(dt){ const P=G.P;
@@ -162,6 +180,7 @@ function step(dt){ const P=G.P;
     else if(!e.ghost){ const k=((e.r+P.r)*0.5-d)/(d||1)*0.5; e.x+=(e.x-P.x)*k; e.y+=(e.y-P.y)*k; } }
   for(const e of G.E) if(!e.ghost) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; e.lv=Math.min(LV_MAX-1,r1(e.lv+wLv(w))); e.r=radius(e.lv,e.f); G.WP[i]=spawnWeapon(); } }
   for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.9+30*G.dpr/(G.ppu||1)){ /* 2026-10-28：絵が少しでも重なれば拾えるように（前は真ん中近くまで行かないと拾えなかった） */ G.weap++; P.w=G.weap; P.lv=Math.min(LV_MAX,r1(P.lv+wLv(w))); P.r=radius(P.lv,P.f); G.WP[i]=spawnWeapon(); try{ w.k?SFX.coin():SFX.tap(); }catch(x){} if(w.k) flash(w.k==='r'?'🌈 虹の武器！ +10レベル':'✨ 金の武器！ +3レベル'); else { const b=$id("ioWp"); if(b){ b.style.transition="none"; b.style.transform="scale(1.6)"; b.style.color="#e53935"; setTimeout(()=>{ b.style.transition="transform .3s"; b.style.transform=""; b.style.color=""; },120); } } if(P.lv>=LV_MAX) return escape(true); } }
+  stepThrow(dt); for(const e of G.E) if(e.hitT) e.hitT=Math.max(0,e.hitT-dt);
   hud(); }
 function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
   // 2026-10-28：体の大きさはそのまま。画面のズームは整数のレベルで決める（武器0.1ぶんでは画面が動かない＝拾った瞬間にカクッとしない）
@@ -174,11 +193,12 @@ function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
   c.font="28px sans-serif"; c.textAlign="center"; c.textBaseline="middle";
   const ws=34*d/ppu; c.font=`${ws}px sans-serif`;   // 武器は画面上でいつも同じくらいの大きさ
   c.imageSmoothingEnabled=false; for(const wp of G.WP){ const im=wp.im; if(!im.complete||!im.naturalWidth) continue; const hh=ws*(wp.k?2:1.5), ww=hh*im.naturalWidth/im.naturalHeight; c.save(); c.translate(wp.x,wp.y); c.rotate(wp.a); c.drawImage(im,-ww/2,-hh/2,ww,hh); c.restore(); }
+  for(const t of (G.TH||[])){ const im=t.im; if(!im.complete||!im.naturalWidth) continue; const hh=ws*1.6, ww=hh*im.naturalWidth/im.naturalHeight; c.save(); c.translate(t.x,t.y); c.rotate(t.a); c.drawImage(im,-ww/2,-hh/2,ww,hh); c.restore(); }
   const L=[...G.E,P].sort((a,b)=>a.r-b.r);
   for(const e of L){ const im=img(e.id), s=e.dr*2;
     c.fillStyle="#0003"; c.beginPath(); c.ellipse(e.x,e.y+e.dr*0.62,e.dr*0.6,e.dr*0.18,0,0,Math.PI*2); c.fill();
     if(im.complete&&im.naturalWidth){ c.imageSmoothingEnabled=false; const ph=e.ph||0, hop=e.mv?Math.abs(Math.sin(ph))*e.dr*0.1:0, tilt=e.mv?Math.sin(ph)*0.06:0;
-      c.save(); c.translate(e.x,e.y+e.dr); c.rotate(tilt); c.scale(-(e.face||1),e.mv?1-Math.abs(Math.sin(ph))*0.03:1); c.drawImage(im,-e.dr,-s-hop,s,s); c.restore(); }
+      c.save(); if(e.hitT) c.globalAlpha=0.4+0.6*Math.abs(Math.sin(e.hitT*40)); c.translate(e.x,e.y+e.dr); c.rotate(tilt); c.scale(-(e.face||1),e.mv?1-Math.abs(Math.sin(ph))*0.03:1); c.drawImage(im,-e.dr,-s-hop,s,s); c.restore(); }
     // 頭の上にレベル（整数だけ）を出す。武器の数は出さない。過去の冒険者（ゴースト）はその上に名前も出す
     const fs=Math.max(12/ppu*d, e.dr*0.26), y0=e.y-e.dr*0.95; c.font=`900 ${fs}px sans-serif`; c.lineWidth=fs*0.25; c.strokeStyle="#fff";
     const k=cmp(e,P); c.fillStyle=e.me?"#1d6fd1":(k>0?"#d32f2f":k<0?"#2e7d32":"#555"); const t="Lv."+Math.floor(r1(e.lv)); c.strokeText(t,e.x,y0); c.fillText(t,e.x,y0);
