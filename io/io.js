@@ -57,6 +57,9 @@ function open(){ if(G) return;
 #ioG .atk small{display:block;font-size:11px;margin-top:3px}
 #ioG .atk.l{left:10px}#ioG .atk.r{right:10px}
 #ioG .atk.r.on{background:#2e7d32}
+#ioG .mvb{position:absolute;right:10px;top:calc(env(safe-area-inset-top,0px) + 222px);width:136px;height:40px;border:3px solid #1d1d1d;border-radius:10px;background:#999;color:#fff;font:900 13px/1 var(--f-body,sans-serif);padding:0;white-space:nowrap;box-shadow:0 3px 0 #1d1d1d;text-shadow:0 1px 0 #0006;z-index:3}
+#ioG .mvb.on{background:#1d6fd1}
+#ioG .mvb:active{transform:translateY(2px);box-shadow:0 1px 0 #1d1d1d}
 #ioG .stick{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);width:150px;height:150px;border-radius:50%;background:#2a4a1a55;pointer-events:none}
 #ioG .knob{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:#ffffffcc}
 #ioG .dlg{position:absolute;inset:0;display:grid;place-items:center;background:#0009;z-index:5}
@@ -71,6 +74,7 @@ function open(){ if(G) return;
 <div class="bx" style="grid-column:1;grid-row:2"><span>武器数</span><b id="ioWp">0</b><span>個</span></div></div>
 <button class="atk l" type="button" data-atk="1">⚔ 武器強化<br>レベル<span id="ioPw">1</span><small>武器100こ使う</small></button>
 <button class="atk r" type="button" data-auto="1">🗡 攻撃<small id="ioAuto">オート OFF</small></button>
+<button class="mvb on" type="button" data-mv="1" id="ioMv">🚶 オート移動 ON</button>
 <div class="stick" hidden><div class="knob" id="ioKnob"></div></div>`;
   document.body.appendChild(root);
   const cv=root.querySelector("#ioCv"), c=cv.getContext("2d");
@@ -90,23 +94,24 @@ function open(){ if(G) return;
   const knob=root.querySelector("#ioKnob");
   // 2026-10-28：ゆっくりオート移動。いつも向いている方向へ進み、画面を指でスライドすると、その方向へ向きを変える
   // 2026-10-28：オート移動はなし。画面をスライドしているあいだだけ動き、指をはなすと進んでいた方向へ武器を1つ投げる
-  const AUTO=0.45, SLOW=AUTO*0.6; G.head={x:1,y:0}; G.dir={x:SLOW,y:0};   /* 指をはなしているあいだは、進んでいた方向へゆっくりオート移動 */
+  const AUTO=0.45, SLOW=AUTO*0.6; G.head={x:1,y:0}; G.dir={x:SLOW,y:0}; G.autoMv=true;   /* 指をはなしているあいだは、進んでいた方向へゆっくりオート移動 */
   const setDir=(dx,dy)=>{ const l=Math.hypot(dx,dy); if(l<8) return; G.head={x:dx/l,y:dy/l}; const m=Math.min(1,l/60)*AUTO; G.dir={x:G.head.x*m,y:G.head.y*m}; };
   root.addEventListener("pointerdown",e=>{ if(e.target.closest("button,.dlg")) return; G.touch={id:e.pointerId,x:e.clientX,y:e.clientY}; });
   root.addEventListener("pointermove",e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; setDir(e.clientX-G.touch.x,e.clientY-G.touch.y); });
-  const up=e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; G.touch=null; G.dir={x:G.head.x*SLOW,y:G.head.y*SLOW}; };   // 指をはなすと、進んでいた方向へゆっくりオート移動
+  const up=e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; G.touch=null; G.dir=G.autoMv?{x:G.head.x*SLOW,y:G.head.y*SLOW}:{x:0,y:0}; };   // 指をはなすと、進んでいた方向へゆっくりオート移動
   root.addEventListener("pointerup",up); root.addEventListener("pointercancel",up);
   G.kd=e=>{ if(!G) return; G.keys[e.key]=e.type==="keydown"; const k=G.keys, dx=(k.ArrowRight?1:0)-(k.ArrowLeft?1:0), dy=(k.ArrowDown?1:0)-(k.ArrowUp?1:0); setDir(dx*60,dy*60); if(e.type==="keyup"&&e.key===" ") throwW(); };
   addEventListener("keydown",G.kd); addEventListener("keyup",G.kd);
   root.querySelector("#ioGear").onclick=()=>{ if(G.over) return; G.pause=true;
     dlg(`<h3>⚙ 一時停止</h3><p>やめると<b>負け</b>になります（冒険者Lvが今のLvぶん下がります）</p><button type="button" data-a="go">つづける</button><button type="button" class="g" data-a="quit">やめる（負け）</button>`,a=>{ if(a==="go"){ G.pause=false; G.t=performance.now(); } else lose("やめました"); }); };
   // 攻撃（2026-10-28）：進んでいる方向へ、拾った武器を1つ投げる（武器数−1）。当たった魔物はレベル−1
+  root.querySelectorAll("[data-mv]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); if(!G||G.over) return; G.autoMv=!G.autoMv; if(!G.touch) G.dir=G.autoMv?{x:G.head.x*SLOW,y:G.head.y*SLOW}:{x:0,y:0}; hud(); }));   // オート移動のON/OFF
   root.querySelectorAll("[data-auto]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); if(!G||G.over) return; G.fireOn=!G.fireOn; G.fireT=0; hud(); }));   // 右の攻撃ボタン：押すとオート攻撃ON、もう一度押すとOFF
   root.querySelectorAll("[data-atk]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); if(!G||G.over||(G.weap||0)<PW_COST) return; G.weap-=PW_COST; G.P.w=G.weap; G.pw=(G.pw||1)+1; try{ SFX.coin(); }catch(x){} flash("⚔ 武器強化！ 攻撃力"+G.pw); hud(); }));   // 左の武器強化ボタン：武器100こで攻撃力+1
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個以上持ってやられると脱出クリア！<br>・武器が${IO.NEED-1}個以下でやられると負けです！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドすると、その方向へ動きます。指をはなしても、進んでいた方向へゆっくりオート移動します！<br>・右の「🗡 攻撃」ボタンを押すと、進んでいる方向へオートで武器を投げ続けます。もう一度押すとストップ！<br>・武器を1つ拾うと武器数が+3、1つ投げると−1になります！武器数が多いほど速く投げます。<br>・左の「⚔ 武器強化」ボタンは、武器100こを使って攻撃力を+1します。攻撃力のぶん敵のレベルが下がり、攻撃力以下のレベルの魔物は倒せます！（はじめは攻撃力1）<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個以上持ってやられると脱出クリア！<br>・武器が${IO.NEED-1}個以下でやられると負けです！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドすると、その方向へ動きます。指をはなしても、進んでいた方向へゆっくりオート移動します（右の「オート移動」ボタンでON/OFF）！<br>・右の「🗡 攻撃」ボタンを押すと、進んでいる方向へオートで武器を投げ続けます。もう一度押すとストップ！<br>・武器を1つ拾うと武器数が+3、1つ投げると−1になります！武器数が多いほど速く投げます。<br>・左の「⚔ 武器強化」ボタンは、武器100こを使って攻撃力を+1します。攻撃力のぶん敵のレベルが下がり、攻撃力以下のレベルの魔物は倒せます！（はじめは攻撃力1）<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -191,7 +196,7 @@ function grass(){ const t=document.createElement("canvas"); t.width=t.height=128
   G.pat=G.c.createPattern(t,"repeat"); }
 function hud(){ $id("ioLv").textContent="Lv."+Math.floor(r1(G.P.lv)); /* 表示は整数だけ（中では0.1刻みで数えている） */ $id("ioWp").textContent=G.weap;
   const rk=1+G.E.filter(e=>cmp(e,G.P)>0).length; G.rank=rk; $id("ioRk").textContent=rk;
-  G.root.querySelectorAll("[data-atk]").forEach(b=>b.disabled=(G.weap||0)<PW_COST); const pw=$id("ioPw"); if(pw) pw.textContent=G.pw||1; const au=$id("ioAuto"); if(au){ au.textContent=G.fireOn?"オート ON":"オート OFF"; au.parentNode.classList.toggle("on",!!G.fireOn); } }
+  G.root.querySelectorAll("[data-atk]").forEach(b=>b.disabled=(G.weap||0)<PW_COST); const pw=$id("ioPw"); if(pw) pw.textContent=G.pw||1; const au=$id("ioAuto"); if(au){ au.textContent=G.fireOn?"オート ON":"オート OFF"; au.parentNode.classList.toggle("on",!!G.fireOn); } const mv=$id("ioMv"); if(mv){ mv.textContent=G.autoMv?"🚶 オート移動 ON":"🧍 オート移動 OFF"; mv.classList.toggle("on",!!G.autoMv); } }
 function loop(now){ if(!G) return; const dt=Math.max(0,Math.min(0.05,(now-G.t)/1000)); G.t=now; G.fdt=dt;
   if(!G.pause&&!G.over) step(dt); draw(); G.raf=requestAnimationFrame(loop); }
 function step(dt){ const P=G.P;
