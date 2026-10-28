@@ -86,7 +86,9 @@ function open(){ if(G) return;
   G.pause=true;
   dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物は画面スライドで移動できます！</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
-function spawnEnemy(first){ const P=G.P, id=G.pool[ri(0,G.pool.length-1)]||18, f=sf(id);
+// 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
+function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
+function spawnEnemy(first){ const P=G.P, fp=fusedPool(), id=(fp.length&&Math.random()<0.4)?fp[ri(0,fp.length-1)]:(G.pool[ri(0,G.pool.length-1)]||18), f=sf(id);
   let lv; const r=Math.random();
   if(r<0.55) lv=Math.max(1,Math.round(P.lv*rnd(0.3,0.95))+ri(-1,1));
   else if(r<0.9) lv=Math.max(1,Math.round(P.lv*rnd(1,1.6))+ri(0,4));
