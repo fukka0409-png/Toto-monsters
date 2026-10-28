@@ -88,7 +88,7 @@ function open(){
     <button class="vt-x" type="button">← もどる</button><div class="vt-title">🗳 魔物投票</div></div><div class="vt-body" id="vtBody"><div class="vt-panel">読み込み中…</div></div>`;
   document.body.appendChild(V);
   V.querySelector(".vt-x").onclick=close;
-  unsub=ref().onSnapshot(sn=>{ CUR=sn.exists?sn.data():null; if(CUR&&isOver(CUR)) settle(); draw(); }, ()=>{ draw(); });
+  unsub=ref().onSnapshot(sn=>{ CUR=sn.exists?sn.data():null; if(CUR&&isOver(CUR)) settle(); draw(); syncVoted(CUR); }, ()=>{ draw(); });
   tick=setInterval(()=>{ const t=V&&V.querySelector("#vtTm"); if(t&&CUR&&CUR.st) t.textContent=mmss(CUR.st+VT.MS-now()); if(CUR&&isOver(CUR)){ settle(); } },1000);
   checkWins();
 }
@@ -151,15 +151,21 @@ async function reserve(mid){
   catch(e){ why="通信できませんでした"; }
   if(!ok) return toast(why||"予約できませんでした");
   addItem("vtk",-1); save(); toast("次の回のエントリーを予約しました！"); }
+// 2026-10-28：投票したのに、この端末の記録から消えていたときは、クラウドの投票の記録（vvotes）から戻す
+const synced={};
+async function syncVoted(d){ try{ if(!d||!DB||!MYID||!isVoting(d)||(S.vtVoted||{})[d.r]!=null||synced[d.r]) return; synced[d.r]=1;
+  const vs=await DB.collection("vvotes").doc(`${d.r}_${MYID}`).get(); if(!vs.exists) return;
+  S.vtVoted=S.vtVoted||{}; S.vtVoted[d.r]=vs.data().i??-1; save(); draw(); }catch(e){} }
 async function vote(i){
   const d=CUR; if(!d||!isVoting(d)) return; if((S.vtVoted||{})[d.r]!=null) return toast("この回はもう投票しました");
   if(d.e[i]&&d.e[i].uid===MYID) return toast("自分のエントリーには投票できません");
-  let ok=false, why="";
+  let ok=false, why="", prev=null;
   try{ await DB.runTransaction(async tx=>{ const vr=DB.collection("vvotes").doc(`${d.r}_${MYID}`); const [sn,vs]=[await tx.get(ref()), await tx.get(vr)]; const x=sn.data(); ok=false;
     if(!x||x.r!==d.r||!isVoting(x)){ why="投票は終わりました"; return; }
-    if(vs.exists){ why="この回はもう投票しました"; return; }
+    if(vs.exists){ why="この回はもう投票しました"; prev=vs.data().i??-1; return; }
     x.c[i]=(x.c[i]||0)+1; tx.set(ref(), x); tx.set(vr,{r:d.r, uid:MYID, i, at:now()}); ok=true; }); }
   catch(e){ why="通信できませんでした"; }
+  if(prev!=null){ S.vtVoted=S.vtVoted||{}; S.vtVoted[d.r]=prev; save(); draw(); }   // もう投票していた：画面を投票ずみにする
   if(!ok) return toast(why||"投票できませんでした");
   S.vtVoted=S.vtVoted||{}; S.vtVoted[d.r]=i; S.coins=(S.coins||0)+VT.VOTE_COIN; save(); try{ renderCoins(); SFX.coin(); }catch(e){} toast(`投票しました！ +${VT.VOTE_COIN.toLocaleString()}コイン`); draw(); }
 

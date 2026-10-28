@@ -6721,6 +6721,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-28-vtvoted", coins:1000 },   // 投票したのに投票前の画面にもどり、投票ボタンが反応しなかった
   { id:"fix-2026-10-25-tspanel", coins:1000 },
   { id:"fix-2026-10-25-tsanim", coins:1000 },
   { id:"fix-2026-10-25-tskinds", coins:1000 },
@@ -10179,6 +10180,6 @@ async function titleRanks(){
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
 <script src="io/io.js?v=63" defer></script>
-<script src="vt/vt.js?v=13" defer></script>
+<script src="vt/vt.js?v=14" defer></script>
 <script src="fz/fz.js?v=14" defer></script>
 </body></html>
