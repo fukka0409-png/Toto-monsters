@@ -6,7 +6,7 @@
            負け：記録は残らず、そのゲームのLvぶん冒険者Lvが下がる（1より下にはならない） */
 (function(){
 "use strict";
-const IO={ W:3200, H:3200, N:70, WEAP:60, NEED:10, R0:40 };
+const IO={ W:3200, H:3200, N:70, WEAP:120, NEED:10, R0:40 };
 const $id=id=>document.getElementById(id);
 const escH=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const rnd=(a,b)=>a+Math.random()*(b-a), ri=(a,b)=>Math.floor(rnd(a,b+1));
