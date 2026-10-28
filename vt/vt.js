@@ -112,6 +112,8 @@ function draw(){ if(!V) return; const B=V.querySelector("#vtBody"); const d=CUR|
   const tk=voting?`<div class="vt-panel vt-tk"><b>🎫 エントリー予約チケット（${vtk()}枚）</b><p class="vt-note">投票中に使うと、この投票が終わったあとの次の回のエントリーに先に入れます（モコはもらえません）。予約 ${(d.q||[]).length}人</p>
       <button class="vt-b gold" type="button" id="vtRes" ${vtk()&&!reserved&&!entrant?"":"disabled"} style="margin-top:6px">${reserved?"予約ずみ":entrant?"今回エントリー中なので予約できません":"チケットで次の回を予約"}</button></div>`:"";
   B.innerHTML=`<div class="vt-panel">${head}</div><div class="vt-rows">${rows}</div>${tk}`;
+  // 2026-10-28：魔物の絵がまだ読みこめていないと枠だけになるので、読みこめたら描きなおす（スクロール位置はそのまま）
+  clearTimeout(V._imgT); if(d.e.some(x=>x&&!IMG[x.m])&&(V._imgN=(V._imgN||0)+1)<40) V._imgT=setTimeout(()=>{ if(!V) return; const sc=V.querySelector("#vtBody"), y=sc?sc.scrollTop:0; draw(); const sc2=V.querySelector("#vtBody"); if(sc2) sc2.scrollTop=y; },500); else V._imgN=0;
   B.querySelectorAll("[data-ent]").forEach(b=>b.onclick=()=>pick(m=>enter(m), d.e.map(x=>x.m)));
   B.querySelectorAll("[data-vote]").forEach(b=>b.onclick=()=>vote(+b.dataset.vote));
   const rb=B.querySelector("#vtRes"); if(rb) rb.onclick=()=>pick(m=>reserve(m), (d.q||[]).map(x=>x.m));
