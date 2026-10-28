@@ -22,7 +22,7 @@ const wSpd=w=>1+0.03*(w||0);   // 2026-10-28：1個ごとに3%（前は1.5%）
 const LV_MAX=1000, radius=(lv,f)=>16*f*Math.pow(Math.max(1,Math.min(LV_MAX,lv)),2/3);
 // 足の速さ：体が大きくなるほど遅くなる（画面の見た目の速さは Lv10で約75%・Lv50で約40%・Lv100で約25%）。敵も同じ
 // 2026-10-28：レベルによる速さ。Lv2からは決まった割合でなめらかに遅くなる（Lv2=2.5倍・Lv5=2.0倍・Lv10≈1.6倍・Lv20≈1.4倍・Lv50≈1.2倍）。Lv1だけは特別に速い（4倍）
-const lvSpd=lv=>{ const L=Math.floor(r1(lv||1)); return L<=1?4:1+9/(L+4); };
+const lvSpd=lv=>{ const L=Math.floor(r1(lv||1)); return L<=1?4:(1+9/(L+4))*0.75; };   // 2026-10-28：Lv2からはさらに4分の3
 const speedOf=(r,lv)=>75*Math.pow(IO.R0/r,0.05)*lvSpd(lv);
 // 武器の絵は3種類（io/w1〜w3.png）からランダム
 const WEAPONS=[1,2,3].map(n=>{ const im=new Image(); im.src="io/w"+n+".png"; return im; });
