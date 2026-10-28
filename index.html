@@ -6013,7 +6013,7 @@ function renderRankTab(){
   bindSeg(k=>{ profMode=k; if(k==="rank") loadRanking(); if(k==="bank") loadBankRank(true); render(); $("#stage").scrollTop=0; });
 }
 // 貯金（2026-10-27）：所持コインは10億まで、貯金に上限はない。貯金ランキングは上位10人だけ
-let BANK_RK=null, BANK_AT=0, bankErr=false; const BANK_OUT_MAX=10000000;   // 引き出しは1シーズン（ランク戦）に1回・1000万コインまで
+let BANK_RK=null, BANK_AT=0, bankErr=false; const BANK_OUT_MAX=10000000, BANK_TAX_OVER=100000000, BANK_TAX=5000000;   // 引き出しは1シーズン（ランク戦）に1回・1000万コインまで
 const bankOutDone=()=>S.bankOutSS===seasonNow();
 async function loadBankRank(force){ if(!DB) return; if(!force&&BANK_RK&&gnow()-BANK_AT<60000) return;
   try{ const q=await withTO(DB.collection("profiles").orderBy("bk","desc").limit(10).get()); BANK_RK=q.docs.map(d=>({id:d.id,...d.data()})).filter(r=>(r.bk||0)>0); BANK_AT=gnow(); bankErr=false; }
@@ -6025,7 +6025,7 @@ function renderBank(segHtml){
     <div style="margin:0 0 10px;padding:12px 14px;border-radius:14px;background:linear-gradient(#ffe16b,#f2b631);border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font-weight:900;text-align:center;font-size:15px;line-height:1.5">🛡🧲 貯金したコインは<br><span style="font-size:19px">コインマグネットで取られません！</span></div>
     <div class="season-box"><div><small>🏦 あなたの貯金</small><b translate="no">${n(bk)}</b></div>
 </div>
-    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>10億</b>まで。貯金には<b>上限がありません</b>。所持コインが10億をこえた分は、自動で貯金に入ります。<br>貯金は<b>いつでも・いくらでも</b>できます。<b>引き出しは1シーズン（ランク戦）に1回、1000万コインまで</b>です。<br>${bankOutDone()?`<b style="color:var(--berry)">今シーズンはもう引き出しました（次のランク戦から引き出せます）</b>`:`<b>今シーズンはまだ引き出せます</b>`}</div>
+    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>10億</b>まで。貯金には<b>上限がありません</b>。所持コインが10億をこえた分は、自動で貯金に入ります。<br>貯金は<b>いつでも・いくらでも</b>できます。<br><b style="color:var(--berry)">⚠️ 貯金が1億コインをこえている冒険者は、魔物ランキングで5位以内に入らないと、ランク戦が終わるたびに貯金から500万コイン減ります</b><br><b>引き出しは1シーズン（ランク戦）に1回、1000万コインまで</b>です。<br>${bankOutDone()?`<b style="color:var(--berry)">今シーズンはもう引き出しました（次のランク戦から引き出せます）</b>`:`<b>今シーズンはまだ引き出せます</b>`}</div>
       <div class="bank-in"><input id="bkAmt" type="number" inputmode="numeric" min="1" placeholder="コインの数" class="fr-ta" style="width:100%;box-sizing:border-box;margin:8px 0 6px">
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn gold" type="button" id="bkIn" style="flex:1">貯金する</button><button class="btn" type="button" id="bkOut" style="flex:1">引き出す</button></div>
       <div style="display:flex;gap:6px;margin-top:6px"><button class="chip" type="button" id="bkAllIn">所持コインを全部貯金</button><button class="chip" type="button" id="bkAllOut">1000万コイン引き出す</button></div></div>
@@ -6590,6 +6590,8 @@ async function checkSeason(){
     const iv=await settleInvest(old, rank, q, mine, coins); coins+=iv.delta; lines.push(...iv.lines);
     if(S!==S0 || (S.season??0)>=cur){ seasonBusy=false; return; }   // 途中で記録が入れかわったら何もしない
     S.coins=Math.max(0,S.coins+coins); if(stones) addItem("stone",stones); if(mokos) S.moko=(S.moko||0)+mokos;
+    // 2026-10-28：貯金が1億コインより多い冒険者は、魔物ランキングで5位以内に入らなければ、シーズンごとに貯金から500万コイン減る
+    if((S.bank||0)>BANK_TAX_OVER && !(rank&&rank<=5)){ const t=Math.min(S.bank,BANK_TAX); S.bank-=t; lines.push(`🏦 貯金が1億コインをこえていて5位以内に入らなかったので、貯金から −${t.toLocaleString()}コイン`); }
     // リセット
     const beforeLv=S.plv;
     S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1;
