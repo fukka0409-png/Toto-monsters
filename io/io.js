@@ -134,7 +134,7 @@ function grass(){ const t=document.createElement("canvas"); t.width=t.height=128
 function hud(){ $id("ioLv").textContent="Lv."+Math.floor(r1(G.P.lv)); /* 表示は整数だけ（中では0.1刻みで数えている） */ $id("ioWp").textContent=G.weap;
   const rk=1+G.E.filter(e=>cmp(e,G.P)>0).length; G.rank=rk; $id("ioRk").textContent=rk;
   $id("ioEsc").classList.toggle("ok",G.weap>=IO.NEED); }
-function loop(now){ if(!G) return; const dt=Math.max(0,Math.min(0.05,(now-G.t)/1000)); G.t=now;
+function loop(now){ if(!G) return; const dt=Math.max(0,Math.min(0.05,(now-G.t)/1000)); G.t=now; G.fdt=dt;
   if(!G.pause&&!G.over) step(dt); draw(); G.raf=requestAnimationFrame(loop); }
 function step(dt){ const P=G.P;
   // 歩く動き：右へ動くときは絵を左右反転して右向きに、左へ動くときはそのまま（絵はもともと左向き）。動いているあいだは少しはねる
@@ -162,7 +162,9 @@ function step(dt){ const P=G.P;
   for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.9+30*G.dpr/(G.ppu||1)){ /* 2026-10-28：絵が少しでも重なれば拾えるように（前は真ん中近くまで行かないと拾えなかった） */ G.weap++; P.w=G.weap; P.lv=Math.min(LV_MAX,r1(P.lv+wLv(w))); P.r=radius(P.lv,P.f); G.WP[i]=spawnWeapon(); try{ w.k?SFX.coin():SFX.tap(); }catch(x){} if(w.k) flash(w.k==='r'?'🌈 虹の武器！ +10レベル':'✨ 金の武器！ +3レベル'); else { const b=$id("ioWp"); if(b){ b.style.transition="none"; b.style.transform="scale(1.6)"; b.style.color="#e53935"; setTimeout(()=>{ b.style.transition="transform .3s"; b.style.transform=""; b.style.color=""; },120); } } if(P.lv>=LV_MAX) return escape(true); } }
   hud(); }
 function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
-  const ppu=G.ppu=d*Math.min(innerWidth,600)/390*0.95*Math.pow(IO.R0/P.r,0.545);   // 2026-10-28：前より少し引いて見える（Lv1000で画面いっぱいはそのまま）   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
+  // 2026-10-28：大きさとズームは少しずつ追いつく（武器を拾った瞬間に体と画面が急に変わって、カクッとならないように）
+  const sk=Math.min(1,(G.fdt||0.016)*6); for(const e of [...G.E,P]){ e.dr=(e.dr==null||Math.abs(e.dr-e.r)>e.r)?e.r:e.dr+(e.r-e.dr)*sk; }
+  const ppu=G.ppu=d*Math.min(innerWidth,600)/390*0.95*Math.pow(IO.R0/P.dr,0.545);   // 2026-10-28：前より少し引いて見える（Lv1000で画面いっぱいはそのまま）   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
   c.setTransform(1,0,0,1,0,0); c.fillStyle="#3d6b2a"; c.fillRect(0,0,w,h);
   c.setTransform(ppu,0,0,ppu,w/2-P.x*ppu,h/2-P.y*ppu);
   c.fillStyle=G.pat; c.save(); c.scale(1/ppu*d*1.6,1/ppu*d*1.6); c.fillRect(0,0,IO.W*ppu/d/1.6,IO.H*ppu/d/1.6); c.restore();   // 草のドットは画面上でいつも同じくらいの細かさ
@@ -171,12 +173,12 @@ function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
   const ws=34*d/ppu; c.font=`${ws}px sans-serif`;   // 武器は画面上でいつも同じくらいの大きさ
   c.imageSmoothingEnabled=false; for(const wp of G.WP){ const im=wp.im; if(!im.complete||!im.naturalWidth) continue; const hh=ws*(wp.k?2:1.5), ww=hh*im.naturalWidth/im.naturalHeight; c.save(); c.translate(wp.x,wp.y); c.rotate(wp.a); c.drawImage(im,-ww/2,-hh/2,ww,hh); c.restore(); }
   const L=[...G.E,P].sort((a,b)=>a.r-b.r);
-  for(const e of L){ const im=img(e.id), s=e.r*2;
-    c.fillStyle="#0003"; c.beginPath(); c.ellipse(e.x,e.y+e.r*0.62,e.r*0.6,e.r*0.18,0,0,Math.PI*2); c.fill();
-    if(im.complete&&im.naturalWidth){ c.imageSmoothingEnabled=false; const ph=e.ph||0, hop=e.mv?Math.abs(Math.sin(ph))*e.r*0.1:0, tilt=e.mv?Math.sin(ph)*0.06:0;
-      c.save(); c.translate(e.x,e.y+e.r); c.rotate(tilt); c.scale(-(e.face||1),e.mv?1-Math.abs(Math.sin(ph))*0.03:1); c.drawImage(im,-e.r,-s-hop,s,s); c.restore(); }
+  for(const e of L){ const im=img(e.id), s=e.dr*2;
+    c.fillStyle="#0003"; c.beginPath(); c.ellipse(e.x,e.y+e.dr*0.62,e.dr*0.6,e.dr*0.18,0,0,Math.PI*2); c.fill();
+    if(im.complete&&im.naturalWidth){ c.imageSmoothingEnabled=false; const ph=e.ph||0, hop=e.mv?Math.abs(Math.sin(ph))*e.dr*0.1:0, tilt=e.mv?Math.sin(ph)*0.06:0;
+      c.save(); c.translate(e.x,e.y+e.dr); c.rotate(tilt); c.scale(-(e.face||1),e.mv?1-Math.abs(Math.sin(ph))*0.03:1); c.drawImage(im,-e.dr,-s-hop,s,s); c.restore(); }
     // 頭の上にレベル（整数だけ）を出す。武器の数は出さない。過去の冒険者（ゴースト）はその上に名前も出す
-    const fs=Math.max(12/ppu*d, e.r*0.26), y0=e.y-e.r*0.95; c.font=`900 ${fs}px sans-serif`; c.lineWidth=fs*0.25; c.strokeStyle="#fff";
+    const fs=Math.max(12/ppu*d, e.dr*0.26), y0=e.y-e.dr*0.95; c.font=`900 ${fs}px sans-serif`; c.lineWidth=fs*0.25; c.strokeStyle="#fff";
     const k=cmp(e,P); c.fillStyle=e.me?"#1d6fd1":(k>0?"#d32f2f":k<0?"#2e7d32":"#555"); const t="Lv."+Math.floor(r1(e.lv)); c.strokeText(t,e.x,y0); c.fillText(t,e.x,y0);
     if(e.ghost&&e.nm){ const f2=fs*0.8; c.font=`900 ${f2}px sans-serif`; c.lineWidth=f2*0.25; c.fillStyle="#6a1b9a"; c.strokeText(e.nm,e.x,y0-fs*1.05); c.fillText(e.nm,e.x,y0-fs*1.05); } } }
 function flash(t){ const el=document.createElement("div"); el.textContent=t; el.style.cssText="position:absolute;left:50%;top:32%;transform:translateX(-50%);z-index:4;background:#fff;border:4px solid #1d1d1d;border-radius:12px;padding:8px 16px;font-weight:900;font-size:20px;color:#b8860b;pointer-events:none;white-space:nowrap"; G.root.appendChild(el); setTimeout(()=>el.remove(),1600); }
