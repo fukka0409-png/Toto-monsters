@@ -3652,7 +3652,7 @@ async function startRemote(uid){
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
     try{ if(dexPeek() && !S.tk0_1026){ S.items=S.items||{}; S.items.ticket=0; S.tk0_1026=1; save(); } }catch(e){}   // 2026-10-26：ふっかーの所持ガチャチケットを1回だけ0にする
-    checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
+    checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
@@ -5083,7 +5083,8 @@ function renderDex(){
 // 魔物合戦（ホームにトトの戦略の配置画面）：みんなに公開（2026-10-25）
 const tsHome = () => true;
 // 2026-10-28（ふっかーだけ・試作）：魔物合戦はランキングの自分のプロフィールから開く。ホームは前の（魔物を飾る）ホームにもどす
-const tsInHome = () => !dexPeek();
+const tsInHome = () => false;   // 2026-10-28：全員公開。ホームは魔物サバイバル、魔物合戦はプロフィールから
+const ioOn = () => true;
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 // 図鑑：まだ出会っていない魔物の入手方法
 function howToGet(m){ const L=[];
@@ -5665,8 +5666,8 @@ function renderHome(){
   if(homeMode==="invest") return renderInvest();
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
   const h=homeCfg(), m=isArt(h.m)?artOf(h.m):mon(h.m);
-  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":dexPeek()?" io":""}">
-    ${tsInHome()?"":dexPeek()?`<div class="io-bg"></div>`:`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
+  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":ioOn()?" io":""}">
+    ${tsInHome()?"":ioOn()?`<div class="io-bg"></div>`:`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
     <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>`}
     <div class="hm-top hm-top2">
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
@@ -5687,8 +5688,8 @@ function renderHome(){
     </div>
     ${tsInHome()?`<div class="hm-ts" id="hmTs"></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
     <div class="hm-stand ${isArt(h.m)?"art":""}"><img class="hm-mon" src="${m.img}" alt="${esc(m.name)}"></div>
-    <div class="hm-name ${dexPeek()?"io-hide":""}">${esc(m.name)}</div>
-    ${dexPeek()?`<button class="io-btn io-ch" type="button" id="ioChange">チェンジ</button><div class="io-stats" id="ioStats">倒した敵 …<br>最高脱出レベル …<br>四天王回数 …</div><button class="io-btn io-go" type="button" id="ioStart">スタート</button>`
+    <div class="hm-name ${ioOn()?"io-hide":""}">${esc(m.name)}</div>
+    ${ioOn()?`<button class="io-btn io-ch" type="button" id="ioChange">チェンジ</button><div class="io-stats" id="ioStats">倒した敵 …<br>最高脱出レベル …<br>四天王回数 …</div><button class="io-btn io-go" type="button" id="ioStart">スタート</button>`
       :`<button class="hm-change" type="button" id="hmChange">🎨「魔物／装飾」変更</button>`}`}
   </div>`;
   $("#hmName").textContent=myName();
@@ -7619,6 +7620,16 @@ function anonWho(b){
 }
 let itemBusy=false;
 // 魔物オリジナル融合のお知らせ（全冒険者に1回だけ・2026-10-27）
+// 2026-10-28：魔物サバイバル公開のお知らせ（全冒険者に1回だけ）
+function ioNotice(){ if(S.nIo1028) return;
+  const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center,#ioG")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
+    if(S.nIo1028) return; S.nIo1028=1; save();
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🍄</div><p>新しいゲーム「魔物サバイバル」！</p>
+      <div class="note" style="margin:0;text-align:left">ホーム画面で遊べるようになりました！<br>・「チェンジ」でBOXの魔物から操作する魔物をえらんで「スタート」<br>・自分より小さい魔物をたおして大きくなろう！<br>・ポリポリの武器を10個集めて脱出すると、上がったレベルの分だけ<b>冒険者レベルが上がります</b>（負けると下がります…）<br><br>⚔️ 魔物合戦の配置は、ホームの<b>自分のプロフィール</b>（上の名前のカード）から変えられます</div>
+      <button class="btn gold" type="button">遊んでみる</button></div>`;
+    document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>{ bg.remove(); try{ tab="home"; homeMode="scene"; render(); }catch(e){} }; };
+  setTimeout(show,1000); }
 // 2026-10-28：貯金の新しいきまりのお知らせ（全冒険者に1回だけ）
 function bankTaxNotice(){ if(S.nBankTax1028) return;
   const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
