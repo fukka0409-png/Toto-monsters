@@ -75,12 +75,14 @@ function open(){ if(G) return;
   rs(); G.onRs=rs; addEventListener("resize",rs);
   // 操作：画面のどこでも、さわったところから指を動かした方向へ進む（スティックの絵は右下）
   const knob=root.querySelector("#ioKnob");
-  const setDir=(dx,dy)=>{ const l=Math.hypot(dx,dy), m=60; const k=l>m?m/l:1; knob.style.transform=`translate(${dx*k}px,${dy*k}px)`; G.dir=l<6?{x:0,y:0}:{x:dx/Math.max(l,m),y:dy/Math.max(l,m)}; };
+  // 2026-10-28：ゆっくりオート移動。いつも向いている方向へ進み、画面を指でスライドすると、その方向へ向きを変える
+  const AUTO=0.6; G.head={x:Math.random()<0.5?1:-1,y:0}; G.dir={x:G.head.x*AUTO,y:0};
+  const setDir=(dx,dy)=>{ const l=Math.hypot(dx,dy); if(l<12) return; G.head={x:dx/l,y:dy/l}; G.dir={x:G.head.x*AUTO,y:G.head.y*AUTO}; };
   root.addEventListener("pointerdown",e=>{ if(e.target.closest("button,.dlg")) return; G.touch={id:e.pointerId,x:e.clientX,y:e.clientY}; });
   root.addEventListener("pointermove",e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; setDir(e.clientX-G.touch.x,e.clientY-G.touch.y); });
-  const up=e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; G.touch=null; setDir(0,0); };
+  const up=e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; G.touch=null; };   // 指をはなしても、その方向へ進みつづける
   root.addEventListener("pointerup",up); root.addEventListener("pointercancel",up);
-  G.kd=e=>{ if(!G) return; G.keys[e.key]=e.type==="keydown"; const k=G.keys, dx=(k.ArrowRight?1:0)-(k.ArrowLeft?1:0), dy=(k.ArrowDown?1:0)-(k.ArrowUp?1:0); if(!G.touch) G.dir=(dx||dy)?{x:dx/Math.hypot(dx,dy),y:dy/Math.hypot(dx,dy)}:{x:0,y:0}; };
+  G.kd=e=>{ if(!G) return; G.keys[e.key]=e.type==="keydown"; const k=G.keys, dx=(k.ArrowRight?1:0)-(k.ArrowLeft?1:0), dy=(k.ArrowDown?1:0)-(k.ArrowUp?1:0); if(dx||dy) setDir(dx*50,dy*50); };
   addEventListener("keydown",G.kd); addEventListener("keyup",G.kd);
   root.querySelector("#ioGear").onclick=()=>{ if(G.over) return; G.pause=true;
     dlg(`<h3>⚙ 一時停止</h3><p>やめると<b>負け</b>になります（冒険者Lvが今のLvぶん下がります）</p><button type="button" data-a="go">つづける</button><button type="button" class="g" data-a="quit">やめる（負け）</button>`,a=>{ if(a==="go"){ G.pause=false; G.t=performance.now(); } else lose("やめました"); }); };
@@ -88,7 +90,7 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物は画面スライドで移動できます！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物はゆっくり自動で進みます。画面をスライドすると向きを変えられます！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
