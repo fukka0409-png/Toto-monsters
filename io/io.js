@@ -162,9 +162,9 @@ function step(dt){ const P=G.P;
   for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.9+30*G.dpr/(G.ppu||1)){ /* 2026-10-28：絵が少しでも重なれば拾えるように（前は真ん中近くまで行かないと拾えなかった） */ G.weap++; P.w=G.weap; P.lv=Math.min(LV_MAX,r1(P.lv+wLv(w))); P.r=radius(P.lv,P.f); G.WP[i]=spawnWeapon(); try{ w.k?SFX.coin():SFX.tap(); }catch(x){} if(w.k) flash(w.k==='r'?'🌈 虹の武器！ +10レベル':'✨ 金の武器！ +3レベル'); else { const b=$id("ioWp"); if(b){ b.style.transition="none"; b.style.transform="scale(1.6)"; b.style.color="#e53935"; setTimeout(()=>{ b.style.transition="transform .3s"; b.style.transform=""; b.style.color=""; },120); } } if(P.lv>=LV_MAX) return escape(true); } }
   hud(); }
 function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
-  // 2026-10-28：大きさとズームは少しずつ追いつく（武器を拾った瞬間に体と画面が急に変わって、カクッとならないように）
-  const sk=Math.min(1,(G.fdt||0.016)*6); for(const e of [...G.E,P]){ e.dr=(e.dr==null||Math.abs(e.dr-e.r)>e.r)?e.r:e.dr+(e.r-e.dr)*sk; }
-  const ppu=G.ppu=d*Math.min(innerWidth,600)/390*0.95*Math.pow(IO.R0/P.dr,0.545);   // 2026-10-28：前より少し引いて見える（Lv1000で画面いっぱいはそのまま）   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
+  // 2026-10-28：体の大きさはそのまま。画面のズームは整数のレベルで決める（武器0.1ぶんでは画面が動かない＝拾った瞬間にカクッとしない）
+  for(const e of [...G.E,P]) e.dr=e.r;
+  const ppu=G.ppu=d*Math.min(innerWidth,600)/390*0.95*Math.pow(IO.R0/radius(Math.floor(r1(P.lv)),P.f),0.545);   // 2026-10-28：前より少し引いて見える（Lv1000で画面いっぱいはそのまま）   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
   c.setTransform(1,0,0,1,0,0); c.fillStyle="#3d6b2a"; c.fillRect(0,0,w,h);
   c.setTransform(ppu,0,0,ppu,w/2-P.x*ppu,h/2-P.y*ppu);
   c.fillStyle=G.pat; c.save(); c.scale(1/ppu*d*1.6,1/ppu*d*1.6); c.fillRect(0,0,IO.W*ppu/d/1.6,IO.H*ppu/d/1.6); c.restore();   // 草のドットは画面上でいつも同じくらいの細かさ
