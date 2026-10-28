@@ -99,7 +99,7 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物はゆっくり自動で進みます。画面をスライドすると向きを変えられます！<br>・「⚔ 攻撃」で進んでいる方向に武器を投げられます（武器−1）。当たった魔物はレベル−1！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物はゆっくり自動で進みます。画面をスライドすると向きを変えられます！<br>・「⚔ 攻撃」で進んでいる方向に武器を投げられます（武器−1）。当たった魔物はレベル−1！Lv1の魔物なら倒せます！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -138,7 +138,8 @@ function throwW(){ if(!G||G.over||G.pause) return; if(G.weap<=0){ flash("武器�
   try{ SFX.tap(); }catch(x){} hud(); }
 function stepThrow(dt){ if(!G.TH||!G.TH.length) return; const hitR=26*(G.dpr||1)/(G.ppu||1);
   for(const t of G.TH){ t.t+=dt; t.x+=t.vx*dt; t.y+=t.vy*dt; t.a+=dt*14;
-    for(const e of G.E){ if(Math.hypot(e.x-t.x,e.y-t.y)<e.r*0.7+hitR){ t.dead=1;
+    for(let i=0;i<G.E.length;i++){ const e=G.E[i]; if(Math.hypot(e.x-t.x,e.y-t.y)<e.r*0.7+hitR){ t.dead=1;
+      if(Math.floor(r1(e.lv))<=1){ const P=G.P; G.E[i]=spawnEnemy(false); P.lv=Math.min(LV_MAX,r1(P.lv+1)); P.r=radius(P.lv,P.f); G.kills++; try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX){ escape(true); return; } break; }   // Lv1の魔物は倒せる（自分のレベル+1）
       if(e.ghost) e.dl=(e.dl||0)-1; else { e.lv=Math.max(1,r1(e.lv-1)); e.r=radius(e.lv,e.f); } e.hitT=0.35; if(e.ghost) ghostPos(e); break; } } }
   G.TH=G.TH.filter(t=>!t.dead&&t.t<1.4&&t.x>-50&&t.y>-50&&t.x<IO.W+50&&t.y<IO.H+50); }
 function spawnWeapon(){ const u=Math.random(), k=u<WSP.r.p?"r":u<WSP.r.p+WSP.g.p?"g":null;
