@@ -74,7 +74,8 @@ function open(){ if(G) return;
   G={root,cv,c,pool,t:performance.now(),over:false,pause:false,
      P:{id:pid,lv:1,w:0,f:sf(pid),x:IO.W/2,y:IO.H/2,me:true}, E:[], WP:[], weap:0, kills:0, dir:{x:0,y:0}, touch:null, keys:{}};
   G.P.r=radius(1,G.P.f); img(pid);
-  for(let i=0;i<IO.N;i++) G.E.push(spawnEnemy(true));
+  // 2026-10-28：敵の8割はスライム（Lv10くらいまで）、2割はほかの冒険者の記録（読みこめるまではスライムで待つ）
+  G.GR=[]; for(let i=0;i<IO.N;i++){ const e=spawnSlime(true); e.role=i<Math.round(IO.N*0.2)?"g":"s"; G.E.push(e); }
   for(let i=0;i<IO.WEAP;i++) G.WP.push(spawnWeapon());
   G.rec=[]; G.recT=0; loadGhosts();
   grass();
@@ -99,10 +100,18 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物はゆっくり自動で進みます。画面をスライドすると向きを変えられます！<br>・「⚔ 攻撃」で進んでいる方向に武器を投げられます（武器−1）。当たった魔物はレベル−1！Lv1の魔物なら倒せます！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・魔物はゆっくり自動で進みます。画面をスライドすると向きを変えられます！<br>・「⚔ 攻撃」で進んでいる方向に武器を投げられます（武器−1）。当たった魔物はレベル−1！Lv1の魔物なら倒せます！<br>・名前のついた魔物（ほかの冒険者の記録）は武器を投げてきます。当たるとレベル−1！</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
+const SLIME_MAX=10;
+function slimePool(){ try{ return MONSTERS.filter(m=>m&&m.img&&/スライム/.test(m.name)).map(m=>m.id); }catch(e){ return [18]; } }
+function spawnSlime(first){ const P=G.P, pool=G.sp||(G.sp=slimePool()), id=pool[ri(0,pool.length-1)]||18, f=sf(id);
+  const lv=first&&Math.random()<0.5?1:1+Math.floor(9*Math.pow(Math.random(),1.6));   // Lv1〜10（低いレベルが多い）
+  let x,y,t=0; do{ x=rnd(60,IO.W-60); y=rnd(60,IO.H-60); t++; }while(t<30&&Math.hypot(x-P.x,y-P.y)<700);
+  img(id); const a=rnd(0,Math.PI*2); return {id,f,lv,w:0,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3),slime:1,role:"s"}; }
+// 倒された・記録が終わった敵を、同じ役割（スライム／冒険者の記録）で出しなおす
+function respawn(i){ const o=G.E[i]; let n=null; if(o&&o.role==="g") n=newGhost(); if(!n) n=spawnSlime(false); n.role=o?o.role:"s"; G.E[i]=n; }
 function spawnEnemy(first){ const P=G.P, fp=fusedPool(), id=(fp.length&&Math.random()<0.4)?fp[ri(0,fp.length-1)]:(G.pool[ri(0,G.pool.length-1)]||18), f=sf(id);
   let lv; const r=Math.random();
   if(r<0.55) lv=Math.max(1,Math.round(P.lv*rnd(0.3,0.95))+ri(-1,1));
@@ -118,12 +127,13 @@ function spawnEnemy(first){ const P=G.P, fp=fusedPool(), id=(fp.length&&Math.ran
 // 1ゲームの動きを0.25秒ごとに「x,y,Lv×10」で記録して ioghost に保存。ほかの冒険者のゲームで、その動きのまま草原を歩く
 const REC_DT=0.25, REC_MAX=1200, GHOST_N=6;
 async function loadGhosts(){ if(typeof DB==="undefined"||!DB) return;
-  try{ const q=await DB.collection("ioghost").orderBy("at","desc").limit(40).get(); if(!G) return;
-    const L=q.docs.map(d=>d.data()).filter(x=>x&&x.uid!==MYID&&typeof x.d==="string").sort(()=>Math.random()-0.5).slice(0,GHOST_N);
-    for(const x of L){ const a=x.d.split(",").map(Number); const path=[]; for(let i=0;i+2<a.length;i+=3) path.push([a[i],a[i+1],a[i+2]/10]); if(path.length<20) continue;
-      const g={ghost:true, id:Number(x.m)||1, nm:String(x.nm||"").slice(0,12), path, gt:0, mx:Math.random()<0.5?-1:1, ox:rnd(-900,900), oy:rnd(-900,900), f:1, w:0, vx:0, vy:0, turn:0};
-      ghostPos(g); img(g.id); if(Math.hypot(g.x-G.P.x,g.y-G.P.y)<600) g.ox+=900*(g.x<G.P.x?-1:1), ghostPos(g);
-      const k=G.E.findIndex(e=>!e.ghost); if(k>=0) G.E[k]=g; else G.E.push(g); } }catch(e){} }
+  try{ const q=await DB.collection("ioghost").orderBy("at","desc").limit(80).get(); if(!G) return;
+    for(const x of q.docs.map(d=>d.data())){ if(!x||x.uid===MYID||typeof x.d!=="string") continue; const a=x.d.split(",").map(Number); const path=[]; for(let i=0;i+2<a.length;i+=3) path.push([a[i],a[i+1],a[i+2]/10]); if(path.length<20) continue;
+      G.GR.push({id:Number(x.m)||1, nm:String(x.nm||"").slice(0,12), path}); img(Number(x.m)||1); }
+    G.E.forEach((e,i)=>{ if(e.role==="g") respawn(i); }); }catch(e){} }
+function newGhost(){ if(!G||!G.GR||!G.GR.length) return null; const R=G.GR[ri(0,G.GR.length-1)];
+  const g={ghost:true, role:"g", id:R.id, nm:R.nm, path:R.path, gt:rnd(0,R.path.length*REC_DT*0.4), mx:Math.random()<0.5?-1:1, ox:rnd(-900,900), oy:rnd(-900,900), f:1, w:0, vx:0, vy:0, turn:0, cd:rnd(2,4)};
+  ghostPos(g); if(Math.hypot(g.x-G.P.x,g.y-G.P.y)<600){ g.ox+=900*(g.x<G.P.x?-1:1); ghostPos(g); } return g; }
 function ghostPos(g){ const t=Math.max(0,g.gt/REC_DT), i=Math.min(g.path.length-1,Math.floor(t)), j=Math.min(g.path.length-1,i+1), u=Math.min(1,t-i), A=g.path[i], B=g.path[j];
   const cx=IO.W/2, cy=IO.H/2, x=A[0]+(B[0]-A[0])*u, y=A[1]+(B[1]-A[1])*u, px=g.x;
   g.x=Math.max(30,Math.min(IO.W-30, cx+(x-cx)*g.mx+g.ox)); g.y=Math.max(30,Math.min(IO.H-30, y+g.oy)); g.lv=Math.max(1,A[2]+(g.dl||0)); g.r=radius(g.lv,g.f);
@@ -138,8 +148,12 @@ function throwW(){ if(!G||G.over||G.pause) return; if(G.weap<=0){ flash("武器�
   try{ SFX.tap(); }catch(x){} hud(); }
 function stepThrow(dt){ if(!G.TH||!G.TH.length) return; const hitR=26*(G.dpr||1)/(G.ppu||1);
   for(const t of G.TH){ t.t+=dt; t.x+=t.vx*dt; t.y+=t.vy*dt; t.a+=dt*14;
+    if(t.own==="g"){ const P=G.P; if(Math.hypot(P.x-t.x,P.y-t.y)<P.r*0.7+hitR){ t.dead=1;   // 冒険者の記録の魔物が投げた武器：当たると自分のレベル−1、Lv1なら倒される
+        if(Math.floor(r1(P.lv))<=1){ lose(`${escH(t.nm||"冒険者")}さんの投げた武器に倒された…`); return; }
+        P.lv=Math.max(1,r1(P.lv-1)); P.r=radius(P.lv,P.f); P.hitT=0.35; flash("🗡 武器が当たった！ レベル−1"); }
+      continue; }
     for(let i=0;i<G.E.length;i++){ const e=G.E[i]; if(Math.hypot(e.x-t.x,e.y-t.y)<e.r*0.7+hitR){ t.dead=1;
-      if(Math.floor(r1(e.lv))<=1){ const P=G.P; dropWeapons(e); G.E[i]=spawnEnemy(false); P.lv=Math.min(LV_MAX,r1(P.lv+1)); P.r=radius(P.lv,P.f); G.kills++; try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX){ escape(true); return; } break; }   // Lv1の魔物は倒せる（自分のレベル+1）
+      if(Math.floor(r1(e.lv))<=1){ const P=G.P; dropWeapons(e); respawn(i); P.lv=Math.min(LV_MAX,r1(P.lv+1)); P.r=radius(P.lv,P.f); G.kills++; try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX){ escape(true); return; } break; }   // Lv1の魔物は倒せる（自分のレベル+1）
       if(e.ghost) e.dl=(e.dl||0)-1; else { e.lv=Math.max(1,r1(e.lv-1)); e.r=radius(e.lv,e.f); } e.hitT=0.35; if(e.ghost) ghostPos(e); break; } } }
   G.TH=G.TH.filter(t=>!t.dead&&t.t<1.4&&t.x>-50&&t.y>-50&&t.x<IO.W+50&&t.y<IO.H+50); }
 // 2026-10-28：倒した敵が持っていた武器は、その周りに全部散らばる（拾われたら消える。数のうちには入れない）
@@ -166,7 +180,11 @@ function step(dt){ const P=G.P;
   for(const e of G.E){ if(e.vx>0.15) e.face=1; else if(e.vx<-0.15) e.face=-1; e.mv=true; e.ph=(e.ph||rnd(0,6))+dt*9; }
   const sp=speedOf(P.r,P.lv)*wSpd(P.w); P.x=Math.max(P.r*0.5,Math.min(IO.W-P.r*0.5,P.x+G.dir.x*sp*dt)); P.y=Math.max(P.r*0.5,Math.min(IO.H-P.r*0.5,P.y+G.dir.y*sp*dt));
   G.recT+=dt; if(G.recT>=REC_DT&&G.rec.length<REC_MAX){ G.recT-=REC_DT; G.rec.push([Math.round(P.x),Math.round(P.y),Math.round(P.lv*10)]); }
-  for(let i=0;i<G.E.length;i++){ const g=G.E[i]; if(!g.ghost) continue; g.gt+=dt; if(ghostPos(g)) G.E[i]=spawnEnemy(false); }
+  for(let i=0;i<G.E.length;i++){ const g=G.E[i]; if(!g.ghost) continue; g.gt+=dt; if(ghostPos(g)){ respawn(i); continue; }
+    // 冒険者の記録の魔物は、近くにいると武器を投げてくる（2〜4秒おき）
+    g.cd-=dt; const dx=P.x-g.x, dy=P.y-g.y, dd=Math.hypot(dx,dy)||1, near=320*(G.dpr||1)/(G.ppu||1);
+    if(g.cd<=0&&dd<near+g.r){ g.cd=rnd(2,4); const sp=650*(G.dpr||1)/(G.ppu||1); G.TH=G.TH||[];
+      G.TH.push({own:"g", nm:g.nm, x:g.x+dx/dd*g.r*0.6, y:g.y+dy/dd*g.r*0.6, vx:dx/dd*sp, vy:dy/dd*sp, t:0, a:Math.atan2(dy,dx)+Math.PI/2, im:RED[ri(0,RED.length-1)]}); } }
   for(const e of G.E){ if(e.ghost) continue; e.turn-=dt; const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, near=d<Math.max(420,P.r*6);
     if(near&&cmp(e,P)>0){ e.vx=dx/d; e.vy=dy/d; } else if(near&&cmp(e,P)<0){ e.vx=-dx/d; e.vy=-dy/d; }
     else if(e.turn<=0){ const a=rnd(0,Math.PI*2); e.vx=Math.cos(a); e.vy=Math.sin(a); e.turn=rnd(1,3); }
@@ -175,17 +193,17 @@ function step(dt){ const P=G.P;
     if(e.y<e.r*0.5||e.y>IO.H-e.r*0.5){ e.vy*=-1; e.y=Math.max(e.r*0.5,Math.min(IO.H-e.r*0.5,e.y)); } }
   // 敵どうし：ふれたら高い方が勝ってLv+1、負けた方は別の場所に出なおす
   for(let i=0;i<G.E.length;i++) for(let j=i+1;j<G.E.length;j++){ const a=G.E[i], b=G.E[j]; if(a.ghost||b.ghost) continue; const d=Math.hypot(a.x-b.x,a.y-b.y);
-    if(d<(a.r+b.r)*0.5&&cmp(a,b)!==0){ const w=cmp(a,b)>0?a:b, l=w===a?j:i; w.lv=Math.min(LV_MAX-1,r1(w.lv+1)); w.r=radius(w.lv,w.f); G.E[l]=spawnEnemy(false); } }
+    if(d<(a.r+b.r)*0.5&&cmp(a,b)!==0){ const w=cmp(a,b)>0?a:b, l=w===a?j:i; w.lv=Math.min(w.slime?SLIME_MAX:LV_MAX-1,r1(w.lv+1)); w.r=radius(w.lv,w.f); respawn(l); } }
   // 自分とふれた敵
   for(let i=0;i<G.E.length;i++){ const e=G.E[i], d=Math.hypot(e.x-P.x,e.y-P.y); if(d>=(e.r+P.r)*0.5) continue;
     const r0=cmp(P,e);
-    if(r0>0){ P.lv=r1(P.lv+1); P.r=radius(P.lv,P.f); G.kills++; dropWeapons(e); G.E[i]=spawnEnemy(false); try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX) return escape(true); }
+    if(r0>0){ P.lv=r1(P.lv+1); P.r=radius(P.lv,P.f); G.kills++; dropWeapons(e); respawn(i); try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX) return escape(true); }
     else if(r0<0){ const mn=escH((typeof mon==="function"&&mon(e.id)||{}).name||"魔物"); return lose(e.ghost?`${escH(e.nm||"冒険者")}さんの${mn}に負けた…`:`${mn}に負けた…`); }
     else if(!e.ghost){ const k=((e.r+P.r)*0.5-d)/(d||1)*0.5; e.x+=(e.x-P.x)*k; e.y+=(e.y-P.y)*k; } }
-  for(const e of G.E) if(!e.ghost) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; e.lv=Math.min(LV_MAX-1,r1(e.lv+wLv(w))); e.r=radius(e.lv,e.f); G.WP[i]=w.drop?{dead:1,x:-9999,y:-9999,im:w.im}:spawnWeapon(); } }
+  for(const e of G.E) if(!e.ghost) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; e.lv=Math.min(e.slime?SLIME_MAX:LV_MAX-1,r1(e.lv+wLv(w))); e.r=radius(e.lv,e.f); G.WP[i]=w.drop?{dead:1,x:-9999,y:-9999,im:w.im}:spawnWeapon(); } }
   for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.9+30*G.dpr/(G.ppu||1)){ /* 2026-10-28：絵が少しでも重なれば拾えるように（前は真ん中近くまで行かないと拾えなかった） */ G.weap++; P.w=G.weap; P.lv=Math.min(LV_MAX,r1(P.lv+wLv(w))); P.r=radius(P.lv,P.f); G.WP[i]=w.drop?{dead:1,x:-9999,y:-9999,im:w.im}:spawnWeapon(); try{ w.k?SFX.coin():SFX.tap(); }catch(x){} if(w.k) flash(w.k==='r'?'🌈 虹の武器！ +10レベル':'✨ 金の武器！ +3レベル'); else { const b=$id("ioWp"); if(b){ b.style.transition="none"; b.style.transform="scale(1.6)"; b.style.color="#e53935"; setTimeout(()=>{ b.style.transition="transform .3s"; b.style.transform=""; b.style.color=""; },120); } } if(P.lv>=LV_MAX) return escape(true); } }
   G.WP=G.WP.filter(w=>!w.dead);
-  stepThrow(dt); for(const e of G.E) if(e.hitT) e.hitT=Math.max(0,e.hitT-dt);
+  stepThrow(dt); for(const e of G.E) if(e.hitT) e.hitT=Math.max(0,e.hitT-dt); if(P.hitT) P.hitT=Math.max(0,P.hitT-dt);
   hud(); }
 function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
   // 2026-10-28：体の大きさはそのまま。画面のズームは整数のレベルで決める（武器0.1ぶんでは画面が動かない＝拾った瞬間にカクッとしない）
