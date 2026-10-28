@@ -3611,7 +3611,9 @@ async function pullRemote(fromPush, force){
       if(!r || !Array.isArray(r.units)) return false;
       // この端末で手に入れて、まだクラウドに送れていなかった魔物（クラウドの記録より後に手に入れたもの）は消さずに残す。図鑑の記録も多いほうを残す
       const keepU=(S.units||[]).filter(u=>u && u.t && u.t>ru && !r.units.some(z=>z.u===u.u && z.m===u.m)), gotL=S.got||{};
+      const vtL=S.vtVoted;   // 2026-10-28：この端末で投票した記録も消さずに残す（投票したのに投票前の画面にもどるバグ）
       S=r; S.got=S.got||{}; for(const k in gotL){ if((gotL[k]||0)>(S.got[k]||0)) S.got[k]=gotL[k]; }
+      if(vtL) S.vtVoted={...vtL, ...(S.vtVoted||{})};
       if(keepU.length){ S.nextUid=Math.max(S.nextUid||1, ...S.units.map(z=>z.u+1)); keepU.forEach(u=>S.units.push({...u, u:S.nextUid++})); S.updated=gnow(); setTimeout(()=>{ try{ save(); }catch(e){} },500); }
       fixPlayer(); fixGuard(); lastRemote=ru;
       try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
