@@ -4576,6 +4576,7 @@ function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
       <button class="btn gold" type="button" id="fuSend" ${enough?"":"disabled"}>📨 送信</button><button class="btn ghost" type="button" id="fuNo">やめる</button></div>`:""}
     <div class="toolbar">${["all",...RANKS].map(r=>`<button class="chip" type="button" data-f="${r}" aria-pressed="${boxFilter===r}">${r==="all"?"すべて":r==="L"?"限定":r==="F"?"融合":r}</button>`).join("")}</div>
     <p class="sub" style="margin:0 0 6px">融合したい種類の異なる魔物を2匹タップしてね</p>
+    <p class="note" style="margin:0 0 6px;color:var(--staff);font-weight:900">🧬 融合された魔物はレベル1の状態で届きます</p>
     <p class="note" style="margin:0 0 6px">🔒 鍵のかかった魔物は、タップすると鍵を外せます</p>
     ${list.length?`<div class="grid">${list.map(x=>unitCard(x,(x.u===S.guard?"dim":"")+(fuSel.includes(x.u)?" sel":""))).join("")}</div>`:`<div class="empty">魔物がいません</div>`}
     ${fuMyReqs()}<div id="fuAdmin"></div>`;
