@@ -5416,7 +5416,7 @@ function profilePayload(){
     comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0), tr:S.tsRd?1:0, tp:S.tsRd?(S.tsPow||0):0,
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, ioL:(S.io&&(S.io.L||S.io.b))||0, ioW:(S.io&&(S.io.W!=null?S.io.W:(S.io.b?10:0)))||0, iom:(S.io&&S.io.m)||((S.home&&typeof S.home.m==="number")?S.home.m:1),   /* 魔物サバイバルの最高記録（前に脱出した記録しかない冒険者は、その記録＋武器10個） */ pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
 }
 function queueProfile(now){
@@ -10108,7 +10108,7 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=46" defer></script>
+<script src="io/io.js?v=47" defer></script>
 <script src="vt/vt.js?v=13" defer></script>
 <script src="fz/fz.js?v=14" defer></script>
 </body></html>
