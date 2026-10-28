@@ -101,7 +101,7 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドしているあいだ、魔物が動きます！<br>・指をはなすと、進んでいた方向へ赤い武器を投げ続けます。武器を1つ拾うと赤い武器が5つ補充されます（左上の🗡の数）。拾った武器が多いほど速く投げます！当たった魔物はレベル−1！Lv1の魔物なら倒せます！<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドしているあいだ、魔物が動きます！<br>・指をはなすと、進んでいた方向と逆の方向へ赤い武器を投げ続けます。武器を1つ拾うと赤い武器が5つ補充されます（左上の🗡の数）。拾った武器が多いほど速く投げます！当たった魔物はレベル−1！Lv1の魔物なら倒せます！<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -156,7 +156,7 @@ const RED=[1,2,3].map(n=>{ const im=new Image(); im.src="io/r"+n+".png"; return 
 const fireGap=()=>Math.max(0.15,3/Math.max(1,G.weap));
 // 2026-10-28：投げるのは赤い武器（拾った武器1つで5つ補充）。拾った武器の数（脱出・速さ）は減らない
 function throwW(){ if(!G||G.over||G.pause) return; if((G.ammo||0)<=0) return;
-  const P=G.P, h=G.head||{x:1,y:0}; G.ammo--; G.TH=G.TH||[];
+  const P=G.P, h0=G.head||{x:1,y:0}, h={x:-h0.x,y:-h0.y}; G.ammo--;   /* 2026-10-28：進んでいた方向と逆の方向へ投げる */ G.TH=G.TH||[];
   const sp=900*(G.dpr||1)/(G.ppu||1);   // 画面の上でいつも同じくらいの速さで飛ぶ
   G.TH.push({x:P.x+h.x*P.r*0.6, y:P.y+h.y*P.r*0.6, vx:h.x*sp, vy:h.y*sp, t:0, a:Math.atan2(h.y,h.x)+Math.PI/2, im:RED[ri(0,RED.length-1)]});
   try{ SFX.tap(); }catch(x){} hud(); }
