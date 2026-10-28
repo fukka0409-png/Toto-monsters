@@ -103,7 +103,7 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドしているあいだ、魔物が動きます！<br>・指をはなすと、進んでいた方向へ赤い武器を投げ続けます。武器を1つ拾うと赤い武器が5つ補充されます（左上の🗡の数）。拾った武器が多いほど速く投げます！<br>・左の「⚔ 武器」ボタンでも、押すたびに1つ投げられます当たった魔物はレベル−1！Lv1の魔物なら倒せます！<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個集めて脱出クリアしよう！<br>・武器を${IO.NEED}個以上持っていれば、やられても脱出クリアになります！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドしているあいだ、魔物が動きます！<br>・指をはなすと、進んでいた方向へ赤い武器を投げ続けます。武器を1つ拾うと赤い武器が5つ補充されます（左上の🗡の数）。拾った武器が多いほど速く投げます！<br>・左の「⚔ 武器」ボタンでも、押すたびに1つ投げられます当たった魔物はレベル−1！Lv1の魔物なら倒せます！<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -243,14 +243,15 @@ function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
 function flash(t){ const el=document.createElement("div"); el.textContent=t; el.style.cssText="position:absolute;left:50%;top:32%;transform:translateX(-50%);z-index:4;background:#fff;border:4px solid #1d1d1d;border-radius:12px;padding:8px 16px;font-weight:900;font-size:20px;color:#b8860b;pointer-events:none;white-space:nowrap"; G.root.appendChild(el); setTimeout(()=>el.remove(),1600); }
 function dlg(html,cb){ const d=document.createElement("div"); d.className="dlg"; d.innerHTML=`<div>${html}</div>`; G.root.appendChild(d);
   d.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{ d.remove(); cb&&cb(b.dataset.a); }); }
-function lose(why){ if(G.over) return; G.over=true; saveAdv(); const n=Math.floor(G.P.lv), before=S.plv;
+function lose(why){ if(G.over) return; if((G.weap||0)>=IO.NEED){ escape(false,true); return; }   /* 武器を10個以上持って死んだら脱出クリア */
+  G.over=true; saveAdv(); const n=Math.floor(G.P.lv), before=S.plv;
   S.plv=Math.max(1,(S.plv||1)-n); try{ save(); queueProfile(true); }catch(e){}
   dlg(`<div style="font-size:48px">💀</div><h3>負けてしまった…</h3><p>${why}</p><p>このゲームのLv <b>${n}</b> ・ 武器 ${G.weap}個<br>記録は残りません</p><p style="color:#d32f2f">冒険者Lv ${before} → <b>${S.plv}</b>（−${before-S.plv}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
-function escape(auto){ if(G.over) return; G.over=true; saveAdv(); const n=Math.floor(G.P.lv), rk=G.rank, before=S.plv;
+function escape(auto,died){ if(G.over) return; G.over=true; saveAdv(); const n=Math.floor(G.P.lv), rk=G.rank, before=S.plv;
   S.plv=(S.plv||1)+n; try{ bumpMaxLv(); }catch(e){}
   S.io=S.io||{k:0,b:0,s:0}; S.io.k+=G.kills; if(n>(S.io.b||0)) S.io.b=n; const top=rk<=4; if(top) S.io.s=(S.io.s||0)+1;
   try{ save(); queueProfile(true); }catch(e){}
-  dlg(`<div style="font-size:48px">🎉</div><h3>${auto?"Lv.1000に到達！自動で脱出！":"脱出成功！"}</h3><p>このゲームのLv <b>${n}</b> ・ 順位 <b>${rk}位</b><br>倒した敵 ${G.kills}匹 ・ 武器 ${G.weap}個</p>${top?`<p style="color:#b8860b">👑 4位以内で脱出！ 四天王回数 +1</p>`:""}<p style="color:#1d6fd1">冒険者Lv ${before} → <b>${S.plv}</b>（+${n}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
+  dlg(`<div style="font-size:48px">🎉</div><h3>${auto?"Lv.1000に到達！自動で脱出！":died?"やられたけど、武器"+IO.NEED+"個以上で脱出クリア！":"脱出成功！"}</h3><p>このゲームのLv <b>${n}</b> ・ 順位 <b>${rk}位</b><br>倒した敵 ${G.kills}匹 ・ 武器 ${G.weap}個</p>${top?`<p style="color:#b8860b">👑 4位以内で脱出！ 四天王回数 +1</p>`:""}<p style="color:#1d6fd1">冒険者Lv ${before} → <b>${S.plv}</b>（+${n}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
 function close(){ if(!G) return; cancelAnimationFrame(G.raf); removeEventListener("resize",G.onRs); removeEventListener("keydown",G.kd); removeEventListener("keyup",G.kd); G.root.remove(); G=null; try{ render(); }catch(e){} }
 
 // ホームの記録（全冒険者の中での順位）
