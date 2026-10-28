@@ -4553,7 +4553,10 @@ function renderGacha(){
     <div class="pulls">
       <button class="pull" data-pull="item" data-n="1" type="button" ${S.coins<ITEM_COST?"disabled":""}>1回まわす<small>${ITEM_COST.toLocaleString()}コイン</small></button>
       <button class="pull ten" data-pull="item" data-n="10" type="button" ${S.coins<ITEM_COST*10?"disabled":""}>10連まわす<small>${(ITEM_COST*10).toLocaleString()}コイン</small></button>
+      <button class="pull ten" data-pull="item" data-n="100" type="button" ${S.coins<ITEM_COST*100?"disabled":""}>100連まわす<small>${(ITEM_COST*100).toLocaleString()}コイン</small></button>
       ${tkBtn("tk-item",`チケットで${TICKET_ITEMS}回まわす`)}</div>
+    <div class="note" style="margin:10px 0 4px;font-weight:900">🎫 アイテム${TK_SWAP}個 → ガチャチケット1枚と交換</div>
+    <div class="pulls" style="grid-template-columns:1fr 1fr 1fr;margin-top:4px">${TK_SWAP_ITEMS.map(k=>{ const it=itemOf(k), h=inv(k); return `<button class="pull" data-tkswap="${k}" type="button" ${h<TK_SWAP?"disabled":""} style="font-size:12px;white-space:normal;line-height:1.25;padding:8px 4px"><img src="${it.img}" alt="" style="width:34px;height:34px;display:block;margin:0 auto 2px"><span style="display:block;font-size:11px">${it.name}</span><small style="white-space:normal">${TK_SWAP}個→🎫1枚<br>（${h.toLocaleString()}個）</small></button>`; }).join("")}</div>
   </section>
   ${tsInHome()?"":`<section class="g-banner deco">
     <div class="g-head"><canvas id="cvDeco" width="200" height="200" aria-hidden="true"></canvas>
@@ -4568,6 +4571,7 @@ function renderGacha(){
 `;
   const PULL={mon:pullMonsters, frame:pullFrames, item:pullItems, deco:pullDeco};
   $("#itemDetail").onclick=openItemList;
+  document.querySelectorAll("[data-tkswap]").forEach(b=>b.onclick=()=>tkSwap(b.dataset.tkswap));
   document.querySelectorAll("[data-pull]").forEach(b=>b.onclick=()=>PULL[b.dataset.pull](+b.dataset.n));
   document.querySelectorAll("[data-rare]").forEach(b=>b.onclick=()=>pullRare(+b.dataset.rare));
   ["mon","frame","item","deco"].forEach(k=>{ const t=$("#tk-"+k); if(t) t.onclick=()=>PULL[k](0,true); });
@@ -4819,6 +4823,8 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:12, t:"🎰 アイテムガチャに100連が登場！"},
+  {ss:12, t:"🎫 ファイヤーボール・爆弾・コインマグネットは、それぞれ100個でガチャチケット1枚と交換できます（アイテムガチャの下）"},
   {ss:12, t:"🗳 魔物投票：投票したのに投票前の画面にもどり、投票ボタンが反応しないことがあったのを修正"},
   {ss:11, t:"🗡 新しいゲーム「魔物サバイバル」が登場！ ホームから遊べます。武器を10個以上持ったまま生き残れ！ クリアするとレベル×100コイン"},
   {ss:11, t:"🏦 貯金のきまり：貯金が1億コイン以上の冒険者は、ランク戦が終わるたびに貯金ランキングの順位で貯金が減ります（1位30%・2位20%・3位10%・4位以下5%）"},
@@ -4888,6 +4894,10 @@ function openRules(){
   el.onclick=e=>{ if(e.target===el) close(); };
   el.querySelectorAll("[data-rj]").forEach(b=>b.onclick=()=>el.querySelector("#rl"+b.dataset.rj).scrollIntoView({behavior:"smooth",block:"start"}));
 }
+// 2026-10-29：ファイヤーボール・爆弾・コインマグネットは、それぞれ100個でガチャチケット1枚と交換できる
+const TK_SWAP = 100, TK_SWAP_ITEMS = ["fire","bomb","magnet"];
+function tkSwap(k){ if(!TK_SWAP_ITEMS.includes(k)) return; if(inv(k)<TK_SWAP) return toast(`${itemOf(k).name}が${TK_SWAP}個ありません`);
+  addItem(k,-TK_SWAP); addItem("ticket",1); save(); try{ SFX.coin(); }catch(e){} toast(`${itemOf(k).name}${TK_SWAP}個をガチャチケット1枚と交換しました！`); render(); }
 function pullItems(n, ticket){
   if(ticket){ if(!inv("ticket")) return toast("ガチャチケットがありません"); addItem("ticket",-1); n=TICKET_ITEMS; }
   else { if(S.coins < ITEM_COST*n) return toast("コインが足りません"); S.coins-=ITEM_COST*n; }
