@@ -18,7 +18,8 @@ const cmp=(a,b)=>a.lv-b.lv;
 const r1=x=>Math.round(x*10)/10, lvT=x=>{ x=r1(x); return Number.isInteger(x)?String(x):x.toFixed(1); };
 // 武器1個ごとに足が1.5%ずつ速くなる（10個で約15%）
 const wSpd=w=>1+0.015*(w||0);
-const radius=(lv,f)=>IO.R0*f*(1+0.09*(lv-1));   // Lv100で約10倍の大きさ
+// 体の大きさ（2026-10-28）：Lv1はとても小さく、Lv1000でフィールドと同じ大きさ（画面いっぱい）。Lv1=16・Lv10=74・Lv100=345・Lv1000=1600
+const LV_MAX=1000, radius=(lv,f)=>16*f*Math.pow(Math.max(1,Math.min(LV_MAX,lv)),2/3);
 // 足の速さ：体が大きくなるほど遅くなる（画面の見た目の速さは Lv10で約75%・Lv50で約40%・Lv100で約25%）。敵も同じ
 const speedOf=(r,lv)=>170*Math.pow(IO.R0/r,0.05);
 // 武器の絵は3種類（io/w1〜w3.png）からランダム
@@ -97,7 +98,7 @@ function spawnEnemy(first){ const P=G.P, fp=fusedPool(), id=(fp.length&&Math.ran
   let x,y,t=0; do{ x=rnd(60,IO.W-60); y=rnd(60,IO.H-60); t++; }while(t<30&&Math.hypot(x-P.x,y-P.y)<700);
   img(id); const a=rnd(0,Math.PI*2);
   const w=(first&&P.lv<=1)?(Math.random()<0.1?1:0):(Math.random()<0.6?0:ri(0,(P.w||0)+2));   // 敵も武器を持っていることがある（はじめはほとんど持っていない）
-  lv=r1(lv+w*0.1);
+  lv=Math.min(LV_MAX-1,r1(lv+w*0.1));
   return {id,f,lv,w,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3)}; }
 // ===== 過去の冒険者の動き（ゴースト）=====
 // 1ゲームの動きを0.25秒ごとに「x,y,Lv×10」で記録して ioghost に保存。ほかの冒険者のゲームで、その動きのまま草原を歩く
@@ -144,18 +145,18 @@ function step(dt){ const P=G.P;
     if(e.y<e.r*0.5||e.y>IO.H-e.r*0.5){ e.vy*=-1; e.y=Math.max(e.r*0.5,Math.min(IO.H-e.r*0.5,e.y)); } }
   // 敵どうし：ふれたら高い方が勝ってLv+1、負けた方は別の場所に出なおす
   for(let i=0;i<G.E.length;i++) for(let j=i+1;j<G.E.length;j++){ const a=G.E[i], b=G.E[j]; if(a.ghost||b.ghost) continue; const d=Math.hypot(a.x-b.x,a.y-b.y);
-    if(d<(a.r+b.r)*0.5&&cmp(a,b)!==0){ const w=cmp(a,b)>0?a:b, l=w===a?j:i; w.lv=r1(w.lv+1); w.r=radius(w.lv,w.f); G.E[l]=spawnEnemy(false); } }
+    if(d<(a.r+b.r)*0.5&&cmp(a,b)!==0){ const w=cmp(a,b)>0?a:b, l=w===a?j:i; w.lv=Math.min(LV_MAX-1,r1(w.lv+1)); w.r=radius(w.lv,w.f); G.E[l]=spawnEnemy(false); } }
   // 自分とふれた敵
   for(let i=0;i<G.E.length;i++){ const e=G.E[i], d=Math.hypot(e.x-P.x,e.y-P.y); if(d>=(e.r+P.r)*0.5) continue;
     const r0=cmp(P,e);
-    if(r0>0){ P.lv=r1(P.lv+1); P.r=radius(P.lv,P.f); G.kills++; G.E[i]=spawnEnemy(false); try{ SFX.coin(); }catch(x){} }
+    if(r0>0){ P.lv=r1(P.lv+1); P.r=radius(P.lv,P.f); G.kills++; G.E[i]=spawnEnemy(false); try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX) return escape(true); }
     else if(r0<0){ const mn=escH((typeof mon==="function"&&mon(e.id)||{}).name||"魔物"); return lose(e.ghost?`${escH(e.nm||"冒険者")}さんの${mn}に負けた…`:`${mn}に負けた…`); }
     else if(!e.ghost){ const k=((e.r+P.r)*0.5-d)/(d||1)*0.5; e.x+=(e.x-P.x)*k; e.y+=(e.y-P.y)*k; } }
-  for(const e of G.E) if(!e.ghost) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; e.lv=r1(e.lv+0.1); e.r=radius(e.lv,e.f); G.WP[i]=spawnWeapon(); } }
-  for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.6+17*G.dpr/G.ppu){ G.weap++; P.w=G.weap; P.lv=r1(P.lv+0.1); P.r=radius(P.lv,P.f); G.WP[i]=spawnWeapon(); try{ SFX.tap(); }catch(x){} } }
+  for(const e of G.E) if(!e.ghost) for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.abs(w.x-e.x)<e.r&&Math.hypot(w.x-e.x,w.y-e.y)<e.r*0.6+20){ e.w++; e.lv=Math.min(LV_MAX-1,r1(e.lv+0.1)); e.r=radius(e.lv,e.f); G.WP[i]=spawnWeapon(); } }
+  for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.6+17*G.dpr/G.ppu){ G.weap++; P.w=G.weap; P.lv=r1(P.lv+0.1); P.r=radius(P.lv,P.f); G.WP[i]=spawnWeapon(); try{ SFX.tap(); }catch(x){} if(P.lv>=LV_MAX) return escape(true); } }
   hud(); }
 function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
-  const ppu=G.ppu=d*Math.min(innerWidth,600)/390*1.25*Math.pow(IO.R0/P.r,0.65);   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
+  const ppu=G.ppu=d*Math.min(innerWidth,600)/390*1.25*Math.pow(IO.R0/P.r,0.62);   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
   c.setTransform(1,0,0,1,0,0); c.fillStyle="#3d6b2a"; c.fillRect(0,0,w,h);
   c.setTransform(ppu,0,0,ppu,w/2-P.x*ppu,h/2-P.y*ppu);
   c.fillStyle=G.pat; c.save(); c.scale(1/ppu*d*1.6,1/ppu*d*1.6); c.fillRect(0,0,IO.W*ppu/d/1.6,IO.H*ppu/d/1.6); c.restore();   // 草のドットは画面上でいつも同じくらいの細かさ
@@ -177,11 +178,11 @@ function dlg(html,cb){ const d=document.createElement("div"); d.className="dlg";
 function lose(why){ if(G.over) return; G.over=true; saveGhost(); const n=Math.floor(G.P.lv), before=S.plv;
   S.plv=Math.max(1,(S.plv||1)-n); try{ save(); queueProfile(true); }catch(e){}
   dlg(`<div style="font-size:48px">💀</div><h3>負けてしまった…</h3><p>${why}</p><p>このゲームのLv <b>${n}</b> ・ 武器 ${G.weap}個<br>記録は残りません</p><p style="color:#d32f2f">冒険者Lv ${before} → <b>${S.plv}</b>（−${before-S.plv}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
-function escape(){ if(G.over) return; G.over=true; saveGhost(); const n=Math.floor(G.P.lv), rk=G.rank, before=S.plv;
+function escape(auto){ if(G.over) return; G.over=true; saveGhost(); const n=Math.floor(G.P.lv), rk=G.rank, before=S.plv;
   S.plv=(S.plv||1)+n; try{ bumpMaxLv(); }catch(e){}
   S.io=S.io||{k:0,b:0,s:0}; S.io.k+=G.kills; if(n>(S.io.b||0)) S.io.b=n; const top=rk<=4; if(top) S.io.s=(S.io.s||0)+1;
   try{ save(); queueProfile(true); }catch(e){}
-  dlg(`<div style="font-size:48px">🎉</div><h3>脱出成功！</h3><p>このゲームのLv <b>${n}</b> ・ 順位 <b>${rk}位</b><br>倒した敵 ${G.kills}匹 ・ 武器 ${G.weap}個</p>${top?`<p style="color:#b8860b">👑 4位以内で脱出！ 四天王回数 +1</p>`:""}<p style="color:#1d6fd1">冒険者Lv ${before} → <b>${S.plv}</b>（+${n}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
+  dlg(`<div style="font-size:48px">🎉</div><h3>${auto?"Lv.1000に到達！自動で脱出！":"脱出成功！"}</h3><p>このゲームのLv <b>${n}</b> ・ 順位 <b>${rk}位</b><br>倒した敵 ${G.kills}匹 ・ 武器 ${G.weap}個</p>${top?`<p style="color:#b8860b">👑 4位以内で脱出！ 四天王回数 +1</p>`:""}<p style="color:#1d6fd1">冒険者Lv ${before} → <b>${S.plv}</b>（+${n}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
 function close(){ if(!G) return; cancelAnimationFrame(G.raf); removeEventListener("resize",G.onRs); removeEventListener("keydown",G.kd); removeEventListener("keyup",G.kd); G.root.remove(); G=null; try{ render(); }catch(e){} }
 
 // ホームの記録（全冒険者の中での順位）
