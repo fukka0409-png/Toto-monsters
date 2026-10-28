@@ -76,7 +76,7 @@ function open(){ if(G) return;
   // 操作：画面のどこでも、さわったところから指を動かした方向へ進む（スティックの絵は右下）
   const knob=root.querySelector("#ioKnob");
   // 2026-10-28：ゆっくりオート移動。いつも向いている方向へ進み、画面を指でスライドすると、その方向へ向きを変える
-  const AUTO=0.6; G.head={x:Math.random()<0.5?1:-1,y:0}; G.dir={x:G.head.x*AUTO,y:0};
+  const AUTO=0.45; G.head={x:Math.random()<0.5?1:-1,y:0}; G.dir={x:G.head.x*AUTO,y:0};
   const setDir=(dx,dy)=>{ const l=Math.hypot(dx,dy); if(l<12) return; G.head={x:dx/l,y:dy/l}; G.dir={x:G.head.x*AUTO,y:G.head.y*AUTO}; };
   root.addEventListener("pointerdown",e=>{ if(e.target.closest("button,.dlg")) return; G.touch={id:e.pointerId,x:e.clientX,y:e.clientY}; });
   root.addEventListener("pointermove",e=>{ if(!G||!G.touch||G.touch.id!==e.pointerId) return; setDir(e.clientX-G.touch.x,e.clientY-G.touch.y); });
