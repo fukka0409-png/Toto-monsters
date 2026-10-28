@@ -2,7 +2,7 @@
    ホーム：えらんだ魔物・チェンジ・記録・スタート
    ゲーム：スティックで動く。ふれた相手とレベルで勝負（高い方の勝ち・同じなら押し合うだけ）。武器が多いほど少しずつ速くなる
            勝つとLv+1で体が大きくなる。武器を10個以上集めると脱出できる
-           脱出：そのゲームのLv×1000コインもらえる。4位以内で脱出すると四天王回数+1
+           脱出：そのゲームのLv×100コインもらえる。4位以内で脱出すると四天王回数+1
            負け：記録は残らず、そのゲームのLvぶん冒険者Lvが下がる（1より下にはならない） */
 (function(){
 "use strict";
@@ -111,7 +111,7 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="margin:0 0 10px;padding:10px;border-radius:10px;background:#fff8e1;border:3px solid #1d1d1d;font-size:18px;font-weight:900;line-height:1.4">🗡 武器を${IO.NEED}個以上持ったまま<br>生き残れ！</p><p style="text-align:left;line-height:1.6">・武器${IO.NEED}個以上でやられたら<b>クリア</b>、${IO.NEED-1}個以下なら<b>負け</b><br>・自分より大きい魔物に触れると即死！<br>・武器を拾うと+3、投げると−1<br>・武器を当てた魔物はLvダウン、倒すと自分はLvアップ<br>・🗡攻撃：オートで投げる（ON/OFF）<br>・⚔武器強化：武器100こで攻撃力+1<br>・🚶オート移動：ON/OFF</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 クリア → レベル×1000コインもらえる<br>💀 負け → 冒険者Lvがレベルの分だけ下がる</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="margin:0 0 10px;padding:10px;border-radius:10px;background:#fff8e1;border:3px solid #1d1d1d;font-size:18px;font-weight:900;line-height:1.4">🗡 武器を${IO.NEED}個以上持ったまま<br>生き残れ！</p><p style="text-align:left;line-height:1.6">・武器${IO.NEED}個以上でやられたら<b>クリア</b>、${IO.NEED-1}個以下なら<b>負け</b><br>・自分より大きい魔物に触れると即死！<br>・武器を拾うと+3、投げると−1<br>・武器を当てた魔物はLvダウン、倒すと自分はLvアップ<br>・🗡攻撃：オートで投げる（ON/OFF）<br>・⚔武器強化：武器100こで攻撃力+1<br>・🚶オート移動：ON/OFF</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 クリア → レベル×100コインもらえる<br>💀 負け → 冒険者Lvがレベルの分だけ下がる</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -256,9 +256,9 @@ function lose(why){ if(G.over) return; if((G.weap||0)>=IO.NEED){ escape(false,tr
   G.over=true; saveAdv(); const n=Math.floor(G.P.lv), before=S.plv;
   S.plv=Math.max(1,(S.plv||1)-n); try{ save(); queueProfile(true); }catch(e){}
   dlg(`<div style="font-size:48px">💀</div><h3>負けてしまった…</h3><p>${why}</p><p>このゲームのLv <b>${n}</b> ・ 武器 ${G.weap}個<br>記録は残りません</p><p style="color:#d32f2f">冒険者Lv ${before} → <b>${S.plv}</b>（−${before-S.plv}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
-const IO_COIN=1000;   // クリアしたとき：このゲームのLv×1000コイン
+const IO_COIN=100;   // クリアしたとき：このゲームのLv×100コイン（2026-10-28 1000→100）
 function escape(auto,died){ if(G.over) return; G.over=true; saveAdv(); const n=Math.floor(G.P.lv), rk=G.rank, coin=n*IO_COIN;
-  S.coins=(S.coins||0)+coin; try{ capCoins(); }catch(e){}   /* 2026-10-28：クリアの報酬は冒険者Lvではなくコイン（このゲームのLv×1000） */
+  S.coins=(S.coins||0)+coin; try{ capCoins(); }catch(e){}   /* 2026-10-28：クリアの報酬は冒険者Lvではなくコイン（このゲームのLv×100） */
   S.io=S.io||{k:0,b:0,s:0}; S.io.k+=G.kills; if(n>(S.io.b||0)) S.io.b=n; const top=rk<=4; if(top) S.io.s=(S.io.s||0)+1;
   try{ save(); queueProfile(true); }catch(e){}
   dlg(`<div style="font-size:48px">🎉</div><h3>${auto?"Lv.1000に到達！自動で脱出！":died?"やられたけど、武器"+IO.NEED+"個以上で脱出クリア！":"脱出成功！"}</h3><p>このゲームのLv <b>${n}</b> ・ 順位 <b>${rk}位</b><br>倒した敵 ${G.kills}匹 ・ 武器 ${G.weap}個</p>${top?`<p style="color:#b8860b">👑 4位以内で脱出！ 四天王回数 +1</p>`:""}<p style="color:#b8860b;font-size:20px;font-weight:900">🪙 +${coin.toLocaleString()}コイン</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
