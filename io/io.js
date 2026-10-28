@@ -26,8 +26,8 @@ const lvSpd=lv=>{ const L=Math.floor(r1(lv||1)); return L<=1?4:(1+9/(L+4))*0.75;
 const speedOf=(r,lv)=>75*Math.pow(IO.R0/r,0.05)*lvSpd(lv);
 // 武器の絵は3種類（io/w1〜w3.png）からランダム
 const WEAPONS=[1,2,3].map(n=>{ const im=new Image(); im.src="io/w"+n+".png"; return im; });
-// 特別な武器（2026-10-28）：金の武器＝1個で+3レベル（出る確率1%）・虹の武器＝1個で+10レベル（0.01%）。ふつうの武器は+0.1レベル
-const WSP={g:{lv:3,p:0.01,im:(()=>{ const i=new Image(); i.src="io/wg.png"; return i; })()}, r:{lv:10,p:0.0001,im:(()=>{ const i=new Image(); i.src="io/wr.png"; return i; })()}};
+// 特別な武器（2026-10-28）：金の武器＝1個で+3レベル（出る確率5%・2026-10-28に1%から変更）・虹の武器＝1個で+10レベル（0.01%）。ふつうの武器は+0.1レベル
+const WSP={g:{lv:3,p:0.05,im:(()=>{ const i=new Image(); i.src="io/wg.png"; return i; })()}, r:{lv:10,p:0.0001,im:(()=>{ const i=new Image(); i.src="io/wr.png"; return i; })()}};
 const wLv=w=>w.k?WSP[w.k].lv:0.1;
 const imgCache={};
 function img(id){ if(imgCache[id]) return imgCache[id]; const m=typeof mon==="function"&&mon(id); const im=new Image(); if(m&&m.img) im.src=m.img; return imgCache[id]=im; }
