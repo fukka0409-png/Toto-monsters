@@ -212,8 +212,8 @@ function flash(t){ const el=document.createElement("div"); el.textContent=t; el.
 function dlg(html,cb){ const d=document.createElement("div"); d.className="dlg"; d.innerHTML=`<div>${html}</div>`; G.root.appendChild(d);
   d.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{ d.remove(); cb&&cb(b.dataset.a); }); }
 function lose(why){ if(G.over) return; G.over=true; saveGhost(); const n=Math.floor(G.P.lv), before=S.plv;
-  S.plv=Math.max(1,(S.plv||1)-n); S.io=S.io||{k:0,b:0,s:0}; S.io.k+=G.kills;   /* 倒した敵の数は、負けたゲームの分も合計に入れる（2026-10-28） */ try{ save(); queueProfile(true); }catch(e){}
-  dlg(`<div style="font-size:48px">💀</div><h3>負けてしまった…</h3><p>${why}</p><p>このゲームのLv <b>${n}</b> ・ 武器 ${G.weap}個<br>倒した敵 ${G.kills}匹は合計に入ります。ほかの記録は残りません</p><p style="color:#d32f2f">冒険者Lv ${before} → <b>${S.plv}</b>（−${before-S.plv}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
+  S.plv=Math.max(1,(S.plv||1)-n); try{ save(); queueProfile(true); }catch(e){}
+  dlg(`<div style="font-size:48px">💀</div><h3>負けてしまった…</h3><p>${why}</p><p>このゲームのLv <b>${n}</b> ・ 武器 ${G.weap}個<br>記録は残りません</p><p style="color:#d32f2f">冒険者Lv ${before} → <b>${S.plv}</b>（−${before-S.plv}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
 function escape(auto){ if(G.over) return; G.over=true; saveGhost(); const n=Math.floor(G.P.lv), rk=G.rank, before=S.plv;
   S.plv=(S.plv||1)+n; try{ bumpMaxLv(); }catch(e){}
   S.io=S.io||{k:0,b:0,s:0}; S.io.k+=G.kills; if(n>(S.io.b||0)) S.io.b=n; const top=rk<=4; if(top) S.io.s=(S.io.s||0)+1;
