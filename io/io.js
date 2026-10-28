@@ -51,9 +51,10 @@ function open(){ if(G) return;
 #ioG .esc.ok{background:#f2dc3a;cursor:pointer}
 #ioG .esc.ok small{display:none}
 #ioG .stick[hidden]{display:none}
-#ioG .atk{position:absolute;top:calc(env(safe-area-inset-top,0px) + 130px);width:110px;height:64px;border:4px solid #1d1d1d;border-radius:12px;background:#e53935;color:#fff;font:900 22px/1 var(--f-body,sans-serif);box-shadow:0 4px 0 #1d1d1d;text-shadow:0 2px 0 #0006;z-index:3}
+#ioG .atk{position:absolute;top:calc(env(safe-area-inset-top,0px) + 130px);width:136px;height:78px;border:4px solid #1d1d1d;border-radius:12px;background:#e53935;color:#fff;font:900 19px/1.15 var(--f-body,sans-serif);padding:2px;box-shadow:0 4px 0 #1d1d1d;text-shadow:0 2px 0 #0006;z-index:3}
 #ioG .atk:active{transform:translateY(3px);box-shadow:0 1px 0 #1d1d1d}
-#ioG .atk[disabled]{background:#999;opacity:.7}
+#ioG .atk[disabled]{background:#999;opacity:.8}
+#ioG .atk small{display:block;font-size:11px;margin-top:3px}
 #ioG .atk.l{left:10px}#ioG .atk.r{right:10px}
 #ioG .stick{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);width:150px;height:150px;border-radius:50%;background:#2a4a1a55;pointer-events:none}
 #ioG .knob{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:#ffffffcc}
@@ -67,7 +68,7 @@ function open(){ if(G) return;
 <canvas id="ioCv"></canvas>
 <div class="hud"><div class="bx" style="grid-column:1;justify-content:center"><b id="ioLv" style="font-size:24px">Lv.1</b></div><div class="bx rk"><small>順位</small><b id="ioRk">1</b><small>位</small></div><button class="gear" type="button" id="ioGear" aria-label="設定">⚙</button>
 <div class="bx" style="grid-column:1;grid-row:2"><span>武器数</span><b id="ioWp">0</b><span>個</span></div></div>
-<button class="atk l" type="button" data-atk="1">⚔ 武器</button>
+<button class="atk l" type="button" data-atk="1">⚔ 武器強化<br>レベル<span id="ioPw">1</span><small>武器100こ使う</small></button>
 <div class="stick" hidden><div class="knob" id="ioKnob"></div></div>`;
   document.body.appendChild(root);
   const cv=root.querySelector("#ioCv"), c=cv.getContext("2d");
@@ -98,11 +99,11 @@ function open(){ if(G) return;
   root.querySelector("#ioGear").onclick=()=>{ if(G.over) return; G.pause=true;
     dlg(`<h3>⚙ 一時停止</h3><p>やめると<b>負け</b>になります（冒険者Lvが今のLvぶん下がります）</p><button type="button" data-a="go">つづける</button><button type="button" class="g" data-a="quit">やめる（負け）</button>`,a=>{ if(a==="go"){ G.pause=false; G.t=performance.now(); } else lose("やめました"); }); };
   // 攻撃（2026-10-28）：進んでいる方向へ、拾った武器を1つ投げる（武器数−1）。当たった魔物はレベル−1
-  root.querySelectorAll("[data-atk]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); throwW(); }));   // 左の武器ボタン：押すたびに1つ投げる
+  root.querySelectorAll("[data-atk]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); if(!G||G.over||(G.weap||0)<PW_COST) return; G.weap-=PW_COST; G.P.w=G.weap; G.pw=(G.pw||1)+1; try{ SFX.coin(); }catch(x){} flash("⚔ 武器強化！ 攻撃力"+G.pw); hud(); }));   // 左の武器強化ボタン：武器100こで攻撃力+1
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個以上持ってやられると脱出クリア！<br>・武器が${IO.NEED-1}個以下でやられると負けです！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドしているあいだ、魔物が動きます！<br>・指をはなすと、進んでいた方向へ赤い武器を投げ続けます。武器を1つ拾うと武器数が+3、1つ投げると−1になります！武器数が多いほど速く投げます。止まったままだと武器数は0まで減ります！<br>・左の「⚔ 武器」ボタンでも、押すたびに1つ投げられます当たった魔物はレベル−1！Lv1の魔物なら倒せます！<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="text-align:left">・ポリポリの武器を${IO.NEED}個以上持ってやられると脱出クリア！<br>・武器が${IO.NEED-1}個以下でやられると負けです！<br>・自分よりサイズが大きい魔物に触れると即死です！<br>・画面をスライドしているあいだ、魔物が動きます！<br>・指をはなすと、進んでいた方向へ赤い武器を投げ続けます。武器を1つ拾うと武器数が+3、1つ投げると−1になります！武器数が多いほど速く投げます。止まったままだと武器数は0まで減ります！<br>・左の「⚔ 武器強化」ボタンは、武器100こを使って攻撃力を+1します。攻撃力のぶん敵のレベルが下がり、攻撃力以下のレベルの魔物は倒せます！（はじめは攻撃力1）<br>・ふつうの武器を拾ってもレベルは上がりません（金・虹の武器は上がります）</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 脱出に成功すれば、上がったレベルの分だけ冒険者レベルが上昇します！<br>💀 ただ負けてしまうと、レベルの分だけ冒険者レベルが下がります…</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -156,6 +157,7 @@ const RED=[1,2,3].map(n=>{ const im=new Image(); im.src="io/r"+n+".png"; return 
 // 止まっているあいだの発射の間隔：武器が多いほど早い（2個で1.5秒・3個で1秒・5個で0.6秒・10個で0.3秒。いちばん早くて0.15秒）
 const fireGap=()=>Math.max(0.15,3/Math.max(1,G.weap));
 // 2026-10-28：投げるのは赤い武器（拾った武器1つで5つ補充）。拾った武器の数（脱出・速さ）は減らない
+const PW_COST=100;   // 武器強化に使う武器の数
 function throwW(){ if(!G||G.over||G.pause) return; if((G.weap||0)<=0) return;
   const P=G.P, h=G.head||{x:1,y:0}; G.weap=Math.max(0,G.weap-1); P.w=G.weap;   /* 投げると1つ減る */   /* 進んでいた方向へ投げる */ G.TH=G.TH||[];
   const sp=900*(G.dpr||1)/(G.ppu||1);   // 画面の上でいつも同じくらいの速さで飛ぶ
@@ -168,8 +170,8 @@ function stepThrow(dt){ if(!G.TH||!G.TH.length) return; const hitR=26*(G.dpr||1)
         P.lv=Math.max(1,r1(P.lv-1)); P.r=radius(P.lv,P.f); P.hitT=0.35; flash("🗡 武器が当たった！ レベル−1"); }
       continue; }
     for(let i=0;i<G.E.length;i++){ const e=G.E[i]; if(Math.hypot(e.x-t.x,e.y-t.y)<e.r*0.7+hitR){ t.dead=1;
-      if(Math.floor(r1(e.lv))<=1){ const P=G.P; dropWeapons(e); respawn(i); P.lv=Math.min(LV_MAX,r1(P.lv+1)); P.r=radius(P.lv,P.f); G.kills++; try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX){ escape(true); return; } break; }   // Lv1の魔物は倒せる（自分のレベル+1）
-      if(e.ghost) e.dl=(e.dl||0)-1; else { e.lv=Math.max(1,r1(e.lv-1)); e.r=radius(e.lv,e.f); } e.hitT=0.35; if(e.ghost) ghostPos(e); break; } } }
+      if(Math.floor(r1(e.lv))<=(G.pw||1)){ const P=G.P; dropWeapons(e); respawn(i); P.lv=Math.min(LV_MAX,r1(P.lv+1)); P.r=radius(P.lv,P.f); G.kills++; try{ SFX.coin(); }catch(x){} if(P.lv>=LV_MAX){ escape(true); return; } break; }   // Lv1の魔物は倒せる（自分のレベル+1）
+      if(e.ghost) e.dl=(e.dl||0)-1; else { e.lv=Math.max(1,r1(e.lv-(G.pw||1))); e.r=radius(e.lv,e.f); } e.hitT=0.35; if(e.ghost) ghostPos(e); break; } } }
   G.TH=G.TH.filter(t=>!t.dead&&t.t<1.4&&t.x>-50&&t.y>-50&&t.x<IO.W+50&&t.y<IO.H+50); }
 // 2026-10-28：倒した敵が持っていた武器は、その周りに全部散らばる（拾われたら消える。数のうちには入れない）
 function dropWeapons(e){ const n=Math.min(40,Math.floor(e.w||0)); for(let k=0;k<n;k++){ const a=Math.random()*Math.PI*2, d=e.r*0.6+rnd(10,e.r*1.4+60);
@@ -186,7 +188,7 @@ function grass(){ const t=document.createElement("canvas"); t.width=t.height=128
   G.pat=G.c.createPattern(t,"repeat"); }
 function hud(){ $id("ioLv").textContent="Lv."+Math.floor(r1(G.P.lv)); /* 表示は整数だけ（中では0.1刻みで数えている） */ $id("ioWp").textContent=G.weap;
   const rk=1+G.E.filter(e=>cmp(e,G.P)>0).length; G.rank=rk; $id("ioRk").textContent=rk;
-  G.root.querySelectorAll("[data-atk]").forEach(b=>b.disabled=!(G.weap>0)); }
+  G.root.querySelectorAll("[data-atk]").forEach(b=>b.disabled=(G.weap||0)<PW_COST); const pw=$id("ioPw"); if(pw) pw.textContent=G.pw||1; }
 function loop(now){ if(!G) return; const dt=Math.max(0,Math.min(0.05,(now-G.t)/1000)); G.t=now; G.fdt=dt;
   if(!G.pause&&!G.over) step(dt); draw(); G.raf=requestAnimationFrame(loop); }
 function step(dt){ const P=G.P;
