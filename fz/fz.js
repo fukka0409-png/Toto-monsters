@@ -82,6 +82,8 @@ function draw(){ if(!V) return; const left=REQ.filter(r=>!DONE[r.id]).length;
       <button class="fz-pic" type="button" data-pic="${r.id}" ${d?"disabled":""}>${pic?`<img src="${pic}" alt="">`:"絵を<br>えらぶ"}</button>
       <button class="fz-send" type="button" data-send="${r.id}" ${d||!PIC[r.id]?"disabled":""}>${d?"送信<br>ずみ":"📨<br>送る"}</button></div>
       ${pv?`<div class="fz-prev"><img src="${pv.img||(FMON_CACHE[pv.id]||{}).img||""}" alt=""><span>この組み合わせは前に作った魔物があります：<b>${esc(pv.name||"")}</b></span><button type="button" data-same="${r.id}">同じ魔物を送る</button></div>`:""}`; }).join("");
+  // 2026-10-28：魔物の絵がまだ読みこめていないと枠だけになるので、読みこめたら描きなおす（スクロール位置はそのまま）
+  clearTimeout(V._imgT); if(OPEN.some(r=>(r.a&&!IMG[r.a])||(r.b&&!IMG[r.b]))&&(V._imgN=(V._imgN||0)+1)<40) V._imgT=setTimeout(()=>{ if(!V) return; const y=B.scrollTop; draw(); B.scrollTop=y; },500); else V._imgN=0;
   B.querySelectorAll("[data-z]").forEach(b=>b.onclick=()=>{ const row=b.closest(".fz-row")||b.parentElement; const L=[...row.querySelectorAll("[data-z]")].map(x=>x.dataset.z).filter(Boolean); if(L.length) zoom(L[0],L[1]); });
   // iPhoneでは、画面につないでいない<input>は写真をえらんだあとに消えてしまうことがあるので、画面の中に置いておく
   B.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ const id=b.dataset.pic; let inp=document.getElementById("fzFile");
