@@ -124,7 +124,7 @@ function grass(){ const t=document.createElement("canvas"); t.width=t.height=128
   for(let i=0;i<2;i++){ const x=ri(6,118),y=ri(6,118); g.fillStyle="#fff"; g.fillRect(x,y,4,4); g.fillStyle="#f6d44a"; g.fillRect(x+1,y+1,2,2); }
   if(Math.random()<1){ const x=ri(10,110),y=ri(10,110); g.fillStyle="#8d8d8d"; g.fillRect(x,y,10,6); g.fillStyle="#b9b9b9"; g.fillRect(x+2,y,6,3); g.fillStyle="#5c5c5c"; g.fillRect(x,y+6,10,2); }
   G.pat=G.c.createPattern(t,"repeat"); }
-function hud(){ $id("ioLv").textContent="Lv."+lvT(G.P.lv); $id("ioWp").textContent=G.weap;
+function hud(){ $id("ioLv").textContent="Lv."+Math.floor(r1(G.P.lv));   // 表示は整数だけ（中では0.1刻みで数えている） $id("ioWp").textContent=G.weap;
   const rk=1+G.E.filter(e=>cmp(e,G.P)>0).length; G.rank=rk; $id("ioRk").textContent=rk;
   $id("ioEsc").classList.toggle("ok",G.weap>=IO.NEED); }
 function loop(now){ if(!G) return; const dt=Math.max(0,Math.min(0.05,(now-G.t)/1000)); G.t=now;
