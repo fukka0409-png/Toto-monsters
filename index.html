@@ -3666,7 +3666,7 @@ async function startRemote(uid){
     try{ if(dexPeek() && !S.io0_1028){ S.io={k:0,b:0,s:0}; S.io0_1028=1; save(); queueProfile(true); } }catch(e){}   // 2026-10-28：ふっかーの魔物サバイバルの記録を1回だけ全部0にする
     try{ if(!S.loveLv3000 && MYID && normName(myName())===normName("love")){ S.plv=3000; S.loveLv3000=1; bumpMaxLv(); save(); queueProfile(true); } }catch(e){}   // 2026-10-28：loveさんの冒険者レベルを1回だけ3000にする（運営より）
     checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -6835,6 +6835,25 @@ async function fixRank11(){ const SS=11, fx=rankFixFor(SS); if(!fx||S.rkFix11||!
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏆</div><p>前のランク戦の順位を直しました</p>
     <div class="note" style="margin:0;text-align:left">運営の判断で、前のランク戦のあなたの順位は <b>${fx}位</b> になりました${orig?`（前は${orig}位）`:""}。<br>賞品の差を直しました：<br>コイン ${sg(dc)}${ds?`<br>覚醒の石 ${sg(ds)}個`:""}${dm?`<br>モコ ${sg(dm)}`:""}</div>
+    <button class="btn gold" type="button">OK</button></div>`;
+  document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
+// 2026-10-28：loveさんの投資（シーズン11：Rikuさんに2億・ＤＲＡＧＯＮさんに5000万）がバグで消えたので、その報酬を送る（1回だけ）
+// loveさんは3位なので、投資先が4位以内なら2倍（invMulOf）
+async function fixLoveInv11(){ const SS=11; if(S.loveInv11||!DB||!MYID) return; if(normName(myName())!==normName("love")) return;
+  const L=[{n:"Riku",amt:200000000},{n:"ＤＲＡＧＯＮ",amt:50000000}];
+  let q; try{ q=await DB.collection("profiles").limit(3000).get(); await loadSeasonEvents(SS); }catch(e){ return; }
+  if(S.loveInv11) return;
+  const lines=[]; let total=0;
+  for(const x of L){ const d=q.docs.find(z=>normName(z.data().name)===normName(x.n)); let tr=null;
+    if(d){ if(rankFixed(SS,d.data())) tr=RANK_FIX[SS][Object.keys(RANK_FIX[SS]).find(k=>normName(k)===normName(x.n))];
+      else { const ts=finalScore(d.id,d.data(),SS); if(ts!=null){ const others=q.docs.filter(z=>z.id!==d.id&&!rankFixed(SS,z.data())).map(z=>({score:finalScore(z.id,z.data(),SS), ok:profOk(z.data(),SS)})).filter(o=>o.score!=null); tr=rankShift(SS,effRank(ts,true,others)); } } }
+    const mul=invMulOf(tr,SS,true), g=Math.floor(x.amt*mul); total+=g;
+    lines.push(`${esc(x.n)}さん（${tr?tr+"位":"順位なし"}）に${x.amt.toLocaleString()}コイン → ${g?`<b>+${g.toLocaleString()}コイン</b>（${mul}倍）`:"報酬なし"}`); }
+  S.loveInv11=1; S.invs=invFix().filter(iv=>!(iv.ss===SS && L.some(x=>normName(iv.name)===normName(x.n))));   // 二重にもらわないように
+  S.coins=(S.coins||0)+total; save(); queueProfile(true); try{ render(); capCoins(); }catch(e){}
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=61;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">💰</div><p>投資の報酬をお届けします🙏</p>
+    <div class="note" style="margin:0;text-align:left">前のランク戦の投資がバグで消えてしまっていたので、その報酬を送りました。<br><br>${lines.join("<br>")}<br><br>合計 <b>+${total.toLocaleString()}コイン</b></div>
     <button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
 async function fixDragon1027(){ if(S.drFix1027||!DB||!MYID) return; let me; try{ me=normName(myName()); }catch(e){ return; } if(me!==normName("ＤＲＡＧＯＮ")) return;
