@@ -168,8 +168,10 @@ function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
     c.fillStyle="#0003"; c.beginPath(); c.ellipse(e.x,e.y+e.r*0.62,e.r*0.6,e.r*0.18,0,0,Math.PI*2); c.fill();
     if(im.complete&&im.naturalWidth){ c.imageSmoothingEnabled=false; const ph=e.ph||0, hop=e.mv?Math.abs(Math.sin(ph))*e.r*0.1:0, tilt=e.mv?Math.sin(ph)*0.06:0;
       c.save(); c.translate(e.x,e.y+e.r); c.rotate(tilt); c.scale(-(e.face||1),e.mv?1-Math.abs(Math.sin(ph))*0.03:1); c.drawImage(im,-e.r,-s-hop,s,s); c.restore(); }
-    // レベルと武器の数は頭の上に出さない（2026-10-28）。過去の冒険者（ゴースト）だけ名前を出す
-    if(e.ghost&&e.nm){ const fs=Math.max(12/ppu*d, e.r*0.22); c.font=`900 ${fs}px sans-serif`; c.lineWidth=fs*0.25; c.strokeStyle="#fff"; c.fillStyle="#6a1b9a"; c.strokeText(e.nm,e.x,e.y-e.r*0.95); c.fillText(e.nm,e.x,e.y-e.r*0.95); } } }
+    // 頭の上にレベル（整数だけ）を出す。武器の数は出さない。過去の冒険者（ゴースト）はその上に名前も出す
+    const fs=Math.max(12/ppu*d, e.r*0.26), y0=e.y-e.r*0.95; c.font=`900 ${fs}px sans-serif`; c.lineWidth=fs*0.25; c.strokeStyle="#fff";
+    const k=cmp(e,P); c.fillStyle=e.me?"#1d6fd1":(k>0?"#d32f2f":k<0?"#2e7d32":"#555"); const t="Lv."+Math.floor(r1(e.lv)); c.strokeText(t,e.x,y0); c.fillText(t,e.x,y0);
+    if(e.ghost&&e.nm){ const f2=fs*0.8; c.font=`900 ${f2}px sans-serif`; c.lineWidth=f2*0.25; c.fillStyle="#6a1b9a"; c.strokeText(e.nm,e.x,y0-fs*1.05); c.fillText(e.nm,e.x,y0-fs*1.05); } } }
 function dlg(html,cb){ const d=document.createElement("div"); d.className="dlg"; d.innerHTML=`<div>${html}</div>`; G.root.appendChild(d);
   d.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{ d.remove(); cb&&cb(b.dataset.a); }); }
 function lose(why){ if(G.over) return; G.over=true; saveGhost(); const n=Math.floor(G.P.lv), before=S.plv;
