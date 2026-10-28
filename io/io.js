@@ -156,7 +156,7 @@ function step(dt){ const P=G.P;
   for(let i=0;i<G.WP.length;i++){ const w=G.WP[i]; if(Math.hypot(w.x-P.x,w.y-P.y)<P.r*0.6+17*G.dpr/G.ppu){ G.weap++; P.w=G.weap; P.lv=r1(P.lv+0.1); P.r=radius(P.lv,P.f); G.WP[i]=spawnWeapon(); try{ SFX.tap(); }catch(x){} if(P.lv>=LV_MAX) return escape(true); } }
   hud(); }
 function draw(){ const {c,cv,P}=G, d=G.dpr, w=cv.width, h=cv.height;
-  const ppu=G.ppu=d*Math.min(innerWidth,600)/390*1.25*Math.pow(IO.R0/P.r,0.62);   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
+  const ppu=G.ppu=d*Math.min(innerWidth,600)/390*0.95*Math.pow(IO.R0/P.r,0.545);   // 2026-10-28：前より少し引いて見える（Lv1000で画面いっぱいはそのまま）   // 1単位あたりの画面のピクセル（大きくなるほど引いて見える）
   c.setTransform(1,0,0,1,0,0); c.fillStyle="#3d6b2a"; c.fillRect(0,0,w,h);
   c.setTransform(ppu,0,0,ppu,w/2-P.x*ppu,h/2-P.y*ppu);
   c.fillStyle=G.pat; c.save(); c.scale(1/ppu*d*1.6,1/ppu*d*1.6); c.fillRect(0,0,IO.W*ppu/d/1.6,IO.H*ppu/d/1.6); c.restore();   // 草のドットは画面上でいつも同じくらいの細かさ
