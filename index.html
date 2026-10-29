@@ -6325,9 +6325,10 @@ function renderRanking(segHtml){
       🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
-    <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button><button class="chip" id="rkGuard" type="button" style="margin-left:auto">🛡 魔物を配置${guardUnit()?`（${esc(mon(guardUnit().m).name)} Lv${guardUnit().l}）`:""}</button></div>
+    <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button>${dexPeek()?`<button class="chip" id="prevRank" type="button">🏆 前のランク戦の結果</button>`:""}<button class="chip" id="rkGuard" type="button" style="margin-left:auto">🛡 魔物を配置${guardUnit()?`（${esc(mon(guardUnit().m).name)} Lv${guardUnit().l}）`:""}</button></div>
     ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
   $("#rkGuard").onclick=()=>openGuardPick();
+  { const pr=$("#prevRank"); if(pr) pr.onclick=()=>openPrevRank(); }
   $("#reRank").onclick=async()=>{ RANK=null; render(); await loadRanking(true); if(!rankErr) toast("全員の最新の状態に更新しました"); };
   const qi=$("#rkQ"); if(qi){ qi.oninput=()=>{ rankQ=qi.value; filterRank(); }; qi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); qi.blur(); if(!filterRank()) searchOutside(); } }; filterRank(); }
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{
@@ -6658,6 +6659,19 @@ async function checkTicks(silent){
   }catch(e){}
   tickBusy=false;
 }
+// 2026-10-29：ふっかーだけ：前のランク戦の結果（1〜10位）。プロフィールに残っているランク戦ごとの最終レベルから出す
+async function openPrevRank(){ if(!DB||!dexPeek()) return; const ss=seasonNow()-1;
+  const bg=sheet(`<div class="sheet-h"><h3>🏆 前のランク戦の結果</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div id="prL"><div class="empty">集計中…</div></div>`);
+  try{ const q=await withTO(DB.collection("profiles").limit(3000).get(),20000); await loadSeasonEvents(ss);
+    const fix=RANK_FIX[ss]||{}, fk=Object.keys(fix);
+    const L=q.docs.map(d=>{ const p=d.data(), sc=finalScore(d.id,p,ss); return sc==null?null:{name:p.name||"名無しの召喚士", sc, fx:(fk.find(k=>normName(k)===normName(p.name))!=null?fix[fk.find(k=>normName(k)===normName(p.name))]:null)}; }).filter(Boolean);
+    const free=L.filter(x=>x.fx==null).sort((a,b)=>b.sc-a.sc), out=[]; const fixed=L.filter(x=>x.fx!=null);
+    let r=1, i=0; while(out.length<10 && (i<free.length||fixed.some(x=>x.fx===r))){ const f=fixed.find(x=>x.fx===r); if(f) out.push({...f,r}); else if(i<free.length) out.push({...free[i++],r}); r++; }
+    const md=["🥇","🥈","🥉"];
+    const el=bg.querySelector("#prL"); if(!el) return;
+    el.innerHTML=`<p class="note" style="margin:0 0 8px">ランク戦${ss}（${new Date(seasonEnd(ss-1)+9*HOUR_MS).getUTCMonth()+1}/${new Date(seasonEnd(ss-1)+9*HOUR_MS).getUTCDate()} 22:00〜${new Date(seasonEnd(ss)+9*HOUR_MS).getUTCMonth()+1}/${new Date(seasonEnd(ss)+9*HOUR_MS).getUTCDate()} 22:00）の最終順位です。ふっかーだけが見られます。</p>`+
+      (out.length?`<ol class="rank">${out.map(x=>`<li><span class="rk-no">${md[x.r-1]||x.r}</span><div class="rk-body"><div class="rk-name" translate="no">${esc(x.name)}</div>${x.fx!=null?`<div class="rk-sub">運営が決めた順位</div>`:""}</div><div class="rk-lv"><small>Lv</small>${Math.floor(x.sc/1e6)}</div></li>`).join("")}</ol>`:`<div class="empty">記録がありません</div>`); }
+  catch(e){ const el=bg.querySelector("#prL"); if(el) el.innerHTML=`<div class="empty">読み込めませんでした</div>`; } }
 function finalScore(id, p, s){
   const base=seasonScore(p,s); if(base==null) return null;
   if(p.sv && p.sv[s]!=null) return base;              // 本人が精算ずみ（すべて反映ずみ）
