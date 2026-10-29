@@ -8025,9 +8025,10 @@ async function checkItems(){
       if(res.length){ const rb=document.createElement("div"); rb.className="sheet-bg center"; rb.style.zIndex=54;
         // 2026-10-29：1文でまとめて出す
         const sum=(L,re)=>L.reduce((t,m)=>{ const x=String(m).match(re); return t+(x?+x[1].replace(/,/g,""):0); },0);
-        const rN=res.filter(m=>String(m).startsWith("↩️")).length, bN=res.filter(m=>String(m).startsWith("🛡 盾により")).length, rLv=sum(res.filter(m=>String(m).startsWith("↩️")),/冒険者レベル−(\d+)/), rC=sum(res.filter(m=>String(m).startsWith("↩️")),/−([\d,]+)コイン/), gC=sum(res,/\+([\d,]+)コインをうばった/);
+        const rN=res.filter(m=>String(m).startsWith("↩️")).length, bN=res.filter(m=>String(m).startsWith("🛡 盾により")).length, rLv=sum(res.filter(m=>String(m).startsWith("↩️")),/冒険者レベル−(\d+)/), rC=sum(res.filter(m=>String(m).startsWith("↩️")),/−([\d,]+)コイン/), gC=sum(res.filter(m=>String(m).startsWith("🧲")),/\+([\d,]+)コインをうばった/), fC=sum(res.filter(m=>String(m).startsWith("🛡 跳ね返した")),/\+([\d,]+)コインをうばった/);
         const parts=[rN?`相手の盾に${rN}回はね返された${rLv||rC?`（${[rC?`−${rC.toLocaleString()}コイン`:"",rLv?`冒険者レベル−${rLv}`:""].filter(Boolean).join("・")}）`:""}`:"", bN?`${bN}回は盾で防がれた`:"", gC?`マグネットで+${gC.toLocaleString()}コインうばった`:""].filter(Boolean);
-        rb.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">📨</div><p style="line-height:1.6">${parts.length?"使ったアイテムが"+parts.join("、")+"。":"使ったアイテムの結果が届きました。"}</p><button class="btn gold" type="button">OK</button></div>`;
+        const own=parts.length?"使ったアイテムが"+parts.join("、")+"。":"", ref=fC?`🛡 あなたの盾が相手のコインマグネットをはね返して、+${fC.toLocaleString()}コインうばった！`:"";
+        rb.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">📨</div><p style="line-height:1.6">${[ref,own].filter(Boolean).join("<br>")||"使ったアイテムの結果が届きました。"}</p><button class="btn gold" type="button">OK</button></div>`;
         document.body.appendChild(rb); rb.querySelector(".btn").onclick=()=>rb.remove(); }
       if(msgs.length){   // 2026-10-29：アイテムを使われたときは1文でまとめて出す
       const bg=document.createElement("div"); bg.className="sheet-bg center";
