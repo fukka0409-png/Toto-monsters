@@ -8024,7 +8024,7 @@ async function checkItems(){
         rb.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="irT"><div class="swear-face">📨</div><p id="irT">使ったアイテムの結果</p>
           <div class="note" style="margin:0;text-align:left">${res.map(m=>"・"+m).join("<br>")}</div><button class="btn gold" type="button">OK</button></div>`;
         document.body.appendChild(rb); rb.querySelector(".btn").onclick=()=>rb.remove(); }
-      if(msgs.length){
+      if(msgs.length && false){   // 2026-10-29：アイテムを使われたときの表示は出さない（効果はそのまま）
       const bg=document.createElement("div"); bg.className="sheet-bg center";
       bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="itT"><div class="swear-face">💥</div><p id="itT">留守中にアイテムを使われました</p>
         <div class="note" style="margin:0;text-align:left">${msgs.map(m=>"・"+m).join("<br>")}</div>
