@@ -3589,7 +3589,9 @@ async function walletStart(){ if(!DB||!MYID||WAL.ref) return; const ref=DB.doc("
   // 最初にクラウドの数字を読んでから動かす（読む前にした変化が消えないように）
   try{ const s0=await ref.get(); const v=s0.data()||{}, nb={}; WF.forEach(f=>{ nb[f]=Math.floor(v[f]||0); S[f]=nb[f]+(S===S0?Math.floor(S[f]||0)-st[f]:0); }); WAL.base=nb; walClamp(); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }catch(e){ return; }
   WAL.ref=ref; WAL.ready=true;
+  try{ await ref.update({sid:SID, sidAt:SID_AT||gnow()}); }catch(e){}   // 2026-10-29：この画面がいちばん新しい画面（ほかの画面はすぐ止まる）
   WAL.unsub=ref.onSnapshot(sn=>{ if(!sn.exists||REMOTE_LOCK) return; const v=sn.data(), first=!WAL.base, nb={}; let ch=false;
+    if(v.sid && v.sid!==SID && (v.sidAt||0)>(SID_AT||0)){ try{ WAL.unsub&&WAL.unsub(); }catch(e){} lockOut(); return; }   // あとから別の画面で開かれた：裏に置いていてもすぐ止める
     WF.forEach(f=>{ const sv=Math.floor(v[f]||0), pend=first?0:Math.floor((S[f]||0)-WAL.base[f]), nv=sv+pend; if(Math.floor(S[f]||0)!==nv){ S[f]=nv; ch=true; } nb[f]=sv; });
     WAL.base=nb; WAL.ready=true; walClamp();
     if(ch){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} try{ renderCoins(); }catch(e){} try{ if(!document.querySelector(".reveal,.sheet-bg,.rules-stage,#ioG")) render(); }catch(e){} } }, ()=>{}); }
@@ -3734,7 +3736,7 @@ async function startRemote(uid){
     try{ if(!S.loveLv7b && MYID && normName(myName())===normName("love")){ S.loveLv7b=1; S.plv=(S.plv||1)+7; lvWhy("運営の調整（消えた上位キープボーナス+7）"); bumpMaxLv(); save(); queueProfile(true); } }catch(e){}   // 2026-10-29：クラウド管理に切りかえた時に消えたloveさんのボーナス
     try{ if(!S.loveLv1519 && MYID && normName(myName())===normName("love")){ S.loveLv1519=1; if((S.plv||1)<1519){ S.plv=1519; S.pexp=0; lvWhy("運営の調整（1519にもどす）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1519に（画面が2つ動いていたバグで下がった分）
     checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); bankIntroNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixLoveSv12(); fixInvLove12(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -6733,7 +6735,7 @@ function checkSeasonEndMsg(){
 setInterval(checkSeasonEndMsg,20000);
 // ランク戦ごとの限定キャラ：{ランク戦の番号: 魔物のid}（そのランク戦の1〜3位に1体ずつ、結果発表で届く）
 // 2026-10-28：運営が決めた順位（前のランク戦＝シーズン11：loveさん3位・ＤＲＡＧＯＮさん4位）
-const RANK_FIX = { 11: { "love":3, "ｄｒａｇｏｎ":4 } };
+const RANK_FIX = { 11: { "love":3, "ｄｒａｇｏｎ":4 }, 12: { "love":2 } };   // 12：画面が2つ動いていたバグで、loveさんのランキングの記録が消えていた
 const rankFixed = (s,p) => { try{ const t=RANK_FIX[s]; if(!t) return false; const n=normName(p&&p.name); return Object.keys(t).some(k=>normName(k)===n); }catch(e){ return false; } };
 // 決めた順位の冒険者をのぞいて数えた順位を、その人たちの席をよけてずらす（例：3位・4位が決まっていたら、3位→5位）
 const rankShift = (s,r) => { const t=RANK_FIX[s]; if(!t||!r) return r; Object.values(t).sort((a,b)=>a-b).forEach(v=>{ if(v<=r) r++; }); return r; };
@@ -6872,6 +6874,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-29-twoscreen2", coins:1000 },   // 画面が2つ動いていると、ランキングの記録がまちがうことがあった
   { id:"fix-2026-10-29-comma", coins:1000 },   // 17:25ごろ、ほんの少しのあいだゲームが動かなくなっていた
   { id:"fix-2026-10-29-walletstart", coins:1000 },   // ゲームを開いた直後にもらった上位キープボーナスなどが消えることがあった
   { id:"fix-2026-10-29-twosession", coins:1000 },   // 同じアカウントのゲームが2つの画面で同時に動くと、レベルやコインが行ったり来たりしていた
@@ -6975,12 +6978,12 @@ function noteTapioka(){
 // 2026-10-27：ＤＲＡＧＯＮさん（誤解で初期化）のデータを、本人から聞いた内容で手で元にもどす（1回だけ）
 //   所持コイン1700万・魔物コンプ率96%・最高順位7位・今シーズンの投資（Love・yoko★）
 // 2026-10-28：シーズン11をもう精算してしまっていたら、決めた順位との賞品の差を直す（1回だけ）
-async function fixRank11(){ const SS=11, fx=rankFixFor(SS); if(!fx||S.rkFix11||!DB||!MYID||(S.season??0)<=SS) return;
+async function fixRank11(SS=11){ const fx=rankFixFor(SS), FK=SS===11?"rkFix11":"rkFix"+SS; if(!fx||S[FK]||!DB||!MYID||(S.season??0)<=SS) return;
   const mine=(S.sv||{})[SS]; let orig=null;
   if(mine!=null){ try{ const q=await DB.collection("profiles").limit(3000).get(); await loadSeasonEvents(SS);
     const others=q.docs.filter(d=>d.id!==MYID).map(d=>({score:finalScore(d.id,d.data(),SS), ok:profOk(d.data(),SS)})).filter(o=>o.score!=null);
     orig=effRank(mine, prizeOk(SS), others); }catch(e){ return; } }
-  if(S.rkFix11) return; S.rkFix11=1;
+  if(S[FK]) return; S[FK]=1;
   const pz=r=>r?(RANK_PRIZE[r]||(r<=10?RANK_PRIZE_10:null)):null, a=pz(orig)||{}, b=pz(fx)||{};
   const dc=(b.c||0)-(a.c||0), ds=(b.st||0)-(a.st||0), dm=(b.mk||0)-(a.mk||0);
   if(orig===fx){ save(); return; }
@@ -6996,6 +6999,23 @@ async function fixRank11(){ const SS=11, fx=rankFixFor(SS); if(!fx||S.rkFix11||!
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
 // 2026-10-28：loveさんの投資（シーズン11：Rikuさんに2億・ＤＲＡＧＯＮさんに5000万）がバグで消えたので、その報酬を送る（1回だけ）
 // loveさんは3位なので、投資先が4位以内なら2倍（invMulOf）
+// 2026-10-29：loveさん：ランク戦12の最終レベル（1756）がプロフィールから消えていたので戻す（ほかの冒険者の「前のランク戦の結果」に出るように）
+function fixLoveSv12(){ try{ if(S.loveSv12||!MYID||normName(myName())!==normName("love")) return; S.loveSv12=1; S.sv=S.sv||{}; if((S.sv[12]||0)<1756e6) S.sv[12]=1756e6; save(); queueProfile(true); }catch(e){} }
+// 2026-10-29：ランク戦12でloveさんに投資していた冒険者：本当は2位だったので、2位の配当にする（負けた分を戻して、配当を足す）
+async function fixInvLove12(){ const SS=12; if(S.invLove12||!DB||!MYID||(S.season??0)<=SS) return;
+  let L=[]; try{ const q=await withTO(DB.collection("invests").where("att","==",MYID).get(),12000); L=q.docs.map(d=>d.data()).filter(x=>x.ss===SS && normName(x.defName)===normName("love") && !x.void); }catch(e){ return; }
+  if(S.invLove12) return; S.invLove12=1; if(!L.length){ save(); return; }
+  let meTop=false; try{ const mine=(S.sv||{})[SS]; if(mine!=null){ const q=await withTO(DB.collection("profiles").limit(3000).get(),20000); await loadSeasonEvents(SS);
+    const others=q.docs.filter(d=>d.id!==MYID&&!rankFixed(SS,d.data())).map(d=>({score:finalScore(d.id,d.data(),SS), ok:profOk(d.data(),SS)})).filter(o=>o.score!=null);
+    meTop=rankShift(SS,effRank(mine,true,others))<=3; } }catch(e){}   // 自分が3位以内なら、投資の配当は2倍（いつものきまり）
+  let add=0; const lines=[];
+  L.forEach(x=>{ const amt=Math.floor(x.amt||0), mul=invMulOf(2,SS,meTop), back=amt*(INV_LOSE-1); add+=amt*mul+back; lines.push(`loveさんへの投資 ${amt.toLocaleString()}コイン → 2位の配当 +${(amt*mul).toLocaleString()}＋取られた分 +${back.toLocaleString()}`); });
+  S.coins=(S.coins||0)+add; try{ capCoins(); }catch(e){} save(); queueProfile(true); try{ renderCoins(); }catch(e){}
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=62;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">💰</div><p>投資の結果を直しました🙏</p>
+    <div class="note" style="margin:0;text-align:left">前のランク戦で、loveさんの順位がバグでまちがって集計されていました。本当は<b>2位</b>だったので、投資の結果を直しました。<br><br>${lines.join("<br>")}<br><br>合計 <b>+${add.toLocaleString()}コイン</b></div>
+    <button class="btn gold" type="button">OK</button></div>`;
+  document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
 async function fixLoveInv11(){ const SS=11; if(S.loveInv11||!DB||!MYID) return; if(normName(myName())!==normName("love")) return;
   const L=[{n:"Riku",amt:200000000},{n:"ＤＲＡＧＯＮ",amt:50000000}];
   let q; try{ q=await DB.collection("profiles").limit(3000).get(); await loadSeasonEvents(SS); }catch(e){ return; }
