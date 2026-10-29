@@ -3572,6 +3572,7 @@ function overNag(){ if(overNagOpen||!(S.coins>COIN_MAX)) return;
   bg.querySelector("#onGo").onclick=()=>{ const o=Math.max(0,Math.floor(S.coins-COIN_MAX)); S.coins-=o; S.bank=(S.bank||0)+o; bg.remove(); overNagOpen=false; save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(`🏦 ${o.toLocaleString()}コインを貯金しました`); try{ render(); }catch(e){} }; }
 setInterval(()=>{ try{ if(S&&S.coins>COIN_MAX) capCoins(); }catch(e){} }, 15000);
 function save(){
+  try{ if(LAST_INPUT>(S.inAt||0)) S.inAt=LAST_INPUT; }catch(e){}   // 最後に画面をさわった時間（端末どうしの記録の新しさくらべに使う）
   capCoins();
   trackLv();
   S.updated = gnow(); queueProfile();
@@ -3596,6 +3597,9 @@ async function checkUpdate(){
 }
 setTimeout(checkUpdate,2000); setInterval(checkUpdate,5*60*1000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") checkUpdate(); });
+// 2026-10-29：この端末で最後に画面をさわった時間。裏に置いていた古い端末が、タイマーの保存だけで「新しい記録」になって、別の端末の新しい記録を上書きしないように使う
+var LAST_INPUT=0; ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,()=>{ LAST_INPUT=gnow(); },true));
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ try{ pullRemote(); }catch(e){} } });   // 画面にもどったら、まずクラウドの新しい記録を読む
 let pushing = null;   // 保存の通信中（その間は読み込みをしない：自分の保存を「別の端末の記録」と勘違いしないため）
 async function pushRemote(){
   if(!remoteDoc || !remoteReady) return;
@@ -3624,7 +3628,7 @@ async function pullRemote(fromPush, force){
     const aheadSeason = r && (r.season??0) > (S.season??0);
     if(ru > lastRemote || aheadSeason){
       // この端末でまだ送っていない、もっと新しい記録があるときは、この端末の記録を優先する
-      if(!aheadSeason && (S.updated||0) > ru){ lastRemote=ru; return false; }
+      if(!aheadSeason && (S.updated||0) > ru && LAST_INPUT > ru){ lastRemote=ru; return false; }   // 2026-10-29：この端末でクラウドより後に画面をさわって遊んでいたときだけ、この端末の記録を優先する
       if(!r || !Array.isArray(r.units)) return false;
       // この端末で手に入れて、まだクラウドに送れていなかった魔物（クラウドの記録より後に手に入れたもの）は消さずに残す。図鑑の記録も多いほうを残す
       const keepU=(S.units||[]).filter(u=>u && u.t && u.t>ru && !r.units.some(z=>z.u===u.u && z.m===u.m)), gotL=S.got||{};
@@ -3671,7 +3675,7 @@ async function startRemote(uid){
         if(rf) takeRemote=false;
         else if(lf) takeRemote=true;
         else if(S.owner && S.owner!==uid) takeRemote=true;            // 別の人の記録は使わない
-        else if(S.owner===uid) takeRemote=(d.updated||0) > (S.updated||0);
+        else if(S.owner===uid) takeRemote=(d.updated||0) > (S.updated||0) || ((r.inAt||0) > (S.inAt||0));   // 2026-10-29：別の端末で最近遊んでいたら、そちらの記録を使う（古い端末がタイマーの保存だけで新しく見えても上書きしない）
         else takeRemote=(await askWhichSave(S,r))==="remote";       // ログイン前の記録 → 本人に選んでもらう
         lastRemote=d.updated||0;
         if(takeRemote){ S = r; fixPlayer(); applyLoginDecay(); fixGuard(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
@@ -3685,6 +3689,7 @@ async function startRemote(uid){
     try{ if(dexPeek() && !S.tk0_1026){ S.items=S.items||{}; S.items.ticket=0; S.tk0_1026=1; save(); } }catch(e){}   // 2026-10-26：ふっかーの所持ガチャチケットを1回だけ0にする
     try{ if(dexPeek() && !S.io0_1028){ S.io={k:0,b:0,s:0}; S.io0_1028=1; save(); queueProfile(true); } }catch(e){}   // 2026-10-28：ふっかーの魔物サバイバルの記録を1回だけ全部0にする
     try{ if(!S.loveLv1 && MYID && normName(myName())===normName("love")){ if(S.loveLv3000){ S.plv=1; S.pexp=0; S._lastLv=1; } S.loveLv3000=1; S.loveLv1=1; save(); queueProfile(true); } }catch(e){}   // 2026-10-28：loveさんの冒険者レベルを1に戻す（3000にしたのを取り消し・運営より）
+    try{ if(!S.loveLv1251 && MYID && normName(myName())===normName("love")){ S.loveLv1251=1; if((S.plv||1)<1251){ S.plv=1251; S.pexp=0; lvWhy("運営の調整（バグのおわび）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1251に（バグで下がった分）
     checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
@@ -6799,6 +6804,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-29-stalesave", coins:1000 },   // 裏に置いていた古い端末の記録が、別の端末の新しい記録を上書きすることがあった
   { id:"fix-2026-10-29-stalelv", coins:1000 },   // 裏のタブや別の端末の古い記録で、冒険者レベルが下がって見えることがあった
   { id:"fix-2026-10-28-vtvoted", coins:1000 },   // 投票したのに投票前の画面にもどり、投票ボタンが反応しなかった
   { id:"fix-2026-10-25-tspanel", coins:1000 },
