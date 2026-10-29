@@ -189,6 +189,7 @@ async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===
   catch(e){ pulling=false; return T(String(e&&e.message)==="tk"?"グッズチケットが足りません":"通信できませんでした。もう一度ためしてください"); }
   await load(); pulling=false;
   const cnt={}; got.forEach(r=>cnt[r]=(cnt[r]||0)+1); const real=got.filter(r=>r!=="D").length;
+  await packFx(cnt.S?"S":cnt.A?"A":(cnt.B||cnt.C)?"B":"D");   // 2026-10-29：パックを開ける演出
   const d=document.createElement("div"); d.className="gd-res";
   d.innerHTML=`<div><h3>${real?"🎉 グッズが当たった！":"結果"}</h3><div class="gd-rl">${["S","A","B","C","D"].filter(r=>cnt[r]).map(r=>`<div class="gd-ri" style="border-color:${COL[r]}"><b style="color:${COL[r]}">${r}賞</b>${esc(pz(r).name)}<br>×${cnt[r]}</div>`).join("")}</div>
     ${cnt.D?`<p style="font-weight:900">🏷 デジタルステッカーを${cnt.D}枚ゲット！<br><small>ステッカー集めの枠に自動で貼られました</small></p><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 12px">${gotStk.map((id,i)=>`<div style="width:56px;height:56px;display:grid;place-items:center">${stkTag(id,i+3)}</div>`).join("")}</div>`:""}
@@ -197,6 +198,53 @@ async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===
   document.body.appendChild(d); try{ SFX.reveal(cnt.S||cnt.A?"Z":real?"S":"A"); }catch(e){}
   d.querySelector("#gdOk").onclick=()=>{ d.remove(); gachaPage(); };
   const ma=d.querySelector("#gdMailAll"); if(ma) ma.onclick=async()=>{ ma.disabled=true; for(const id of newIds){ try{ await withTO(DB.doc("gdwin/"+id).update({st:"req", reqAt:gnow()})); }catch(e){} } await load(); d.remove(); T("郵送申請しました！ 申請済みグッズに追加されました"); gachaPage(); }; }
+
+// パックを開ける演出：D賞だけ＝茶色のパック／B・C賞＝銀色のキラキラ／A賞＝金色のキラキラ／S賞＝虹色の超キラキラ
+const PK={D:{c:"kraft",n:0,fl:"#fff7e6",t:"グッズパック"}, B:{c:"silver",n:14,fl:"#eef6ff",t:"シルバーパック"}, A:{c:"gold",n:22,fl:"#fff1b0",t:"ゴールドパック"}, S:{c:"rainbow",n:40,fl:"#ffffff",t:"レインボーパック"}};
+function packFx(tier){ return new Promise(done=>{ const k=PK[tier]||PK.D;
+  const o=document.createElement("div"); o.className="gd-pko";
+  const sp=Array.from({length:k.n},()=>`<i class="gd-sp" style="left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${(Math.random()*1.6).toFixed(2)}s;--s:${(0.6+Math.random()*1.2).toFixed(2)}"></i>`).join("");
+  o.innerHTML=`<div class="gd-pkw"><div class="gd-pk ${k.c}"><div class="gd-pk-top"><span>✂︎ - - - - - - - - - -</span></div><div class="gd-pk-body"><b>🛍</b><em>${k.t}</em><small>トトと魔物たち</small></div>${sp}</div></div><p class="gd-pk-hint">パックの上を横になぞって開けよう！<br><small>（タップでも開きます）</small></p>`;
+  document.body.appendChild(o); try{ SFX.tap(); }catch(e){}
+  const pk=o.querySelector(".gd-pk"); let x0=null, opened=false;
+  const open=()=>{ if(opened) return; opened=true; pk.classList.add("open"); o.querySelector(".gd-pk-hint").style.opacity=0;
+    try{ SFX.reveal(tier==="S"?"Z":tier==="A"?"S":tier==="B"?"A":"B"); }catch(e){}
+    setTimeout(()=>{ const f=document.createElement("div"); f.className="gd-flash "+k.c; f.style.background=k.fl; o.appendChild(f); },380);
+    setTimeout(()=>{ o.remove(); done(); }, tier==="S"?1500:tier==="A"?1200:950); };
+  pk.addEventListener("pointerdown",e=>{ x0=e.clientX; });
+  pk.addEventListener("pointermove",e=>{ if(x0!=null&&Math.abs(e.clientX-x0)>60) open(); });
+  pk.addEventListener("pointerup",()=>{ x0=null; });
+  o.addEventListener("click",()=>setTimeout(open,60)); }); }
+const pkCss=document.createElement("style");
+pkCss.textContent=`
+.gd-pko{position:fixed;inset:0;z-index:238;background:radial-gradient(#0008,#000e);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;touch-action:none;user-select:none}
+.gd-pkw{animation:gdPkIn .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes gdPkIn{from{transform:translateY(60px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+.gd-pk{position:relative;width:min(62vw,230px);aspect-ratio:3/4.2;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px #000a;animation:gdPkWob 1.6s ease-in-out infinite}
+@keyframes gdPkWob{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg) translateY(-4px)}}
+.gd-pk-top{position:absolute;left:0;right:0;top:0;height:18%;border-bottom:3px dashed #0006;display:grid;place-items:center;font:900 12px var(--f-body,sans-serif);color:#0007;letter-spacing:1px;z-index:2;transition:transform .45s ease-in,opacity .45s}
+.gd-pk-body{position:absolute;inset:18% 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-family:var(--f-body,sans-serif);color:#2b1a06;z-index:1}
+.gd-pk-body b{font-size:58px;filter:drop-shadow(0 3px 0 #0003)}
+.gd-pk-body em{font-style:normal;font:900 20px var(--f-body,sans-serif)}
+.gd-pk-body small{font-size:11px;font-weight:900;opacity:.6}
+.gd-pk.kraft{background:repeating-linear-gradient(45deg,#00000008 0 3px,transparent 3px 7px),linear-gradient(#c8955c,#9b6a38);border:4px solid #6b4423}
+.gd-pk.silver{background:linear-gradient(115deg,#cfd8dc 0%,#ffffff 20%,#90a4ae 40%,#eceff1 60%,#b0bec5 80%,#ffffff 100%);background-size:300% 100%;animation:gdPkWob 1.6s ease-in-out infinite,gdShine 2.2s linear infinite;border:4px solid #78909c;box-shadow:0 0 22px #e3f2fdcc,0 10px 30px #000a}
+.gd-pk.gold{background:linear-gradient(115deg,#f5c542 0%,#fff6c8 18%,#c9971c 38%,#ffe27a 58%,#b8860b 78%,#fff6c8 100%);background-size:300% 100%;animation:gdPkWob 1.4s ease-in-out infinite,gdShine 1.8s linear infinite;border:4px solid #a77a12;box-shadow:0 0 34px #ffd54fdd,0 10px 30px #000a}
+.gd-pk.rainbow{background:linear-gradient(115deg,#ff5f6d,#ffc371,#fff96b,#5ef08a,#4fc3f7,#9575cd,#f06292,#ff5f6d);background-size:400% 100%;animation:gdPkWob 1.1s ease-in-out infinite,gdShine 1.4s linear infinite,gdHue 3s linear infinite;border:4px solid #fff;box-shadow:0 0 30px #fff,0 0 70px #f0f8,0 0 120px #0ff6,0 10px 30px #000a}
+.gd-pk.silver .gd-pk-body,.gd-pk.gold .gd-pk-body,.gd-pk.rainbow .gd-pk-body{text-shadow:0 1px 0 #fff8}
+@keyframes gdShine{from{background-position:0% 0}to{background-position:300% 0}}
+@keyframes gdHue{from{filter:hue-rotate(0)}to{filter:hue-rotate(360deg)}}
+.gd-sp{position:absolute;width:calc(14px*var(--s));height:calc(14px*var(--s));z-index:3;pointer-events:none;background:radial-gradient(#fff 0 18%,transparent 20%),conic-gradient(from 45deg,transparent 0 10%,#fff 12%,transparent 14% 35%,#fff 37%,transparent 39% 60%,#fff 62%,transparent 64% 85%,#fff 87%,transparent 89%);border-radius:50%;opacity:0;animation:gdTw 1.6s ease-in-out infinite;transform:translate(-50%,-50%)}
+@keyframes gdTw{0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(0)}50%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(90deg)}}
+.gd-pk.open .gd-pk-top{transform:translate(70%,-160%) rotate(28deg);opacity:0}
+.gd-pk.open{animation:gdPkOpen .9s ease-in forwards}
+@keyframes gdPkOpen{0%{transform:scale(1)}30%{transform:scale(1.08)}100%{transform:scale(1.5);opacity:0}}
+.gd-pk-hint{color:#fff;font-weight:900;text-align:center;transition:opacity .3s;margin:0;text-shadow:0 2px 6px #000}
+.gd-flash{position:absolute;inset:0;opacity:0;animation:gdFl .7s ease-out forwards;pointer-events:none}
+.gd-flash.rainbow{background:conic-gradient(#ff5f6d,#ffc371,#fff96b,#5ef08a,#4fc3f7,#9575cd,#f06292,#ff5f6d)!important;animation:gdFl 1.1s ease-out forwards}
+@keyframes gdFl{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+`;
+document.head.appendChild(pkCss);
 
 // ④ ステッカー集め
 function stkPage(){ page="stk"; const el=shell("🏷 ステッカー集め",homePage); const n=Math.min(GD.STK,ACC.stk||0), cp=ACC.cp;
@@ -248,5 +296,5 @@ const confirmBox=t=>true;   // ダイアログは使わない（画面が止ま�
 setInterval(()=>{ const b=document.getElementById("ttlGd"), m=document.getElementById("ttlGdAdm"); const on=!!(typeof DB!=="undefined"&&DB&&MYID)&&canSee();
   if(b&&b.hidden===on) b.hidden=!on; const am=!!(typeof DB!=="undefined"&&DB&&MYID)&&typeof dexPeek==="function"&&dexPeek(); if(m&&m.hidden===am) m.hidden=!am; }, 1500);
 document.addEventListener("click",e=>{ if(e.target.closest("#ttlGd")){ tap(); open(); } else if(e.target.closest("#ttlGdAdm")){ tap(); admin(); } });
-window.__gd={GD,open,admin};
+window.__gd={GD,open,admin,packFx};
 })();
