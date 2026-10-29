@@ -3,7 +3,7 @@
    依頼した冒険者に送ると、その冒険者のBOXに限定ランクとして届き「融合に成功しました！」と出る
    データ：fusereq（依頼）・fusemon/{番号}（できた魔物の絵と名前）・items（item:"fmon" で届ける） */
 (()=>{
-let V=null, REQ=[], DONE={}, PIC={};
+let V=null, REQ=[], DONE={}, PIC={}, NTH={};   // NTH[依頼ID] = その冒険者の何回目の融合か
 // チーターの疑いで初期化した冒険者の依頼は一覧に出さない（2026-10-27）
 // 同じ冒険者が同じ組み合わせを2分以内に何回も送ったもの（二重送信）は、いちばん新しい1つだけ出す
 const dupKey=r=>[r.uid,[r.a,r.b].sort((x,y)=>x-y).join('+')].join('|');
@@ -64,6 +64,9 @@ function cutout(file){ return new Promise((ok,ng)=>{ const url=URL.createObjectU
 
 async function load(){ if(!DB) return;
   try{ const q=await withTO(DB.collection("fusereq").orderBy("at","desc").limit(100).get()); REQ=q.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!crSkip(r.nm)); REQ=dedupe(REQ); }catch(e){ REQ=[]; }
+  // 2026-10-29：その冒険者の何回目の融合か（全部の依頼から数える・二重送信は1回）
+  try{ const q=await withTO(DB.collection("fusereq").get()); const all=dedupe(q.docs.map(d=>({id:d.id,...d.data()}))).sort((a,b)=>(a.at||0)-(b.at||0)), c={}; NTH={};
+    all.forEach(r=>{ const k=r.uid||r.nm; c[k]=(c[k]||0)+1; NTH[r.id]=c[k]; }); }catch(e){}
   try{ const q=await withTO(DB.collection("fusemon").get()); DONE={}; q.docs.forEach(d=>{ const x=d.data(); if(x&&x.req) DONE[x.req]=x; if(x&&x.id&&x.img) FMON_CACHE[x.id]=Object.assign(FMON_CACHE[x.id]||{},{name:x.name,img:x.img,rk:x.rk||"F"},x.a!=null?{a:x.a,b:x.b}:{},x.an?{an:x.an,bn:x.bn}:{},!x.same?{req:x.req,fn:x.fn,fat:x.at}:{}); }); }catch(e){}
   draw(); }
 // 同じ組み合わせ（2匹の順番は問わない）で前に作った魔物をさがす
@@ -76,7 +79,7 @@ function draw(){ if(!V) return; const left=REQ.filter(r=>!DONE[r.id]).length;
   if(!OPEN.length){ B.innerHTML=`<div class="fz-row" style="justify-content:center">${REQ.length?"未対応の依頼はありません ✨":"まだ依頼はありません"}</div>`; return; }
   B.innerHTML=OPEN.map(r=>{ const d=DONE[r.id], A=mon(r.a), Bm=mon(r.b), pic=d?(d.img||(FMON_CACHE[d.id]||{}).img):PIC[r.id], pv=!d&&prevOf(r);
     return `<div class="fz-row ${d?"done":""}" data-r="${r.id}">
-      <div class="fz-who"><b>${esc(r.nm||"冒険者")}</b><span>魔物融合</span><small>${new Date(r.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></div>
+      <div class="fz-who"><b>${esc(r.nm||"冒険者")}</b><span>魔物融合${NTH[r.id]?`（<b style="color:#e53935">${NTH[r.id]}回目</b>）`:""}</span><small>${new Date(r.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></div>
       <button class="fz-c" type="button" data-z="${A?cardURL(A.id,0,320):""}"><img src="${A?cardURL(A.id,0,120):""}" alt=""></button><span class="fz-plus">＋</span>
       <button class="fz-c" type="button" data-z="${Bm?cardURL(Bm.id,0,320):""}"><img src="${Bm?cardURL(Bm.id,0,120):""}" alt=""></button>
       <button class="fz-pic" type="button" data-pic="${r.id}" ${d?"disabled":""}>${pic?`<img src="${pic}" alt="">`:"絵を<br>えらぶ"}</button>
