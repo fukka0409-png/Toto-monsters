@@ -3572,6 +3572,7 @@ function overNag(){ if(overNagOpen||!(S.coins>COIN_MAX)) return;
   bg.querySelector("#onGo").onclick=()=>{ const o=Math.max(0,Math.floor(S.coins-COIN_MAX)); S.coins-=o; S.bank=(S.bank||0)+o; S.bankEver=1; bg.remove(); overNagOpen=false; save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(`🏦 ${o.toLocaleString()}コインを貯金しました`); try{ render(); }catch(e){} }; }
 setInterval(()=>{ try{ if(S&&S.coins>COIN_MAX) capCoins(); }catch(e){} }, 15000);
 function save(){
+  if(REMOTE_LOCK) return;   // 止めた画面は保存しない
   try{ if(LAST_INPUT>(S.inAt||0)) S.inAt=LAST_INPUT; }catch(e){}   // 最後に画面をさわった時間（端末どうしの記録の新しさくらべに使う）
   capCoins();
   trackLv();
@@ -3598,7 +3599,14 @@ async function checkUpdate(){
 setTimeout(checkUpdate,2000); setInterval(checkUpdate,5*60*1000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") checkUpdate(); });
 // 2026-10-29：この端末で最後に画面をさわった時間。裏に置いていた古い端末が、タイマーの保存だけで「新しい記録」になって、別の端末の新しい記録を上書きしないように使う
-var LAST_INPUT=0; ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,()=>{ LAST_INPUT=gnow(); },true));
+var LAST_INPUT=0;
+// 2026-10-29：同じアカウントのゲームが2つの画面で同時に動いていると、記録がまざってレベルやコインが行ったり来たりする。
+// あとから開いた画面だけを動かし、前の画面は止めて「開き直す」を出す
+var SID=Math.random().toString(36).slice(2)+Date.now().toString(36), SID_AT=0, REMOTE_LOCK=false;
+function lockOut(){ if(REMOTE_LOCK) return; REMOTE_LOCK=true; remoteReady=false;
+  const b=document.createElement("div"); b.className="sheet-bg center"; b.style.zIndex=99990;
+  b.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">📱</div><p>ほかの画面でゲームが開かれました</p><div class="note" style="margin:0">記録がまざらないように、この画面は止めました。<br>続けて遊ぶときは「開き直す」を押してください。</div><button class="btn gold" type="button">開き直す</button></div>`;
+  document.body.appendChild(b); b.querySelector(".btn").onclick=()=>location.reload(); } ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,()=>{ LAST_INPUT=gnow(); },true));
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ try{ pullRemote(); }catch(e){} } });   // 画面にもどったら、まずクラウドの新しい記録を読む
 let pushing = null;   // 保存の通信中（その間は読み込みをしない：自分の保存を「別の端末の記録」と勘違いしないため）
 async function pushRemote(){
@@ -3611,7 +3619,8 @@ async function pushRemote(){
       S.owner = MYID;
       const u=S.updated, prev=lastRemote;
       lastRemote=u;                       // 送る前に記録しておく（返事を待つ間の読み込みで勘違いしないように）
-      try{ await remoteDoc.set({json:JSON.stringify(S), updated:u}); }catch(e){ lastRemote=prev; }
+      if(REMOTE_LOCK) return;
+      try{ await remoteDoc.set({json:JSON.stringify(S), updated:u, sid:SID, sidAt:SID_AT}); }catch(e){ lastRemote=prev; }
     }catch(e){}
   })();
   try{ await pushing; } finally { pushing=null; }
@@ -3623,6 +3632,7 @@ async function pullRemote(fromPush, force){
   try{
     const snap=await remoteDoc.get(); if(!snap.exists) return false;
     const d=snap.data(), ru=d.updated||0;
+    if(d.sid && d.sid!==SID && (d.sidAt||0)>SID_AT && SID_AT){ lockOut(); return false; }   // あとから別の画面で開かれた
     let r=null; try{ r=JSON.parse(d.json); }catch(e){}
     // 別の端末がもう新しいランク戦に進んでいたら、日時に関係なくそちらを使う（古い記録でランク戦を2回精算しないため）
     const aheadSeason = r && (r.season??0) > (S.season??0);
@@ -3682,6 +3692,7 @@ async function startRemote(uid){
       }
     }
     if(LOGIN_NAME) S.name=LOGIN_NAME;
+    SID_AT=gnow(); try{ await remoteDoc.set({sid:SID, sidAt:SID_AT},{merge:true}); }catch(e){}   // この画面がいちばん新しい画面
     S.owner=uid; DB=db; MYID=uid; remoteReady=true; hourlyDecay(); save(); render(); try{ titleRanks(); }catch(e){}
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
@@ -5515,7 +5526,7 @@ function profilePayload(){
 function queueProfile(now){
   if(!DB||!MYID) return; clearTimeout(profTimer);
   profTimer=setTimeout(async()=>{
-    profTimer=null;
+    profTimer=null; if(REMOTE_LOCK) return;
     // 2026-10-29：裏に置いたままのタブや古い端末が、古いレベルでプロフィールを上書きしないように：見えていないときは送らない・送る前にクラウドの新しい記録を読む
     if(document.visibilityState==="hidden") return;
     try{ await pullRemote(); }catch(e){}
@@ -6805,6 +6816,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-29-twosession", coins:1000 },   // 同じアカウントのゲームが2つの画面で同時に動くと、レベルやコインが行ったり来たりしていた
   { id:"fix-2026-10-29-stalesave", coins:1000 },   // 裏に置いていた古い端末の記録が、別の端末の新しい記録を上書きすることがあった
   { id:"fix-2026-10-29-stalelv", coins:1000 },   // 裏のタブや別の端末の古い記録で、冒険者レベルが下がって見えることがあった
   { id:"fix-2026-10-28-vtvoted", coins:1000 },   // 投票したのに投票前の画面にもどり、投票ボタンが反応しなかった
