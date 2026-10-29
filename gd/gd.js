@@ -92,7 +92,7 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-let V=null, ACC=null, WINS=[], STOCK={}, page="home";
+let V=null, ACC=null, WINS=[], STOCK={}, TREQ=[], page="home";
 function shell(title,back){ if(!V){ V=document.createElement("div"); V.id="gdo"; document.body.appendChild(V); }
   V.innerHTML=`<div class="gd-top"><button class="gd-b" type="button" id="gdBack">${back?"← もどる":"← タイトルへ"}</button><b>${title}</b><span style="width:70px"></span></div><div class="gd-body"><div class="gd-in" id="gdIn"></div></div>`;
   V.querySelector("#gdBack").onclick=()=>{ tap(); if(back) back(); else close(); };
@@ -101,7 +101,8 @@ function close(){ if(V){ V.remove(); V=null; } }
 
 // 2026-10-29：3つをいっしょに読む（前は1つずつ読んでいて遅かった）
 async function load(){
-  const [a,q,st]=await Promise.all([withTO(accRef().get()).catch(()=>undefined), withTO(DB.collection("gdwin").where("uid","==",MYID).get()).catch(()=>null), withTO(stockRef().get()).catch(()=>null)]);
+  const [a,q,st,tr]=await Promise.all([withTO(accRef().get()).catch(()=>undefined), withTO(DB.collection("gdwin").where("uid","==",MYID).get()).catch(()=>null), withTO(stockRef().get()).catch(()=>null), withTO(DB.collection("gdtreq").where("uid","==",MYID).get()).catch(()=>null)]);
+  TREQ=tr?tr.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(y.at||0)-(x.at||0)):[];
   ACC=a===undefined?undefined:(a.exists?a.data():null);
   WINS=q?q.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(y.at||0)-(x.at||0)):[];
   STOCK=st&&st.exists?st.data():{};
@@ -180,9 +181,27 @@ function gachaPage(){ page="gacha"; const el=shell("🎰 グッズガチャ",hom
       <p style="font-size:12px;margin:0">S賞とA賞は1人だけ当選します。B賞とC賞は数に限りがあります。当選者が出たり品切れになったりすると、その景品はモノクロになります。</p></div>
     <div style="text-align:center;font-weight:900;margin:0 0 8px">所持チケット 🎫 ${ACC.tk||0}枚</div>
     <div class="gd-pulls"><button type="button" data-n="1" ${(ACC.tk||0)<GD.ONE?"disabled":""}>1連<small>チケット${GD.ONE}枚</small></button><button type="button" data-n="10" ${(ACC.tk||0)<GD.TEN?"disabled":""}>10連<small>チケット${GD.TEN}枚</small></button></div>
-    ${GD.BUY_URL?`<a href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener" style="display:block;border-radius:12px;overflow:hidden;border:3px solid #2b1a06;box-shadow:0 4px 0 #2b1a06"><img src="${esc(GD.BUY_IMG)}" alt="グッズチケットを500円で購入！ 1セット購入でグッズチケット1枚申請できます" style="display:block;width:100%;height:auto"></a><p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0">🎫 グッズチケットを500円で購入！</p>`:""}`;
+    ${GD.BUY_URL?`<a href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener" style="display:block;border-radius:12px;overflow:hidden;border:3px solid #2b1a06;box-shadow:0 4px 0 #2b1a06"><img src="${esc(GD.BUY_IMG)}" alt="グッズチケットを500円で購入！ 1セット購入でグッズチケット1枚申請できます" style="display:block;width:100%;height:auto"></a><p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0">🎫 グッズチケットを500円で購入！</p>`:""}
+    <button class="gd-go" type="button" id="gdTreq" style="margin-top:14px">🎫 チケットを申請する</button>
+    ${(()=>{ const w=TREQ.filter(x=>x.st==="wait"); return w.length?`<p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0;color:#c62828">申請中：${w.reduce((t,x)=>t+(x.n||0),0)}枚（ふっかーの確認待ち）</p>`:""; })()}`;
   el.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>pull(+b.dataset.n));
+  { const tb=el.querySelector("#gdTreq"); if(tb) tb.onclick=()=>{ tap(); treqFlow(); }; }
   el.querySelectorAll("[data-zoom]").forEach(im=>im.onclick=()=>{ const p=pz(im.dataset.zoom), z=document.createElement("div"); z.className="gd-zoom"; z.innerHTML=`<div><img src="${esc(p.img)}" alt=""><p>${p.r}賞　${esc(p.name)}</p></div>`; z.onclick=()=>z.remove(); document.body.appendChild(z); }); }
+// 2026-10-29：チケットを申請する（①条件の確認 → ②枚数を入れて申請 → ふっかーの「チケット申請」に届く）
+function treqFlow(){ const d=document.createElement("div"); d.className="gd-res";
+  d.innerHTML=`<div><h3>🎫 チケットを申請する</h3><p style="font-weight:900;line-height:1.7">500円のステッカー購入が条件です！<br>条件を満たしていないと申請は通りません🙏</p><button type="button" id="trOk">条件達成</button><br><br><button type="button" id="trNo" style="background:#fff">やめる</button></div>`;
+  document.body.appendChild(d); d.querySelector("#trNo").onclick=()=>d.remove();
+  d.querySelector("#trOk").onclick=()=>{ tap();
+    d.innerHTML=`<div><h3>🎫 何枚申請しますか？</h3><p style="font-size:13px">買ったセットの数だけ申請してね（1セット＝1枚）</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0"><button type="button" id="trM" style="background:#fff;padding:8px 14px">−</button><input id="trN" type="number" inputmode="numeric" min="1" max="99" value="1" style="width:80px;padding:10px;font-size:20px;text-align:center;border:3px solid #2b1a06;border-radius:10px"><button type="button" id="trP" style="background:#fff;padding:8px 14px">＋</button></div>
+      <div id="trMsg" style="color:#c62828;font-weight:900;margin:0 0 8px"></div><button type="button" id="trGo">申請</button><br><br><button type="button" id="trNo2" style="background:#fff">やめる</button></div>`;
+    const inp=d.querySelector("#trN"), msg=d.querySelector("#trMsg"); d.querySelector("#trNo2").onclick=()=>d.remove();
+    d.querySelector("#trM").onclick=()=>{ inp.value=Math.max(1,(+inp.value||1)-1); }; d.querySelector("#trP").onclick=()=>{ inp.value=Math.min(99,(+inp.value||0)+1); };
+    d.querySelector("#trGo").onclick=async()=>{ const n=Math.trunc(+inp.value||0); if(n<1||n>99){ msg.textContent="1〜99枚で入れてください"; return; }
+      const b=d.querySelector("#trGo"); b.disabled=true;
+      try{ const ref=DB.collection("gdtreq").doc(); await withTO(ref.set({uid:MYID, adv:String(myName()||"").slice(0,24), real:String((ACC&&ACC.real)||"").slice(0,40), n, at:gnow(), st:"wait"})); TREQ.unshift({id:ref.id, uid:MYID, n, at:gnow(), st:"wait"}); }
+      catch(e){ b.disabled=false; msg.textContent="送れませんでした。少し時間をおいてためしてください"; return; }
+      d.remove(); T(`チケット${n}枚を申請しました！ ふっかーの確認をお待ちください`); try{ SFX.coin(); }catch(e){} gachaPage(); }; }; }
 let pulling=false;
 async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===10?GD.TEN:GD.ONE; let got=[], newIds=[], gotStk=[], nAcc=null, nSt=null;
   try{ await DB.runTransaction(async tx=>{ const a=await tx.get(accRef()), s=await tx.get(stockRef()); const acc=a.data(), st=s.exists?s.data():{}; got=[]; newIds=[];
@@ -296,27 +315,34 @@ function stkPage(){ page="stk"; const el=shell("🏷 ステッカー集め",home
 // お知らせ：発送された・クーポンコードが届いた
 function noticeCheck(){ try{ S.gdSeen=S.gdSeen||{}; const msgs=[];
   WINS.filter(w=>w.st==="sent"&&!S.gdSeen[w.id]).forEach(w=>{ S.gdSeen[w.id]=1; msgs.push(`📦 ${w.r}賞「${esc(w.name)}」が発送されました！`); });
+  TREQ.filter(r=>(r.st==="ok"||r.st==="ng")&&!S.gdSeen["tr"+r.id]).forEach(r=>{ S.gdSeen["tr"+r.id]=1; msgs.push(r.st==="ok"?`🎫 申請したチケット${r.n}枚が届きました！`:`🙏 チケット${r.n}枚の申請は通りませんでした（条件を確認してね）`); });
   if(ACC&&ACC.cp&&ACC.cp.st==="sent"&&!S.gdSeen["cp"+ACC.cp.at]){ S.gdSeen["cp"+ACC.cp.at]=1; msgs.push(`🎟 クーポンコードが届きました！<br><b translate="no" style="font-size:20px;color:#1565c0">${esc(ACC.cp.code||"")}</b>`); }
   if(!msgs.length) return; save();
   const d=document.createElement("div"); d.className="gd-res"; d.innerHTML=`<div><h3>🛍 お知らせ</h3><p style="line-height:1.8">${msgs.join("<br>")}</p><button type="button">OK</button></div>`;
   document.body.appendChild(d); d.querySelector("button").onclick=()=>d.remove(); }catch(e){} }
 
 /* ---------- ふっかー：グッズ管理 ---------- */
-let AT="wait";
+let AT="treq";
 async function admin(){ if(!DB||!dexPeek()) return; const el=shell("🛍 グッズ管理（ふっかー）"); el.innerHTML=`<div class="gd-card">読み込み中…</div>`;
-  let A=[], W=[]; try{ A=(await withTO(DB.collection("gdacc").get())).docs.map(d=>({id:d.id,...d.data()})); W=(await withTO(DB.collection("gdwin").get())).docs.map(d=>({id:d.id,...d.data()})); }
+  let A=[], W=[], R=[]; try{ A=(await withTO(DB.collection("gdacc").get())).docs.map(d=>({id:d.id,...d.data()})); W=(await withTO(DB.collection("gdwin").get())).docs.map(d=>({id:d.id,...d.data()})); R=(await withTO(DB.collection("gdtreq").get()).catch(()=>({docs:[]}))).docs.map(d=>({id:d.id,...d.data()})); }
   catch(e){ el.innerHTML=`<div class="gd-card">読み込めませんでした（Firestoreのルールを確認してください）</div>`; return; }
   const nk=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/\s+/g,""), same={}; A.forEach(a=>{ same[nk(a.real)]=(same[nk(a.real)]||0)+1; });
   const who=a=>`<b translate="no">${esc(a.adv||"?")}</b><br><small>本名：<span translate="no">${esc(a.real||"")}</span>${same[nk(a.real)]>1?` <b style="color:#c62828">（同じ本名${same[nk(a.real)]}人）</b>`:""}</small>`;
   const nm=uid=>{ const a=A.find(x=>x.id===uid); return a?who(a):esc(uid); };
-  const tabs=[["wait",`承認待ち ${A.filter(a=>a.st!=="ok").length}`],["users",`冒険者・チケット ${A.filter(a=>a.st==="ok").length}`],["mail",`郵送申請 ${W.filter(w=>w.st==="req").length}`],["cp",`クーポン申請 ${A.filter(a=>a.cp&&a.cp.st==="wait").length}`]];
-  const body=()=>{ if(AT==="wait"){ const L=A.filter(a=>a.st!=="ok"); return L.length?L.map(a=>`<div class="gd-it"><b>${who(a)}<br><small style="opacity:.6">${new Date(a.at||0).toLocaleString("ja-JP")}</small></b><button class="gd-mini" type="button" data-ok="${a.id}">承認する</button></div>`).join(""):"<p>承認待ちはいません</p>"; }
+  const tabs=[["treq",`チケット申請 ${R.filter(r=>r.st==="wait").length}`],["wait",`承認待ち ${A.filter(a=>a.st!=="ok").length}`],["users",`冒険者・チケット ${A.filter(a=>a.st==="ok").length}`],["mail",`郵送申請 ${W.filter(w=>w.st==="req").length}`],["cp",`クーポン申請 ${A.filter(a=>a.cp&&a.cp.st==="wait").length}`]];
+  const body=()=>{ if(AT==="treq"){ const L=R.slice().sort((a,b)=>(a.st!=="wait")-(b.st!=="wait")||(b.at||0)-(a.at||0)).slice(0,60); return L.length?L.map(r=>`<div class="gd-it"><b>${nm(r.uid)}<br><small>🎫 <b style="font-size:15px">${r.n}枚</b>の申請 ・ ${new Date(r.at||0).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></b>${r.st==="wait"?`<button class="gd-mini" type="button" data-trok="${r.id}">承認して送る</button><button class="gd-mini" type="button" data-trng="${r.id}" style="background:#fff">却下</button>`:r.st==="ok"?`<span class="gd-tag sent">送った</span>`:`<span class="gd-tag">却下</span>`}</div>`).join(""):"<p>チケット申請はありません</p>"; }
+    if(AT==="wait"){ const L=A.filter(a=>a.st!=="ok"); return L.length?L.map(a=>`<div class="gd-it"><b>${who(a)}<br><small style="opacity:.6">${new Date(a.at||0).toLocaleString("ja-JP")}</small></b><button class="gd-mini" type="button" data-ok="${a.id}">承認する</button></div>`).join(""):"<p>承認待ちはいません</p>"; }
     if(AT==="users"){ const L=A.filter(a=>a.st==="ok"); return L.length?L.map(a=>`<div class="gd-it"><b>${who(a)}<br><small>🎫 のこり${a.tk||0}枚 ・ 🏷 ${a.stk||0}/${GD.STK}<br>📤 ふっかーが送った合計 <b>${(a.given||0).toLocaleString()}枚</b>${(a.gl||[]).length?`<br><span style="opacity:.7">${(a.gl||[]).filter(x=>x&&!Array.isArray(x)).slice(-3).reverse().map(({t,n})=>`${new Date(t).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} ${n>0?"+":""}${n}枚`).join("／")}</span>`:""}</small></b><input type="number" inputmode="numeric" min="-999" max="999" value="1" data-tkn="${a.id}" style="width:64px;padding:8px 6px;font-size:16px;border:2px solid #2b1a06;border-radius:8px;text-align:center">枚<button class="gd-mini" type="button" data-tk="${a.id}">送る</button></div>`).join(""):"<p>まだいません</p>"; }
     if(AT==="mail"){ const L=W.filter(w=>w.st==="req"||w.st==="sent").sort((a,b)=>(a.st==="sent")-(b.st==="sent")||(b.reqAt||0)-(a.reqAt||0)); return L.length?L.map(w=>`<div class="gd-it"><span style="font-size:20px;font-weight:900;color:${COL[w.r]}">${w.r}</span><b>${esc(w.name||"")}<br><small>${nm(w.uid)}</small></b>${w.st==="sent"?`<span class="gd-tag sent">発送済み</span>`:`<button class="gd-mini" type="button" data-ship="${w.id}">発送</button>`}</div>`).join(""):"<p>郵送申請はありません</p>"; }
     const L=A.filter(a=>a.cp); return L.length?L.map(a=>`<div class="gd-it"><b>${who(a)}</b>${a.cp.st==="sent"?`<span class="gd-tag code">送った：${esc(a.cp.code||"")}</span>`:`<button class="gd-mini" type="button" data-cp="${a.id}">コードを送る</button>`}</div>`).join(""):"<p>クーポン申請はありません</p>"; };
   const draw=()=>{ el.innerHTML=`<div class="gd-tabs">${tabs.map(([k,t])=>`<button type="button" class="${AT===k?"on":""}" data-at="${k}">${t}</button>`).join("")}</div><div class="gd-card">${body()}</div>`;
     el.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{ AT=b.dataset.at; draw(); });
     el.querySelectorAll("[data-ok]").forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await withTO(DB.doc("gdacc/"+b.dataset.ok).update({st:"ok", okAt:gnow()})); T("承認しました"); }catch(e){ T("できませんでした"); } admin(); });
+    el.querySelectorAll("[data-trok]").forEach(b=>b.onclick=async()=>{ const r=R.find(x=>x.id===b.dataset.trok); if(!r) return; b.disabled=true;
+      try{ await DB.runTransaction(async tx=>{ const rq=DB.doc("gdtreq/"+r.id), ac=DB.doc("gdacc/"+r.uid); const [x,a]=[await tx.get(rq), await tx.get(ac)]; if(!x.exists||x.data().st!=="wait") throw new Error("done"); const cur=a.data()||{};
+          tx.update(ac,{tk:(cur.tk||0)+r.n, given:(cur.given||0)+r.n, gl:[...(cur.gl||[]).filter(z=>z&&!Array.isArray(z)),{t:gnow(),n:r.n}].slice(-20)}); tx.update(rq,{st:"ok", okAt:gnow()}); });
+        T(`チケット${r.n}枚を送りました`); }catch(e){ T(String(e&&e.message)==="done"?"もう対応ずみです":"できませんでした"); } admin(); });
+    el.querySelectorAll("[data-trng]").forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await withTO(DB.doc("gdtreq/"+b.dataset.trng).update({st:"ng", okAt:gnow()})); T("却下しました"); }catch(e){ T("できませんでした"); } admin(); });
     el.querySelectorAll("[data-tk]").forEach(b=>b.onclick=async()=>{ const id=b.dataset.tk, n=Math.trunc(+((el.querySelector(`[data-tkn="${id}"]`)||{}).value||0));
       if(!n) return T("枚数を入れてください"); b.disabled=true;
       try{ let after=0; await DB.runTransaction(async tx=>{ const r=DB.doc("gdacc/"+id), sn=await tx.get(r); const cur=sn.data()||{}; after=Math.max(0,(cur.tk||0)+n); const real=after-(cur.tk||0); tx.update(r,{tk:after, given:(cur.given||0)+Math.max(0,real), gl:[...(cur.gl||[]).filter(x=>x&&!Array.isArray(x)),{t:gnow(),n:real}].slice(-20)}); });   // 送った合計と記録
@@ -338,6 +364,12 @@ async function resetFukka(){ try{ if(!DB||!MYID||typeof dexPeek!=="function"||!d
   const a=await withTO(accRef().get()); if(a.exists) await withTO(accRef().update({tk:0, stk:0, sl:[], given:0, gl:[], cp:firebase.firestore.FieldValue.delete()}));
   S.gdReset1029=1; S.gdSeen={}; delete S.gdCache; save(); }catch(e){} }
 setTimeout(function tryReset(){ if(typeof DB!=="undefined"&&DB&&MYID) resetFukka(); else setTimeout(tryReset,3000); }, 4000);
+
+// ふっかーのタイトルの「グッズ管理」に、対応が必要な数の赤い印
+async function admBadge(){ try{ const b=document.getElementById("ttlGdAdmB"); if(!b||!DB||!MYID||typeof dexPeek!=="function"||!dexPeek()) return;
+  const [r,a,w]=await Promise.all([DB.collection("gdtreq").where("st","==","wait").get().catch(()=>({size:0,docs:[]})), DB.collection("gdacc").get().catch(()=>({docs:[]})), DB.collection("gdwin").where("st","==","req").get().catch(()=>({size:0}))]);
+  const n=r.size+a.docs.filter(d=>{ const x=d.data(); return x.st!=="ok"||(x.cp&&x.cp.st==="wait"); }).length+w.size; b.textContent=n>99?"99+":String(n); b.hidden=!n; }catch(e){} }
+setTimeout(admBadge,6000); setInterval(()=>{ if(document.querySelector("#title:not([hidden])")) admBadge(); },60000);
 
 /* ---------- タイトルのボタン ---------- */
 setInterval(()=>{ const b=document.getElementById("ttlGd"), m=document.getElementById("ttlGdAdm"); const on=!!(typeof DB!=="undefined"&&DB&&MYID)&&canSee();
