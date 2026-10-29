@@ -9,7 +9,7 @@ const GD={
   WHO:["おじおじ"],            // 見られる冒険者（ふっかーはいつでも）
   ONE:1, TEN:7,                 // 1連・10連に使うチケット
   STK:30,                       // ステッカーの枠
-  BUY_URL:"https://fukka0409.base.shop/",   // 「グッズチケットを500円で購入！」のリンク（BASEのショップ）
+  BUY_URL:"https://fukka0409.base.shop/items/151065414", BUY_IMG:"gd/buy.jpg",   // 「グッズチケットを500円で購入！」のリンク（BASEのショップ）
   // 景品（S賞・A賞は1人だけ当選）。img にラインナップの画像を入れる
   PRIZES:[
     {r:"S", name:"「勇者アヒル」の原画", img:"gd/s.jpg?v=2", rate:0.05, one:true},
@@ -170,7 +170,7 @@ function gachaPage(){ page="gacha"; const el=shell("🎰 グッズガチャ",hom
       <p style="font-size:12px;margin:0">S賞とA賞は1人だけ当選します。当選者が出ると、その景品はモノクロになります。</p></div>
     <div style="text-align:center;font-weight:900;margin:0 0 8px">所持チケット 🎫 ${ACC.tk||0}枚</div>
     <div class="gd-pulls"><button type="button" data-n="1" ${(ACC.tk||0)<GD.ONE?"disabled":""}>1連<small>チケット${GD.ONE}枚</small></button><button type="button" data-n="10" ${(ACC.tk||0)<GD.TEN?"disabled":""}>10連<small>チケット${GD.TEN}枚</small></button></div>
-    ${GD.BUY_URL?`<a class="gd-buy" href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener">🎫 グッズチケットを500円で購入！</a>`:`<div class="gd-buy">🎫 グッズチケットを500円で購入！<br><small>（準備中）</small></div>`}`;
+    ${GD.BUY_URL?`<a href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener" style="display:block;border-radius:12px;overflow:hidden;border:3px solid #2b1a06;box-shadow:0 4px 0 #2b1a06"><img src="${esc(GD.BUY_IMG)}" alt="グッズチケットを500円で購入！ 1セット購入でグッズチケット1枚申請できます" style="display:block;width:100%;height:auto"></a><p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0">🎫 グッズチケットを500円で購入！</p>`:""}`;
   el.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>pull(+b.dataset.n));
   el.querySelectorAll("[data-zoom]").forEach(im=>im.onclick=()=>{ const p=pz(im.dataset.zoom), z=document.createElement("div"); z.className="gd-zoom"; z.innerHTML=`<div><img src="${esc(p.img)}" alt=""><p>${p.r}賞　${esc(p.name)}</p></div>`; z.onclick=()=>z.remove(); document.body.appendChild(z); }); }
 let pulling=false;
