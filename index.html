@@ -6850,6 +6850,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-29-comma", coins:1000 },   // 17:25ごろ、ほんの少しのあいだゲームが動かなくなっていた
   { id:"fix-2026-10-29-walletstart", coins:1000 },   // ゲームを開いた直後にもらった上位キープボーナスなどが消えることがあった
   { id:"fix-2026-10-29-twosession", coins:1000 },   // 同じアカウントのゲームが2つの画面で同時に動くと、レベルやコインが行ったり来たりしていた
   { id:"fix-2026-10-29-stalesave", coins:1000 },   // 裏に置いていた古い端末の記録が、別の端末の新しい記録を上書きすることがあった
