@@ -3,7 +3,7 @@
    ゲーム：スティックで動く。ふれた相手とレベルで勝負（高い方の勝ち・同じなら押し合うだけ）。武器が多いほど少しずつ速くなる
            勝つとLv+1で体が大きくなる。武器を10個以上集めると脱出できる
            脱出：そのゲームのLv×100コインもらえる。4位以内で脱出すると四天王回数+1
-           負け：記録は残らず、そのゲームのLvぶん冒険者Lvが下がる（1より下にはならない） */
+           負け：記録は残らず、コインはもらえない（冒険者Lvは下がらない） */
 (function(){
 "use strict";
 const IO={ W:3200, H:3200, N:120, WEAP:150, NEED:10, R0:40 };
@@ -103,7 +103,7 @@ function open(){ if(G) return;
   G.kd=e=>{ if(!G) return; G.keys[e.key]=e.type==="keydown"; const k=G.keys, dx=(k.ArrowRight?1:0)-(k.ArrowLeft?1:0), dy=(k.ArrowDown?1:0)-(k.ArrowUp?1:0); setDir(dx*60,dy*60); if(e.type==="keyup"&&e.key===" ") throwW(); };
   addEventListener("keydown",G.kd); addEventListener("keyup",G.kd);
   root.querySelector("#ioGear").onclick=()=>{ if(G.over) return; G.pause=true;
-    dlg(`<h3>⚙ 一時停止</h3><p>やめると<b>負け</b>になります（冒険者Lvが今のLvぶん下がります）</p><button type="button" data-a="go">つづける</button><button type="button" class="g" data-a="quit">やめる（負け）</button>`,a=>{ if(a==="go"){ G.pause=false; G.t=performance.now(); } else lose("やめました"); }); };
+    dlg(`<h3>⚙ 一時停止</h3><p>やめると<b>負け</b>になります（コインはもらえません。冒険者Lvは下がりません）</p><button type="button" data-a="go">つづける</button><button type="button" class="g" data-a="quit">やめる（負け）</button>`,a=>{ if(a==="go"){ G.pause=false; G.t=performance.now(); } else lose("やめました"); }); };
   // 攻撃（2026-10-28）：進んでいる方向へ、拾った武器を1つ投げる（武器数−1）。当たった魔物はレベル−1
   root.querySelectorAll("[data-mv]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); if(!G||G.over) return; G.autoMv=!G.autoMv; if(!G.touch) G.dir=G.autoMv?{x:G.head.x*SLOW,y:G.head.y*SLOW}:{x:0,y:0}; hud(); }));   // オート移動のON/OFF
   root.querySelectorAll("[data-auto]").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); e.stopPropagation(); if(!G||G.over) return; G.fireOn=!G.fireOn; G.fireT=0; hud(); }));   // 右の攻撃ボタン：押すとオート攻撃ON、もう一度押すとOFF
@@ -111,7 +111,7 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="margin:0 0 10px;padding:10px;border-radius:10px;background:#fff8e1;border:3px solid #1d1d1d;font-size:18px;font-weight:900;line-height:1.4">🗡 武器を${IO.NEED}個以上持ったまま<br>生き残れ！</p><p style="text-align:left;line-height:1.6">・武器${IO.NEED}個以上でやられたら<b>クリア</b>、${IO.NEED-1}個以下なら<b>負け</b><br>・自分より大きい魔物に触れると即死！<br>・武器を拾うと+3、投げると−1<br>・武器を当てた魔物はLvダウン、倒すと自分はLvアップ<br>・🗡攻撃：オートで投げる（ON/OFF）<br>・⚔武器強化：武器100こで攻撃力+1<br>・🚶オート移動：ON/OFF</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 クリア → レベル×100コインもらえる<br>💀 負け → 冒険者Lvがレベルの分だけ下がる</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="margin:0 0 10px;padding:10px;border-radius:10px;background:#fff8e1;border:3px solid #1d1d1d;font-size:18px;font-weight:900;line-height:1.4">🗡 武器を${IO.NEED}個以上持ったまま<br>生き残れ！</p><p style="text-align:left;line-height:1.6">・武器${IO.NEED}個以上でやられたら<b>クリア</b>、${IO.NEED-1}個以下なら<b>負け</b><br>・自分より大きい魔物に触れると即死！<br>・武器を拾うと+3、投げると−1<br>・武器を当てた魔物はLvダウン、倒すと自分はLvアップ<br>・🗡攻撃：オートで投げる（ON/OFF）<br>・⚔武器強化：武器100こで攻撃力+1<br>・🚶オート移動：ON/OFF</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 クリア → レベル×100コインもらえる<br>💀 負け → コインはもらえない（冒険者Lvは下がらない）</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
@@ -253,9 +253,9 @@ function flash(t){ const el=document.createElement("div"); el.textContent=t; el.
 function dlg(html,cb){ const d=document.createElement("div"); d.className="dlg"; d.innerHTML=`<div>${html}</div>`; G.root.appendChild(d);
   d.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{ d.remove(); cb&&cb(b.dataset.a); }); }
 function lose(why){ if(G.over) return; if((G.weap||0)>=IO.NEED){ escape(false,true); return; }   /* 武器を10個以上持って死んだら脱出クリア */
-  G.over=true; saveAdv(); const n=Math.floor(G.P.lv), before=S.plv;
-  S.plv=Math.max(1,(S.plv||1)-n); try{ save(); queueProfile(true); }catch(e){}
-  dlg(`<div style="font-size:48px">💀</div><h3>負けてしまった…</h3><p>${why}</p><p>このゲームのLv <b>${n}</b> ・ 武器 ${G.weap}個<br>記録は残りません</p><p style="color:#d32f2f">冒険者Lv ${before} → <b>${S.plv}</b>（−${before-S.plv}）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
+  G.over=true; saveAdv(); const n=Math.floor(G.P.lv);
+  try{ save(); queueProfile(true); }catch(e){}   /* 2026-10-29：負けても冒険者Lvは下がらない（コインがもらえないだけ） */
+  dlg(`<div style="font-size:48px">💀</div><h3>負けてしまった…</h3><p>${why}</p><p>このゲームのLv <b>${n}</b> ・ 武器 ${G.weap}個<br>記録は残りません</p><p>コインはもらえません（冒険者Lvは下がりません）</p><button type="button" data-a="x">ホームにもどる</button>`,close); }
 const IO_COIN=100;   // クリアしたとき：このゲームのLv×100コイン（2026-10-28 1000→100）
 function escape(auto,died){ if(G.over) return; G.over=true; saveAdv(); const n=Math.floor(G.P.lv), rk=G.rank, coin=n*IO_COIN;
   S.coins=(S.coins||0)+coin; try{ capCoins(); }catch(e){}   /* 2026-10-28：クリアの報酬は冒険者Lvではなくコイン（このゲームのLv×100） */
