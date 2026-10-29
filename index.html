@@ -740,6 +740,7 @@ html .ttl .ttl-mini.ttl-fz span{font-size:30px;gap:2px}
 html .ttl .ttl-mini.ttl-fz span small{font-size:16px}
 .ttl .ttl-mini.ttl-rp{left:178px;width:220px}   /* 通報箱（ふっかーだけ）：融合依頼の左 */
 .ttl .ttl-mini.ttl-fz:not(.ttl-rp){left:418px;width:220px}
+.ttl-fz.ttl-gda{left:658px;width:220px}
 .ttl-fz-badge{position:absolute;right:-14px;top:-16px;min-width:44px;height:44px;padding:0 10px;box-sizing:border-box;border-radius:999px;background:#e53935;color:#fff;border:4px solid #fff;font:900 26px/36px var(--f-body);text-align:center;box-shadow:0 3px 0 #3a1a08;animation:vtTip 1.6s ease-in-out infinite}
 .ttl-fz-badge[hidden]{display:none}
 .mg-pick{display:flex;flex-direction:column;gap:10px;width:100%}
@@ -1264,6 +1265,8 @@ html[lang=en] .kn-bt span{font-size:38px}
     <button class="ttl-mini ttl-vote" id="ttlVote" type="button" style="top:900px"><img src="title/btn_en.png" alt="" draggable="false"><span>🗳 魔物投票<small></small></span></button>
     <button class="ttl-mini ttl-fz" id="ttlFz" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧬 融合依頼<small id="ttlFzN"></small></span><b class="ttl-fz-badge" id="ttlFzB" hidden></b></button>
     <button class="ttl-mini ttl-fz ttl-rp" id="ttlRp" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🚨 通報箱</span><b class="ttl-fz-badge" id="ttlRpB" hidden></b></button>
+    <button class="ttl-mini ttl-fz ttl-gda" id="ttlGdAdm" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🛍 グッズ管理</span></button>
+    <button class="ttl-mini ttl-gd" id="ttlGd" type="button" hidden style="top:1140px"><img src="title/btn_en.png" alt="" draggable="false"><span>🛍 グッズ特典</span></button>
     <div class="ttl-vote-tip" id="ttlVoteTip" hidden></div>
     <button class="ttl-mini" id="ttlMini" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
@@ -10350,4 +10353,5 @@ async function titleRanks(){
 <script src="io/io.js?v=64" defer></script>
 <script src="vt/vt.js?v=14" defer></script>
 <script src="fz/fz.js?v=16" defer></script>
+<script src="gd/gd.js?v=1" defer></script>
 </body></html>
