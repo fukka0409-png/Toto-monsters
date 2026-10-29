@@ -4602,7 +4602,7 @@ function renderGacha(){
     <div class="note" style="margin:10px 0 4px;font-weight:900">🎫 アイテム${TK_SWAP}個 → ガチャチケット1枚と交換</div>
     <div class="pulls" style="grid-template-columns:1fr 1fr 1fr;margin-top:4px">${TK_SWAP_ITEMS.map(k=>{ const it=itemOf(k), h=inv(k); return `<button class="pull" data-tkswap="${k}" type="button" ${h<TK_SWAP?"disabled":""} style="font-size:12px;white-space:normal;line-height:1.25;padding:8px 4px"><img src="${it.img}" alt="" style="width:34px;height:34px;display:block;margin:0 auto 2px"><span style="display:block;font-size:11px">${it.name}</span><small style="white-space:normal">${TK_SWAP}個→🎫1枚<br>（${h.toLocaleString()}個）</small></button>`; }).join("")}</div>
   </section>
-  ${tsInHome()?"":`<section class="g-banner deco">
+  ${true?"":`<section class="g-banner deco">
     <div class="g-head"><canvas id="cvDeco" width="200" height="200" aria-hidden="true"></canvas>
       <div><div class="g-tag">HOME DECO</div><div class="g-title">装飾ガチャ</div><div class="g-sub">ホームの背景・床・装飾 全${DECO_POOL.length}種（持っているものが出たら🪙10コインか💎覚醒の石1個に）</div></div></div>
     <div class="pulls">
@@ -4867,6 +4867,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:12, t:"🎰 装飾ガチャを終了しました（持っている背景・床・装飾はそのまま使えます）"},
   {ss:12, t:"🏦 まだ貯金したことがない冒険者に、貯金できることをお知らせ（貯金はマグネットで取られません）"},
   {ss:12, t:"🗡 魔物サバイバル：負けても冒険者レベルが下がらなくなりました（コインがもらえないだけ）"},
   {ss:12, t:"🎰 アイテムガチャに100連が登場！"},
