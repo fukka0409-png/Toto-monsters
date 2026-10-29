@@ -3323,6 +3323,7 @@ const CODES = [
   { h: "aee08caee1e46d395162f385df2568e3ecd0f23ee7fdbb888def70c37c510f34", coins: 20000 },  // 2026-10-22 追加「ハムハム」：2万コイン（1回だけ）
   { h: "7f8630eba4b8720bc6fb60f55d5ffd97befe1822f3dfbbe9518e96c3e1638aac", coins: 70000 },  // 2026-10-25 追加「たけし」：7万コイン（1回だけ）
   { h: "2196172103518ad0384c55653ee66082584d151accc734b7c902904423f6005c", coins: 30000 },  // 2026-10-27 追加「モコモコ」：3万コイン（1回だけ）
+  { h: "ac71202e445e5ac9312d37faf3fcfbd0a84b8e6722c6cac7d567b445aa3f3948", coins: 0, moko: 10 },  // 2026-10-29 追加「ポリポリ」：10モコ（1回だけ）
 ];
 /* ---------- QRコードの報酬 ── 新しいQRコードはここに追加（1つのQRコードにつき1人1回だけ） ----------
    h: QRコードの中身を暗号化した値 / name: 名前 / coins・ticket・stone・item+qty: もらえるもの */
@@ -5473,7 +5474,8 @@ function renderBonus(target){
     if(c.item){ const it=itemOf(c.item), q=c.qty||1; addItem(c.item,q); save(); $("#codeIn").value="";
       say(c.item==="ticket"?`「${it.name}」を${q}枚手に入れた！ガチャで使えます。ランキングで相手をタップすると贈ることもできます（持っている数：${inv(c.item)}枚）`:`「${it.name}」を${q}個手に入れた！ランキングで相手をタップすると使えます（持っている数：${inv(c.item)}）`,true); SFX.reveal("S"); toast(`${it.name}×${q}を手に入れた！`); return; }
     if(S.codes.includes(h)) return say("この呪文はもう使われています",false);
-    S.codes.push(h); S.coins+=c.coins; if(c.stone) addItem("stone",c.stone); if(c.ticket) addItem("ticket",c.ticket); save(); renderCoins(); $("#codeIn").value="";
+    S.codes.push(h); S.coins+=(c.coins||0); if(c.moko) S.moko=(S.moko||0)+c.moko; if(c.stone) addItem("stone",c.stone); if(c.ticket) addItem("ticket",c.ticket); save(); renderCoins(); $("#codeIn").value="";
+    if(c.moko&&!c.coins) return say(`${c.moko.toLocaleString()}モコを受け取りました！`,true);
     say(c.stone?`${c.coins.toLocaleString()}コインと覚醒の石${c.stone}個を受け取りました！`:c.ticket?`${c.coins.toLocaleString()}コインとガチャチケット${c.ticket}枚を受け取りました！`:`${c.coins.toLocaleString()}コインを受け取りました！`,true); SFX.coin(); toast(`呪文 +${c.coins.toLocaleString()}コイン`);
   };
 }
@@ -8021,13 +8023,17 @@ async function checkItems(){
           <p class="note" style="text-align:center;max-width:320px">神から${gifts.length>1?`${gifts.length}つの`:""}贈り物が届きました！${gCoins?`<br><b style="color:var(--staff);font-size:20px">+${gCoins.toLocaleString()}コイン</b>`:""}${gTickets?`<br><b style="color:var(--staff);font-size:20px">🎫 ガチャチケット ×${gTickets}</b>`:""}</p><button class="btn gold" type="button">受け取る</button>`;
         document.body.appendChild(g); SFX.reveal("S"); SFX.coin(); g.querySelector(".btn").onclick=()=>{ g.remove(); renderCoins(); }; }
       if(res.length){ const rb=document.createElement("div"); rb.className="sheet-bg center"; rb.style.zIndex=54;
-        rb.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="irT"><div class="swear-face">📨</div><p id="irT">使ったアイテムの結果</p>
-          <div class="note" style="margin:0;text-align:left">${res.map(m=>"・"+m).join("<br>")}</div><button class="btn gold" type="button">OK</button></div>`;
+        // 2026-10-29：1文でまとめて出す
+        const sum=(L,re)=>L.reduce((t,m)=>{ const x=String(m).match(re); return t+(x?+x[1].replace(/,/g,""):0); },0);
+        const rN=res.filter(m=>String(m).startsWith("↩️")).length, bN=res.filter(m=>String(m).startsWith("🛡 盾により")).length, rLv=sum(res.filter(m=>String(m).startsWith("↩️")),/冒険者レベル−(\d+)/), rC=sum(res.filter(m=>String(m).startsWith("↩️")),/−([\d,]+)コイン/), gC=sum(res,/\+([\d,]+)コインをうばった/);
+        const parts=[rN?`相手の盾に${rN}回はね返された${rLv||rC?`（${[rC?`−${rC.toLocaleString()}コイン`:"",rLv?`冒険者レベル−${rLv}`:""].filter(Boolean).join("・")}）`:""}`:"", bN?`${bN}回は盾で防がれた`:"", gC?`マグネットで+${gC.toLocaleString()}コインうばった`:""].filter(Boolean);
+        rb.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">📨</div><p style="line-height:1.6">${parts.length?"使ったアイテムが"+parts.join("、")+"。":"使ったアイテムの結果が届きました。"}</p><button class="btn gold" type="button">OK</button></div>`;
         document.body.appendChild(rb); rb.querySelector(".btn").onclick=()=>rb.remove(); }
-      if(msgs.length && false){   // 2026-10-29：アイテムを使われたときの表示は出さない（効果はそのまま）
+      if(msgs.length){   // 2026-10-29：アイテムを使われたときは1文でまとめて出す
       const bg=document.createElement("div"); bg.className="sheet-bg center";
-      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="itT"><div class="swear-face">💥</div><p id="itT">留守中にアイテムを使われました</p>
-        <div class="note" style="margin:0;text-align:left">${msgs.map(m=>"・"+m).join("<br>")}</div>
+      const att=msgs.filter(m=>!String(m).startsWith("🛡")).length, blk=msgs.filter(m=>String(m).startsWith("🛡")).length;
+      const eff=[lostCoin?`−${lostCoin.toLocaleString()}コイン`:"", lostLv?`冒険者レベル−${lostLv}`:""].filter(Boolean).join("・");
+      bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">💥</div><p style="line-height:1.6">留守中にアイテムを${msgs.length}回使われ${eff?`て${eff}`:"ました"}${blk?`（${blk}回は盾で防いだ）`:""}${eff?"。":"。"}</p>
         <button class="btn gold" type="button">OK</button></div>`;
       document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove();
       }
