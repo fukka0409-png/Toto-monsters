@@ -4873,7 +4873,6 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
-  {ss:12, t:"🛍 BASEでグッズを買ってくれた冒険者は、ショップでPay IDの名前を登録できるように（運営だけが見られます）"},
   {ss:12, t:"🎰 装飾ガチャを終了しました（持っている背景・床・装飾はそのまま使えます）"},
   {ss:12, t:"🏦 まだ貯金したことがない冒険者に、貯金できることをお知らせ（貯金はマグネットで取られません）"},
   {ss:12, t:"🗡 魔物サバイバル：負けても冒険者レベルが下がらなくなりました（コインがもらえないだけ）"},
@@ -5351,7 +5350,7 @@ function renderMission(){
     ${left?`<div class="cd">クリア済み<span class="t" data-mcd="${i}">${fmt(left)}</span><small>次の挑戦まで</small></div>`:`<button class="btn ${big?"gold":""}" type="button" data-mi="${i}">達成</button>`}
   </div>`}).join("")}</div>`}
   ${MOKO_SHOP.map(x=>`<a class="shop-banner moko-banner" href="${mokoHref(x)}" target="_blank" rel="noopener" data-mshop="${x.n}"><img src="${x.img}" alt="${x.n}モコ（オンラインショップ）" loading="lazy"></a><div class="shop-views" data-mview="${x.n}">${mviewTxt(x.n)}</div>`).join("")}
-  ${DB&&MYID?`<div class="note" style="margin:12px 0;text-align:left">🛍 <b>BASEでグッズを買ってくれた冒険者へ</b><br>Pay IDに登録している名前を入れてね。運営が購入を確認して、報酬を送ります。<br><small>入れた名前は運営（ふっかー）だけが見られます。ほかの冒険者には見えません。</small><br>${S.realName?`<small>登録中：<b translate="no">${esc(S.realName)}</b></small><br>`:""}<button class="btn gold" type="button" id="rnOpen" style="margin-top:6px">${S.realName?"Pay IDの名前を変える・消す":"Pay IDの名前を登録する"}</button></div>`:""}<p class="shop-law"><a href="tokushoho.html" target="_blank" rel="noopener">特定商取引法に基づく表記</a></p>${[].map(sh=>{ const left=shopLeft(sh.k); return `<a class="shop-banner" href="${sh.url}" target="_blank" rel="noopener" data-shop="${sh.k}"><img src="${sh.img}" alt="${sh.name}（オンラインショップ）"></a>
+  ${DB&&MYID&&dexPeek()?`<div class="note" style="margin:12px 0;text-align:left">🛍 <b>BASEでグッズを買ってくれた冒険者へ</b><br>Pay IDに登録している名前を入れてね。運営が購入を確認して、報酬を送ります。<br><small>入れた名前は運営（ふっかー）だけが見られます。ほかの冒険者には見えません。</small><br>${S.realName?`<small>登録中：<b translate="no">${esc(S.realName)}</b></small><br>`:""}<button class="btn gold" type="button" id="rnOpen" style="margin-top:6px">${S.realName?"Pay IDの名前を変える・消す":"Pay IDの名前を登録する"}</button></div>`:""}<p class="shop-law"><a href="tokushoho.html" target="_blank" rel="noopener">特定商取引法に基づく表記</a></p>${[].map(sh=>{ const left=shopLeft(sh.k); return `<a class="shop-banner" href="${sh.url}" target="_blank" rel="noopener" data-shop="${sh.k}"><img src="${sh.img}" alt="${sh.name}（オンラインショップ）"></a>
     <div class="shop-cd ${left?"":"ready"}">${left?`報酬は受け取り済み ・ 次の報酬まで <b data-shopcd="${sh.k}">${fmt(left)}</b>`:`🎁 タップしてショップを${SHOP_STAY/1000}秒見ると <b>+${SHOP_REWARD.toLocaleString()}コイン</b>`}</div>`; }).join("")}`;
   document.querySelectorAll("[data-mi]").forEach(b=>b.onclick=()=>confirmMission(+b.dataset.mi));
   loadMview();
