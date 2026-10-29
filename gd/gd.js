@@ -96,13 +96,20 @@ function shell(title,back){ if(!V){ V=document.createElement("div"); V.id="gdo";
   return V.querySelector("#gdIn"); }
 function close(){ if(V){ V.remove(); V=null; } }
 
+// 2026-10-29：3つをいっしょに読む（前は1つずつ読んでいて遅かった）
 async function load(){
-  try{ const a=await withTO(accRef().get()); ACC=a.exists?a.data():null; }catch(e){ ACC=undefined; }
-  try{ const q=await withTO(DB.collection("gdwin").where("uid","==",MYID).get()); WINS=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.at||0)-(a.at||0)); }catch(e){ WINS=[]; }
-  try{ const s=await withTO(stockRef().get()); STOCK=s.exists?s.data():{}; }catch(e){ STOCK={}; }
+  const [a,q,st]=await Promise.all([withTO(accRef().get()).catch(()=>undefined), withTO(DB.collection("gdwin").where("uid","==",MYID).get()).catch(()=>null), withTO(stockRef().get()).catch(()=>null)]);
+  ACC=a===undefined?undefined:(a.exists?a.data():null);
+  WINS=q?q.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(y.at||0)-(x.at||0)):[];
+  STOCK=st&&st.exists?st.data():{};
+  try{ if(ACC!==undefined){ S.gdCache={ACC,WINS,STOCK,uid:MYID}; save(); } }catch(e){}
 }
+const reshow=()=>{ if(!V) return; if(page==="gacha") gachaPage(); else if(page==="stk") stkPage(); else route(); };
 async function open(){ if(!DB||!MYID) return T("グッズ特典はログインしている冒険者だけ使えます");
   if(!canSee()) return;
+  GD.PRIZES.forEach(p=>{ if(p.img){ const im=new Image(); im.src=p.img; } }); if(GD.BUY_IMG){ const im=new Image(); im.src=GD.BUY_IMG; }   // 写真を先に読みこんでおく
+  const c=S.gdCache; page="home";
+  if(c&&c.uid===MYID&&c.ACC){ ACC=c.ACC; WINS=c.WINS||[]; STOCK=c.STOCK||{}; route(); load().then(()=>{ if(V&&!document.querySelector(".gd-res,.pk-stage.gdp")) reshow(); }); return; }   // 前の記録ですぐ出して、うらで新しくする
   const el=shell("🛍 グッズ特典"); el.innerHTML=`<div class="gd-card" style="text-align:center">読み込み中…</div>`;
   await load(); route(); }
 function route(){
@@ -174,7 +181,7 @@ function gachaPage(){ page="gacha"; const el=shell("🎰 グッズガチャ",hom
   el.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>pull(+b.dataset.n));
   el.querySelectorAll("[data-zoom]").forEach(im=>im.onclick=()=>{ const p=pz(im.dataset.zoom), z=document.createElement("div"); z.className="gd-zoom"; z.innerHTML=`<div><img src="${esc(p.img)}" alt=""><p>${p.r}賞　${esc(p.name)}</p></div>`; z.onclick=()=>z.remove(); document.body.appendChild(z); }); }
 let pulling=false;
-async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===10?GD.TEN:GD.ONE; let got=[], newIds=[], gotStk=[];
+async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===10?GD.TEN:GD.ONE; let got=[], newIds=[], gotStk=[], nAcc=null, nSt=null;
   try{ await DB.runTransaction(async tx=>{ const a=await tx.get(accRef()), s=await tx.get(stockRef()); const acc=a.data(), st=s.exists?s.data():{}; got=[]; newIds=[];
       if(!acc||acc.st!=="ok") throw new Error("not ok"); if((acc.tk||0)<cost) throw new Error("tk");
       const taken={S:!!st.S, A:!!st.A}, setSt={}; let d=0; const sl=(acc.sl||[]).slice(), pool=stkPool(); gotStk=[];
@@ -183,11 +190,12 @@ async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===
         if(pick.one&&taken[pick.r]) pick=pz("D");   // 当選者が出たS賞・A賞の分はD賞になる
         if(pick.one){ taken[pick.r]=true; setSt[pick.r]=MYID; }
         got.push(pick.r); if(pick.r==="D"){ d++; if(pool.length){ const id=pool[Math.floor(Math.random()*pool.length)]; gotStk.push(id); if(sl.length<GD.STK) sl.push(id); } } }
-      tx.update(accRef(),{tk:(acc.tk||0)-cost, stk:sl.length, sl});
+      tx.update(accRef(),{tk:(acc.tk||0)-cost, stk:sl.length, sl}); nAcc={...acc, tk:(acc.tk||0)-cost, stk:sl.length, sl}; nSt={...st,...setSt};
       if(Object.keys(setSt).length) tx.set(stockRef(),{...st,...setSt});
       got.filter(r=>r!=="D").forEach(r=>{ const ref=DB.collection("gdwin").doc(); newIds.push(ref.id); tx.set(ref,{uid:MYID, adv:String(myName()||"").slice(0,24), r, name:pz(r).name, at:gnow(), st:"won"}); }); }); }
   catch(e){ pulling=false; return T(String(e&&e.message)==="tk"?"グッズチケットが足りません":"通信できませんでした。もう一度ためしてください"); }
-  await load(); pulling=false;
+  if(nAcc) ACC=nAcc; if(nSt) STOCK=nSt; newIds.forEach((id,i)=>{ const r=got.filter(x=>x!=="D")[i]; WINS.unshift({id, uid:MYID, r, name:pz(r).name, at:gnow(), st:"won"}); });   // 待たずに画面を進める
+  pulling=false; load().catch(()=>{});
   const cnt={}; got.forEach(r=>cnt[r]=(cnt[r]||0)+1); const real=got.filter(r=>r!=="D").length;
   { const best=["S","A","B","C"].find(r=>cnt[r]); await packFx(best==="S"?"S":best==="A"?"A":best?"B":"D", n, best?pz(best).img:(gotStk[0]!=null?stkImg(gotStk[0]):"")); }   // 2026-10-29：パックを開ける演出（ゲームの魔物パックと同じ）
   const d=document.createElement("div"); d.className="gd-res";
