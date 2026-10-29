@@ -3571,11 +3571,33 @@ function overNag(){ if(overNagOpen||!(S.coins>COIN_MAX)) return;
   bg.querySelector("#onNo").onclick=()=>{ bg.remove(); overNagOpen=false; coinCapToastAt=Date.now(); };
   bg.querySelector("#onGo").onclick=()=>{ const o=Math.max(0,Math.floor(S.coins-COIN_MAX)); S.coins-=o; S.bank=(S.bank||0)+o; S.bankEver=1; bg.remove(); overNagOpen=false; save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(`🏦 ${o.toLocaleString()}コインを貯金しました`); try{ render(); }catch(e){} }; }
 setInterval(()=>{ try{ if(S&&S.coins>COIN_MAX) capCoins(); }catch(e){} }, 15000);
+/* ---------- 💰 大事な数字はクラウドで管理（wallet/{uid}・2026-10-29） ----------
+   コイン・貯金・冒険者レベル・モコは、クラウドの数字を「+100」「−2」のように足し引きして変える。
+   画面が2つ動いていても、古い記録で上書きされて消えることがない。クラウドの数字がいつも正しい数字 */
+const WF=["coins","bank","plv","moko"];
+const WAL={ref:null, base:null, unsub:null, t:null, ready:false};
+function walClamp(){ if((S.plv||0)<1) S.plv=1; if((S.coins||0)<0) S.coins=0; if((S.bank||0)<0) S.bank=0; if((S.moko||0)<0) S.moko=0; }
+async function walletStart(){ if(!DB||!MYID||WAL.ref) return; const ref=DB.doc("wallet/"+MYID);
+  try{ await DB.runTransaction(async tx=>{ const sn=await tx.get(ref); if(!sn.exists){ const v={}; WF.forEach(f=>v[f]=Math.floor(S[f]||0)); v.ss=S.season??0; v.at=gnow(); tx.set(ref,v); } }); }catch(e){ return; }   // ルールがまだなら今までどおり
+  // 最初にクラウドの数字を読んでから動かす（読む前にした変化が消えないように）
+  try{ const s0=await ref.get(); const v=s0.data()||{}, nb={}; WF.forEach(f=>{ nb[f]=Math.floor(v[f]||0); S[f]=nb[f]; }); WAL.base=nb; walClamp(); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }catch(e){ return; }
+  WAL.ref=ref; WAL.ready=true;
+  WAL.unsub=ref.onSnapshot(sn=>{ if(!sn.exists||REMOTE_LOCK) return; const v=sn.data(), first=!WAL.base, nb={}; let ch=false;
+    WF.forEach(f=>{ const sv=Math.floor(v[f]||0), pend=first?0:Math.floor((S[f]||0)-WAL.base[f]), nv=sv+pend; if(Math.floor(S[f]||0)!==nv){ S[f]=nv; ch=true; } nb[f]=sv; });
+    WAL.base=nb; WAL.ready=true; walClamp();
+    if(ch){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} try{ renderCoins(); }catch(e){} try{ if(!document.querySelector(".reveal,.sheet-bg,.rules-stage,#ioG")) render(); }catch(e){} } }, ()=>{}); }
+function walletQueue(){ if(!WAL.ready||REMOTE_LOCK||WAL.t) return; WAL.t=setTimeout(()=>{ WAL.t=null; walletPush(); },800); }   // 0.8秒ごとにまとめて送る
+function walletPush(){ if(!WAL.ready||!WAL.ref||REMOTE_LOCK) return; const up={}, dd={}; let n=0;
+  WF.forEach(f=>{ const d=Math.floor((S[f]||0)-WAL.base[f]); if(d){ up[f]=firebase.firestore.FieldValue.increment(d); dd[f]=d; WAL.base[f]+=d; n++; } });
+  if(!n) return; up.at=gnow(); WAL.ref.update(up).catch(()=>{ WF.forEach(f=>{ if(dd[f]) WAL.base[f]-=dd[f]; }); }); }
+// 記録がまるごと入れかわったとき（別の端末の記録を読んだとき）は、大事な数字だけクラウドの数字にもどす
+function walAdopt(){ if(!WAL.ready||!WAL.base) return; WF.forEach(f=>{ S[f]=WAL.base[f]; }); walClamp(); }
 function save(){
   if(REMOTE_LOCK) return;   // 止めた画面は保存しない
   try{ if(LAST_INPUT>(S.inAt||0)) S.inAt=LAST_INPUT; }catch(e){}   // 最後に画面をさわった時間（端末どうしの記録の新しさくらべに使う）
   capCoins();
   trackLv();
+  try{ walletQueue(); }catch(e){}
   S.updated = gnow(); queueProfile();
   try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
   if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(()=>{ remoteTimer=null; pushRemote(); }, 8000); }   // 書き込み回数を節約：操作が落ち着いてから8秒後にまとめて保存
@@ -3645,6 +3667,7 @@ async function pullRemote(fromPush, force){
       const vtL=S.vtVoted, lvL=S.plv;   // 2026-10-28：この端末で投票した記録も消さずに残す（投票したのに投票前の画面にもどるバグ）
       S=r; S.got=S.got||{}; for(const k in gotL){ if((gotL[k]||0)>(S.got[k]||0)) S.got[k]=gotL[k]; }
       if(vtL) S.vtVoted={...vtL, ...(S.vtVoted||{})};
+      try{ walAdopt(); }catch(e){}
       try{ if(lvL!==S.plv){ S.plvLog=(S.plvLog||[]).concat([[gnow(), lvL, S.plv, aheadSeason?"別の端末の記録（新しいランク戦）に入れかわった":"別の端末の記録に入れかわった"]]).slice(-40); } S._logLv=S.plv; }catch(e){}   // レベルの記録
       if(keepU.length){ S.nextUid=Math.max(S.nextUid||1, ...S.units.map(z=>z.u+1)); keepU.forEach(u=>S.units.push({...u, u:S.nextUid++})); S.updated=gnow(); setTimeout(()=>{ try{ save(); }catch(e){} },500); }
       fixPlayer(); fixGuard(); lastRemote=ru;
@@ -3693,7 +3716,7 @@ async function startRemote(uid){
     }
     if(LOGIN_NAME) S.name=LOGIN_NAME;
     SID_AT=gnow(); try{ await remoteDoc.set({sid:SID, sidAt:SID_AT},{merge:true}); }catch(e){}   // この画面がいちばん新しい画面
-    S.owner=uid; DB=db; MYID=uid; remoteReady=true; hourlyDecay(); save(); render(); try{ titleRanks(); }catch(e){}
+    S.owner=uid; DB=db; MYID=uid; remoteReady=true; try{ await walletStart(); }catch(e){} hourlyDecay(); save(); render(); try{ titleRanks(); }catch(e){}
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
@@ -6731,6 +6754,12 @@ async function checkSeason(){
     let bankTax=null; if(old>=BANK_TAX_SS && (S.bank||0)>=BANK_TAX_OVER){ const pre=Math.floor(S.bank||0), brk=await bankRankAt(old,pre);
       if(brk){ const p=pre>=BANK_TAX_OVER?(BANK_TAX_PCT[brk]||BANK_TAX_PCT_OVER):0;   /* 貯金が1億コイン以上のときだけ引かれる */ if(p>0) bankTax={rk:brk,p,t:Math.floor(pre*p)}; } S.bankPre=pre; S.bankPreS=old; }
     if(S!==S0 || (S.season??0)>=cur){ seasonBusy=false; return; }   // 途中で記録が入れかわったら何もしない
+    // 2026-10-29：ほかの画面がもうこのランク戦を精算していたら、二重に精算しない（クラウドの数字に記録）
+    if(WAL.ref){ let rs=-1; try{ const rd=await remoteDoc.get(); rs=(JSON.parse(rd.data().json).season)??-1; }catch(e){}
+      if(rs>=cur){ seasonBusy=false; try{ await pullRemote(true,true); }catch(e){} return; }   // ほかの画面がもう精算して保存していた
+      let done=false; try{ await DB.runTransaction(async tx=>{ const sn=await tx.get(WAL.ref); const w=sn.exists?sn.data():{}; if((w.ss??-1)>=cur && w.ssBy && w.ssBy!==SID && gnow()-(w.ssAt||0)<5*60000){ done=true; return; } tx.update(WAL.ref,{ss:cur, ssBy:SID, ssAt:gnow()}); }); }catch(e){ seasonBusy=false; return; }
+      if(done){ seasonBusy=false; try{ await pullRemote(true,true); }catch(e){} return; } }
+    if(S!==S0){ seasonBusy=false; return; }
     { const nc=S.coins+coins; if(nc<0){ S.bank=Math.max(0,(S.bank||0)+nc); S.coins=0; } else S.coins=nc; }   // 2026-10-28：所持コインで足りないマイナスは貯金から引く
     if(stones) addItem("stone",stones); if(mokos) S.moko=(S.moko||0)+mokos;
     if(old>=BANK_TAX_SS && bankTax){ const t=Math.min(S.bank||0,bankTax.t); S.bank=(S.bank||0)-t; if(t>0) lines.push(`🏦 貯金ランキング${bankTax.rk}位なので、貯金の${Math.round(bankTax.p*100)}%（−${t.toLocaleString()}コイン）`); }
