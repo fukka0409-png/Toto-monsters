@@ -730,6 +730,8 @@ html .ttl .ttl-mini span{position:absolute;inset:0;display:flex;flex-direction:c
 html .ttl .ttl-mini span small{font:900 20px/1 var(--f-body);color:#7a3d10;display:block}
 html .ttl .ttl-mini span small:empty{display:none}
 html[lang=en] .ttl .ttl-mini span{font-size:36px}
+.ttl-mini[hidden]{display:none}
+#ttlVoteTip{top:1047px!important}
 .ttl-mini:active{transform:scale(.96)}
 .ttl-mini.ttl-ts{top:1045px}
 /* 融合依頼（ふっかーだけ）：ほかのボタンや言語の切りかえと重ならないように、タイトルと「ガチャ・育成」の間に小さく置く */
@@ -1259,11 +1261,11 @@ html[lang=en] .kn-bt span{font-size:38px}
       <img src="title/c2.png" alt="" style="top:960px;--w:200px;--d:100s;--o:-55s;opacity:.9">
     </div>
     <button class="ttl-mini ttl-ts" id="ttlTs" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧠 トトの戦略<small>試作（ふっかーだけに表示）</small></span></button>
-    <button class="ttl-mini ttl-vote" id="ttlVote" type="button" style="top:1045px"><img src="title/btn_en.png" alt="" draggable="false"><span>🗳 魔物投票<small></small></span></button>
+    <button class="ttl-mini ttl-vote" id="ttlVote" type="button" style="top:900px"><img src="title/btn_en.png" alt="" draggable="false"><span>🗳 魔物投票<small></small></span></button>
     <button class="ttl-mini ttl-fz" id="ttlFz" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🧬 融合依頼<small id="ttlFzN"></small></span><b class="ttl-fz-badge" id="ttlFzB" hidden></b></button>
     <button class="ttl-mini ttl-fz ttl-rp" id="ttlRp" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🚨 通報箱</span><b class="ttl-fz-badge" id="ttlRpB" hidden></b></button>
     <div class="ttl-vote-tip" id="ttlVoteTip" hidden></div>
-    <button class="ttl-mini" id="ttlMini" type="button"><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
+    <button class="ttl-mini" id="ttlMini" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
     <div class="ttl-nx" id="ttlNx" translate="no"></div>
     <div class="ttl-rt" id="ttlRt" translate="no"></div>
@@ -5819,6 +5821,7 @@ function renderHome(){
         <button class="hm-btn" type="button" id="hmTitle">🏠 タイトル画面に戻る</button>
         <button class="hm-btn" type="button" id="hmFriend">🤝 フレンド${DB&&MYID&&frBadge()?`<span class="rules-new fr-badge">${frBadge()}</span>`:""}</button>
         <button class="hm-btn ${pbox().length?"new":""}" type="button" id="hmPbox">🎁 プレゼントBOX${pbox().length?`<span class="rules-new fr-badge">${pbox().length}</span>`:""}</button>
+        <button class="hm-btn" type="button" id="hmMini">🎮 ミニゲーム</button>
       </div></div>
     </div>
     ${tsInHome()?`<div class="hm-ts" id="hmTs"></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
@@ -5841,6 +5844,7 @@ function renderHome(){
 
   $("#hmFriend").onclick=()=>openFriends();
   $("#hmPbox").onclick=()=>{ try{ SFX.tap(); }catch(e){} openPresentBox(); };
+  { const mb=$("#hmMini"); if(mb) mb.onclick=()=>{ const t=document.getElementById("ttlMini"); if(t) t.click(); }; }   // 2026-10-29：タイトルのミニゲームをホームに移動
   $("#hmInvest").onclick=()=>{ homeMode="invest"; INV_LIST=null; render(); $("#stage").scrollTop=0; loadInvestList(); };
 }
 function openHomeEdit(mode){
