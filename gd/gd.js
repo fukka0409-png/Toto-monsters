@@ -157,7 +157,19 @@ function homePage(){ page="home"; const el=shell("🛍 グッズ特典");
     <button class="gd-big" type="button" id="gdGacha">グッズガチャ</button>
     <p class="gd-cap">本物のグッズが当たります‼️</p>
     <button class="gd-big stk" type="button" id="gdStk">ステッカー集め</button>
-    <p class="gd-cap">デジタルステッカーを${GD.STK}枚集めると<br>Pay IDで使える50%クーポンがゲットできます‼️</p>`;
+    <p class="gd-cap">デジタルステッカーを${GD.STK}枚集めると<br>Pay IDで使える50%クーポンがゲットできます‼️</p>
+    <div class="gd-card" style="line-height:1.7">
+      <b style="font-size:16px">🎫 グッズチケットのゲット方法</b>
+      <ol style="margin:8px 0 10px;padding-left:1.4em;font-size:14px">
+        <li><b>BASEで500円のステッカーを買う</b><br><small>1セット買うと、チケット1枚を申請できます</small></li>
+        <li>「グッズガチャ」を開いて、バナーの下の<b>「チケットを申請する」</b>を押す</li>
+        <li><b>「条件達成」</b>を押して、買ったセットの数を入れて<b>「申請」</b></li>
+        <li>ふっかーが確認すると、<b>チケットが届きます！</b><br><small>（1連はチケット1枚・10連はチケット7枚）</small></li>
+      </ol>
+      ${GD.BUY_URL?`<a class="gd-go" href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;font-size:16px;margin:0 0 8px">🛒 BASEでステッカーを買う</a>`:""}
+      <button class="gd-go" type="button" id="gdTreq2" style="font-size:16px;background:#fff">🎫 チケットを申請する</button>
+    </div>`;
+  { const t2=el.querySelector("#gdTreq2"); if(t2) t2.onclick=()=>{ tap(); treqFlow(); }; }   // 2026-10-30：ホームからも申請できる
   el.querySelector("#gdReq").onclick=()=>{ tap(); reqPage(); };
   el.querySelector("#gdGacha").onclick=()=>{ tap(); gachaPage(); };
   el.querySelector("#gdStk").onclick=()=>{ tap(); stkPage(); };
