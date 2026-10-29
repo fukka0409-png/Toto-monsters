@@ -323,9 +323,15 @@ function noticeCheck(){ try{ S.gdSeen=S.gdSeen||{}; const msgs=[];
 
 /* ---------- ふっかー：グッズ管理 ---------- */
 let AT="treq";
-async function admin(){ if(!DB||!dexPeek()) return; const el=shell("🛍 グッズ管理（ふっかー）"); el.innerHTML=`<div class="gd-card">読み込み中…</div>`;
-  let A=[], W=[], R=[]; try{ A=(await withTO(DB.collection("gdacc").get())).docs.map(d=>({id:d.id,...d.data()})); W=(await withTO(DB.collection("gdwin").get())).docs.map(d=>({id:d.id,...d.data()})); R=(await withTO(DB.collection("gdtreq").get()).catch(()=>({docs:[]}))).docs.map(d=>({id:d.id,...d.data()})); }
-  catch(e){ el.innerHTML=`<div class="gd-card">読み込めませんでした（Firestoreのルールを確認してください）</div>`; return; }
+// 2026-10-30：速く開く：前に読んだ内容ですぐ出して、3つを同時に読みなおす（当たった景品は郵送申請と発送ずみだけ読む）
+let ADMC=null;
+async function admin(){ if(!DB||!dexPeek()) return; const el=shell("🛍 グッズ管理（ふっかー）");
+  if(ADMC) adminDraw(el,...ADMC); else el.innerHTML=`<div class="gd-card">読み込み中…</div>`;
+  let A, W, R; try{ const [a,w,r]=await Promise.all([withTO(DB.collection("gdacc").get()), withTO(DB.collection("gdwin").where("st","in",["req","sent"]).get()).catch(()=>withTO(DB.collection("gdwin").get())), withTO(DB.collection("gdtreq").get()).catch(()=>({docs:[]}))]);
+    A=a.docs.map(d=>({id:d.id,...d.data()})); W=w.docs.map(d=>({id:d.id,...d.data()})); R=r.docs.map(d=>({id:d.id,...d.data()})); }
+  catch(e){ if(!ADMC) el.innerHTML=`<div class="gd-card">読み込めませんでした（Firestoreのルールを確認してください）</div>`; return; }
+  ADMC=[A,W,R]; if(V&&V.contains(el)) adminDraw(el,A,W,R); }
+function adminDraw(el,A,W,R){
   const nk=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/\s+/g,""), same={}; A.forEach(a=>{ same[nk(a.real)]=(same[nk(a.real)]||0)+1; });
   const who=a=>`<b translate="no">${esc(a.adv||"?")}</b><br><small>本名：<span translate="no">${esc(a.real||"")}</span>${same[nk(a.real)]>1?` <b style="color:#c62828">（同じ本名${same[nk(a.real)]}人）</b>`:""}</small>`;
   const nm=uid=>{ const a=A.find(x=>x.id===uid); return a?who(a):esc(uid); };
