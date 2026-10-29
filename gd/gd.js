@@ -12,9 +12,9 @@ const GD={
   BUY_URL:"https://fukka0409.base.shop/",   // 「グッズチケットを500円で購入！」のリンク（BASEのショップ）
   // 景品（S賞・A賞は1人だけ当選）。img にラインナップの画像を入れる
   PRIZES:[
-    {r:"S", name:"「勇者アヒル」の原画", img:"gd/s.jpg", rate:0.05, one:true},
-    {r:"A", name:"複製画キャンバス", img:"gd/a.jpg", rate:2.95, one:true},
-    {r:"B", name:"ランダム複製トレカ3枚セット", img:"gd/b.jpg", rate:5},
+    {r:"S", name:"「勇者アヒル」の原画", img:"gd/s.jpg?v=2", rate:0.05, one:true},
+    {r:"A", name:"複製画キャンバス", img:"gd/a.jpg?v=2", rate:2.95, one:true},
+    {r:"B", name:"ランダム複製トレカ3枚セット", img:"gd/b.jpg?v=2", rate:5},
     {r:"C", name:"パック式豆色紙", img:"gd/c.jpg", rate:7},
     {r:"D", name:"デジタルステッカー（魔物）", img:"", rate:85},
   ],
