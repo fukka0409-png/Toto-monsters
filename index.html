@@ -3569,7 +3569,7 @@ function overNag(){ if(overNagOpen||!(S.coins>COIN_MAX)) return;
     <button class="btn gold" type="button" id="onGo">🏦 こえた分を貯金する</button><button class="btn ghost" type="button" id="onNo">あとで</button></div>`;
   document.body.appendChild(bg);
   bg.querySelector("#onNo").onclick=()=>{ bg.remove(); overNagOpen=false; coinCapToastAt=Date.now(); };
-  bg.querySelector("#onGo").onclick=()=>{ const o=Math.max(0,Math.floor(S.coins-COIN_MAX)); S.coins-=o; S.bank=(S.bank||0)+o; bg.remove(); overNagOpen=false; save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(`🏦 ${o.toLocaleString()}コインを貯金しました`); try{ render(); }catch(e){} }; }
+  bg.querySelector("#onGo").onclick=()=>{ const o=Math.max(0,Math.floor(S.coins-COIN_MAX)); S.coins-=o; S.bank=(S.bank||0)+o; S.bankEver=1; bg.remove(); overNagOpen=false; save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(`🏦 ${o.toLocaleString()}コインを貯金しました`); try{ render(); }catch(e){} }; }
 setInterval(()=>{ try{ if(S&&S.coins>COIN_MAX) capCoins(); }catch(e){} }, 15000);
 function save(){
   try{ if(LAST_INPUT>(S.inAt||0)) S.inAt=LAST_INPUT; }catch(e){}   // 最後に画面をさわった時間（端末どうしの記録の新しさくらべに使う）
@@ -3690,7 +3690,7 @@ async function startRemote(uid){
     try{ if(dexPeek() && !S.io0_1028){ S.io={k:0,b:0,s:0}; S.io0_1028=1; save(); queueProfile(true); } }catch(e){}   // 2026-10-28：ふっかーの魔物サバイバルの記録を1回だけ全部0にする
     try{ if(!S.loveLv1 && MYID && normName(myName())===normName("love")){ if(S.loveLv3000){ S.plv=1; S.pexp=0; S._lastLv=1; } S.loveLv3000=1; S.loveLv1=1; save(); queueProfile(true); } }catch(e){}   // 2026-10-28：loveさんの冒険者レベルを1に戻す（3000にしたのを取り消し・運営より）
     try{ if(!S.loveLv1251 && MYID && normName(myName())===normName("love")){ S.loveLv1251=1; if((S.plv||1)<1251){ S.plv=1251; S.pexp=0; lvWhy("運営の調整（バグのおわび）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1251に（バグで下がった分）
-    checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
+    checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); bankIntroNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
@@ -4832,6 +4832,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:12, t:"🏦 まだ貯金したことがない冒険者に、貯金できることをお知らせ（貯金はマグネットで取られません）"},
   {ss:12, t:"🗡 魔物サバイバル：負けても冒険者レベルが下がらなくなりました（コインがもらえないだけ）"},
   {ss:12, t:"🎰 アイテムガチャに100連が登場！"},
   {ss:12, t:"🎫 ファイヤーボール・爆弾・コインマグネットは、それぞれ100個でガチャチケット1枚と交換できます（アイテムガチャの下）"},
@@ -6152,7 +6153,7 @@ function renderBank(segHtml){
       `<ol class="sd-list">${BANK_RK.map((r,i)=>`<li class="sd-row ${r.id===MYID?"me":""}" data-bkr="${esc(r.id)}"><span class="no ${i<3?"t"+(i+1):""}">${i+1}</span>${avatarImg(r.icon,34)}<span class="nm">${uname(r.name)}</span><span class="lv" translate="no">🏦 ${n(r.bk)}</span></li>`).join("")}</ol>`}`;
   const amt=()=>Math.floor(Number($("#bkAmt").value)||0);
   const done=t=>{ save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(t); setTimeout(()=>loadBankRank(true),1500); render(); };
-  const dep=a=>{ a=Math.min(a,Math.floor(S.coins)); if(a<=0) return toast("貯金できるコインがありません"); S.coins-=a; S.bank=(S.bank||0)+a; done(`🏦 ${a.toLocaleString()}コインを貯金しました`); };
+  const dep=a=>{ a=Math.min(a,Math.floor(S.coins)); if(a<=0) return toast("貯金できるコインがありません"); S.coins-=a; S.bank=(S.bank||0)+a; S.bankEver=1; done(`🏦 ${a.toLocaleString()}コインを貯金しました`); };
   const wd=a=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); a=Math.min(a,BANK_OUT_MAX,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（5億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; S.bankOutSS=seasonNow(); done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
   $("#bkIn").onclick=()=>{ const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>S.coins) return toast("所持コインが足りません"); dep(a); };
   $("#bkOut").onclick=()=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>BANK_OUT_MAX) return toast("引き出せるのは1000万コインまでです"); if(a>(S.bank||0)) return toast("貯金が足りません"); if(a>room) return toast(`所持コインは5億までなので、引き出せるのは ${room.toLocaleString()}コイン までです`); wd(a); };
@@ -7789,6 +7790,18 @@ function ioNotice(){ if(S.nIo1028) return;
     document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>{ bg.remove(); try{ tab="home"; homeMode="scene"; render(); }catch(e){} }; };
   setTimeout(show,1000); }
 // 2026-10-28：貯金の新しいきまりのお知らせ（全冒険者に1回だけ）
+// 2026-10-29：まだ貯金したことがない冒険者に、貯金できることを1回だけ知らせる
+function bankIntroNotice(){ if(S.nBankIntro1029||S.bankEver||(S.bank||0)>0) return;
+  const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
+    if(S.nBankIntro1029||S.bankEver||(S.bank||0)>0) return; S.nBankIntro1029=1; save();
+    const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+    bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏦</div><p>コインを貯金できます！</p>
+      <div class="note" style="margin:0;text-align:left">「ランキング」の上のタブ<b>「貯金ランキング」</b>から、持っているコインを貯金できます。<br><br>🛡🧲 <b style="color:var(--berry)">貯金したコインは、コインマグネットで取られません！</b><br>💰 投資にも貯金を使えます。<br>📤 引き出しは1シーズン（ランク戦）に1回・1000万コインまで。<br>🏦 貯金が多い冒険者は貯金ランキングにのります。</div>
+      <button class="btn gold" type="button" id="biGo">貯金しに行く</button><button class="btn ghost" type="button" id="biNo">あとで</button></div>`;
+    document.body.appendChild(bg);
+    bg.querySelector("#biGo").onclick=()=>{ bg.remove(); try{ tab="rank"; profMode="bank"; loadBankRank(true); render(); $("#stage").scrollTop=0; }catch(e){} };
+    bg.querySelector("#biNo").onclick=()=>bg.remove(); };
+  setTimeout(show,1200); }
 function bankTaxNotice(){ if(S.nBankTax1028c) return;
   const show=()=>{ if(document.querySelector(".reveal,.sheet-bg.center")||document.querySelector("#title:not([hidden])")) return setTimeout(show,1500);
     if(S.nBankTax1028c) return; S.nBankTax1028c=1; save();
