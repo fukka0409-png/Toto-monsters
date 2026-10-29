@@ -7174,8 +7174,10 @@ async function checkCheatRestore(){ if(!DB||!MYID) return; S.crrDone=S.crrDone||
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
 // 2026-10-29：ふっかーだけ：名前を指定したプレゼント（最近7日）の届け先が、登録されている冒険者名と一致するか確かめる。一致しないものがあれば知らせる
 async function checkGiftNames(){ try{ if(!DB||!MYID||!dexPeek()) return; const since=gnow()-7*DAY_MS, bad=[];
+  // 実際に届くかどうかと同じくらべ方（ランキングのプロフィールの名前を normName でくらべる）
+  let known=null; try{ const q=await withTO(DB.collection("profiles").limit(3000).get(),20000); known=new Set(q.docs.map(d=>normName(d.data().name))); }catch(e){ return; }
   for(const g of NAMED_GIFTS){ const m=String(g.id).match(/(\d{4}-\d{2}-\d{2})/); if(!m||Date.parse(m[1]+"T00:00:00+09:00")<since) continue;
-    let ok=false; for(const n of Object.keys(g.to||{})){ try{ const d=await withTO(DB.doc("names/"+(await nameKey(n))).get()); if(d.exists){ ok=true; break; } }catch(e){ ok=true; break; } }
+    const ok=Object.keys(g.to||{}).some(n=>known.has(normName(n)));
     if(!ok) { const what=[g.coins?g.coins.toLocaleString()+"コイン":"", g.moko?g.moko+"モコ":"", g.ticket?"チケット"+g.ticket+"枚":"", (g.mons||[]).length?"限定キャラ":""].filter(Boolean).join("・")||"プレゼント"; bad.push(`${Object.keys(g.to).join("／")}（${what}）`); } }
   if(!bad.length) return;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
