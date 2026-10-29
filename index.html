@@ -3737,7 +3737,7 @@ async function startRemote(uid){
     try{ if(!S.loveLv7b && MYID && normName(myName())===normName("love")){ S.loveLv7b=1; S.plv=(S.plv||1)+7; lvWhy("運営の調整（消えた上位キープボーナス+7）"); bumpMaxLv(); save(); queueProfile(true); } }catch(e){}   // 2026-10-29：クラウド管理に切りかえた時に消えたloveさんのボーナス
     try{ if(!S.loveLv1519 && MYID && normName(myName())===normName("love")){ S.loveLv1519=1; if((S.plv||1)<1519){ S.plv=1519; S.pexp=0; lvWhy("運営の調整（1519にもどす）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1519に（画面が2つ動いていたバグで下がった分）
     checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); bankIntroNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixLoveSv12(); fixInvLove12(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); checkGiftNames(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixLoveSv12(); fixInvLove12(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -7169,6 +7169,15 @@ async function checkCheatRestore(){ if(!DB||!MYID) return; S.crrDone=S.crrDone||
     <div class="note" style="margin:0;font-size:15px">確認の結果、誤解だったことがわかりました。<br>アカウントのデータを元にもどしました。ご迷惑をおかけしました🙏</div>
     <button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
+// 2026-10-29：ふっかーだけ：名前を指定したプレゼント（最近7日）の届け先が、登録されている冒険者名と一致するか確かめる。一致しないものがあれば知らせる
+async function checkGiftNames(){ try{ if(!DB||!MYID||!dexPeek()) return; const since=gnow()-7*DAY_MS, bad=[];
+  for(const g of NAMED_GIFTS){ const m=String(g.id).match(/(\d{4}-\d{2}-\d{2})/); if(!m||Date.parse(m[1]+"T00:00:00+09:00")<since) continue;
+    let ok=false; for(const n of Object.keys(g.to||{})){ try{ const d=await withTO(DB.doc("names/"+(await nameKey(n))).get()); if(d.exists){ ok=true; break; } }catch(e){ ok=true; break; } }
+    if(!ok) { const what=[g.coins?g.coins.toLocaleString()+"コイン":"", g.moko?g.moko+"モコ":"", g.ticket?"チケット"+g.ticket+"枚":"", (g.mons||[]).length?"限定キャラ":""].filter(Boolean).join("・")||"プレゼント"; bad.push(`${Object.keys(g.to).join("／")}（${what}）`); } }
+  if(!bad.length) return;
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚠️</div><p>届け先が見つからないプレゼント</p><div class="note" style="margin:0;text-align:left">この名前の冒険者は登録されていません。名前がちがうかもしれません：<br>${bad.map(x=>"・"+esc(x)).join("<br>")}</div><button class="btn gold" type="button">OK</button></div>`;
+  document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }catch(e){} }
 function checkNamedGift(){
   if(!MYID||isFreshSave(S)) return; S.ngift=S.ngift||[];
   const me=normName(myName()); let tk=0, cn=0, stn=0, mk=0; const ms=[];
