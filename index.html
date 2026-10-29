@@ -3578,9 +3578,10 @@ const WF=["coins","bank","plv","moko"];
 const WAL={ref:null, base:null, unsub:null, t:null, ready:false};
 function walClamp(){ if((S.plv||0)<1) S.plv=1; if((S.coins||0)<0) S.coins=0; if((S.bank||0)<0) S.bank=0; if((S.moko||0)<0) S.moko=0; }
 async function walletStart(){ if(!DB||!MYID||WAL.ref) return; const ref=DB.doc("wallet/"+MYID);
+  const S0=S, st={}; WF.forEach(f=>st[f]=Math.floor(S[f]||0));   // 2026-10-29：クラウドを読んでいるあいだに増えた分（上位キープボーナスなど）を消さないように、始めた時の数字をおぼえておく
   try{ await DB.runTransaction(async tx=>{ const sn=await tx.get(ref); if(!sn.exists){ const v={}; WF.forEach(f=>v[f]=Math.floor(S[f]||0)); v.ss=S.season??0; v.at=gnow(); tx.set(ref,v); } }); }catch(e){ return; }   // ルールがまだなら今までどおり
   // 最初にクラウドの数字を読んでから動かす（読む前にした変化が消えないように）
-  try{ const s0=await ref.get(); const v=s0.data()||{}, nb={}; WF.forEach(f=>{ nb[f]=Math.floor(v[f]||0); S[f]=nb[f]; }); WAL.base=nb; walClamp(); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }catch(e){ return; }
+  try{ const s0=await ref.get(); const v=s0.data()||{}, nb={}; WF.forEach(f=>{ nb[f]=Math.floor(v[f]||0); S[f]=nb[f]+(S===S0?Math.floor(S[f]||0)-st[f]:0); }); WAL.base=nb; walClamp(); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }catch(e){ return; }
   WAL.ref=ref; WAL.ready=true;
   WAL.unsub=ref.onSnapshot(sn=>{ if(!sn.exists||REMOTE_LOCK) return; const v=sn.data(), first=!WAL.base, nb={}; let ch=false;
     WF.forEach(f=>{ const sv=Math.floor(v[f]||0), pend=first?0:Math.floor((S[f]||0)-WAL.base[f]), nv=sv+pend; if(Math.floor(S[f]||0)!==nv){ S[f]=nv; ch=true; } nb[f]=sv; });
@@ -3724,6 +3725,7 @@ async function startRemote(uid){
     try{ if(dexPeek() && !S.io0_1028){ S.io={k:0,b:0,s:0}; S.io0_1028=1; save(); queueProfile(true); } }catch(e){}   // 2026-10-28：ふっかーの魔物サバイバルの記録を1回だけ全部0にする
     try{ if(!S.loveLv1 && MYID && normName(myName())===normName("love")){ if(S.loveLv3000){ S.plv=1; S.pexp=0; S._lastLv=1; } S.loveLv3000=1; S.loveLv1=1; save(); queueProfile(true); } }catch(e){}   // 2026-10-28：loveさんの冒険者レベルを1に戻す（3000にしたのを取り消し・運営より）
     try{ if(!S.loveLv1251 && MYID && normName(myName())===normName("love")){ S.loveLv1251=1; if((S.plv||1)<1251){ S.plv=1251; S.pexp=0; lvWhy("運営の調整（バグのおわび）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1251に（バグで下がった分）
+    try{ if(!S.loveLv7b && MYID && normName(myName())===normName("love")){ S.loveLv7b=1; S.plv=(S.plv||1)+7; lvWhy("運営の調整（消えた上位キープボーナス+7）"); bumpMaxLv(); save(); queueProfile(true); } }catch(e){}   // 2026-10-29：クラウド管理に切りかえた時に消えたloveさんのボーナス
     try{ if(!S.loveLv1519 && MYID && normName(myName())===normName("love")){ S.loveLv1519=1; if((S.plv||1)<1519){ S.plv=1519; S.pexp=0; lvWhy("運営の調整（1519にもどす）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1519に（画面が2つ動いていたバグで下がった分）
     checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); bankIntroNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
     fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
@@ -6847,6 +6849,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-29-walletstart", coins:1000 },   // ゲームを開いた直後にもらった上位キープボーナスなどが消えることがあった
   { id:"fix-2026-10-29-twosession", coins:1000 },   // 同じアカウントのゲームが2つの画面で同時に動くと、レベルやコインが行ったり来たりしていた
   { id:"fix-2026-10-29-stalesave", coins:1000 },   // 裏に置いていた古い端末の記録が、別の端末の新しい記録を上書きすることがあった
   { id:"fix-2026-10-29-stalelv", coins:1000 },   // 裏のタブや別の端末の古い記録で、冒険者レベルが下がって見えることがあった
