@@ -23,6 +23,7 @@ css.textContent=`
 #fzo .fz-who b{font-size:12px;line-height:1.25;padding:3px 6px;background:#efe2c4;border:2px solid #3a2306;border-radius:4px;word-break:break-all}
 #fzo .fz-who span{font-size:11px;font-weight:900;padding:3px 6px;border:2px solid #3a2306;border-radius:999px;text-align:center;background:#ffe58a}
 #fzo .fz-who small{font-size:10px;opacity:.7}
+.fz-who .fz-nth{font-style:normal;font-size:11px;font-weight:900;color:#e53935;text-align:center}
 #fzo .fz-c{flex:none;width:52px;height:52px;border:3px solid #3a2306;border-radius:6px;overflow:hidden;background:#efe2c4;padding:0;cursor:zoom-in}
 #fzo .fz-c img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:block}
 #fzo .fz-plus{font:900 18px var(--f-body)}
@@ -79,7 +80,7 @@ function draw(){ if(!V) return; const left=REQ.filter(r=>!DONE[r.id]).length;
   if(!OPEN.length){ B.innerHTML=`<div class="fz-row" style="justify-content:center">${REQ.length?"未対応の依頼はありません ✨":"まだ依頼はありません"}</div>`; return; }
   B.innerHTML=OPEN.map(r=>{ const d=DONE[r.id], A=mon(r.a), Bm=mon(r.b), pic=d?(d.img||(FMON_CACHE[d.id]||{}).img):PIC[r.id], pv=!d&&prevOf(r);
     return `<div class="fz-row ${d?"done":""}" data-r="${r.id}">
-      <div class="fz-who"><b>${esc(r.nm||"冒険者")}</b><span>魔物融合${NTH[r.id]?`（<b style="color:#e53935">${NTH[r.id]}回目</b>）`:""}</span><small>${new Date(r.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></div>
+      <div class="fz-who"><b>${esc(r.nm||"冒険者")}</b><span>魔物融合</span>${NTH[r.id]?`<em class="fz-nth">${NTH[r.id]}回目の融合</em>`:""}<small>${new Date(r.at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></div>
       <button class="fz-c" type="button" data-z="${A?cardURL(A.id,0,320):""}"><img src="${A?cardURL(A.id,0,120):""}" alt=""></button><span class="fz-plus">＋</span>
       <button class="fz-c" type="button" data-z="${Bm?cardURL(Bm.id,0,320):""}"><img src="${Bm?cardURL(Bm.id,0,120):""}" alt=""></button>
       <button class="fz-pic" type="button" data-pic="${r.id}" ${d?"disabled":""}>${pic?`<img src="${pic}" alt="">`:"絵を<br>えらぶ"}</button>
