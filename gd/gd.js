@@ -12,11 +12,11 @@ const GD={
   BUY_URL:"https://fukka0409.base.shop/items/151065414", BUY_IMG:"gd/buy.jpg",   // 「グッズチケットを500円で購入！」のリンク（BASEのショップ）
   // 景品（S賞・A賞は1人だけ当選）。img にラインナップの画像を入れる
   PRIZES:[
-    {r:"S", name:"「勇者アヒル」の原画", img:"gd/s.jpg?v=2", rate:0.05, one:true},
+    {r:"S", name:"「勇者アヒル」の原画", img:"gd/s.jpg?v=2", rate:0.01, one:true}   /* 2026-10-29：0.05%→0.01% */,
     {r:"A", name:"複製画キャンバス", img:"gd/a.jpg?v=2", rate:2.95, one:true},
     {r:"B", name:"ランダム複製トレカ3枚セット", img:"gd/b.jpg?v=2", rate:5, max:100},
     {r:"C", name:"パック式豆色紙", img:"gd/c.jpg", rate:7, max:100},
-    {r:"D", name:"デジタルステッカー（魔物）", img:"", rate:85},
+    {r:"D", name:"デジタルステッカー（魔物）", img:"", rate:85.04},
   ],
 };
 // D賞：ゲームの魔物の絵をステッカー風にして、ステッカー集めの枠に自動で貼る
@@ -25,7 +25,7 @@ const stkImg=id=>{ try{ const m=mon(id); return m&&m.img||""; }catch(e){ return 
 const stkRot=i=>((i*37)%13-6);   // 枠ごとに少しかたむける
 const stkTag=(id,i)=>`<img class="gd-st" src="${stkImg(id)}" alt="" style="--r:${stkRot(i)}deg">`;
 const COL={S:"#e53935",A:"#fb8c00",B:"#43a047",C:"#1e88e5",D:"#8e24aa"};
-const canSee=()=>{ try{ if(typeof dexPeek==="function"&&dexPeek()) return true; const me=normName(myName()); return GD.WHO.some(n=>normName(n)===me); }catch(e){ return false; } };
+const canSee=()=>true;   // 2026-10-29：全冒険者に公開（ログインしている冒険者だけ使える）
 const accRef=()=>DB.doc("gdacc/"+MYID), stockRef=()=>DB.doc("gdstock/one");
 const pz=r=>GD.PRIZES.find(p=>p.r===r);
 // 2026-10-29：数に限りがある景品（B賞・C賞は100個まで）。当たった数は gdstock/one の Bn・Cn
@@ -328,6 +328,16 @@ async function admin(){ if(!DB||!dexPeek()) return; const el=shell("🛍 グッ�
     d.querySelector("#gdCs").onclick=async()=>{ const c=d.querySelector("#gdCode").value.trim(); if(!c) return; try{ await withTO(DB.doc("gdacc/"+a.id).update({cp:{st:"sent", at:a.cp.at||gnow(), code:c.slice(0,40), sentAt:gnow()}})); T("クーポンコードを送りました"); }catch(e){ T("できませんでした"); } d.remove(); admin(); }; };
   draw(); }
 const confirmBox=t=>true;   // ダイアログは使わない（画面が止まるのを防ぐ）
+
+/* ---------- 2026-10-29：ふっかーの試しのデータをリセット（1回だけ） ----------
+   当たった景品は「void」にして一覧から消す・S賞/A賞の当選者とB賞/C賞の数を0に・チケット/ステッカー/クーポン/送った記録を0に（登録と承認はそのまま） */
+async function resetFukka(){ try{ if(!DB||!MYID||typeof dexPeek!=="function"||!dexPeek()||S.gdReset1029) return;
+  const q=await withTO(DB.collection("gdwin").where("uid","==",MYID).get());
+  for(const d of q.docs){ if((d.data()||{}).st!=="void") await withTO(DB.doc("gdwin/"+d.id).update({st:"void"})); }
+  await withTO(stockRef().set({S:null, A:null, Bn:0, Cn:0}));
+  const a=await withTO(accRef().get()); if(a.exists) await withTO(accRef().update({tk:0, stk:0, sl:[], given:0, gl:[], cp:firebase.firestore.FieldValue.delete()}));
+  S.gdReset1029=1; S.gdSeen={}; delete S.gdCache; save(); }catch(e){} }
+setTimeout(function tryReset(){ if(typeof DB!=="undefined"&&DB&&MYID) resetFukka(); else setTimeout(tryReset,3000); }, 4000);
 
 /* ---------- タイトルのボタン ---------- */
 setInterval(()=>{ const b=document.getElementById("ttlGd"), m=document.getElementById("ttlGdAdm"); const on=!!(typeof DB!=="undefined"&&DB&&MYID)&&canSee();
