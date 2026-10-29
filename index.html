@@ -3405,7 +3405,7 @@ const mulTxt = c => (Math.round(compMul(c)*100)/100).toString();
 function gainPExp(n){
   n=Math.round(n*compMul(compPct()));
   S.pexp+=n; let up=0;
-  while(S.pexp>=pNeed(S.plv)){ S.pexp-=pNeed(S.plv); S.plv++; up++; bumpMaxLv(); }
+  while(S.pexp>=pNeed(S.plv)){ S.pexp-=pNeed(S.plv); S.plv++; up++; bumpMaxLv(); } if(up) lvWhy("EXP（ガチャ・合成など）");
   if(up) setTimeout(()=>toast(`冒険者レベルが ${S.plv} に上がった！`),900);
 }
 
@@ -3461,7 +3461,7 @@ function defeatUnit(u){
   if(S.guard===u){ clearGuard(); S.lostNote=1; }   // 負けた魔物はBOXに戻る（すぐ配置し直せる）→ お知らせ②
   return {x, repl:null};
 }
-function winReward(oppLv){ const c=WIN_BASE+Math.max(0,Math.floor(oppLv||0)); S.coins+=c; S.plv+=WIN_LV; bumpMaxLv(); return c; }
+function winReward(oppLv){ const c=WIN_BASE+Math.max(0,Math.floor(oppLv||0)); S.coins+=c; S.plv+=WIN_LV; lvWhy("バトル勝ち"); bumpMaxLv(); return c; }
 // 過去最高の冒険者レベル：ランク戦に関係なく、一瞬でも到達したいちばん高いレベル
 function bumpMaxLv(){ if(!S.maxPlv || S.plv>S.maxPlv) S.maxPlv=S.plv; cpTrack(); }
 // チェックポイント：このランク戦で一度到達した10刻みのレベル（バトルで負けても、そこより下には下がらない）
@@ -3471,7 +3471,7 @@ function cpFloor(){ cpTrack(); return Math.max(1,S.cp||0); }
 function halveUnitLv(u){ const x=S.units.find(z=>z.u===u); if(x){ x.l=lvDrop(x.l); x.e=0; } return x; }   // 引き分け：負けと同じ下がり方
 function addRecord(kind){ S.stats.win=S.stats.win||0; S.stats.lose=S.stats.lose||0; S.stats.draw=S.stats.draw||0; S.stats[kind]++; }
 const winRate=(w,l,d)=>{ const t=(w||0)+(l||0)+(d||0); return t?Math.round((w||0)/t*1000)/10+"%":"―"; };
-function dropPlayerLv(n,useCp=true){ const b=S.plv, f=useCp?cpFloor():1; S.plv=Math.max(1,Math.min(b,Math.max(f,S.plv-n))); if(S.plv<b) S.pexp=0; return b-S.plv; }   // バトル：チェックポイントより下には下がらない
+function dropPlayerLv(n,useCp=true,why){ if(why) lvWhy(why); const b=S.plv, f=useCp?cpFloor():1; S.plv=Math.max(1,Math.min(b,Math.max(f,S.plv-n))); if(S.plv<b) S.pexp=0; return b-S.plv; }   // バトル：チェックポイントより下には下がらない
 // （今は使っていない）配置できる魔物の中からランダムで自動配置する関数。配置は任意なので呼んでいない
 const EMPTY_STEP_MS = 30*60*1000, EMPTY_MAX_DAY = 48;   // 2026-10-21：枠が空のあいだ30分ごとに1レベル下がる（1日の上限なし・チェックポイント関係なし）
 const EMPTY_TXT = "30分ごとに冒険者レベルが1下がります";
@@ -3531,7 +3531,7 @@ function hourlyDecay(){
     for(let i=1;i<=Math.min(n,48*30);i++){ const t=S.decayAt+i*EMPTY_STEP_MS;
       if(S.emptyLog.filter(x=>x>t-DAY_MS_).length<EMPTY_MAX_DAY){ S.emptyLog.push(t); drop++; } }
     S.decayAt+=n*EMPTY_STEP_MS;
-    const d=dropPlayerLv(drop,false); save(); /* 枠が空で下がる分は、チェックポイントに関係なく下がる */ if(d) setTimeout(()=>toast(`魔物を配置していなかったので、冒険者レベルが ${d} 下がりました`),1200); }
+    const d=dropPlayerLv(drop,false,"配置の枠が空"); save(); /* 枠が空で下がる分は、チェックポイントに関係なく下がる */ if(d) setTimeout(()=>toast(`魔物を配置していなかったので、冒険者レベルが ${d} 下がりました`),1200); }
 }
 setTimeout(hourlyDecay,0);
 setInterval(hourlyDecay, 60*1000);
@@ -3540,7 +3540,10 @@ function isFreshSave(x){ return !x || ((x.units||[]).length<=1 && !x.coins && !(
 /* ---------- 冒険者レベルの流れ（ランキングの矢印） ----------
    最近3時間のレベルの上がり下がりを記録：上がるだけ=▲緑 / 下がるだけ=▼赤 / 両方=▶青 */
 const TREND_MS = 3*HOUR_MS;
+// 2026-10-29：冒険者レベルが変わった理由の記録（ふっかーがプロフィールから見られる・最新40件）
+let LV_WHY=[]; const lvWhy=w=>{ if(!LV_WHY.includes(w)) LV_WHY.push(w); };
 function trackLv(){
+  try{ if(S._logLv==null) S._logLv=S.plv; if(S.plv!==S._logLv){ S.plvLog=(S.plvLog||[]).concat([[gnow(), S._logLv, S.plv, LV_WHY.join("・")||"その他"]]).slice(-40); S._logLv=S.plv; } LV_WHY=[]; }catch(e){}
   if(!S.maxPlv || S.plv>S.maxPlv) S.maxPlv=S.plv;   // 今までの最高冒険者レベル（ランク戦でリセットされない）
   if(S._lastLv==null){ S._lastLv=S.plv; return; }
   cpTrack();
@@ -4777,7 +4780,7 @@ function doSell(uids){
   const total=list.reduce((t,u)=>t+sellPrice(u),0);
   S.units=S.units.filter(z=>!list.includes(z));
   if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
-  const lv=sellLv(list); if(lv){ S.plv+=lv; bumpMaxLv(); }
+  const lv=sellLv(list); if(lv){ S.plv+=lv; lvWhy("魔物の売却"); bumpMaxLv(); }
   const nL=list.filter(u=>mon(u.m).rank==="L").length, up=nL*LIMITED_SELL_LV; let raised=0;
   if(up){ S.units.forEach(z=>{ const c=capOf(z); if(evoLocked(z)){ if(z.l>=c) return; z.l=Math.min(c,z.l+up); } else { const b0=z.l; z.l+=up; z.a=(z.a||0)+Math.max(0,z.l-Math.max(b0,MAX_LV)); } if(z.l>=Math.min(c,MAX_LV)) z.e=0; raised++; }); queueProfile(true); }   // Lv100を超えた分も、覚醒の石と同じようにそのまま上がる
   S.sellLog=(S.sellLog||[]).concat({at:gnow(), units:list.map(u=>({...u})), coins:total, plv:lv, up}).slice(-30);   // 売却の記録（あとで戻せるように）
@@ -5499,7 +5502,7 @@ function profilePayload(){
     comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0), tr:S.tsRd?1:0, tp:S.tsRd?(S.tsPow||0):0,
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), bkp:S.bankPreS!=null?Math.floor(S.bankPre||0):null, bkpS:S.bankPreS??-1, iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, ioL:(S.io&&(S.io.L||S.io.b))||0, ioW:(S.io&&(S.io.W!=null?S.io.W:(S.io.b?10:0)))||0, iom:(S.io&&S.io.m)||((S.home&&typeof S.home.m==="number")?S.home.m:1),   /* 魔物サバイバルの最高記録（前に脱出した記録しかない冒険者は、その記録＋武器10個） */ pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), plg:JSON.stringify((S.plvLog||[]).slice(-40)), bkp:S.bankPreS!=null?Math.floor(S.bankPre||0):null, bkpS:S.bankPreS??-1, iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, ioL:(S.io&&(S.io.L||S.io.b))||0, ioW:(S.io&&(S.io.W!=null?S.io.W:(S.io.b?10:0)))||0, iom:(S.io&&S.io.m)||((S.home&&typeof S.home.m==="number")?S.home.m:1),   /* 魔物サバイバルの最高記録（前に脱出した記録しかない冒険者は、その記録＋武器10個） */ pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
 }
 function queueProfile(now){
@@ -6351,7 +6354,7 @@ window.tsTier=p=>{ const t=TS_TIERS.find(x=>(p||0)>=x[0]); return {lv:t[1], c:t[
 // 魔物合戦の結果（ts/ts.js からよばれる）。勝ったら冒険者Lv+1・1000コイン。相手が勝ったら記録をのこして、相手が次に来たときにごほうび
 window.tsFightDone=(opp,res)=>{
   const myPow=S.tsPow||0, opPow=window.tsPower?window.tsPower(opp):0;
-  if(res==="win"){ const r=tsTier(opPow); S.plv=(S.plv||1)+r.lv; bumpMaxLv(); S.coins=(S.coins||0)+r.c;
+  if(res==="win"){ const r=tsTier(opPow); S.plv=(S.plv||1)+r.lv; lvWhy("魔物合戦の勝ち"); bumpMaxLv(); S.coins=(S.coins||0)+r.c;
     try{ if(TS_READY) TS_READY.delete(opp.uid); }catch(e){}
     try{ if(DB&&opp.uid) DB.collection("tsp").doc(opp.uid).update({rd:0, lb:myName().slice(0,12), lt:gnow()}).catch(()=>{}); }catch(e){} }   // 負けた相手は、すぐに準備完了が外れる
   save(); try{ queueProfile(true); }catch(e){} try{ renderCoins(); }catch(e){}
@@ -6374,7 +6377,7 @@ async function checkTsBattles(){ if(!DB||!MYID) return;
     const lost=L.find(b=>b.result==="att" && b.at>=(S.tsRdAt||0) && S.tsRd);   // 準備完了したあとの配置で負けた
     let back=0, n=0; if(lost&&window.tsLoseLayout){ const x=window.tsLoseLayout(); back=x.back; n=x.n; }
     let gLv=0, gC=0; W.forEach(b=>{ const r=tsTier(b.sp); gLv+=r.lv; gC+=r.c; });   // ごほうびは、しかけてきた相手の配置の強さで決まる
-    if(W.length){ S.plv=(S.plv||1)+gLv; bumpMaxLv(); S.coins=(S.coins||0)+gC; }
+    if(W.length){ S.plv=(S.plv||1)+gLv; lvWhy("魔物合戦の防衛"); bumpMaxLv(); S.coins=(S.coins||0)+gC; }
     save(); if(!W.length&&!lost) return; render();
     const bg=document.createElement("div"); bg.className="sheet-bg center";
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">⚔️</div><p>留守中に魔物合戦がありました</p>
@@ -6437,10 +6440,10 @@ async function doFight(r){
   S.attacks[r.id]=day;
   addRecord(result==="att"?"win":result==="def"?"lose":"draw");
   let lost=0, repl=null;
-  if(result==="def"){ repl=defeatUnit(g.u).repl; lost=dropPlayerLv(LOSE_LV); }
+  if(result==="def"){ repl=defeatUnit(g.u).repl; lost=dropPlayerLv(LOSE_LV,true,"バトル負け"); }
   if(result==="att"){ winReward(d.lv); }
   let half=null;
-  if(result==="draw"){ half=halveUnitLv(g.u); lost=dropPlayerLv(DRAW_LV); }
+  if(result==="draw"){ half=halveUnitLv(g.u); lost=dropPlayerLv(DRAW_LV,true,"引き分け"); }
   save(); closeSheet(); render();
   showBattleResult(result, g.m, d.gm, r.name, lost, coins, result==="draw"?"":myLv===theirLv?(rI(g.m)!==rI(d.gm)?"rank":"no"):"", repl);
   loadRanking();
@@ -6582,7 +6585,7 @@ async function checkTicks(silent){
       let n10=0, n30=0, lv=0, coins=0;
       for(const t of list){ if(t.n<=(S.tickSeen??-1)) continue;   // ほかの端末ですでに受け取った分は数えない
         if(t.ss>(S.season??0)) break;   // 新しいランク戦の分は、ランク戦の切り替え（精算）のあとで受け取る
-        if((t.t10||[]).includes(MYID)){ n10++; coins+=TOP10_COIN; if(t.ss===S.season){ S.plv+=1; bumpMaxLv(); lv++; } }
+        if((t.t10||[]).includes(MYID)){ n10++; coins+=TOP10_COIN; if(t.ss===S.season){ S.plv+=1; lvWhy("上位キープボーナス"); bumpMaxLv(); lv++; } }
         else if((t.t30||[]).includes(MYID)){ n30++; coins+=TOP30_COIN; }
         S.tickSeen=Math.max(S.tickSeen,t.n);
       }
@@ -6711,7 +6714,7 @@ async function checkSeason(){
     if(old>=BANK_TAX_SS && bankTax){ const t=Math.min(S.bank||0,bankTax.t); S.bank=(S.bank||0)-t; if(t>0) lines.push(`🏦 貯金ランキング${bankTax.rk}位なので、貯金の${Math.round(bankTax.p*100)}%（−${t.toLocaleString()}コイン）`); }
     // リセット
     const beforeLv=S.plv;
-    S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1;
+    lvWhy("ランク戦の終わり（リセット）"); S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1;
     S.season=cur; Object.keys(S.sv).forEach(k=>{ if(+k<cur-3) delete S.sv[k]; });
     save(); queueProfile(true); render();
     const bg=document.createElement("div"); bg.className="reveal";
@@ -6752,7 +6755,7 @@ function presentTxt(p, L=LANG==="en"){ const a=[];
   return a.join("<br>"); }
 function presentClaim(id){ const L=pbox(), i=L.findIndex(x=>x.id===id); if(i<0) return null; const p=L[i]; L.splice(i,1);
   if(p.coins){ S.coins=(S.coins||0)+p.coins; capCoins(); }
-  if(p.lv){ S.plv=(S.plv||1)+p.lv; bumpMaxLv(); }
+  if(p.lv){ S.plv=(S.plv||1)+p.lv; lvWhy("プレゼント"); bumpMaxLv(); }
   if(p.ticket) addItem("ticket",p.ticket); if(p.stone) addItem("stone",p.stone); if(p.moko) S.moko=(S.moko||0)+p.moko;
   (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(!m) return; S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:!!x.k,t:gnow()}); });
   save(); try{ renderCoins(); }catch(e){} if(p.lv) try{ queueProfile(true); }catch(e){} pboxUI(); return p; }
@@ -7277,11 +7280,11 @@ async function checkBattles(){
           if(!b.bot) S.lastBattle=Math.max(S.lastBattle||0,b.at); continue; }
         if(b.result==="att"){ downed.add(b.defU);
           const {x,repl}=defeatUnit(b.defU);
-          lostLv+=dropPlayerLv(LOSE_LV);
+          lostLv+=dropPlayerLv(LOSE_LV,true,"バトル負け（防衛）");
           msgs.push(`${anonWho(b)}に負けて、${esc(mon(b.defM)?.name||"魔物")}のレベルが下がった…${x?`（Lv${x.l}）`:""}`);
         } else if(b.result==="def"){ const c=winReward(b.attP); coinDiff+=c; lostLv-=WIN_LV;
           msgs.push(`${anonWho(b)}の${esc(mon(b.attM)?.name||"魔物")}をしりぞけた！（+${c.toLocaleString()}コイン・冒険者Lv+${WIN_LV}）`); }
-        else { halveUnitLv(b.defU); lostLv+=dropPlayerLv(DRAW_LV);
+        else { halveUnitLv(b.defU); lostLv+=dropPlayerLv(DRAW_LV,true,"引き分け（防衛）");
           msgs.push(`${anonWho(b)}と引き分けた…${esc(mon(b.defM)?.name||"魔物")}のレベルが下がった`); }
         addRecord(b.result==="att"?"lose":b.result==="def"?"win":"draw");
         if(!b.bot) S.lastBattle=Math.max(S.lastBattle||0,b.at);
@@ -7860,7 +7863,7 @@ async function checkItems(){
           if(b.what==="magnet"){ const c=Math.min(S.coins,Math.max(0,Math.floor(S.coins*MAGNET))); S.coins-=c; lostCoin+=c; res.push(`↩️ ${to}さんの盾に${nm}を跳ね返された…（−${c.toLocaleString()}コイン）`);
             if(b.att && DB){ try{ DB.collection("items").add({att:MYID, def:b.att, attP:S.plv, item:"loot", r:1, qty:1, coins:c, at:gnow()}); }catch(e){} } }
           else if(b.what==="fire"){ const x=guardUnit(); let t=""; if(x){ const before=x.l; x.l=Math.max(1,x.l-FIRE_LV); x.e=0; t=`${esc(mon(x.m).name)}がLv${before}→Lv${x.l}`; } res.push(`↩️ ${to}さんの盾に${nm}を跳ね返された…${t?`（${t}）`:"（配置中の魔物がいなかったので何も起きなかった）"}`); }
-          else if(b.what==="bomb"){ const d=dropPlayerLv(BOMB_LV); lostLv+=d; res.push(`↩️ ${to}さんの盾に${nm}を跳ね返された…${d?`（冒険者レベル−${d}）`:"でもチェックポイントのおかげで冒険者レベルは下がらなかった！"}`); }
+          else if(b.what==="bomb"){ const d=dropPlayerLv(BOMB_LV,true,"爆弾を盾ではね返された"); lostLv+=d; res.push(`↩️ ${to}さんの盾に${nm}を跳ね返された…${d?`（冒険者レベル−${d}）`:"でもチェックポイントのおかげで冒険者レベルは下がらなかった！"}`); }
           S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(["magnet","fire","bomb","shbomb"].includes(b.item) && (b.at||0) < seasonEnd(seasonOf(b.at||0)-1)+HOUR_MS){ if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at); continue; }   // ランク戦が始まって1時間のあいだに使われた攻撃アイテムは無効（古いアプリから使われても効かない）
         if(["magnet","fire","bomb","shbomb"].includes(b.item)) shPurge(seasonOf(b.at||0));   // その攻撃のときのランク戦の盾だけが使える
@@ -7882,7 +7885,7 @@ async function checkItems(){
         else if(b.item==="fire"){ const x=S.units.find(z=>z.u===b.defU); let t="";
           if(x){ const before=x.l; x.l=Math.max(1,x.l-FIRE_LV); x.e=0; t=`${esc(mon(x.m).name)}がLv${before}→Lv${x.l}`; }
           msgs.push(`🔥 ${who}からファイヤーボールを使われた…${t?`（${t}）`:"（魔物はもういなかった）"}`); }
-        else if(b.item==="bomb"){ const d=dropPlayerLv(BOMB_LV); lostLv+=d; msgs.push(d?`💣 ${who}から爆弾を使われた…（冒険者レベル−${d}）`:`💣 ${who}から爆弾を使われた…でもチェックポイントのおかげで冒険者レベルは下がらなかった！`); }
+        else if(b.item==="bomb"){ const d=dropPlayerLv(BOMB_LV,true,"爆弾を使われた"); lostLv+=d; msgs.push(d?`💣 ${who}から爆弾を使われた…（冒険者レベル−${d}）`:`💣 ${who}から爆弾を使われた…でもチェックポイントのおかげで冒険者レベルは下がらなかった！`); }
         if(!b.bot) S.lastItem=Math.max(S.lastItem||0,b.at);
       }
       save(); render();
@@ -7949,6 +7952,14 @@ async function repClean(force){ if(!DB||!MYID) return; if(!force && Date.now()-r
     for(const d of q.docs){ if((d.data()||{}).ck!==ck || !myPubComment()) d.ref.delete().catch(()=>{}); } }catch(e){} }
 setInterval(()=>{ try{ repClean(false); }catch(e){} }, 60000);
 let LAST_PROF=null;
+// ふっかーだけ：その冒険者の冒険者レベルが変わった記録（新しい順）
+async function openLvLog(r){ let L=[]; try{ let p=r; if(DB&&r.id){ const d=await withTO(DB.collection("profiles").doc(r.id).get()); if(d.exists) p=d.data(); } L=JSON.parse(p.plg||"[]"); }catch(e){}
+  const tm=t=>{ const d=new Date(t+9*HOUR_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`; };
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" style="max-height:80vh;overflow:auto"><p>📜 ${esc(r.name||"")}さんの冒険者レベルの記録</p>
+    <div class="note" style="margin:0;text-align:left;font-size:12px;line-height:1.6">${L.length?L.slice().reverse().map(([t,a,b,w])=>`${tm(t)}　Lv${a}→<b style="color:${b<a?"#ff6b6b":"#7ddc6f"}">${b}</b>（${b-a>0?"+":""}${b-a}）　${esc(w)}`).join("<br>"):"まだ記録がありません（この冒険者が新しい版を開いてからの記録が出ます）"}</div>
+    <button class="btn gold" type="button">とじる</button></div>`;
+  document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
 function openOtherProfile(r,rank){
   if(!r) return; LAST_PROF=[r,rank];
   const n=v=>esc(Number(v||0).toLocaleString());
@@ -7977,11 +7988,13 @@ function openOtherProfile(r,rank){
       ${(r.kw||r.kc)?`<div><i class="st-ic" aria-hidden="true">🏯</i><small>魔ノ国の称号</small><b translate="no">${esc(knTitleText(r.kw||0,r.kc||0))}</b></div>`:""}
       <div><i class="st-ic" aria-hidden="true">⭐</i><small>最高冒険者Lv</small><b>${n(Math.max(r.mp||0,r.lv||1))}</b></div>
     </div>
+    ${dexPeek()?`<button type="button" class="btn ghost" id="profLvLog" style="margin:14px auto 0;display:block;font-size:13px">📜 冒険者レベルの記録（ふっかーだけ）</button>`:""}
     ${DB&&MYID&&r.id&&r.id!==MYID?`<button type="button" class="btn ghost" id="profRpt" style="margin:14px auto 0;display:block;font-size:13px">🚨 この冒険者を通報する</button>`:""}
   </div>`);
   try{ defRecInto(bg.querySelector("#defRec"),r); }catch(e){}
   const pr=bg.querySelector("#profRep"); if(pr) pr.onclick=()=>openReplies(r);
   const rp=bg.querySelector("#profRpt"); if(rp) rp.onclick=()=>openReport(r);
+  const ll=bg.querySelector("#profLvLog"); if(ll) ll.onclick=()=>openLvLog(r);
 }
 // レーダーチャート：ガチャ回数・合成回数・魔物コンプ率・手持ちの魔物を、ランキングの平均と重ねて表示
 // 回数は人によって差が大きいので、ランキング内の最大値を外側として平方根でならす（コンプ率は0〜100%そのまま）
