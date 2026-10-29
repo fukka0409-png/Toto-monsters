@@ -14,8 +14,8 @@ const GD={
   PRIZES:[
     {r:"S", name:"「勇者アヒル」の原画", img:"gd/s.jpg?v=2", rate:0.05, one:true},
     {r:"A", name:"複製画キャンバス", img:"gd/a.jpg?v=2", rate:2.95, one:true},
-    {r:"B", name:"ランダム複製トレカ3枚セット", img:"gd/b.jpg?v=2", rate:5},
-    {r:"C", name:"パック式豆色紙", img:"gd/c.jpg", rate:7},
+    {r:"B", name:"ランダム複製トレカ3枚セット", img:"gd/b.jpg?v=2", rate:5, max:100},
+    {r:"C", name:"パック式豆色紙", img:"gd/c.jpg", rate:7, max:100},
     {r:"D", name:"デジタルステッカー（魔物）", img:"", rate:85},
   ],
 };
@@ -28,6 +28,9 @@ const COL={S:"#e53935",A:"#fb8c00",B:"#43a047",C:"#1e88e5",D:"#8e24aa"};
 const canSee=()=>{ try{ if(typeof dexPeek==="function"&&dexPeek()) return true; const me=normName(myName()); return GD.WHO.some(n=>normName(n)===me); }catch(e){ return false; } };
 const accRef=()=>DB.doc("gdacc/"+MYID), stockRef=()=>DB.doc("gdstock/one");
 const pz=r=>GD.PRIZES.find(p=>p.r===r);
+// 2026-10-29：数に限りがある景品（B賞・C賞は100個まで）。当たった数は gdstock/one の Bn・Cn
+const leftOf=(p,st)=>p.max?Math.max(0,p.max-((st||{})[p.r+"n"]||0)):null;
+const soldOut=(p,st)=>p.one?!!(st||{})[p.r]:(p.max?leftOf(p,st)<=0:false);
 const T=t=>{ try{ toast(t); }catch(e){} };
 const tap=()=>{ try{ SFX.tap(); }catch(e){} };
 
@@ -56,7 +59,7 @@ css.textContent=`
 #gdo .gd-pz .rk{display:block;font-size:18px}
 #gdo .gd-pz img,#gdo .gd-pz .ph{width:100%;aspect-ratio:1;object-fit:contain;display:block;margin:3px 0;border-radius:6px;background:#f6efe0;font-size:28px;line-height:1;display:grid;place-items:center}
 #gdo .gd-pz.out{filter:grayscale(1);opacity:.55}
-#gdo .gd-pz.out::after{content:"当選者が出ました！";position:absolute;left:-4px;right:-4px;top:42%;background:#222;color:#fff;font-size:10px;padding:3px 0;transform:rotate(-8deg);border-radius:4px}
+#gdo .gd-pz.out::after{content:attr(data-out);position:absolute;left:-4px;right:-4px;top:42%;background:#222;color:#fff;font-size:10px;padding:3px 0;transform:rotate(-8deg);border-radius:4px}
 #gdo .gd-pulls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px}
 #gdo .gd-pulls button{padding:14px 6px;border-radius:12px;border:3px solid #2b1a06;box-shadow:0 4px 0 #2b1a06;background:#ffcf3b;font:900 18px var(--f-body);color:#2b1a06}
 #gdo .gd-pulls button small{display:block;font-size:12px;margin-top:3px}
@@ -173,8 +176,8 @@ async function mailReq(id,after){ tap(); try{ await withTO(DB.doc("gdwin/"+id).u
 
 // ③ グッズガチャ
 function gachaPage(){ page="gacha"; const el=shell("🎰 グッズガチャ",homePage);
-  el.innerHTML=`<div class="gd-card"><b>ラインナップ</b><div class="gd-line" style="margin-top:8px">${GD.PRIZES.map(p=>`<div class="gd-pz ${p.one&&STOCK[p.r]?"out":""}"><span class="rk" style="color:${COL[p.r]}">${p.r}賞</span>${p.img?`<img src="${esc(p.img)}" alt="" data-zoom="${p.r}">`:p.r==="D"&&stkPool().length?`<span class="ph">${stkTag(stkPool()[Math.floor(Math.random()*stkPool().length)],1)}</span>`:`<span class="ph">🎁</span>`}${esc(p.name)}${p.one?"<br><small>1名のみ</small>":""}</div>`).join("")}</div>
-      <p style="font-size:12px;margin:0">S賞とA賞は1人だけ当選します。当選者が出ると、その景品はモノクロになります。</p></div>
+  el.innerHTML=`<div class="gd-card"><b>ラインナップ</b><div class="gd-line" style="margin-top:8px">${GD.PRIZES.map(p=>`<div class="gd-pz ${soldOut(p,STOCK)?"out":""}" data-out="${p.one?"当選者が出ました！":"品切れ"}"><span class="rk" style="color:${COL[p.r]}">${p.r}賞</span>${p.img?`<img src="${esc(p.img)}" alt="" data-zoom="${p.r}">`:p.r==="D"&&stkPool().length?`<span class="ph">${stkTag(stkPool()[Math.floor(Math.random()*stkPool().length)],1)}</span>`:`<span class="ph">🎁</span>`}${esc(p.name)}${p.one?"<br><small>1名のみ</small>":p.max?`<br><small style="color:#c62828">残り${leftOf(p,STOCK)}個</small>`:""}</div>`).join("")}</div>
+      <p style="font-size:12px;margin:0">S賞とA賞は1人だけ当選します。B賞とC賞は数に限りがあります。当選者が出たり品切れになったりすると、その景品はモノクロになります。</p></div>
     <div style="text-align:center;font-weight:900;margin:0 0 8px">所持チケット 🎫 ${ACC.tk||0}枚</div>
     <div class="gd-pulls"><button type="button" data-n="1" ${(ACC.tk||0)<GD.ONE?"disabled":""}>1連<small>チケット${GD.ONE}枚</small></button><button type="button" data-n="10" ${(ACC.tk||0)<GD.TEN?"disabled":""}>10連<small>チケット${GD.TEN}枚</small></button></div>
     ${GD.BUY_URL?`<a href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener" style="display:block;border-radius:12px;overflow:hidden;border:3px solid #2b1a06;box-shadow:0 4px 0 #2b1a06"><img src="${esc(GD.BUY_IMG)}" alt="グッズチケットを500円で購入！ 1セット購入でグッズチケット1枚申請できます" style="display:block;width:100%;height:auto"></a><p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0">🎫 グッズチケットを500円で購入！</p>`:""}`;
@@ -184,10 +187,12 @@ let pulling=false;
 async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===10?GD.TEN:GD.ONE; let got=[], newIds=[], gotStk=[], nAcc=null, nSt=null;
   try{ await DB.runTransaction(async tx=>{ const a=await tx.get(accRef()), s=await tx.get(stockRef()); const acc=a.data(), st=s.exists?s.data():{}; got=[]; newIds=[];
       if(!acc||acc.st!=="ok") throw new Error("not ok"); if((acc.tk||0)<cost) throw new Error("tk");
-      const taken={S:!!st.S, A:!!st.A}, setSt={}; let d=0; const sl=(acc.sl||[]).slice(), pool=stkPool(); gotStk=[];
+      const taken={S:!!st.S, A:!!st.A}, setSt={}, used={}; let d=0; const sl=(acc.sl||[]).slice(), pool=stkPool(); gotStk=[];
       for(let i=0;i<n;i++){ let x=Math.random()*100, pick=pz("D");
         for(const p of GD.PRIZES){ if((x-=p.rate)<0){ pick=p; break; } }
         if(pick.one&&taken[pick.r]) pick=pz("D");   // 当選者が出たS賞・A賞の分はD賞になる
+        if(pick.max&&((st[pick.r+"n"]||0)+(used[pick.r]||0))>=pick.max) pick=pz("D");   // 品切れのB賞・C賞の分もD賞になる
+        if(pick.max){ used[pick.r]=(used[pick.r]||0)+1; setSt[pick.r+"n"]=(st[pick.r+"n"]||0)+used[pick.r]; }
         if(pick.one){ taken[pick.r]=true; setSt[pick.r]=MYID; }
         got.push(pick.r); if(pick.r==="D"){ d++; if(pool.length){ const id=pool[Math.floor(Math.random()*pool.length)]; gotStk.push(id); if(sl.length<GD.STK) sl.push(id); } } }
       tx.update(accRef(),{tk:(acc.tk||0)-cost, stk:sl.length, sl}); nAcc={...acc, tk:(acc.tk||0)-cost, stk:sl.length, sl}; nSt={...st,...setSt};
