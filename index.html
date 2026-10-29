@@ -6789,8 +6789,10 @@ async function checkSeason(){
     // 2026-10-29：ほかの画面がもうこのランク戦を精算していたら、二重に精算しない（クラウドの数字に記録）
     if(WAL.ref){ let rs=-1; try{ const rd=await remoteDoc.get(); rs=(JSON.parse(rd.data().json).season)??-1; }catch(e){}
       if(rs>=cur){ seasonBusy=false; try{ await pullRemote(true,true); }catch(e){} return; }   // ほかの画面がもう精算して保存していた
-      let done=false; try{ await DB.runTransaction(async tx=>{ const sn=await tx.get(WAL.ref); const w=sn.exists?sn.data():{}; if((w.ss??-1)>=cur && w.ssBy && w.ssBy!==SID && gnow()-(w.ssAt||0)<5*60000){ done=true; return; } tx.update(WAL.ref,{ss:cur, ssBy:SID, ssAt:gnow()}); }); }catch(e){ seasonBusy=false; return; }
-      if(done){ seasonBusy=false; try{ await pullRemote(true,true); }catch(e){} return; } }
+      let done=false; try{ await DB.runTransaction(async tx=>{ const sn=await tx.get(WAL.ref); const w=sn.exists?sn.data():{}; if((w.ss??-1)>=cur && w.ssBy!==SID){ done=true; return; } tx.update(WAL.ref,{ss:cur, ssBy:SID, ssAt:gnow()}); }); }catch(e){ seasonBusy=false; return; }
+      if(done){ try{ await pullRemote(true,true); }catch(e){}   // 2026-10-30：ほかの画面がもう精算していた：賞品は受け取らずに、新しいランク戦へ進める（前は時間がたつともう一度精算して賞品が二重になることがあった）
+        if((S.season??0)<cur && S===S0){ S.sv=S.sv||{}; if(S.sv[old]==null) S.sv[old]=mine; lvWhy("ランク戦の終わり（ほかの画面で精算ずみ）"); S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1; S.season=cur; try{ walAdopt(); }catch(e){} save(); queueProfile(true); try{ render(); }catch(e){} }
+        seasonBusy=false; return; } }
     if(S!==S0){ seasonBusy=false; return; }
     { const nc=S.coins+coins; if(nc<0){ S.bank=Math.max(0,(S.bank||0)+nc); S.coins=0; } else S.coins=nc; }   // 2026-10-28：所持コインで足りないマイナスは貯金から引く
     if(stones) addItem("stone",stones); if(mokos) S.moko=(S.moko||0)+mokos;
@@ -6878,6 +6880,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-30-season2x", coins:1000 },   // 画面が2つ動いていると、ランク戦の精算が二重になることがあった
   { id:"fix-2026-10-29-gdsend", coins:1000 },   // グッズ管理でチケットを送れなかった
   { id:"fix-2026-10-29-reflectmsg", coins:1000 },   // 盾でマグネットをはね返したのに「使ったアイテムが…」と出ていた
   { id:"fix-2026-10-29-twoscreen2", coins:1000 },   // 画面が2つ動いていると、ランキングの記録がまちがうことがあった
@@ -10416,5 +10419,5 @@ async function titleRanks(){
 <script src="io/io.js?v=64" defer></script>
 <script src="vt/vt.js?v=14" defer></script>
 <script src="fz/fz.js?v=16" defer></script>
-<script src="gd/gd.js?v=18" defer></script>
+<script src="gd/gd.js?v=20" defer></script>
 </body></html>
