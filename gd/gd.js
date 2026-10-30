@@ -16,7 +16,7 @@ const GD={
     {r:"A", name:"複製画キャンバス", img:"gd/a.jpg?v=2", rate:2.95, one:true},
     {r:"B", name:"ランダム複製トレカ3枚セット", img:"gd/b.jpg?v=2", rate:5, max:100},
     {r:"C", name:"パック式豆色紙", img:"gd/c.jpg", rate:7, max:100},
-    {r:"D", name:"デジタルステッカー（魔物）", img:"", rate:85.04},
+    {r:"D", name:"デジタルステッカー（魔物）", img:"", rate:85.04, max:300},   /* 2026-10-30：D賞も残り300まで */
   ],
 };
 // D賞：ゲームの魔物の絵をステッカー風にして、ステッカー集めの枠に自動で貼る
@@ -190,9 +190,9 @@ async function mailReq(id,after){ tap(); try{ await withTO(DB.doc("gdwin/"+id).u
 // ③ グッズガチャ
 function gachaPage(){ page="gacha"; const el=shell("🎰 グッズガチャ",homePage);
   el.innerHTML=`<div class="gd-card"><b>ラインナップ</b><div class="gd-line" style="margin-top:8px">${GD.PRIZES.map(p=>`<div class="gd-pz ${soldOut(p,STOCK)?"out":""}" data-out="${p.one?"当選者が出ました！":"品切れ"}"><span class="rk" style="color:${COL[p.r]}">${p.r}賞</span>${p.img?`<img src="${esc(p.img)}" alt="" data-zoom="${p.r}">`:p.r==="D"&&stkPool().length?`<span class="ph">${stkTag(stkPool()[Math.floor(Math.random()*stkPool().length)],1)}</span>`:`<span class="ph">🎁</span>`}${esc(p.name)}${p.one?"<br><small>1名のみ</small>":p.max?`<br><small style="color:#c62828">残り${leftOf(p,STOCK)}個</small>`:""}</div>`).join("")}</div>
-      <p style="font-size:12px;margin:0">S賞とA賞は1人だけ当選します。B賞とC賞は数に限りがあります。当選者が出たり品切れになったりすると、その景品はモノクロになります。</p></div>
+      <p style="font-size:12px;margin:0">S賞とA賞は1人だけ当選します。B賞・C賞・D賞は数に限りがあります。当選者が出たり品切れになったりすると、その景品はモノクロになります。</p></div>
     <div style="text-align:center;font-weight:900;margin:0 0 8px">所持チケット 🎫 ${ACC.tk||0}枚</div>
-    <div class="gd-pulls"><button type="button" data-n="1" ${(ACC.tk||0)<GD.ONE?"disabled":""}>1連<small>チケット${GD.ONE}枚</small></button><button type="button" data-n="10" ${(ACC.tk||0)<GD.TEN?"disabled":""}>10連<small>チケット${GD.TEN}枚</small></button></div>
+    ${soldOut(pz("D"),STOCK)?`<p style="text-align:center;font-weight:900;color:#c62828;margin:0 0 8px">D賞が品切れのため、ガチャはお休みです（補充をお待ちください）</p>`:""}<div class="gd-pulls"><button type="button" data-n="1" ${(ACC.tk||0)<GD.ONE||soldOut(pz("D"),STOCK)?"disabled":""}>1連<small>チケット${GD.ONE}枚</small></button><button type="button" data-n="10" ${(ACC.tk||0)<GD.TEN||soldOut(pz("D"),STOCK)||leftOf(pz("D"),STOCK)<10?"disabled":""}>10連<small>チケット${GD.TEN}枚</small></button></div>
     ${GD.BUY_URL?`<a href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener" style="display:block;border-radius:12px;overflow:hidden;border:3px solid #2b1a06;box-shadow:0 4px 0 #2b1a06"><img src="${esc(GD.BUY_IMG)}" alt="グッズチケットを500円で購入！ 1セット購入でグッズチケット1枚申請できます" style="display:block;width:100%;height:auto"></a><p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0">🎫 グッズチケットを500円で購入！</p>`:""}
     <button class="gd-go" type="button" id="gdTreq" style="margin-top:14px">🎫 チケットを申請する</button>
     ${(()=>{ const w=TREQ.filter(x=>x.st==="wait"); return w.length?`<p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0;color:#c62828">申請中：${w.reduce((t,x)=>t+(x.n||0),0)}枚（ふっかーの確認待ち）</p>`:""; })()}`;
@@ -222,14 +222,15 @@ async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===
       for(let i=0;i<n;i++){ let x=Math.random()*100, pick=pz("D");
         for(const p of GD.PRIZES){ if((x-=p.rate)<0){ pick=p; break; } }
         if(pick.one&&taken[pick.r]) pick=pz("D");   // 当選者が出たS賞・A賞の分はD賞になる
-        if(pick.max&&((st[pick.r+"n"]||0)+(used[pick.r]||0))>=pick.max) pick=pz("D");   // 品切れのB賞・C賞の分もD賞になる
+        if(pick.r!=="D"&&pick.max&&((st[pick.r+"n"]||0)+(used[pick.r]||0))>=pick.max) pick=pz("D");   /* 品切れのB賞・C賞の分もD賞になる */
+        if(pick.r==="D"&&((st.Dn||0)+(used.D||0))>=pz("D").max) throw new Error("dout");   /* D賞が品切れ：このガチャは取り消し */
         if(pick.max){ used[pick.r]=(used[pick.r]||0)+1; setSt[pick.r+"n"]=(st[pick.r+"n"]||0)+used[pick.r]; }
         if(pick.one){ taken[pick.r]=true; setSt[pick.r]=MYID; }
         got.push(pick.r); if(pick.r==="D"){ d++; if(pool.length){ const id=pool[Math.floor(Math.random()*pool.length)]; gotStk.push(id); if(sl.length<GD.STK) sl.push(id); } } }
       tx.update(accRef(),{tk:(acc.tk||0)-cost, stk:sl.length, sl}); nAcc={...acc, tk:(acc.tk||0)-cost, stk:sl.length, sl}; nSt={...st,...setSt};
       if(Object.keys(setSt).length) tx.set(stockRef(),{...st,...setSt});
       got.filter(r=>r!=="D").forEach(r=>{ const ref=DB.collection("gdwin").doc(); newIds.push(ref.id); tx.set(ref,{uid:MYID, adv:String(myName()||"").slice(0,24), r, name:pz(r).name, at:gnow(), st:"won"}); }); }); }
-  catch(e){ pulling=false; return T(String(e&&e.message)==="tk"?"グッズチケットが足りません":"通信できませんでした。もう一度ためしてください"); }
+  catch(e){ pulling=false; return T(String(e&&e.message)==="tk"?"グッズチケットが足りません":String(e&&e.message)==="dout"?"D賞が品切れのため、ガチャはお休みです（補充をお待ちください）":"通信できませんでした。もう一度ためしてください"); }
   if(nAcc) ACC=nAcc; if(nSt) STOCK=nSt; newIds.forEach((id,i)=>{ const r=got.filter(x=>x!=="D")[i]; WINS.unshift({id, uid:MYID, r, name:pz(r).name, at:gnow(), st:"won"}); });   // 待たずに画面を進める
   pulling=false; load().catch(()=>{});
   const cnt={}; got.forEach(r=>cnt[r]=(cnt[r]||0)+1); const real=got.filter(r=>r!=="D").length;
