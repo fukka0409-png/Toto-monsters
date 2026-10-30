@@ -24,7 +24,7 @@ const stkPool=()=>{ try{ return MONSTERS.filter(m=>m&&m.img&&m.rank!=="L").map(m
 const stkImg=id=>{ try{ const m=mon(id); return m&&m.img||""; }catch(e){ return ""; } };
 const stkRot=i=>((i*37)%13-6);   // 枠ごとに少しかたむける
 const stkTag=(id,i)=>`<img class="gd-st" src="${stkImg(id)}" alt="" style="--r:${stkRot(i)}deg">`;
-const FIRST_N=3, FIRST_RATE={S:0.01, A:5, B:20, C:30, D:44.99};   // 最初の3回の確率（%）
+const FIRST_N=3, FIRST_RATE={S:0.01, A:2.95, B:20, C:30, D:47.04};   // 最初の3回の確率（%）：B・Cが出やすい（S・Aはいつもと同じ）
 const COL={S:"#e53935",A:"#fb8c00",B:"#43a047",C:"#1e88e5",D:"#8e24aa"};
 const canSee=()=>true;   // 2026-10-29：全冒険者に公開（ログインしている冒険者だけ使える）
 const accRef=()=>DB.doc("gdacc/"+MYID), stockRef=()=>DB.doc("gdstock/one");
