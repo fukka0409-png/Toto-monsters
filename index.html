@@ -6805,9 +6805,9 @@ async function checkSeason(){
     let rank=null, q=null, RR=null;
     if(old>=cur-3){
       /* 2026-10-30：順位はサーバーが1回だけ決めた結果（rankres）を使う。みんな同じ結果になり、電波や古い画面でずれない */
-      try{ const rd=await DB.doc("rankres/"+old).get({source:"server"}); if(rd.exists) RR=rd.data(); }catch(e){}
+      let srv=false; try{ const rd=await DB.doc("rankres/"+old).get({source:"server"}); if(rd.exists) RR=rd.data(); else srv=(await DB.doc("rankres/"+(old-1)).get({source:"server"})).exists; }catch(e){}   /* 前の回の結果があれば、サーバーが動いている */
       if(RR){ rank=(RR.r||{})[MYID] ?? (1+Object.values(RR.sc||{}).filter(v=>v>mine).length); }
-      else if(gnow()<seasonEnd(old)+RANKRES_WAIT){ if(S.rrWaitMsg!==old){ S.rrWaitMsg=old; try{ toast("🏁 ランク戦の結果を集計中です。少し待ってね"); }catch(e){} } seasonBusy=false; return; }   /* サーバーの集計を待つ（1分ごとに見直す） */
+      else if(srv && gnow()<seasonEnd(old)+RANKRES_WAIT){ if(S.rrWaitMsg!==old){ S.rrWaitMsg=old; try{ toast("🏁 ランク戦の結果を集計中です。少し待ってね"); }catch(e){} } seasonBusy=false; return; }   /* サーバーの集計を待つ（1分ごとに見直す） */
       else {   /* サーバーの結果がないとき（サーバーが止まっていたときなど）だけ、前と同じように自分で計算する */
       q=await DB.collection("profiles").limit(3000).get({source:"server"});   /* かならずサーバーから読む（電波がもどる前の、端末に残った古い一部の記録で順位を決めないように） */
       if(q.size<5) throw new Error("few");   /* 冒険者の記録がほとんど読めなかったときは、精算しないで少しあとにやり直す */
@@ -10504,8 +10504,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261030230657" defer></script>
-<script src="vt/vt.js?v=20261030230657" defer></script>
-<script src="fz/fz.js?v=20261030230657" defer></script>
-<script src="gd/gd.js?v=20261030230657" defer></script>
+<script src="io/io.js?v=20261030230714" defer></script>
+<script src="vt/vt.js?v=20261030230714" defer></script>
+<script src="fz/fz.js?v=20261030230714" defer></script>
+<script src="gd/gd.js?v=20261030230714" defer></script>
 </body></html>
