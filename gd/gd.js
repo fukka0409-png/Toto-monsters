@@ -118,7 +118,8 @@ async function load(){
   try{ if(ACC!==undefined){ S.gdCache={ACC,WINS,STOCK,uid:MYID}; save(); } }catch(e){}
 }
 const reshow=()=>{ if(!V) return; if(page==="gacha") gachaPage(); else if(page==="stk") stkPage(); else route(); };
-async function open(){ if(!DB||!MYID) return T("グッズ特典はログインしている冒険者だけ使えます");
+let TIP=false;
+async function open(){ if(!DB||!MYID) return T("グッズ特典はログインしている冒険者だけ使えます"); TIP=true;   /* 2026-10-30：開くたびに、チケット申請の案内を出す */
   if(!canSee()) return;
   GD.PRIZES.forEach(p=>{ if(p.img){ const im=new Image(); im.src=p.img; } }); if(GD.BUY_IMG){ const im=new Image(); im.src=GD.BUY_IMG; }   // 写真を先に読みこんでおく
   const c=S.gdCache; page="home";
@@ -192,7 +193,10 @@ function homePage(){ page="home"; const el=shell("🛍 グッズガチャ");
   { const gb=el.querySelector("#gdGachaBox"); if(gb) gb.appendChild(gachaBody()); }
   el.querySelector("#gdReq").onclick=()=>{ tap(); reqPage(); };
   el.querySelector("#gdStk").onclick=()=>{ tap(); stkPage(); };
-  noticeCheck(); }
+  noticeCheck(); if(TIP){ TIP=false; showTip(); } }
+function showTip(){ const d=document.createElement("div"); d.className="gd-res";
+  d.innerHTML=`<div style="padding:12px"><img src="gd/tip.jpg?v=2" alt="" style="display:block;width:100%;height:auto;border-radius:10px;margin:0 0 10px"><p style="font-weight:900;font-size:16px;line-height:1.6;margin:0 0 12px">ステッカーを購入したら<br><span style="color:#c62828">「チケットを申請する」</span>ボタンをタップして<br>購入分の枚数を申請しよう！</p><button type="button">OK</button></div>`;
+  document.body.appendChild(d); d.querySelector("button").onclick=()=>d.remove(); d.onclick=e=>{ if(e.target===d) d.remove(); }; }
 
 // 申請済みグッズ（郵送申請したもの・クーポン）
 function reqPage(){ const el=shell("📦 申請済みグッズ",homePage);
