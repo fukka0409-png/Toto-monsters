@@ -6906,6 +6906,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-30-gdDn", coins:1000 },   // 古い画面のままグッズガチャを引くと、D賞の残りの数が減っていなかった
   { id:"fix-2026-10-30-reloadloss", coins:1000 },   // 更新した直後に増えたコインなどが、ページの更新で消えることがあった
   { id:"fix-2026-10-30-shieldmsg", coins:1000 },   // アイテムのお知らせに、魔物のレベルが下がったことや盾がこわれたことが出ていなかった
   { id:"fix-2026-10-30-minitimer", coins:1000 },   // ミニゲームの画面のタイマーが止まって見えていた
@@ -10449,8 +10450,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=202610301912" defer></script>
-<script src="vt/vt.js?v=202610301912" defer></script>
-<script src="fz/fz.js?v=202610301912" defer></script>
-<script src="gd/gd.js?v=202610301912" defer></script>
+<script src="io/io.js?v=20261030191400" defer></script>
+<script src="vt/vt.js?v=20261030191400" defer></script>
+<script src="fz/fz.js?v=20261030191400" defer></script>
+<script src="gd/gd.js?v=20261030191400" defer></script>
 </body></html>

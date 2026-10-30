@@ -417,6 +417,10 @@ async function resetFukka(){ try{ if(!DB||!MYID||typeof dexPeek!=="function"||!d
 async function delOjiOji(){ try{ if(!DB||!MYID||typeof dexPeek!=="function"||!dexPeek()||S.gdDelOji) return;
   const q=await withTO(DB.collection("gdacc").get()); for(const d of q.docs){ const x=d.data()||{}; if(normName(x.adv)===normName("おじおじ")) await withTO(DB.doc("gdacc/"+d.id).delete()); }
   S.gdDelOji=1; save(); ADMC=null; }catch(e){} }
+/* 2026-10-30：古い画面のままグッズガチャを引くと、D賞の残りが減っていなかった（loveさんの10連のD賞9コ）。ふっかーが開いたときに1回だけ足す */
+async function fixDn1030(){ try{ if(!DB||!MYID||typeof dexPeek!=="function"||!dexPeek()) return;
+  await DB.runTransaction(async tx=>{ const sn=await tx.get(stockRef()); const st=sn.exists?sn.data():{}; if(st.fixD1030) return; tx.set(stockRef(),{...st, Dn:(st.Dn||0)+9, fixD1030:1}); }); try{ load().catch(()=>{}); }catch(e){} }catch(e){} }
+setTimeout(function tryFixD(){ if(typeof DB!=="undefined"&&DB&&MYID) fixDn1030(); else setTimeout(tryFixD,3000); }, 4500);
 setTimeout(function tryDel(){ if(typeof DB!=="undefined"&&DB&&MYID) delOjiOji(); else setTimeout(tryDel,3000); }, 5000);
 setTimeout(function tryReset(){ if(typeof DB!=="undefined"&&DB&&MYID) resetFukka(); else setTimeout(tryReset,3000); }, 4000);
 
