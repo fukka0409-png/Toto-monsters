@@ -126,7 +126,7 @@ async function loadAdvPool(){ try{ if(typeof DB==="undefined"||!DB) return; cons
   const n=Math.round(G.E.length*ADV_RATE); let k=0; for(let i=0;i<G.E.length&&k<n;i++){ const e=G.E[i]; if(!e.adv&&Math.hypot(e.x-G.P.x,e.y-G.P.y)>700){ G.E[i]=spawnSlime(false,true); k++; } } }catch(e){} }
 function spawnSlime(first,forceAdv){ const P=G.P, A=G.AP&&G.AP.length&&(forceAdv||Math.random()<ADV_RATE)?G.AP[ri(0,G.AP.length-1)]:null, pool=G.sp||(G.sp=slimePool()), id=A?A.id:(pool[ri(0,pool.length-1)]||18), f=sf(id);
   // 2026-10-30：自分のレベルが高いほど、自分より高い敵（+1〜+3）がふえる（Lv1で4割 → Lv50で約6割 → Lv100以上で8割）
-  const pl=Math.floor(r1(P.lv||1)), lv=Math.random()<hiRate(pl)?pl+ri(1,3):Math.max(1,pl-ri(0,3));
+  const pl=Math.floor(r1(P.lv||1)), lv=Math.random()<hiRate(pl)?pl+ri(2,6):Math.max(1,pl-ri(0,2));   /* 2026-10-30：強く（高い敵は+2〜+6、低い敵は−2〜±0） */
   let x,y,t=0; do{ x=rnd(60,IO.W-60); y=rnd(60,IO.H-60); t++; }while(t<30&&Math.hypot(x-P.x,y-P.y)<700);
   img(id); const a=rnd(0,Math.PI*2); return A?{adv:1, nm:A.nm, id,f,lv,w:0,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3),slime:1,role:"s"}:{id,f,lv,w:0,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3),slime:1,role:"s"}; }
 // 倒された・記録が終わった敵を、同じ役割（スライム／冒険者の記録）で出しなおす
@@ -209,7 +209,7 @@ function loop(now){ if(!G) return; const dt=Math.max(0,Math.min(0.05,(now-G.t)/1
 function step(dt){ const P=G.P;
   // 2026-10-30：自分より高い敵が少なすぎるときは、遠くの弱い敵を1匹ずつ入れかえる（0.5秒ごと）
   G.mixT=(G.mixT||0)-dt; if(G.mixT<=0&&G.E&&G.E.length){ G.mixT=0.5; const pl=Math.floor(r1(P.lv||1)), hi=G.E.filter(e=>!e.ghost&&cmp(e,P)>0).length;
-    if(hi<G.E.length*hiRate(pl)){ const far=G.E.map((e,i)=>({e,i})).filter(o=>!o.e.ghost&&o.e.slime&&cmp(o.e,P)<=0&&Math.hypot(o.e.x-P.x,o.e.y-P.y)>900); if(far.length){ const o=far[ri(0,far.length-1)]; const x=G.E[o.i]; const n=spawnSlime(false); n.x=x.x; n.y=x.y; n.lv=pl+ri(1,3); n.r=radius(n.lv,n.f); G.E[o.i]=n; } } }
+    if(hi<G.E.length*hiRate(pl)){ const far=G.E.map((e,i)=>({e,i})).filter(o=>!o.e.ghost&&o.e.slime&&cmp(o.e,P)<=0&&Math.hypot(o.e.x-P.x,o.e.y-P.y)>900); if(far.length){ const o=far[ri(0,far.length-1)]; const x=G.E[o.i]; const n=spawnSlime(false); n.x=x.x; n.y=x.y; n.lv=pl+ri(2,6); n.r=radius(n.lv,n.f); G.E[o.i]=n; } } }
   // 歩く動き：右へ動くときは絵を左右反転して右向きに、左へ動くときはそのまま（絵はもともと左向き）。動いているあいだは少しはねる
   if(G.dir.x>0.15) P.face=1; else if(G.dir.x<-0.15) P.face=-1; P.mv=Math.hypot(G.dir.x,G.dir.y)>0.1; if(P.mv) P.ph=(P.ph||0)+dt*11;
   for(const e of G.E){ if(e.vx>0.15) e.face=1; else if(e.vx<-0.15) e.face=-1; e.mv=true; e.ph=(e.ph||rnd(0,6))+dt*9; }
