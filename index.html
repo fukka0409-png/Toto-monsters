@@ -3262,7 +3262,7 @@ const SHBOMB_NEED = 10, SHBOMB_BREAK = 3;   // 爆弾10個 → 対盾爆弾1個�
 /* ---------- 盾 ----------
    Sランクの魔物3体 → 盾（アイテム攻撃を5回防ぐ）／ Zランクの魔物1体 → スーパー盾（5回防ぐ）
    装備・所持数・耐久力は自分にしか見えない（サーバーにも送らない） */
-const SHIELDS = { n:{ name:"盾", dur:5, rank:"S", need:3, ic:"🛡" }, s:{ name:"スーパー盾", dur:5, rank:"Z", need:1, ic:"🛡✨" } };   // 盾＝Sランク3体で耐久2／スーパー盾＝Zランク1体で耐久5
+const SHIELDS = { n:{ name:"盾", dur:5, rank:"S", need:3, ic:"🛡" }, s:{ name:"スーパー盾", dur:5, rank:"Z", need:1, ic:"🛡✨" } };   // 盾＝Sランク3体で耐久5／スーパー盾＝Zランク1体で耐久5
 const LOOT_FROM = Date.parse("2026-10-18T13:03:00+09:00");   // これ以降のマグネットは、うばったコインを相手が開いたときに届ける
 // 盾は1つずつ持つ（S.shieldList）。装備中の盾がこわれたら、鍵のかかっていない盾を自動で装備する（盾→スーパー盾の順）
 function shFix(){
@@ -6883,6 +6883,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-30-shieldmsg", coins:1000 },   // アイテムのお知らせに、魔物のレベルが下がったことや盾がこわれたことが出ていなかった
   { id:"fix-2026-10-30-minitimer", coins:1000 },   // ミニゲームの画面のタイマーが止まって見えていた
   { id:"fix-2026-10-30-season2x", coins:1000 },   // 画面が2つ動いていると、ランク戦の精算が二重になることがあった
   { id:"fix-2026-10-29-gdsend", coins:1000 },   // グッズ管理でチケットを送れなかった
@@ -8054,14 +8055,17 @@ async function checkItems(){
         // 2026-10-29：1文でまとめて出す
         const sum=(L,re)=>L.reduce((t,m)=>{ const x=String(m).match(re); return t+(x?+x[1].replace(/,/g,""):0); },0);
         const rN=res.filter(m=>String(m).startsWith("↩️")).length, bN=res.filter(m=>String(m).startsWith("🛡 盾により")).length, rLv=sum(res.filter(m=>String(m).startsWith("↩️")),/冒険者レベル−(\d+)/), rC=sum(res.filter(m=>String(m).startsWith("↩️")),/−([\d,]+)コイン/), gC=sum(res.filter(m=>String(m).startsWith("🧲")),/\+([\d,]+)コインをうばった/), fC=sum(res.filter(m=>String(m).startsWith("🛡 跳ね返した")),/\+([\d,]+)コインをうばった/);
-        const parts=[rN?`相手の盾に${rN}回はね返された${rLv||rC?`（${[rC?`−${rC.toLocaleString()}コイン`:"",rLv?`冒険者レベル−${rLv}`:""].filter(Boolean).join("・")}）`:""}`:"", bN?`${bN}回は盾で防がれた`:"", gC?`マグネットで+${gC.toLocaleString()}コインうばった`:""].filter(Boolean);
+        const rM=res.filter(m=>String(m).startsWith("↩️")).reduce((t,m)=>{ const x=String(m).match(/Lv(\d+)→Lv(\d+)/); return t+(x?(+x[1])-(+x[2]):0); },0);   /* 2026-10-30：はね返されたファイヤーボールで下がった魔物のレベルも出す */
+        const parts=[rN?`相手の盾に${rN}回はね返された${rLv||rC||rM?`（${[rC?`−${rC.toLocaleString()}コイン`:"",rLv?`冒険者レベル−${rLv}`:"",rM?`配置中の魔物Lv−${rM}`:""].filter(Boolean).join("・")}）`:""}`:"", bN?`${bN}回は盾で防がれた`:"", gC?`マグネットで+${gC.toLocaleString()}コインうばった`:""].filter(Boolean);
         const own=parts.length?"使ったアイテムが"+parts.join("、")+"。":"", ref=fC?`🛡 あなたの盾が相手のコインマグネットをはね返して、+${fC.toLocaleString()}コインうばった！`:"";
         rb.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">📨</div><p style="line-height:1.6">${[ref,own].filter(Boolean).join("<br>")||"使ったアイテムの結果が届きました。"}</p><button class="btn gold" type="button">OK</button></div>`;
         document.body.appendChild(rb); rb.querySelector(".btn").onclick=()=>rb.remove(); }
       if(msgs.length){   // 2026-10-29：アイテムを使われたときは1文でまとめて出す
       const bg=document.createElement("div"); bg.className="sheet-bg center";
       const att=msgs.filter(m=>!String(m).startsWith("🛡")).length, blk=msgs.filter(m=>String(m).startsWith("🛡")).length;
-      const eff=[lostCoin?`−${lostCoin.toLocaleString()}コイン`:"", lostLv?`冒険者レベル−${lostLv}`:""].filter(Boolean).join("・");
+      const monDrop=msgs.reduce((t,m)=>{ const x=String(m).match(/Lv(\d+)→Lv(\d+)/); return t+(x?(+x[1])-(+x[2]):0); },0);   /* 2026-10-30：ファイヤーボールで下がった魔物のレベルと、こわれた盾の数も出す */
+      const shBroke=msgs.reduce((t,m)=>{ const x=String(m).match(/盾が(\d+)つこわれた/); return t+(x?+x[1]:(String(m).includes("がこわれた")?1:0)); },0);
+      const eff=[lostCoin?`−${lostCoin.toLocaleString()}コイン`:"", lostLv?`冒険者レベル−${lostLv}`:"", monDrop?`配置中の魔物Lv−${monDrop}`:"", shBroke?`盾が${shBroke}つこわれた`:""].filter(Boolean).join("・");
       bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">💥</div><p style="line-height:1.6">留守中にアイテムを${msgs.length}回使われ${eff?`て${eff}`:"ました"}${blk?`（${blk}回は盾で防いだ）`:""}${eff?"。":"。"}</p>
         <button class="btn gold" type="button">OK</button></div>`;
       document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove();
