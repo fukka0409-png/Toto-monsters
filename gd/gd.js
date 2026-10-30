@@ -1,14 +1,14 @@
 /* 🛍 グッズ特典（2026-10-29・試作：おじおじさんとふっかーだけ）
    ①登録：BASEのPay IDの名前を入れて「ふっかーへ申請」→ ふっかーが承認するまで先へ進めない
    ②グッズガチャ：グッズチケットで引く（1連=1枚・10連=7枚）。S〜C賞は「郵送申請」、D賞はデジタルステッカー
-   ③ステッカー集め：30枚で「50%クーポン券を申請する」→ ふっかーがクーポンコードを送る
+   ③ステッカー集め：20枚で「50%クーポン券を申請する」→ ふっかーがクーポンコードを送る
    ふっかー：タイトルの「🛍 グッズ管理」から、承認・チケットを渡す・発送・クーポンコードを送る
    データ：gdacc/{uid}（登録・チケット・ステッカー・クーポン）／gdwin/{id}（当たった景品）／gdstock/one（S賞・A賞の当選者） */
 (()=>{
 const GD={
   WHO:["おじおじ"],            // 見られる冒険者（ふっかーはいつでも）
   ONE:1, TEN:7,                 // 1連・10連に使うチケット
-  STK:30,                       // ステッカーの枠
+  STK:20,                       // ステッカーの枠（2026-10-30：30→20）
   BUY_URL:"https://fukka0409.base.shop/items/151065414", BUY_IMG:"gd/buy.jpg",   // 「グッズチケットを500円で購入！」のリンク（BASEのショップ）
   // 景品（S賞・A賞は1人だけ当選）。img にラインナップの画像を入れる
   PRIZES:[
@@ -66,7 +66,7 @@ css.textContent=`
 #gdo .gd-pulls button small{display:block;font-size:12px;margin-top:3px}
 #gdo .gd-pulls button:disabled{opacity:.4}
 #gdo .gd-buy{display:block;text-align:center;padding:16px;border-radius:12px;border:3px dashed #e53935;background:#fff0f0;color:#c62828;font:900 17px var(--f-body);text-decoration:none}
-#gdo .gd-slots{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:0 0 14px}
+#gdo .gd-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:0 0 14px}
 #gdo .gd-slot{aspect-ratio:1;border:3px dashed #b9a98a;border-radius:10px;display:grid;place-items:center;font-size:22px;background:#fffdf6}
 #gdo .gd-slot.on{border:3px solid #8e24aa;background:#f3e5f5}
 .gd-st{width:86%;height:86%;object-fit:contain;image-rendering:pixelated;transform:rotate(var(--r,0deg));filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(1px 2px 2px #0007)}
