@@ -4888,6 +4888,7 @@ const NEWS = [
   {ss:12, t:"🗳 魔物投票：投票したのに投票前の画面にもどり、投票ボタンが反応しないことがあったのを修正"},
   {ss:11, t:"🗡 新しいゲーム「魔物サバイバル」が登場！ ホームから遊べます。武器を10個以上持ったまま生き残れ！ クリアするとレベル×100コイン"},
   {ss:11, t:"🏦 貯金のきまり：貯金が1億コイン以上の冒険者は、ランク戦が終わるたびに貯金ランキングの順位で貯金が減ります（1位30%・2位20%・3位10%・4位以下5%）"},
+  {ss:13, t:"🛡 魔物ランキングで10位以内に入れば、貯金は守られる（減らない）ようになりました！"},
   {ss:11, t:"✨ 貯金ランキング1〜3位の冒険者は、魔物ランキングの枠がゴールド・シルバー・ブロンズに輝く"},
   {ss:11, t:"🪙 所持コインは5億まで。こえた分は貯金しよう（投資には貯金も使えます）"},
   {ss:11, t:"🎰 魔物ガチャのSランクが出やすくなりました（0.075% → 0.5%）"},
@@ -6177,7 +6178,7 @@ function renderRankTab(){
 // 貯金（2026-10-27）：所持コインは10億まで、貯金に上限はない。貯金ランキングは上位10人だけ
 let BANK_RK=null, BANK_AT=0, bankErr=false, BANK_N=null; const BANK_OUT_MAX=10000000, BANK_TAX_OVER=100000000, BANK_TAX=5000000, BANK_TAX_SS=12;
 // 2026-10-28：貯金が1億コイン以上の冒険者だけ、貯金ランキングの順位で％引かれる。1位30%・2位20%・3位10%・4位以下5%
-const BANK_TAX_PCT={1:0.30,2:0.20,3:0.10}, BANK_TAX_PCT_OVER=0.05;
+const BANK_TAX_PCT={1:0.30,2:0.20,3:0.10}, BANK_TAX_PCT_OVER=0.05, BANK_SAFE_RANK=10;
 // 精算するときの貯金ランキングの順位。先に精算して税で減った冒険者は、減る前の貯金（bkp）でくらべる
 async function bankRankAt(ss,mine){ try{
   const [a,b]=await Promise.all([withTO(DB.collection("profiles").orderBy("bk","desc").limit(30).get()), withTO(DB.collection("profiles").orderBy("bkp","desc").limit(30).get()).catch(()=>null)]);
@@ -6194,10 +6195,10 @@ function renderBank(segHtml){
   const n=v=>Math.floor(v||0).toLocaleString(), bk=Math.floor(S.bank||0), room=Math.max(0,COIN_MAX-S.coins);
   if(!BANK_RK&&!bankErr) loadBankRank();
   $("#stage").innerHTML=`${segHtml}<h2>貯金ランキング</h2>${BANK_N!=null?`<p class="sub" style="margin:-6px 0 8px;font-size:12px;opacity:.85">🏦 貯金している冒険者 <b>${BANK_N.toLocaleString()}人</b>（上位10人を表示）</p>`:""}
-    <div style="margin:0 0 10px;padding:12px 14px;border-radius:14px;background:linear-gradient(#ffe16b,#f2b631);border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font-weight:900;text-align:center;font-size:15px;line-height:1.5">🛡🧲 貯金したコインは<br><span style="font-size:19px">コインマグネットで取られません！</span></div>
+    <div style="margin:0 0 10px;padding:12px 14px;border-radius:14px;background:linear-gradient(#ffe16b,#f2b631);border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font-weight:900;text-align:center;font-size:15px;line-height:1.5">🛡🧲 貯金したコインは<br><span style="font-size:19px">コインマグネットで取られません！</span><br><span style="font-size:14px">🛡 魔物ランキング10位以内なら、ランク戦が終わっても貯金は減りません！</span></div>
     <div class="season-box"><div><small>🏦 あなたの貯金</small><b translate="no">${n(bk)}</b></div>
 </div>
-    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>5億</b>まで。貯金には<b>上限がありません</b>。所持コインが5億をこえたら、こえた分を貯金してください。<br>💰 <b>投資</b>には、所持コインに加えて<b>貯金も使えます</b>（投資で所持コインより多くマイナスになったときは、貯金から引かれます）。<br>貯金は<b>いつでも・いくらでも</b>できます。<br><b style="color:var(--berry)">⚠️ 次のランク戦（10/28 22:00〜）から、ランク戦が終わるたびに、貯金が1億コイン以上の冒険者は、貯金ランキングの順位で貯金が減ります：1位 30%・2位 20%・3位 10%・4位以下 5%</b><br><b>引き出しは1シーズン（ランク戦）に1回、1000万コインまで</b>です。<br>${bankOutDone()?`<b style="color:var(--berry)">今シーズンはもう引き出しました（次のランク戦から引き出せます）</b>`:`<b>今シーズンはまだ引き出せます</b>`}</div>
+    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>5億</b>まで。貯金には<b>上限がありません</b>。所持コインが5億をこえたら、こえた分を貯金してください。<br>💰 <b>投資</b>には、所持コインに加えて<b>貯金も使えます</b>（投資で所持コインより多くマイナスになったときは、貯金から引かれます）。<br>貯金は<b>いつでも・いくらでも</b>できます。<br><b style="color:var(--berry)">⚠️ ランク戦が終わるたびに、貯金が1億コイン以上の冒険者は、貯金ランキングの順位で貯金が減ります：1位 30%・2位 20%・3位 10%・4位以下 5%</b><br><b style="color:#2e7d32">🛡 魔物ランキングで10位以内に入れば、貯金は守られます（減りません）！</b><br><b>引き出しは1シーズン（ランク戦）に1回、1000万コインまで</b>です。<br>${bankOutDone()?`<b style="color:var(--berry)">今シーズンはもう引き出しました（次のランク戦から引き出せます）</b>`:`<b>今シーズンはまだ引き出せます</b>`}</div>
       <div class="bank-in"><input id="bkAmt" type="number" inputmode="numeric" min="1" placeholder="コインの数" class="fr-ta" style="width:100%;box-sizing:border-box;margin:8px 0 6px">
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn gold" type="button" id="bkIn" style="flex:1">貯金する</button><button class="btn" type="button" id="bkOut" style="flex:1">引き出す</button></div>
       <div style="display:flex;gap:6px;margin-top:6px"><button class="chip" type="button" id="bkAllIn">所持コインを全部貯金</button><button class="chip" type="button" id="bkAllOut">1000万コイン引き出す</button></div></div>
@@ -6783,7 +6784,7 @@ async function checkSeason(){
     // 投資の精算（自分が投資した分・自分に投資された分）
     const iv=await settleInvest(old, rank, q, mine, coins); coins+=iv.delta; lines.push(...iv.lines);
     // 2026-10-28：貯金の税（貯金ランキングの順位で％が決まる）。減る前の貯金を bkp としてプロフィールに出しておく
-    let bankTax=null; if(old>=BANK_TAX_SS && (S.bank||0)>=BANK_TAX_OVER){ const pre=Math.floor(S.bank||0), brk=await bankRankAt(old,pre);
+    let bankTax=null; if(old>=BANK_TAX_SS && (S.bank||0)>=BANK_TAX_OVER && !(rank&&rank<=BANK_SAFE_RANK)){   /* 2026-10-30：魔物ランキング10位以内なら貯金は減らない */ const pre=Math.floor(S.bank||0), brk=await bankRankAt(old,pre);
       if(brk){ const p=pre>=BANK_TAX_OVER?(BANK_TAX_PCT[brk]||BANK_TAX_PCT_OVER):0;   /* 貯金が1億コイン以上のときだけ引かれる */ if(p>0) bankTax={rk:brk,p,t:Math.floor(pre*p)}; } S.bankPre=pre; S.bankPreS=old; }
     if(S!==S0 || (S.season??0)>=cur){ seasonBusy=false; return; }   // 途中で記録が入れかわったら何もしない
     // 2026-10-29：ほかの画面がもうこのランク戦を精算していたら、二重に精算しない（クラウドの数字に記録）
@@ -7929,7 +7930,7 @@ function bankTaxNotice(){ if(S.nBankTax1028c) return;
     if(S.nBankTax1028c) return; S.nBankTax1028c=1; save();
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏦</div><p>貯金の新しいきまり</p>
-      <div class="note" style="margin:0;text-align:left">次のランク戦（今日22:00から）から、ランク戦が終わるたびに、<b>貯金が1億コイン以上の冒険者</b>は、<b>貯金ランキングの順位</b>で貯金が減ります。<br><br><b style="color:var(--berry)">🥇 1位：貯金の30%<br>🥈 2位：貯金の20%<br>🥉 3位：貯金の10%<br>4位以下：貯金の5%</b><br><br>貯金が1億コインより少なければ、何位でも減りません。</div>
+      <div class="note" style="margin:0;text-align:left">次のランク戦（今日22:00から）から、ランク戦が終わるたびに、<b>貯金が1億コイン以上の冒険者</b>は、<b>貯金ランキングの順位</b>で貯金が減ります。<br><br><b style="color:var(--berry)">🥇 1位：貯金の30%<br>🥈 2位：貯金の20%<br>🥉 3位：貯金の10%<br>4位以下：貯金の5%</b><br><br><b style="color:#2e7d32">🛡 魔物ランキングで10位以内に入れば、貯金は守られます！</b><br>貯金が1億コインより少なければ、何位でも減りません。</div>
       <button class="btn gold" type="button">わかった</button></div>`;
     document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); };
   setTimeout(show,900); }
