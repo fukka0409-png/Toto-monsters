@@ -3770,7 +3770,7 @@ if(FBA){
     if(u){ if(!LOGIN_NAME){ try{ const p=await FDB.doc("profiles/"+u.uid).get(); if(p.exists) LOGIN_NAME=p.data().name||null; }catch(e){} }
       startRemote(u.uid); }
     else { SIGNED=false; DB=null; MYID=null; remoteDoc=null; remoteReady=false; render();
-      newsDone.then(()=>{ try{ if(!localStorage.getItem("toto-login-skip")) setTimeout(()=>openLogin(),300); }catch(e){ setTimeout(()=>openLogin(),300); } }); }
+      if(!openLogin.shown){ openLogin.shown=1; const go=()=>{ let set=true; try{ set=!!localStorage.getItem("toto-lang-set"); }catch(e){} if(!set&&document.querySelector(".ttl-pick")) return setTimeout(go,500); if(!DB) openLogin(); }; go(); } }   // 2026-10-30：ログインしていなければ、開いたらすぐログイン画面を出す（「あとで」を押していても毎回）
   });
 }
 
@@ -3857,7 +3857,7 @@ function openLogin(mode){
   if(!FBA) return toast("サーバーにつながりません。通信を確認してください");
   document.querySelectorAll(".login-sheet").forEach(x=>x.remove());
   let m=mode||"login";
-  const bg=document.createElement("div"); bg.className="sheet-bg center login-sheet";
+  const bg=document.createElement("div"); bg.className="sheet-bg center login-sheet ttl-top"; bg.style.zIndex=9000;
   const draw=()=>{ bg.innerHTML=`<form class="swear" role="dialog" aria-modal="true" aria-labelledby="lgT" autocomplete="off">
     <div class="seg" style="margin:0">${[["login","ログイン"],["new","はじめて"]].map(([k,l])=>`<button type="button" data-k="${k}" aria-pressed="${k===m}">${l}</button>`).join("")}</div>
     <p id="lgT">${m==="new"?"名前と4桁の数字を決めよう":"名前と4桁の数字でログイン"}</p>
