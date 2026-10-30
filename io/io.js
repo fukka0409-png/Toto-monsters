@@ -19,7 +19,7 @@ const r1=x=>Math.round(x*10)/10, lvT=x=>{ x=r1(x); return Number.isInteger(x)?St
 // 武器1個ごとに足が3%ずつ速くなる（10個で約30%）
 const wSpd=w=>1+0.03*(w||0);   // 2026-10-28：1個ごとに3%（前は1.5%）
 // 体の大きさ（2026-10-28）：Lv1はとても小さく、Lv1000でフィールドと同じ大きさ（画面いっぱい）。Lv1=16・Lv10=74・Lv100=345・Lv1000=1600
-const LV_MAX=1000, radius=(lv,f)=>16*f*Math.pow(Math.max(1,Math.min(LV_MAX,lv)),2/3);
+const LV_MAX=1000, radius=(lv,f)=>IO.R0*1.6;   /* 2026-10-30：レベルで大きさは変えない（みんな同じ大きさ。勝ち負けはレベルで決まる） */
 // 足の速さ：体が大きくなるほど遅くなる（画面の見た目の速さは Lv10で約75%・Lv50で約40%・Lv100で約25%）。敵も同じ
 // 2026-10-28：レベルによる速さ。Lv2からは決まった割合でなめらかに遅くなる（Lv2=2.5倍・Lv5=2.0倍・Lv10≈1.6倍・Lv20≈1.4倍・Lv50≈1.2倍）。Lv1だけは特別に速い（4倍）
 const lvSpd=lv=>{ const L=Math.floor(r1(lv||1)); return L<=1?4:(1+9/(L+4))*0.75; };   // 2026-10-28：Lv2からはさらに4分の3
@@ -111,7 +111,7 @@ function open(){ if(G) return;
   hud(); G.raf=requestAnimationFrame(loop);
   // 始まった直後の説明（読んでから「スタート！」で動き出す）
   G.pause=true;
-  dlg(`<h3>⚔️ ルール</h3><p style="margin:0 0 10px;padding:10px;border-radius:10px;background:#fff8e1;border:3px solid #1d1d1d;font-size:18px;font-weight:900;line-height:1.4">🗡 武器を${IO.NEED}個以上持ったまま<br>生き残れ！</p><p style="text-align:left;line-height:1.6">・武器${IO.NEED}個以上でやられたら<b>クリア</b>、${IO.NEED-1}個以下なら<b>負け</b><br>・自分より大きい魔物に触れると即死！<br>・武器を拾うと+3、投げると−1<br>・武器を当てた魔物はLvダウン、倒すと自分はLvアップ<br>・🗡攻撃：オートで投げる（ON/OFF）<br>・⚔武器強化：武器100こで攻撃力+1<br>・🚶オート移動：ON/OFF</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 クリア → レベル×100コインもらえる<br>💀 負け → コインはもらえない（冒険者Lvは下がらない）</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
+  dlg(`<h3>⚔️ ルール</h3><p style="margin:0 0 10px;padding:10px;border-radius:10px;background:#fff8e1;border:3px solid #1d1d1d;font-size:18px;font-weight:900;line-height:1.4">🗡 武器を${IO.NEED}個以上持ったまま<br>生き残れ！</p><p style="text-align:left;line-height:1.6">・武器${IO.NEED}個以上でやられたら<b>クリア</b>、${IO.NEED-1}個以下なら<b>負け</b><br>・自分よりレベルが高い魔物に触れると即死！<br>・武器を拾うと+3、投げると−1<br>・武器を当てた魔物はLvダウン、倒すと自分はLvアップ<br>・🗡攻撃：オートで投げる（ON/OFF）<br>・⚔武器強化：武器100こで攻撃力+1<br>・🚶オート移動：ON/OFF</p><p style="margin:10px 0 0;padding:10px;border-radius:10px;background:#fff3cd;border:3px solid #e53935;color:#c62828;font-weight:900;line-height:1.6">🔥 クリア → レベル×100コインもらえる<br>💀 負け → コインはもらえない（冒険者Lvは下がらない）</p><button type="button" data-a="go">スタート！</button>`,()=>{ if(!G) return; G.pause=false; G.t=performance.now(); });
 }
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
