@@ -128,6 +128,7 @@ async function open(){ if(!DB||!MYID) return T("グッズ特典はログイン�
 function route(){
   if(ACC===undefined){ shell("🛍 グッズ特典").innerHTML=`<div class="gd-card">読み込めませんでした。少し時間をおいて開き直してください。</div>`; return; }
   if(!ACC) return regPage();
+  if(ACC.st==="ng") return ngPage();   /* 2026-10-30：却下された */
   if(ACC.st!=="ok") return waitPage();
   if(!S.gdOkSeen){ S.gdOkSeen=1; try{ save(); }catch(e){}
     const el=shell("🛍 グッズ特典"); el.innerHTML=`<div class="gd-card" style="text-align:center"><div style="font-size:56px">🎉</div><h2 style="margin:6px 0 10px">承認されました！</h2><p>グッズガチャとステッカー集めが使えるようになりました。</p><button class="gd-go" type="button" id="gdNext">次へ進む</button></div>`;
@@ -135,6 +136,17 @@ function route(){
   homePage(); }
 
 // ① 登録
+// 却下された冒険者の画面（ショップの名前を確かめて、もう一度申請できる）
+const SHOP_URL="https://s.payid.jp/NfLuZavS";
+function ngPage(){ const el=shell("🛍 グッズガチャ");
+  el.innerHTML=`<div class="gd-card" style="text-align:center;line-height:1.8"><div style="font-size:48px">🙏</div>
+    <p style="font-weight:900;font-size:16px;margin:4px 0 10px">ショップに登録されてない名前だったので<br>承認が却下されました🙏</p>
+    <p style="margin:0 0 12px">下のリンクからステッカーやグッズを<br>ゲットして是非参加しよう！✨</p>
+    <a class="gd-buyb" href="${SHOP_URL}" target="_blank" rel="noopener"><img src="gd/shop.jpg" alt="ショップ"></a>
+    <p style="font-weight:900;font-size:13px;margin:10px 0 14px;color:#c62828">▲ タップでショップが開きます</p>
+    <div class="gd-safe" style="text-align:left">本人かどうか確かめるために記入する名前は、<b>ショップに登録してある本名</b>でお願いします！<br>（本名はふっかーのみが確認できます！）</div>
+    <button class="gd-go" type="button" id="gdRe2">もう一度申請する</button></div>`;
+  el.querySelector("#gdRe2").onclick=()=>{ tap(); regPage(); }; }
 function regPage(){ const el=shell("📝 登録画面");
   el.innerHTML=`<div class="gd-safe">🔒 名前を含む個人情報は、ほかの冒険者からは見えません！<br>見られるのは運営（ふっかー）だけです。安心して入力してね。</div>
     <div class="gd-card"><b>BASEのPay IDに登録している名前を記入</b>
@@ -145,7 +157,7 @@ function regPage(){ const el=shell("📝 登録画面");
   el.querySelector("#gdSend").onclick=async()=>{ const v=el.querySelector("#gdName").value.replace(/\s+/g," ").trim().slice(0,30), msg=el.querySelector("#gdMsg");
     if(v.length<2){ msg.textContent="名前を入力してください"; return; }
     const b=el.querySelector("#gdSend"); b.disabled=true; b.textContent="送信中…";
-    try{ await withTO(accRef().set({uid:MYID, adv:String(myName()||"").slice(0,24), real:v, st:"wait", at:gnow(), tk:0, stk:0})); }
+    try{ if(ACC&&ACC.st==="ng") await withTO(accRef().update({adv:String(myName()||"").slice(0,24), real:v, st:"wait", at:gnow()})); else await withTO(accRef().set({uid:MYID, adv:String(myName()||"").slice(0,24), real:v, st:"wait", at:gnow(), tk:0, stk:0})); }
     catch(e){ b.disabled=false; b.textContent="ふっかーへ申請"; msg.textContent="送れませんでした。少し時間をおいてためしてください"; return; }
     ACC={uid:MYID, real:v, st:"wait", at:gnow(), tk:0, stk:0}; tap(); waitPage(); }; }
 // 承認待ち（ここから先へは進めない）
@@ -362,14 +374,15 @@ function adminDraw(el,A,W,R){
   const nk=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/\s+/g,""), same={}; A.forEach(a=>{ same[nk(a.real)]=(same[nk(a.real)]||0)+1; });
   const who=a=>`<b translate="no">${esc(a.adv||"?")}</b><br><small>本名：<span translate="no">${esc(a.real||"")}</span>${same[nk(a.real)]>1?` <b style="color:#c62828">（同じ本名${same[nk(a.real)]}人）</b>`:""}</small>`;
   const nm=uid=>{ const a=A.find(x=>x.id===uid); return a?who(a):esc(uid); };
-  const tabs=[["treq",`チケット申請 ${R.filter(r=>r.st==="wait").length}`],["wait",`承認待ち ${A.filter(a=>a.st!=="ok").length}`],["users",`冒険者・チケット ${A.filter(a=>a.st==="ok").length}`],["mail",`郵送申請 ${W.filter(w=>w.st==="req").length}`],["cp",`クーポン申請 ${A.filter(a=>a.cp&&a.cp.st==="wait").length}`]];
+  const tabs=[["treq",`チケット申請 ${R.filter(r=>r.st==="wait").length}`],["wait",`承認待ち ${A.filter(a=>a.st==="wait").length}`],["users",`冒険者・チケット ${A.filter(a=>a.st==="ok").length}`],["mail",`郵送申請 ${W.filter(w=>w.st==="req").length}`],["cp",`クーポン申請 ${A.filter(a=>a.cp&&a.cp.st==="wait").length}`]];
   const body=()=>{ if(AT==="treq"){ const L=[...R.filter(r=>r.st==="wait").sort((a,b)=>(b.at||0)-(a.at||0)), ...R.filter(r=>r.st!=="wait").sort((a,b)=>(b.okAt||b.at||0)-(a.okAt||a.at||0)).slice(0,30)];   /* 2026-10-30：送った・却下の履歴は30件まで */ return L.length?L.map(r=>`<div class="gd-it"><b>${nm(r.uid)}<br><small>🎫 <b style="font-size:15px">${r.n}枚</b>の申請 ・ ${new Date(r.at||0).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></b>${r.st==="wait"?`<button class="gd-mini" type="button" data-trok="${r.id}">承認して送る</button><button class="gd-mini" type="button" data-trng="${r.id}" style="background:#fff">却下</button>`:r.st==="ok"?`<span class="gd-tag sent">送った</span>`:`<span class="gd-tag">却下</span>`}</div>`).join(""):"<p>チケット申請はありません</p>"; }
-    if(AT==="wait"){ const L=A.filter(a=>a.st!=="ok"); return L.length?L.map(a=>`<div class="gd-it"><b>${who(a)}<br><small style="opacity:.6">${new Date(a.at||0).toLocaleString("ja-JP")}</small></b><button class="gd-mini" type="button" data-ok="${a.id}">承認する</button></div>`).join(""):"<p>承認待ちはいません</p>"; }
+    if(AT==="wait"){ const L=A.filter(a=>a.st==="wait"); return L.length?L.map(a=>`<div class="gd-it"><b>${who(a)}<br><small style="opacity:.6">${new Date(a.at||0).toLocaleString("ja-JP")}</small></b><button class="gd-mini" type="button" data-ok="${a.id}">承認する</button><button class="gd-mini" type="button" data-ng="${a.id}" style="background:#fff">却下</button></div>`).join(""):"<p>承認待ちはいません</p>"; }
     if(AT==="users"){ const L=A.filter(a=>a.st==="ok"); return L.length?L.map(a=>`<div class="gd-it"><b>${who(a)}<br><small>🎫 のこり${a.tk||0}枚 ・ 🏷 ${a.stk||0}/${GD.STK}<br>📤 ふっかーが送った合計 <b>${(a.given||0).toLocaleString()}枚</b>${(a.gl||[]).length?`<br><span style="opacity:.7">${(a.gl||[]).filter(x=>x&&!Array.isArray(x)).slice(-3).reverse().map(({t,n})=>`${new Date(t).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} ${n>0?"+":""}${n}枚`).join("／")}</span>`:""}</small></b><input type="number" inputmode="numeric" min="-999" max="999" value="1" data-tkn="${a.id}" style="width:64px;padding:8px 6px;font-size:16px;border:2px solid #2b1a06;border-radius:8px;text-align:center">枚<button class="gd-mini" type="button" data-tk="${a.id}">送る</button></div>`).join(""):"<p>まだいません</p>"; }
     if(AT==="mail"){ const L=W.filter(w=>w.st==="req"||w.st==="sent").sort((a,b)=>(a.st==="sent")-(b.st==="sent")||(b.reqAt||0)-(a.reqAt||0)); return L.length?L.map(w=>`<div class="gd-it"><span style="font-size:20px;font-weight:900;color:${COL[w.r]}">${w.r}</span><b>${esc(w.name||"")}<br><small>${nm(w.uid)}</small></b>${w.st==="sent"?`<span class="gd-tag sent">発送済み</span>`:`<button class="gd-mini" type="button" data-ship="${w.id}">発送</button>`}</div>`).join(""):"<p>郵送申請はありません</p>"; }
     const L=A.filter(a=>a.cp); return L.length?L.map(a=>`<div class="gd-it"><b>${who(a)}</b>${a.cp.st==="sent"?`<span class="gd-tag code">送った：${esc(a.cp.code||"")}</span>`:`<button class="gd-mini" type="button" data-cp="${a.id}">コードを送る</button>`}</div>`).join(""):"<p>クーポン申請はありません</p>"; };
   const draw=()=>{ el.innerHTML=`<div class="gd-tabs">${tabs.map(([k,t])=>`<button type="button" class="${AT===k?"on":""}" data-at="${k}">${t}</button>`).join("")}</div><div class="gd-card">${body()}</div>`;
     el.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{ AT=b.dataset.at; draw(); });
+    el.querySelectorAll("[data-ng]").forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await withTO(DB.doc("gdacc/"+b.dataset.ng).update({st:"ng", ngAt:gnow()})); T("却下しました"); }catch(e){ T("できませんでした"); } admin(); });
     el.querySelectorAll("[data-ok]").forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await withTO(DB.doc("gdacc/"+b.dataset.ok).update({st:"ok", okAt:gnow()})); T("承認しました"); }catch(e){ T("できませんでした"); } admin(); });
     el.querySelectorAll("[data-trok]").forEach(b=>b.onclick=async()=>{ const r=R.find(x=>x.id===b.dataset.trok); if(!r) return; b.disabled=true;
       try{ await DB.runTransaction(async tx=>{ const rq=DB.doc("gdtreq/"+r.id), ac=DB.doc("gdacc/"+r.uid); const [x,a]=[await tx.get(rq), await tx.get(ac)]; if(!x.exists||x.data().st!=="wait") throw new Error("done"); const cur=a.data()||{};
@@ -406,7 +419,7 @@ setTimeout(function tryReset(){ if(typeof DB!=="undefined"&&DB&&MYID) resetFukka
 // ふっかーのタイトルの「グッズ管理」に、対応が必要な数の赤い印
 async function admBadge(){ try{ const b=document.getElementById("ttlGdAdmB"); if(!b||!DB||!MYID||typeof dexPeek!=="function"||!dexPeek()) return;
   const [r,a,w]=await Promise.all([DB.collection("gdtreq").where("st","==","wait").get().catch(()=>({size:0,docs:[]})), DB.collection("gdacc").get().catch(()=>({docs:[]})), DB.collection("gdwin").where("st","==","req").get().catch(()=>({size:0}))]);
-  const n=r.size+a.docs.filter(d=>{ const x=d.data(); return x.st!=="ok"||(x.cp&&x.cp.st==="wait"); }).length+w.size; b.textContent=n>99?"99+":String(n); b.hidden=!n; }catch(e){} }
+  const n=r.size+a.docs.filter(d=>{ const x=d.data(); return x.st==="wait"||(x.cp&&x.cp.st==="wait"); }).length+w.size; b.textContent=n>99?"99+":String(n); b.hidden=!n; }catch(e){} }
 setTimeout(admBadge,6000); setInterval(()=>{ if(document.querySelector("#title:not([hidden])")) admBadge(); },60000);
 
 /* ---------- タイトルのボタン ---------- */
