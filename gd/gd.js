@@ -24,6 +24,7 @@ const stkPool=()=>{ try{ return MONSTERS.filter(m=>m&&m.img&&m.rank!=="L").map(m
 const stkImg=id=>{ try{ const m=mon(id); return m&&m.img||""; }catch(e){ return ""; } };
 const stkRot=i=>((i*37)%13-6);   // 枠ごとに少しかたむける
 const stkTag=(id,i)=>`<img class="gd-st" src="${stkImg(id)}" alt="" style="--r:${stkRot(i)}deg">`;
+const FIRST_N=3, FIRST_RATE={S:0.01, A:5, B:20, C:30, D:44.99};   // 最初の3回の確率（%）
 const COL={S:"#e53935",A:"#fb8c00",B:"#43a047",C:"#1e88e5",D:"#8e24aa"};
 const canSee=()=>true;   // 2026-10-29：全冒険者に公開（ログインしている冒険者だけ使える）
 const accRef=()=>DB.doc("gdacc/"+MYID), stockRef=()=>DB.doc("gdstock/one");
@@ -223,15 +224,16 @@ async function pull(n){ if(pulling) return; pulling=true; tap(); const cost=n===
   try{ await DB.runTransaction(async tx=>{ const a=await tx.get(accRef()), s=await tx.get(stockRef()); const acc=a.data(), st=s.exists?s.data():{}; got=[]; newIds=[];
       if(!acc||acc.st!=="ok") throw new Error("not ok"); if((acc.tk||0)<cost) throw new Error("tk");
       const taken={S:!!st.S, A:!!st.A}, setSt={}, used={}; let d=0; const sl=(acc.sl||[]).slice(), pool=stkPool(); gotStk=[];
-      for(let i=0;i<n;i++){ let x=Math.random()*100, pick=pz("D");
-        for(const p of GD.PRIZES){ if((x-=p.rate)<0){ pick=p; break; } }
+      const pc0=acc.pc||0;   /* 2026-10-30：その冒険者の最初の3回は、C・B・A賞が当たりやすい（画面には出さない） */
+      for(let i=0;i<n;i++){ let x=Math.random()*100, pick=pz("D"); const R=(pc0+i)<FIRST_N?FIRST_RATE:null;
+        for(const p of GD.PRIZES){ if((x-=(R&&R[p.r]!=null?R[p.r]:p.rate))<0){ pick=p; break; } }
         if(pick.one&&taken[pick.r]) pick=pz("D");   // 当選者が出たS賞・A賞の分はD賞になる
         if(pick.r!=="D"&&pick.max&&((st[pick.r+"n"]||0)+(used[pick.r]||0))>=pick.max) pick=pz("D");   /* 品切れのB賞・C賞の分もD賞になる */
         if(pick.r==="D"&&((st.Dn||0)+(used.D||0))>=pz("D").max) throw new Error("dout");   /* D賞が品切れ：このガチャは取り消し */
         if(pick.max){ used[pick.r]=(used[pick.r]||0)+1; setSt[pick.r+"n"]=(st[pick.r+"n"]||0)+used[pick.r]; }
         if(pick.one){ taken[pick.r]=true; setSt[pick.r]=MYID; }
         got.push(pick.r); if(pick.r==="D"){ d++; if(pool.length){ const id=pool[Math.floor(Math.random()*pool.length)]; gotStk.push(id); if(sl.length<GD.STK) sl.push(id); } } }
-      tx.update(accRef(),{tk:(acc.tk||0)-cost, stk:sl.length, sl}); nAcc={...acc, tk:(acc.tk||0)-cost, stk:sl.length, sl}; nSt={...st,...setSt};
+      tx.update(accRef(),{tk:(acc.tk||0)-cost, stk:sl.length, sl, pc:pc0+n}); nAcc={...acc, tk:(acc.tk||0)-cost, stk:sl.length, sl, pc:pc0+n}; nSt={...st,...setSt};
       if(Object.keys(setSt).length) tx.set(stockRef(),{...st,...setSt});
       got.filter(r=>r!=="D").forEach(r=>{ const ref=DB.collection("gdwin").doc(); newIds.push(ref.id); tx.set(ref,{uid:MYID, adv:String(myName()||"").slice(0,24), r, name:pz(r).name, at:gnow(), st:"won"}); }); }); }
   catch(e){ pulling=false; return T(String(e&&e.message)==="tk"?"グッズチケットが足りません":String(e&&e.message)==="dout"?"D賞が品切れのため、ガチャはお休みです（補充をお待ちください）":"通信できませんでした。もう一度ためしてください"); }
