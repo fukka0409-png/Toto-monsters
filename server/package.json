@@ -1,0 +1,7 @@
+{
+  "name": "toto-rank-settle",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "dependencies": { "firebase-admin": "^12.0.0" }
+}

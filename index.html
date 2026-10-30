@@ -3643,6 +3643,16 @@ let lastRemote = 0;   // 最後にサーバーと同じだった時の updated
 /* ---------- 新しいバージョンのお知らせ ----------
    サイトが更新されたら「更新する」ボタンを出す（古い画面のまま遊び続けないように） */
 let PAGE_TAG=null, updShown=false;
+/* 2026-10-30：新しいバージョンが出たら、遊んでいる途中ではないときに自動で更新する（古い画面のまま遊んでバグが出ないように）。
+   保存してから開き直す。何度も開き直さないように、自動の更新は10分に1回まで */
+async function updNow(){ if(updNow.go) return; updNow.go=1; try{ walletPush(); }catch(e){} try{ if(remoteTimer){ clearTimeout(remoteTimer); remoteTimer=null; await pushRemote(); } }catch(e){}
+  try{ if(!REMOTE_LOCK) localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} location.reload(); }
+const updBusy=()=>{ try{ return !!(seasonBusy || !document.querySelector("#title:not([hidden])") || document.querySelector(".reveal,.pk-stage,.sheet-bg,.gd-res,#ioG,#tso:not(.embed),#fzo,#mbo,#mco,#vto,.rules-stage,.swear") || (typeof pulling!=="undefined"&&pulling)); }catch(e){ return true; } };
+function autoUpd(){ let last=0; try{ last=+sessionStorage.getItem("toto-autoupd")||0; }catch(e){} if(Date.now()-last<10*60*1000) return;
+  const idle=()=>gnow()-(LAST_INPUT||0)>8000;   /* 8秒さわっていないとき */
+  const t=()=>{ if(REMOTE_LOCK) return; if(document.visibilityState!=="visible"||updBusy()||!idle()) return setTimeout(t,3000);
+    try{ sessionStorage.setItem("toto-autoupd",String(Date.now())); }catch(e){} updNow(); };
+  setTimeout(t,1500); }
 async function checkUpdate(){
   if(updShown || location.protocol==="file:") return;
   try{
@@ -3651,8 +3661,8 @@ async function checkUpdate(){
     if(!PAGE_TAG){ PAGE_TAG=t; return; }
     if(t!==PAGE_TAG){ updShown=true; const b=document.createElement("div"); b.className="upd-bar"; b.setAttribute("role","alert");
       b.innerHTML=`✨ 新しいバージョンがあります <button type="button">更新する</button>`;
-      b.querySelector("button").onclick=async()=>{ try{ walletPush(); }catch(e){} if(remoteTimer){ clearTimeout(remoteTimer); remoteTimer=null; await pushRemote(); } location.reload(); };
-      document.body.appendChild(b); }
+      b.querySelector("button").onclick=()=>updNow();
+      document.body.appendChild(b); autoUpd(); }
   }catch(e){}
 }
 setTimeout(checkUpdate,2000); setInterval(checkUpdate,5*60*1000);
@@ -6038,7 +6048,7 @@ async function ivBackfill(){
     S.ivBF=1; save();
   }catch(e){}
 }
-async function settleInvest(old, rank, q, mine, coinsSoFar){
+async function settleInvest(old, rank, q, mine, coinsSoFar, RR){
   const out={delta:0, lines:[]};
   resetOldInvest();
   let ivNet=null;   // 投資の素質：このランク戦の投資の損益（黒字か赤字か）
@@ -6046,9 +6056,9 @@ async function settleInvest(old, rank, q, mine, coinsSoFar){
     if(ivNet==null) ivNet=0;
     const nm=esc(iv.name||"相手");
     if(!invNew(old) && rank && rank<=3){ ivNet-=iv.amt; const lose=iv.paid?0:Math.min(iv.amt, S.coins+(S.bank||0)+coinsSoFar); out.delta-=lose; out.lines.push(`💸 あなたが${rank}位に入ったので、投資は無効（−${(iv.paid?iv.amt:lose).toLocaleString()}コイン没収）`); }
-    else if(q){
-      const d=q.docs.find(x=>x.id===iv.def), ts=d?finalScore(d.id,d.data(),old):null;
-      let tr=null; if(ts!=null){
+    else if(q||RR){
+      const d=q?q.docs.find(x=>x.id===iv.def):null, ts=d?finalScore(d.id,d.data(),old):null;
+      let tr=null; if(RR){ tr=(RR.r||{})[iv.def]??null; } else if(ts!=null){
         const others=q.docs.filter(x=>x.id!==iv.def&&x.id!==MYID).map(x=>({score:finalScore(x.id,x.data(),old), ok:profOk(x.data(),old)})).filter(o=>o.score!=null);
         others.push({score:mine, ok:prizeOk(old)});
         tr=effRank(ts, profOk(d.data(),old), others); }
@@ -6618,6 +6628,7 @@ const ITEM_REST_TXT = "🏁 ランク戦が始まってから1時間は、アイ
 const itemRest = () => gnow() < seasonEnd(seasonNow()-1) + HOUR_MS;
 const noAct = () => inFreeze() || (!!DB && !!MYID && S.season!=null && S.season<seasonNow());
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
+const RANKRES_WAIT = 40*60*1000;   // サーバーの集計（rankres）を待つ時間。これを過ぎてもなければ、自分で計算する
 const RANK_PRIZE = [ null, {c:500000,st:50,mk:50}, {c:250000,st:40,mk:25}, {c:100000,st:30,mk:10} ];   // 1〜3位（2026-10-27〜：モコも）
 const RANK_PRIZE_OLD = [ null, {c:10000,st:20}, {c:7777,st:10}, {c:5000,st:5} ], PRIZE_NEW_SS = 10;   // シーズン9以前は前の賞品（シーズン10＝2026-10-27のランク戦から新しい賞品）
 const RANK_PRIZE_10 = {c:2000, st:2};                                          // 4〜10位
@@ -6696,7 +6707,10 @@ async function checkTicks(silent){
 // 2026-10-29：ふっかーだけ：前のランク戦の結果（1〜10位）。プロフィールに残っているランク戦ごとの最終レベルから出す
 async function openPrevRank(){ if(!DB||!dexPeek()) return; const ss=seasonNow()-1;
   const bg=sheet(`<div class="sheet-h"><h3>🏆 前のランク戦の結果</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div id="prL"><div class="empty">集計中…</div></div>`);
-  try{ const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),20000); await loadSeasonEvents(ss);
+  try{ let RR=null; try{ const rd=await DB.doc("rankres/"+ss).get({source:"server"}); if(rd.exists) RR=rd.data(); }catch(e){}
+    if(RR&&Array.isArray(RR.top)){ const el=bg.querySelector("#prL"); if(!el) return; const md=["🥇","🥈","🥉"];   /* 2026-10-30：サーバーが決めた結果 */
+      el.innerHTML=`<p class="note" style="margin:0 0 8px">ランク戦${ss}の最終順位です（サーバーで集計・${RR.n||0}人）。ふっかーだけが見られます。</p><ol class="rank">${RR.top.map(x=>`<li><span class="rk-no">${md[x.r-1]||x.r}</span><div class="rk-body"><div class="rk-name" translate="no">${esc(x.name||"")}</div></div><div class="rk-lv"><small>Lv</small>${Math.floor((x.sc||0)/1e6)}</div></li>`).join("")}</ol>`; return; }
+    const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),20000); await loadSeasonEvents(ss);
     const fix=RANK_FIX[ss]||{}, fk=Object.keys(fix);
     const L=q.docs.map(d=>{ const p=d.data(), sc=finalScore(d.id,p,ss); return sc==null?null:{name:p.name||"名無しの召喚士", sc, fx:(fk.find(k=>normName(k)===normName(p.name))!=null?fix[fk.find(k=>normName(k)===normName(p.name))]:null)}; }).filter(Boolean);
     const free=L.filter(x=>x.fx==null).sort((a,b)=>b.sc-a.sc), out=[]; const fixed=L.filter(x=>x.fx!=null);
@@ -6788,13 +6802,18 @@ async function checkSeason(){
   try{
     const old=S.season, mine=S.plv*1e6+S.pexp;
     S.sv=S.sv||{}; S.sv[old]=mine;
-    let rank=null, q=null;
+    let rank=null, q=null, RR=null;
     if(old>=cur-3){
-      q=await DB.collection("profiles").limit(3000).get({source:"server"});   /* 2026-10-30：かならずサーバーから読む（電波がもどる前に、端末に残った古い一部の記録だけで順位を決めて、まちがって1位になるバグ） */
+      /* 2026-10-30：順位はサーバーが1回だけ決めた結果（rankres）を使う。みんな同じ結果になり、電波や古い画面でずれない */
+      try{ const rd=await DB.doc("rankres/"+old).get({source:"server"}); if(rd.exists) RR=rd.data(); }catch(e){}
+      if(RR){ rank=(RR.r||{})[MYID] ?? (1+Object.values(RR.sc||{}).filter(v=>v>mine).length); }
+      else if(gnow()<seasonEnd(old)+RANKRES_WAIT){ if(S.rrWaitMsg!==old){ S.rrWaitMsg=old; try{ toast("🏁 ランク戦の結果を集計中です。少し待ってね"); }catch(e){} } seasonBusy=false; return; }   /* サーバーの集計を待つ（1分ごとに見直す） */
+      else {   /* サーバーの結果がないとき（サーバーが止まっていたときなど）だけ、前と同じように自分で計算する */
+      q=await DB.collection("profiles").limit(3000).get({source:"server"});   /* かならずサーバーから読む（電波がもどる前の、端末に残った古い一部の記録で順位を決めないように） */
       if(q.size<5) throw new Error("few");   /* 冒険者の記録がほとんど読めなかったときは、精算しないで少しあとにやり直す */
       await loadSeasonEvents(old);
       const others=q.docs.filter(d=>d.id!==MYID&&!rankFixed(old,d.data())).map(d=>({score:finalScore(d.id,d.data(),old), ok:profOk(d.data(),old)})).filter(o=>o.score!=null);
-      rank=rankShift(old, effRank(mine, prizeOk(old), others));
+      rank=rankShift(old, effRank(mine, prizeOk(old), others)); }
     }
     { const fx=rankFixFor(old); if(fx) rank=fx; }   // 運営が決めた順位
     const w=S.stats.win||0, l=S.stats.lose||0, dr=S.stats.draw||0, t=w+l+dr, wr=t?w/t*100:0;
@@ -6810,9 +6829,9 @@ async function checkSeason(){
     let limGift=null; const lgId=SEASON_LIMITED[old];
     if(lgId && rank && rank<=3 && eligible && !(S.limGot||{})[old]){ const m=mon(lgId); if(m){ S.limGot=S.limGot||{}; S.limGot[old]=1; presentAdd({key:"lim:"+old, ic:"👑", title:`ランク戦の${rank}位の限定キャラ`, en:`Limited character for #${rank} in the ranked match`, mons:[{m:m.id,k:true}], quiet:true}); limGift=m; lines.push(`🎁 ${rank}位の限定キャラ：<span class="rk rk-L">限定</span> <b>「${esc(m.name)}」</b>（プレゼントBOXに届きました）`); } }
     // 投資の精算（自分が投資した分・自分に投資された分）
-    const iv=await settleInvest(old, rank, q, mine, coins); coins+=iv.delta; lines.push(...iv.lines);
+    const iv=await settleInvest(old, rank, q, mine, coins, RR); coins+=iv.delta; lines.push(...iv.lines);
     // 2026-10-28：貯金の税（貯金ランキングの順位で％が決まる）。減る前の貯金を bkp としてプロフィールに出しておく
-    let bankTax=null; if(old>=BANK_TAX_SS && (S.bank||0)>=BANK_TAX_OVER && !(rank&&rank<=BANK_SAFE_RANK)){   /* 2026-10-30：魔物ランキング10位以内なら貯金は減らない */ const pre=Math.floor(S.bank||0), brk=await bankRankAt(old,pre);
+    let bankTax=null; if(old>=BANK_TAX_SS && (S.bank||0)>=BANK_TAX_OVER && !(rank&&rank<=BANK_SAFE_RANK)){   /* 2026-10-30：魔物ランキング10位以内なら貯金は減らない */ const pre=Math.floor(S.bank||0), brk=(RR&&RR.bk)?(RR.bk[MYID]||null):await bankRankAt(old,pre);
       if(brk){ const p=pre>=BANK_TAX_OVER?(BANK_TAX_PCT[brk]||BANK_TAX_PCT_OVER):0;   /* 貯金が1億コイン以上のときだけ引かれる */ if(p>0) bankTax={rk:brk,p,t:Math.floor(pre*p)}; } S.bankPre=pre; S.bankPreS=old; }
     if(S!==S0 || (S.season??0)>=cur){ seasonBusy=false; return; }   // 途中で記録が入れかわったら何もしない
     // 2026-10-29：ほかの画面がもうこのランク戦を精算していたら、二重に精算しない（クラウドの数字に記録）
@@ -7131,10 +7150,12 @@ async function fixYoko13(){ const SS=13, FL="fixY13";
   if(normName(myName())!==normName("yoko★")){ S[FL]=1; save(); return; }
   const mine=(S.sv||{})[SS]; if(mine==null){ S[FL]=1; save(); return; }
   let rank=null;
-  try{ const q=await DB.collection("profiles").limit(3000).get({source:"server"}); if(q.size<5) return;
+  try{ let RR=null; try{ const rd=await DB.doc("rankres/"+SS).get({source:"server"}); if(rd.exists) RR=rd.data(); }catch(e){}
+    if(RR){ rank=(RR.r||{})[MYID] ?? (1+Object.values(RR.sc||{}).filter(v=>v>mine).length); } else {
+    const q=await DB.collection("profiles").limit(3000).get({source:"server"}); if(q.size<5) return;
     await loadSeasonEvents(SS);
     const others=q.docs.filter(d=>d.id!==MYID&&!rankFixed(SS,d.data())).map(d=>({score:finalScore(d.id,d.data(),SS), ok:profOk(d.data(),SS)})).filter(o=>o.score!=null);
-    rank=rankShift(SS, effRank(mine, true, others)); }catch(e){ return; }
+    rank=rankShift(SS, effRank(mine, true, others)); } }catch(e){ return; }
   if(S[FL]) return; S[FL]=1;
   if(!rank||rank===1){ save(); return; }   /* 本当に1位なら何もしない */
   const bad=RANK_PRIZE[1], lines=[];
@@ -10483,8 +10504,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261030225942" defer></script>
-<script src="vt/vt.js?v=20261030225942" defer></script>
-<script src="fz/fz.js?v=20261030225942" defer></script>
-<script src="gd/gd.js?v=20261030225942" defer></script>
+<script src="io/io.js?v=20261030230657" defer></script>
+<script src="vt/vt.js?v=20261030230657" defer></script>
+<script src="fz/fz.js?v=20261030230657" defer></script>
+<script src="gd/gd.js?v=20261030230657" defer></script>
 </body></html>
