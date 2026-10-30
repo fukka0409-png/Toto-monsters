@@ -4845,7 +4845,7 @@ const sellPrice=u=>{ const p=dexPrice(u.m); return p!=null ? p : (mon(u.m).sell 
 async function loadDexStats(force){
   if(!DB) return dexStats(); const st=dexStats(); if(!force && st && gnow()-st.at<DEX_STALE_MS) return st;
   if(DEXP) return DEXP;
-  DEXP=(async()=>{ try{ const q=await withTO(DB.collection("profiles").limit(3000).get(),15000); const tot={}; let n=0;
+  DEXP=(async()=>{ try{ const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),15000); const tot={}; let n=0;
       q.docs.forEach(d=>{ n++; if(d.id===MYID) return; const gc=d.data().gc; if(gc&&typeof gc==="object") for(const k in gc){ const v=Math.max(0,Math.floor(+gc[k]||0)); if(v) tot[k]=(tot[k]||0)+Math.min(v,1e6); } });
       S.dexStats={at:gnow(), n:Math.max(1,n), tot}; save(); }catch(e){ if(S.dexStats) S.dexStats.at=gnow()-DEX_STALE_MS+30000; } finally{ DEXP=null; }
     return dexStats(); })();
@@ -6028,7 +6028,7 @@ async function ivBackfill(){
     const r=await withTO(DB.collection("invests").where("att","==",MYID).get(),12000);
     const by={}; r.docs.forEach(d=>{ const x=d.data(); if(!x||(x.at||0)<INV_RESET_AT||x.ss==null||x.ss>=seasonNow()) return; (by[x.ss]=by[x.ss]||[]).push(x); });
     const sss=Object.keys(by).map(Number).filter(ss=>!(S.ivSeen&&S.ivSeen[ss]!=null));
-    if(sss.length){ const q=await withTO(DB.collection("profiles").limit(3000).get(),15000);
+    if(sss.length){ const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),15000);
       for(const ss of sss){ await loadSeasonEvents(ss); let net=0;
         const all=q.docs.map(x=>{ const isMe=x.id===MYID, v=x.data(); return {id:x.id, score:isMe&&S.sv&&S.sv[ss]!=null?S.sv[ss]:finalScore(x.id,v,ss), ok:true}; }).filter(o=>o.score!=null);
         for(const x of by[ss]){ if(x.void){ net-=x.amt||0; continue; }
@@ -6074,7 +6074,7 @@ async function openLastResult(){
   if(!DB) return draw(loginBox("前回の結果を見るには、ログインが必要です。"));
   if(LAST_RES.s!==old){
     draw(`<div class="empty">集計しています…</div>`);
-    try{ const q=await withTO(DB.collection("profiles").limit(3000).get()); await loadSeasonEvents(old);
+    try{ const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"})); await loadSeasonEvents(old);
       const all=q.docs.map(x=>{ const v=x.data(); const isMe=x.id===MYID;
         const sc=isMe&&S.sv&&S.sv[old]!=null?S.sv[old]:finalScore(x.id,v,old);
         return {id:x.id, name:v.name, icon:v.icon, score:sc, ok:isMe?prizeOk(old):profOk(v,old)}; }).filter(o=>o.score!=null);
@@ -6696,7 +6696,7 @@ async function checkTicks(silent){
 // 2026-10-29：ふっかーだけ：前のランク戦の結果（1〜10位）。プロフィールに残っているランク戦ごとの最終レベルから出す
 async function openPrevRank(){ if(!DB||!dexPeek()) return; const ss=seasonNow()-1;
   const bg=sheet(`<div class="sheet-h"><h3>🏆 前のランク戦の結果</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div id="prL"><div class="empty">集計中…</div></div>`);
-  try{ const q=await withTO(DB.collection("profiles").limit(3000).get(),20000); await loadSeasonEvents(ss);
+  try{ const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),20000); await loadSeasonEvents(ss);
     const fix=RANK_FIX[ss]||{}, fk=Object.keys(fix);
     const L=q.docs.map(d=>{ const p=d.data(), sc=finalScore(d.id,p,ss); return sc==null?null:{name:p.name||"名無しの召喚士", sc, fx:(fk.find(k=>normName(k)===normName(p.name))!=null?fix[fk.find(k=>normName(k)===normName(p.name))]:null)}; }).filter(Boolean);
     const free=L.filter(x=>x.fx==null).sort((a,b)=>b.sc-a.sc), out=[]; const fixed=L.filter(x=>x.fx!=null);
@@ -6790,7 +6790,8 @@ async function checkSeason(){
     S.sv=S.sv||{}; S.sv[old]=mine;
     let rank=null, q=null;
     if(old>=cur-3){
-      q=await DB.collection("profiles").limit(3000).get();
+      q=await DB.collection("profiles").limit(3000).get({source:"server"});   /* 2026-10-30：かならずサーバーから読む（電波がもどる前に、端末に残った古い一部の記録だけで順位を決めて、まちがって1位になるバグ） */
+      if(q.size<5) throw new Error("few");   /* 冒険者の記録がほとんど読めなかったときは、精算しないで少しあとにやり直す */
       await loadSeasonEvents(old);
       const others=q.docs.filter(d=>d.id!==MYID&&!rankFixed(old,d.data())).map(d=>({score:finalScore(d.id,d.data(),old), ok:profOk(d.data(),old)})).filter(o=>o.score!=null);
       rank=rankShift(old, effRank(mine, prizeOk(old), others));
@@ -6908,6 +6909,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-30-rank1", coins:1000 },   // 電波がもどる前にランク戦の精算をすると、まちがった順位になることがあった
   { id:"fix-2026-10-30-heavy", coins:1000 },   // ページが重すぎて、iPhoneのホーム画面のアプリが開けないことがあった
   { id:"fix-2026-10-30-gdDn", coins:1000 },   // 古い画面のままグッズガチャを引くと、D賞の残りの数が減っていなかった
   { id:"fix-2026-10-30-reloadloss", coins:1000 },   // 更新した直後に増えたコインなどが、ページの更新で消えることがあった
@@ -7022,7 +7024,7 @@ function noteTapioka(){
 // 2026-10-28：シーズン11をもう精算してしまっていたら、決めた順位との賞品の差を直す（1回だけ）
 async function fixRank11(SS=11){ const fx=rankFixFor(SS), FK=SS===11?"rkFix11":"rkFix"+SS; if(!fx||S[FK]||!DB||!MYID||(S.season??0)<=SS) return;
   const mine=(S.sv||{})[SS]; let orig=null;
-  if(mine!=null){ try{ const q=await DB.collection("profiles").limit(3000).get(); await loadSeasonEvents(SS);
+  if(mine!=null){ try{ const q=await DB.collection("profiles").limit(3000).get({source:"server"}); await loadSeasonEvents(SS);
     const others=q.docs.filter(d=>d.id!==MYID).map(d=>({score:finalScore(d.id,d.data(),SS), ok:profOk(d.data(),SS)})).filter(o=>o.score!=null);
     orig=effRank(mine, prizeOk(SS), others); }catch(e){ return; } }
   if(S[FK]) return; S[FK]=1;
@@ -7047,7 +7049,7 @@ function fixLoveSv12(){ try{ if(S.loveSv12||!MYID||normName(myName())!==normName
 async function fixInvLove12(){ const SS=12; if(S.invLove12||!DB||!MYID||(S.season??0)<=SS) return;
   let L=[]; try{ const q=await withTO(DB.collection("invests").where("att","==",MYID).get(),12000); L=q.docs.map(d=>d.data()).filter(x=>x.ss===SS && normName(x.defName)===normName("love") && !x.void); }catch(e){ return; }
   if(S.invLove12) return; S.invLove12=1; if(!L.length){ save(); return; }
-  let meTop=false; try{ const mine=(S.sv||{})[SS]; if(mine!=null){ const q=await withTO(DB.collection("profiles").limit(3000).get(),20000); await loadSeasonEvents(SS);
+  let meTop=false; try{ const mine=(S.sv||{})[SS]; if(mine!=null){ const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),20000); await loadSeasonEvents(SS);
     const others=q.docs.filter(d=>d.id!==MYID&&!rankFixed(SS,d.data())).map(d=>({score:finalScore(d.id,d.data(),SS), ok:profOk(d.data(),SS)})).filter(o=>o.score!=null);
     meTop=rankShift(SS,effRank(mine,true,others))<=3; } }catch(e){}   // 自分が3位以内なら、投資の配当は2倍（いつものきまり）
   let add=0; const lines=[];
@@ -7060,7 +7062,7 @@ async function fixInvLove12(){ const SS=12; if(S.invLove12||!DB||!MYID||(S.seaso
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
 async function fixLoveInv11(){ const SS=11; if(S.loveInv11||!DB||!MYID) return; if(normName(myName())!==normName("love")) return;
   const L=[{n:"Riku",amt:200000000},{n:"ＤＲＡＧＯＮ",amt:50000000}];
-  let q; try{ q=await DB.collection("profiles").limit(3000).get(); await loadSeasonEvents(SS); }catch(e){ return; }
+  let q; try{ q=await DB.collection("profiles").limit(3000).get({source:"server"}); await loadSeasonEvents(SS); }catch(e){ return; }
   if(S.loveInv11) return;
   const lines=[]; let total=0;
   for(const x of L){ const d=q.docs.find(z=>normName(z.data().name)===normName(x.n)); let tr=null;
@@ -7214,7 +7216,7 @@ async function checkCheatRestore(){ if(!DB||!MYID) return; S.crrDone=S.crrDone||
 // 2026-10-29：ふっかーだけ：名前を指定したプレゼント（最近7日）の届け先が、登録されている冒険者名と一致するか確かめる。一致しないものがあれば知らせる
 async function checkGiftNames(){ try{ if(!DB||!MYID||!dexPeek()) return; const since=gnow()-7*DAY_MS, bad=[];
   // 実際に届くかどうかと同じくらべ方（ランキングのプロフィールの名前を normName でくらべる）
-  let known=null; try{ const q=await withTO(DB.collection("profiles").limit(3000).get(),20000); known=new Set(q.docs.map(d=>normName(d.data().name))); }catch(e){ return; }
+  let known=null; try{ const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),20000); known=new Set(q.docs.map(d=>normName(d.data().name))); }catch(e){ return; }
   for(const g of NAMED_GIFTS){ const m=String(g.id).match(/(\d{4}-\d{2}-\d{2})/); if(!m||Date.parse(m[1]+"T00:00:00+09:00")<since) continue;
     const ok=Object.keys(g.to||{}).some(n=>known.has(normName(n)));
     if(!ok) { const what=[g.coins?g.coins.toLocaleString()+"コイン":"", g.moko?g.moko+"モコ":"", g.ticket?"チケット"+g.ticket+"枚":"", (g.mons||[]).length?"限定キャラ":""].filter(Boolean).join("・")||"プレゼント"; bad.push(`${Object.keys(g.to).join("／")}（${what}）`); } }
@@ -7253,7 +7255,7 @@ async function checkUsagiGift(){
   if(S.usagiChk||!DB||!MYID||(S.season||0)<=USAGI_SS) return;
   const mine=S.sv&&S.sv[USAGI_SS]; if(mine==null){ S.usagiChk=1; save(); return; }
   try{
-    const q=await DB.collection("profiles").limit(3000).get();
+    const q=await DB.collection("profiles").limit(3000).get({source:"server"});
     await loadSeasonEvents(USAGI_SS);
     const others=q.docs.filter(d=>d.id!==MYID).map(d=>({score:finalScore(d.id,d.data(),USAGI_SS), ok:profOk(d.data(),USAGI_SS)})).filter(o=>o.score!=null);
     const rank=effRank(mine, prizeOk(USAGI_SS), others);
@@ -7352,7 +7354,7 @@ async function checkMaidGift(){
   if(S.maidChk||!DB||!MYID||(S.season||0)<=MAID_SS) return;
   const mine=S.sv&&S.sv[MAID_SS]; if(mine==null){ S.maidChk=1; save(); return; }
   try{
-    const q=await DB.collection("profiles").limit(3000).get();
+    const q=await DB.collection("profiles").limit(3000).get({source:"server"});
     await loadSeasonEvents(MAID_SS);
     const others=q.docs.filter(d=>d.id!==MYID).map(d=>({score:finalScore(d.id,d.data(),MAID_SS), ok:profOk(d.data(),MAID_SS)})).filter(o=>o.score!=null);
     const rank=effRank(mine, prizeOk(MAID_SS), others);
@@ -7372,7 +7374,7 @@ async function checkBritGift(){
   if(S.britChk||!DB||!MYID||(S.season||0)<=BRIT_SS) return;
   const mine=S.sv&&S.sv[BRIT_SS]; if(mine==null){ S.britChk=1; save(); return; }
   try{
-    const q=await DB.collection("profiles").limit(3000).get();
+    const q=await DB.collection("profiles").limit(3000).get({source:"server"});
     await loadSeasonEvents(BRIT_SS);
     const others=q.docs.filter(d=>d.id!==MYID).map(d=>({score:finalScore(d.id,d.data(),BRIT_SS), ok:profOk(d.data(),BRIT_SS)})).filter(o=>o.score!=null);
     const rank=effRank(mine, prizeOk(BRIT_SS), others);
@@ -7393,7 +7395,7 @@ async function checkLimRetro(SS, ID, flag, enName){
   const fx=rankFixFor(SS), mine=S.sv&&S.sv[SS]; if(mine==null&&!fx){ S[flag]=1; save(); return; }
   try{
     let rank=fx;   /* 2026-10-30：運営が決めた順位（RANK_FIX）も同じように使う */
-    if(!rank){ const q=await DB.collection("profiles").limit(3000).get();
+    if(!rank){ const q=await DB.collection("profiles").limit(3000).get({source:"server"});
       await loadSeasonEvents(SS);
       const others=q.docs.filter(d=>d.id!==MYID&&!rankFixed(SS,d.data())).map(d=>({score:finalScore(d.id,d.data(),SS), ok:profOk(d.data(),SS)})).filter(o=>o.score!=null);
       rank=rankShift(SS, effRank(mine, prizeOk(SS), others)); }
@@ -7414,7 +7416,7 @@ async function checkPinkGift(){
   if((S.limGot||{})[PINK_SS]){ S.pinkChk=1; save(); return; }
   const mine=S.sv&&S.sv[PINK_SS]; if(mine==null){ S.pinkChk=1; save(); return; }
   try{
-    const q=await DB.collection("profiles").limit(3000).get();
+    const q=await DB.collection("profiles").limit(3000).get({source:"server"});
     await loadSeasonEvents(PINK_SS);
     const others=q.docs.filter(d=>d.id!==MYID).map(d=>({score:finalScore(d.id,d.data(),PINK_SS), ok:profOk(d.data(),PINK_SS)})).filter(o=>o.score!=null);
     const rank=effRank(mine, prizeOk(PINK_SS), others);
@@ -10454,8 +10456,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261030220740" defer></script>
-<script src="vt/vt.js?v=20261030220740" defer></script>
-<script src="fz/fz.js?v=20261030220740" defer></script>
-<script src="gd/gd.js?v=20261030220740" defer></script>
+<script src="io/io.js?v=20261030225806" defer></script>
+<script src="vt/vt.js?v=20261030225806" defer></script>
+<script src="fz/fz.js?v=20261030225806" defer></script>
+<script src="gd/gd.js?v=20261030225806" defer></script>
 </body></html>
