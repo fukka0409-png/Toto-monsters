@@ -65,6 +65,14 @@ css.textContent=`
 #gdo .gd-pulls button{padding:14px 6px;border-radius:12px;border:3px solid #2b1a06;box-shadow:0 4px 0 #2b1a06;background:#ffcf3b;font:900 18px var(--f-body);color:#2b1a06}
 #gdo .gd-pulls button small{display:block;font-size:12px;margin-top:3px}
 #gdo .gd-pulls button:disabled{opacity:.4}
+#gdo .gd-buyb{position:relative;display:block;border-radius:14px;overflow:hidden;border:4px solid #2b1a06;box-shadow:0 6px 0 #2b1a06,0 0 0 0 #ffcf3b;transform:translateY(0);animation:gdBuyPulse 1.6s ease-in-out infinite;-webkit-tap-highlight-color:transparent}
+#gdo .gd-buyb img{display:block;width:100%;height:auto}
+#gdo .gd-buyb::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,#ffffff99 50%,transparent 65%);background-size:250% 100%;animation:gdBuySh 2.4s linear infinite;pointer-events:none}
+#gdo .gd-buyb:active{transform:translateY(5px);box-shadow:0 1px 0 #2b1a06;animation:none}
+#gdo .gd-buyf{position:absolute;right:6%;bottom:8%;font-size:34px;font-style:normal;animation:gdBuyF 1s ease-in-out infinite;filter:drop-shadow(0 2px 2px #0008);pointer-events:none}
+@keyframes gdBuyPulse{0%,100%{box-shadow:0 6px 0 #2b1a06,0 0 0 0 #ffcf3b00}50%{box-shadow:0 6px 0 #2b1a06,0 0 0 6px #ffcf3bcc}}
+@keyframes gdBuySh{from{background-position:200% 0}to{background-position:-100% 0}}
+@keyframes gdBuyF{0%,100%{transform:translate(0,0)}50%{transform:translate(-6px,-8px) scale(.92)}}
 #gdo .gd-buy{display:block;text-align:center;padding:16px;border-radius:12px;border:3px dashed #e53935;background:#fff0f0;color:#c62828;font:900 17px var(--f-body);text-decoration:none}
 #gdo .gd-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:0 0 14px}
 #gdo .gd-slot{aspect-ratio:1;border:3px dashed #b9a98a;border-radius:10px;display:grid;place-items:center;font-size:22px;background:#fffdf6}
@@ -196,7 +204,7 @@ function gachaBody(){ const el=document.createElement("div");   /* 2026-10-30：
       <p style="font-size:12px;margin:0">S賞とA賞は1人だけ当選します。B賞・C賞・D賞は数に限りがあります。当選者が出たり品切れになったりすると、その景品はモノクロになります。</p></div>
     <div style="text-align:center;font-weight:900;margin:0 0 8px">所持チケット 🎫 ${ACC.tk||0}枚</div>
     ${soldOut(pz("D"),STOCK)?`<p style="text-align:center;font-weight:900;color:#c62828;margin:0 0 8px">D賞が品切れのため、ガチャはお休みです（補充をお待ちください）</p>`:""}<div class="gd-pulls"><button type="button" data-n="1" ${(ACC.tk||0)<GD.ONE||soldOut(pz("D"),STOCK)?"disabled":""}>1連<small>チケット${GD.ONE}枚</small></button><button type="button" data-n="10" ${(ACC.tk||0)<GD.TEN||soldOut(pz("D"),STOCK)||leftOf(pz("D"),STOCK)<10?"disabled":""}>10連<small>チケット${GD.TEN}枚</small></button></div>
-    ${GD.BUY_URL?`<a href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener" style="display:block;border-radius:12px;overflow:hidden;border:3px solid #2b1a06;box-shadow:0 4px 0 #2b1a06"><img src="${esc(GD.BUY_IMG)}" alt="グッズチケットを500円で購入！ 1セット購入でグッズチケット1枚申請できます" style="display:block;width:100%;height:auto"></a><p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0">🎫 グッズチケットを500円で購入！</p>`:""}
+    ${GD.BUY_URL?`<a class="gd-buyb" href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener"><img src="${esc(GD.BUY_IMG)}" alt="グッズチケットを500円で購入！ 1セット購入でグッズチケット1枚申請できます"></a><p style="text-align:center;font-weight:900;font-size:13px;margin:10px 0 0;color:#c62828">▲ タップでBASEのページが開きます</p>`:""}
     <button class="gd-go" type="button" id="gdTreq" style="margin-top:14px">🎫 チケットを申請する</button>
     ${(()=>{ const w=TREQ.filter(x=>x.st==="wait"); return w.length?`<p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0;color:#c62828">申請中：${w.reduce((t,x)=>t+(x.n||0),0)}枚（ふっかーの確認待ち）</p>`:""; })()}`;
   el.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>pull(+b.dataset.n));
