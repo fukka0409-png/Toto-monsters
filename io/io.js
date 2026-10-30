@@ -86,7 +86,7 @@ function open(){ if(G) return;
   for(let i=0;i<IO.N;i++) G.E.push(spawnSlime(true));
   G.maxL=1; G.maxW=0;
   for(let i=0;i<IO.WEAP;i++) G.WP.push(spawnWeapon());
-  G.rec=[]; G.recT=0;   // 2026-10-28：ほかの冒険者の記録を出すのは中止（敵はスライムだけ）
+  G.rec=[]; G.recT=0; loadAdvPool();   // 2026-10-28：ほかの冒険者の記録を出すのは中止（敵はスライムだけ）
   grass();
   const rs=()=>{ const d=Math.min(2,window.devicePixelRatio||1); G.dpr=d; cv.width=Math.round(innerWidth*d); cv.height=Math.round(innerHeight*d); };
   rs(); G.onRs=rs; addEventListener("resize",rs);
@@ -118,11 +118,17 @@ function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Obj
 const SLIME_MAX=LV_MAX-1;   // 2026-10-28：スライムのレベル上限はなし（自分のレベルに合わせて出てくる）
 function slimePool(){ try{ return MONSTERS.filter(m=>m&&m.img&&/スライム/.test(m.name)).map(m=>m.id); }catch(e){ return [18]; } }
 const hiRate=pl=>0.4+0.4*Math.min(1,Math.max(0,(pl-1)/99));
-function spawnSlime(first){ const P=G.P, pool=G.sp||(G.sp=slimePool()), id=pool[ri(0,pool.length-1)]||18, f=sf(id);
+// 2026-10-30：敵の2割は、ほかの冒険者の過去のデータ（名前と、その冒険者が使った魔物）。レベルの決まり方はスライムと同じ
+const ADV_RATE=0.2;
+async function loadAdvPool(){ try{ if(typeof DB==="undefined"||!DB) return; const q=await DB.collection("profiles").where("ioL",">",0).orderBy("ioL","desc").limit(200).get(); if(!G) return;
+  G.AP=q.docs.map(d=>({uid:d.id,...d.data()})).filter(x=>x.uid!==MYID&&x.name).map(x=>({nm:String(x.name).slice(0,12), id:Number(x.iom)||1}));
+  G.AP.forEach(x=>img(x.id));
+  const n=Math.round(G.E.length*ADV_RATE); let k=0; for(let i=0;i<G.E.length&&k<n;i++){ const e=G.E[i]; if(!e.adv&&Math.hypot(e.x-G.P.x,e.y-G.P.y)>700){ G.E[i]=spawnSlime(false,true); k++; } } }catch(e){} }
+function spawnSlime(first,forceAdv){ const P=G.P, A=G.AP&&G.AP.length&&(forceAdv||Math.random()<ADV_RATE)?G.AP[ri(0,G.AP.length-1)]:null, pool=G.sp||(G.sp=slimePool()), id=A?A.id:(pool[ri(0,pool.length-1)]||18), f=sf(id);
   // 2026-10-30：自分のレベルが高いほど、自分より高い敵（+1〜+3）がふえる（Lv1で4割 → Lv50で約6割 → Lv100以上で8割）
   const pl=Math.floor(r1(P.lv||1)), lv=Math.random()<hiRate(pl)?pl+ri(1,3):Math.max(1,pl-ri(0,3));
   let x,y,t=0; do{ x=rnd(60,IO.W-60); y=rnd(60,IO.H-60); t++; }while(t<30&&Math.hypot(x-P.x,y-P.y)<700);
-  img(id); const a=rnd(0,Math.PI*2); return {id,f,lv,w:0,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3),slime:1,role:"s"}; }
+  img(id); const a=rnd(0,Math.PI*2); return A?{adv:1, nm:A.nm, id,f,lv,w:0,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3),slime:1,role:"s"}:{id,f,lv,w:0,x,y,r:radius(lv,f),vx:Math.cos(a),vy:Math.sin(a),turn:rnd(1,3),slime:1,role:"s"}; }
 // 倒された・記録が終わった敵を、同じ役割（スライム／冒険者の記録）で出しなおす
 function respawn(i){ G.E[i]=spawnSlime(false); }   // 冒険者の記録は1ゲームに1回だけなので、倒されたらスライムになる
 function spawnEnemy(first){ const P=G.P, fp=fusedPool(), id=(fp.length&&Math.random()<0.4)?fp[ri(0,fp.length-1)]:(G.pool[ri(0,G.pool.length-1)]||18), f=sf(id);
