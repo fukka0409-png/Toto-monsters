@@ -126,7 +126,10 @@ async function open(){ if(!DB||!MYID) return T("グッズ特典はログイン�
   if(c&&c.uid===MYID&&c.ACC){ ACC=c.ACC; WINS=c.WINS||[]; STOCK=c.STOCK||{}; route(); load().then(()=>{ if(V&&!document.querySelector(".gd-res,.pk-stage.gdp")) reshow(); }); return; }   // 前の記録ですぐ出して、うらで新しくする
   const el=shell("🛍 グッズ特典"); el.innerHTML=`<div class="gd-card" style="text-align:center">読み込み中…</div>`;
   await load(); route(); }
+/* 2026-10-30：おじおじさんはグッズガチャから外す（ふっかーの管理画面にも出さない・登録し直してもすぐ消す） */
+const isOji=x=>{ try{ return normName(String((x&&x.adv)||""))===normName("おじおじ"); }catch(e){ return false; } };
 function route(){
+  try{ if(normName(myName())===normName("おじおじ")){ shell("🛍 グッズガチャ").innerHTML=`<div class="gd-card" style="text-align:center">グッズガチャは利用できません。</div>`; return; } }catch(e){}
   if(ACC===undefined){ shell("🛍 グッズ特典").innerHTML=`<div class="gd-card">読み込めませんでした。少し時間をおいて開き直してください。</div>`; return; }
   if(!ACC) return regPage();
   if(ACC.st==="ng") return ngPage();   /* 2026-10-30：却下された */
@@ -371,7 +374,7 @@ let ADMC=null;
 async function admin(){ if(!DB||!dexPeek()) return; const el=shell("🛍 グッズ管理（ふっかー）");
   if(ADMC) adminDraw(el,...ADMC); else el.innerHTML=`<div class="gd-card">読み込み中…</div>`;
   let A, W, R; try{ const [a,w,r]=await Promise.all([withTO(DB.collection("gdacc").get()), withTO(DB.collection("gdwin").where("st","in",["req","sent"]).get()).catch(()=>withTO(DB.collection("gdwin").get())), withTO(DB.collection("gdtreq").get()).catch(()=>({docs:[]}))]);
-    A=a.docs.map(d=>({id:d.id,...d.data()})); W=w.docs.map(d=>({id:d.id,...d.data()})); R=r.docs.map(d=>({id:d.id,...d.data()})); }
+    A=a.docs.map(d=>({id:d.id,...d.data()})); A.filter(isOji).forEach(x=>{ DB.doc("gdacc/"+x.id).delete().catch(()=>{}); }); A=A.filter(x=>!isOji(x)); W=w.docs.map(d=>({id:d.id,...d.data()})); R=r.docs.map(d=>({id:d.id,...d.data()})).filter(x=>!isOji(x)); }
   catch(e){ if(!ADMC) el.innerHTML=`<div class="gd-card">読み込めませんでした（Firestoreのルールを確認してください）</div>`; return; }
   ADMC=[A,W,R]; if(V&&V.contains(el)) adminDraw(el,A,W,R); }
 function adminDraw(el,A,W,R){
@@ -427,7 +430,7 @@ setTimeout(function tryReset(){ if(typeof DB!=="undefined"&&DB&&MYID) resetFukka
 // ふっかーのタイトルの「グッズ管理」に、対応が必要な数の赤い印
 async function admBadge(){ try{ const b=document.getElementById("ttlGdAdmB"); if(!b||!DB||!MYID||typeof dexPeek!=="function"||!dexPeek()) return;
   const [r,a,w]=await Promise.all([DB.collection("gdtreq").where("st","==","wait").get().catch(()=>({size:0,docs:[]})), DB.collection("gdacc").get().catch(()=>({docs:[]})), DB.collection("gdwin").where("st","==","req").get().catch(()=>({size:0}))]);
-  const n=r.size+a.docs.filter(d=>{ const x=d.data(); return x.st==="wait"||(x.cp&&x.cp.st==="wait"); }).length+w.size; b.textContent=n>99?"99+":String(n); b.hidden=!n; }catch(e){} }
+  const n=r.docs.filter(d=>!isOji(d.data())).length+a.docs.filter(d=>{ const x=d.data(); return !isOji(x)&&(x.st==="wait"||(x.cp&&x.cp.st==="wait")); }).length+w.size; b.textContent=n>99?"99+":String(n); b.hidden=!n; }catch(e){} }
 setTimeout(admBadge,6000); setInterval(()=>{ if(document.querySelector("#title:not([hidden])")) admBadge(); },60000);
 
 /* ---------- タイトルのボタン ---------- */
