@@ -150,28 +150,26 @@ function waitPage(){ const el=shell("⏳ 承認待ち");
 
 // ② ホーム（申請済みグッズ・所持チケット数・ガチャ・ステッカー集め）
 function pendingCount(){ return WINS.filter(w=>w.st==="req").length + (ACC.cp&&ACC.cp.st==="wait"?1:0); }
-function homePage(){ page="home"; const el=shell("🛍 グッズ特典");
+function homePage(){ page="home"; const el=shell("🛍 グッズガチャ");
   el.innerHTML=`<div class="gd-row">
       <button class="gd-box" type="button" id="gdReq"><small>申請済みグッズ</small><b>${pendingCount()}</b><small>タップで確認</small></button>
       <div class="gd-box"><small>所持チケット数</small><b>🎫 ${ACC.tk||0}</b><small>グッズチケット</small></div></div>
-    <button class="gd-big" type="button" id="gdGacha">グッズガチャ</button>
-    <p class="gd-cap">本物のグッズが当たります‼️</p>
+    <p class="gd-cap" style="margin:0 0 12px">※本物のグッズが当たります‼️</p>
+    <div id="gdGachaBox"></div>
     <button class="gd-big stk" type="button" id="gdStk">ステッカー集め</button>
     <p class="gd-cap">デジタルステッカーを${GD.STK}枚集めると<br>Pay IDで使える50%クーポンがゲットできます‼️</p>
     <div class="gd-card" style="line-height:1.7">
       <b style="font-size:16px">🎫 グッズチケットのゲット方法</b>
       <ol style="margin:8px 0 10px;padding-left:1.4em;font-size:14px">
         <li><b>BASEで500円のステッカーを買う</b><br><small>1セット買うと、チケット1枚を申請できます</small></li>
-        <li>「グッズガチャ」を開いて、バナーの下の<b>「チケットを申請する」</b>を押す</li>
+        <li>上のバナーの下の<b>「チケットを申請する」</b>を押す</li>
         <li><b>「条件達成」</b>を押して、買ったセットの数を入れて<b>「申請」</b></li>
         <li>ふっかーが確認すると、<b>チケットが届きます！</b><br><small>（1連はチケット1枚・10連はチケット7枚）</small></li>
       </ol>
       ${GD.BUY_URL?`<a class="gd-go" href="${esc(GD.BUY_URL)}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;font-size:16px;margin:0 0 8px">🛒 BASEでステッカーを買う</a>`:""}
-      <button class="gd-go" type="button" id="gdTreq2" style="font-size:16px;background:#fff">🎫 チケットを申請する</button>
     </div>`;
-  { const t2=el.querySelector("#gdTreq2"); if(t2) t2.onclick=()=>{ tap(); treqFlow(); }; }   // 2026-10-30：ホームからも申請できる
+  { const gb=el.querySelector("#gdGachaBox"); if(gb) gb.appendChild(gachaBody()); }
   el.querySelector("#gdReq").onclick=()=>{ tap(); reqPage(); };
-  el.querySelector("#gdGacha").onclick=()=>{ tap(); gachaPage(); };
   el.querySelector("#gdStk").onclick=()=>{ tap(); stkPage(); };
   noticeCheck(); }
 
@@ -188,7 +186,7 @@ async function mailReq(id,after){ tap(); try{ await withTO(DB.doc("gdwin/"+id).u
   const w=WINS.find(x=>x.id===id); if(w){ w.st="req"; w.reqAt=gnow(); } T("郵送申請しました！ 申請済みグッズに追加されました"); after&&after(); }
 
 // ③ グッズガチャ
-function gachaPage(){ page="gacha"; const el=shell("🎰 グッズガチャ",homePage);
+function gachaBody(){ const el=document.createElement("div");   /* 2026-10-30：グッズガチャはホームの画面にそのまま出す */
   const totalLeft=GD.PRIZES.reduce((t,p)=>t+(p.one?(STOCK[p.r]?0:1):p.max?leftOf(p,STOCK):0),0);   /* 2026-10-30：ガチャの中身の残りの合計 */
   el.innerHTML=`<div style="margin:0 0 12px;padding:10px 12px;border-radius:14px;border:4px solid #2b1a06;background:linear-gradient(#fff3c4,#ffd76a);box-shadow:0 4px 0 #2b1a06;text-align:center;font-weight:900">
       <div style="font-size:13px">🎁 ガチャの中身</div><div style="font-size:30px;line-height:1.2;color:#c62828">残り <span style="font-size:40px">${totalLeft.toLocaleString()}</span>コ！</div>
@@ -202,7 +200,9 @@ function gachaPage(){ page="gacha"; const el=shell("🎰 グッズガチャ",hom
     ${(()=>{ const w=TREQ.filter(x=>x.st==="wait"); return w.length?`<p style="text-align:center;font-weight:900;font-size:13px;margin:8px 0 0;color:#c62828">申請中：${w.reduce((t,x)=>t+(x.n||0),0)}枚（ふっかーの確認待ち）</p>`:""; })()}`;
   el.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>pull(+b.dataset.n));
   { const tb=el.querySelector("#gdTreq"); if(tb) tb.onclick=()=>{ tap(); treqFlow(); }; }
-  el.querySelectorAll("[data-zoom]").forEach(im=>im.onclick=()=>{ const p=pz(im.dataset.zoom), z=document.createElement("div"); z.className="gd-zoom"; z.innerHTML=`<div><img src="${esc(p.img)}" alt=""><p>${p.r}賞　${esc(p.name)}</p></div>`; z.onclick=()=>z.remove(); document.body.appendChild(z); }); }
+  el.querySelectorAll("[data-zoom]").forEach(im=>im.onclick=()=>{ const p=pz(im.dataset.zoom), z=document.createElement("div"); z.className="gd-zoom"; z.innerHTML=`<div><img src="${esc(p.img)}" alt=""><p>${p.r}賞　${esc(p.name)}</p></div>`; z.onclick=()=>z.remove(); document.body.appendChild(z); });  return el; }
+function gachaPage(){ homePage(); }
+
 // 2026-10-29：チケットを申請する（①条件の確認 → ②枚数を入れて申請 → ふっかーの「チケット申請」に届く）
 function treqFlow(){ const d=document.createElement("div"); d.className="gd-res";
   d.innerHTML=`<div><h3>🎫 チケットを申請する</h3><p style="font-weight:900;line-height:1.7">500円のステッカー購入が条件です！<br>条件を満たしていないと申請は通りません🙏</p><button type="button" id="trOk">条件達成</button><br><br><button type="button" id="trNo" style="background:#fff">やめる</button></div>`;
