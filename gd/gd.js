@@ -9,7 +9,7 @@ const GD={
   WHO:["おじおじ"],            // 見られる冒険者（ふっかーはいつでも）
   ONE:1, TEN:7,                 // 1連・10連に使うチケット
   STK:20,                       // ステッカーの枠（2026-10-30：30→20）
-  BUY_URL:"https://fukka0409.base.shop/items/151065414", BUY_IMG:"gd/buy.jpg",   // 「グッズチケットを500円で購入！」のリンク（BASEのショップ）
+  BUY_URL:"https://fukka0409.base.shop/items/151065414", BUY_IMG:"gd/buy.jpg?v=2",   // 「グッズチケットを500円で購入！」のリンク（BASEのショップ）
   // 景品（S賞・A賞は1人だけ当選）。img にラインナップの画像を入れる
   PRIZES:[
     {r:"S", name:"「勇者アヒル」の原画", img:"gd/s.jpg?v=2", rate:0.01, one:true}   /* 2026-10-29：0.05%→0.01% */,
