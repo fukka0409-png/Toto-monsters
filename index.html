@@ -6344,6 +6344,27 @@ function seenMark(r){
   const h=(gnow()-(r.pub||0))/HOUR_MS;
   return h<=1?" 🟢":h<=6?" 🟡":h<=24?" 🟠":h<=48?" 🔴":h<=72?" 🟣":"";
 }
+/* 2026-10-31：過去3回のランク戦の1〜3位（終わったランク戦の結果は変わらないので、この端末にとっておく） */
+let PAST_TOP=null, pastBusy=false;
+function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[cur-1,cur-2,cur-3].filter(x=>x>=0);
+  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop")||"{}")||{}; }catch(e){}
+  PAST_TOP=want.map(ss=>({ss, top:c[ss]||null}));
+  const need=want.filter(ss=>!c[ss]); if(!need.length) return;
+  pastBusy=true; (async()=>{ try{ let q=null;
+    for(const ss of need){ let top=null;
+      try{ const rd=await DB.doc("rankres/"+ss).get(); if(rd.exists&&Array.isArray(rd.data().top)) top=rd.data().top.filter(x=>x.r<=3).map(x=>({r:x.r, name:x.name||"", lv:Math.floor((x.sc||0)/1e6)})); }catch(e){}
+      if(!top){ if(!q) q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),20000);
+        const fix=RANK_FIX[ss]||{}, fk=Object.keys(fix), fxOf=n=>{ const k=fk.find(k=>normName(k)===normName(n)); return k!=null?fix[k]:null; };
+        const L=q.docs.map(d=>{ const p=d.data(), sc=seasonScore(p,ss); return {name:p.name||"名無しの召喚士", sc, fx:fxOf(p.name)}; }).filter(x=>x.sc!=null||x.fx!=null);
+        const free=L.filter(x=>x.fx==null).sort((a,b)=>b.sc-a.sc), fixed=L.filter(x=>x.fx!=null); top=[]; let r=1, i=0;
+        while(top.length<3 && (i<free.length||fixed.some(x=>x.fx===r))){ const f=fixed.find(x=>x.fx===r); const x=f||free[i++]; top.push({r, name:x.name, lv:Math.floor((x.sc||0)/1e6)}); r++; } }
+      c[ss]=top; }
+    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
+    PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
+  }catch(e){} pastBusy=false; })(); }
+function pastTopHtml(){ if(!DB) return ""; if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return "";
+  const md=["🥇","🥈","🥉"], L=LANG==="en";
+  return `<details class="season-box past-top" open><summary style="font-weight:900">🏆 ${L?"Past ranked matches — Top 3":"過去のランク戦 1〜3位"}</summary>${PAST_TOP.map(x=>`<div style="margin:8px 0 0"><small style="opacity:.8">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</small>${x.top==null?`<div class="note">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div class="note">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:2px 0"><span>${md[t.r-1]||t.r}</span><b translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.name)}</b><small>Lv</small><b>${t.lv}</b></div>`).join("")}</div>`).join("")}</details>`; }
 function renderRanking(segHtml){
   if(!BANK_RK&&!bankErr) loadBankRank();   // 貯金ランキング1〜3位の金色の枠のため
   let body;
@@ -6368,6 +6389,7 @@ function renderRanking(segHtml){
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
+    ${pastTopHtml()}
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button>${dexPeek()?`<button class="chip" id="prevRank" type="button">🏆 前のランク戦の結果</button>`:""}<button class="chip" id="rkGuard" type="button" style="margin-left:auto">🛡 魔物を配置${guardUnit()?`（${esc(mon(guardUnit().m).name)} Lv${guardUnit().l}）`:""}</button></div>
     ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
@@ -10504,8 +10526,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261030230714" defer></script>
-<script src="vt/vt.js?v=20261030230714" defer></script>
-<script src="fz/fz.js?v=20261030230714" defer></script>
-<script src="gd/gd.js?v=20261030230714" defer></script>
+<script src="io/io.js?v=20261031095527" defer></script>
+<script src="vt/vt.js?v=20261031095527" defer></script>
+<script src="fz/fz.js?v=20261031095527" defer></script>
+<script src="gd/gd.js?v=20261031095527" defer></script>
 </body></html>
