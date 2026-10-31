@@ -3775,7 +3775,7 @@ async function startRemote(uid){
     try{ if(!S.loveLv1519 && MYID && normName(myName())===normName("love")){ S.loveLv1519=1; if((S.plv||1)<1519){ S.plv=1519; S.pexp=0; lvWhy("運営の調整（1519にもどす）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1519に（画面が2つ動いていたバグで下がった分）
     try{ if(!S.loveMokoM80 && MYID && normName(myName())===normName("love")){ S.loveMokoM80=1; S.moko=Math.max(0,(S.moko||0)-80); save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんのモコを1回だけ80へらす（運営より）
     checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); bankIntroNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); await checkLimRetro(12, 113, "duckG12", "Golden Hero Duck"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); checkGiftNames(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixLoveSv12(); fixInvLove12(); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); await fixYoko13(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); await checkLimRetro(12, 113, "duckG12", "Golden Hero Duck"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); checkGiftNames(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixRank11(13); fixLoveSv12(); fixInvLove12(); fixInvLove12(13); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); await fixYoko13(); checkApology(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -6347,7 +6347,7 @@ function seenMark(r){
 /* 2026-10-31：過去3回のランク戦の1〜3位（終わったランク戦の結果は変わらないので、この端末にとっておく） */
 let PAST_TOP=null, pastBusy=false;
 function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[cur-1,cur-2,cur-3].filter(x=>x>=0);
-  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop")||"{}")||{}; }catch(e){}
+  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop2")||"{}")||{}; }catch(e){}
   PAST_TOP=want.map(ss=>({ss, top:c[ss]||null}));
   const need=want.filter(ss=>!c[ss]); if(!need.length) return;
   pastBusy=true; (async()=>{ try{ let q=null;
@@ -6359,7 +6359,7 @@ function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[c
         const free=L.filter(x=>x.fx==null).sort((a,b)=>b.sc-a.sc), fixed=L.filter(x=>x.fx!=null); top=[]; let r=1, i=0;
         while(top.length<3 && (i<free.length||fixed.some(x=>x.fx===r))){ const f=fixed.find(x=>x.fx===r); const x=f||free[i++]; top.push({r, name:x.name, lv:Math.floor((x.sc||0)/1e6)}); r++; } }
       c[ss]=top; }
-    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
+    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop2",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
     PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
   }catch(e){} pastBusy=false; })(); }
 function pastTopHtml(){ if(!DB||!dexPeek()) return "";   /* ふっかーだけ */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return "";
@@ -6803,7 +6803,7 @@ function checkSeasonEndMsg(){
 setInterval(checkSeasonEndMsg,20000);
 // ランク戦ごとの限定キャラ：{ランク戦の番号: 魔物のid}（そのランク戦の1〜3位に1体ずつ、結果発表で届く）
 // 2026-10-28：運営が決めた順位（前のランク戦＝シーズン11：loveさん3位・ＤＲＡＧＯＮさん4位）
-const RANK_FIX = { 11: { "love":3, "ｄｒａｇｏｎ":4 }, 12: { "love":2 } };   // 12：画面が2つ動いていたバグで、loveさんのランキングの記録が消えていた
+const RANK_FIX = { 11: { "love":3, "ｄｒａｇｏｎ":4 }, 12: { "love":2 }, 13: { "love":2 } };   // 13：運営の判断でloveさんは2位（2026-10-31）   // 12：画面が2つ動いていたバグで、loveさんのランキングの記録が消えていた
 const rankFixed = (s,p) => { try{ const t=RANK_FIX[s]; if(!t) return false; const n=normName(p&&p.name); return Object.keys(t).some(k=>normName(k)===n); }catch(e){ return false; } };
 // 決めた順位の冒険者をのぞいて数えた順位を、その人たちの席をよけてずらす（例：3位・4位が決まっていたら、3位→5位）
 const rankShift = (s,r) => { const t=RANK_FIX[s]; if(!t||!r) return r; Object.values(t).sort((a,b)=>a-b).forEach(v=>{ if(v<=r) r++; }); return r; };
@@ -7087,9 +7087,9 @@ async function fixRank11(SS=11){ const fx=rankFixFor(SS), FK=SS===11?"rkFix11":"
 // 2026-10-29：loveさん：ランク戦12の最終レベル（1756）がプロフィールから消えていたので戻す（ほかの冒険者の「前のランク戦の結果」に出るように）
 function fixLoveSv12(){ try{ if(S.loveSv12||!MYID||normName(myName())!==normName("love")) return; S.loveSv12=1; S.sv=S.sv||{}; if((S.sv[12]||0)<1756e6) S.sv[12]=1756e6; save(); queueProfile(true); }catch(e){} }
 // 2026-10-29：ランク戦12でloveさんに投資していた冒険者：本当は2位だったので、2位の配当にする（負けた分を戻して、配当を足す）
-async function fixInvLove12(){ const SS=12; if(S.invLove12||!DB||!MYID||(S.season??0)<=SS) return;
+async function fixInvLove12(SS=12){ const FK=SS===12?"invLove12":"invLove"+SS; if(S[FK]||!DB||!MYID||(S.season??0)<=SS) return;
   let L=[]; try{ const q=await withTO(DB.collection("invests").where("att","==",MYID).get(),12000); L=q.docs.map(d=>d.data()).filter(x=>x.ss===SS && normName(x.defName)===normName("love") && !x.void); }catch(e){ return; }
-  if(S.invLove12) return; S.invLove12=1; if(!L.length){ save(); return; }
+  if(S[FK]) return; S[FK]=1; if(!L.length){ save(); return; }
   let meTop=false; try{ const mine=(S.sv||{})[SS]; if(mine!=null){ const q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),20000); await loadSeasonEvents(SS);
     const others=q.docs.filter(d=>d.id!==MYID&&!rankFixed(SS,d.data())).map(d=>({score:finalScore(d.id,d.data(),SS), ok:profOk(d.data(),SS)})).filter(o=>o.score!=null);
     meTop=rankShift(SS,effRank(mine,true,others))<=3; } }catch(e){}   // 自分が3位以内なら、投資の配当は2倍（いつものきまり）
@@ -7098,7 +7098,7 @@ async function fixInvLove12(){ const SS=12; if(S.invLove12||!DB||!MYID||(S.seaso
   S.coins=(S.coins||0)+add; try{ capCoins(); }catch(e){} save(); queueProfile(true); try{ renderCoins(); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=62;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">💰</div><p>投資の結果を直しました🙏</p>
-    <div class="note" style="margin:0;text-align:left">前のランク戦で、loveさんの順位がバグでまちがって集計されていました。本当は<b>2位</b>だったので、投資の結果を直しました。<br><br>${lines.join("<br>")}<br><br>合計 <b>+${add.toLocaleString()}コイン</b></div>
+    <div class="note" style="margin:0;text-align:left">第${SS}回のランク戦で、loveさんの順位は<b>2位</b>になったので、投資の結果を直しました。<br><br>${lines.join("<br>")}<br><br>合計 <b>+${add.toLocaleString()}コイン</b></div>
     <button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
 async function fixLoveInv11(){ const SS=11; if(S.loveInv11||!DB||!MYID) return; if(normName(myName())!==normName("love")) return;
@@ -10526,8 +10526,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031101729" defer></script>
-<script src="vt/vt.js?v=20261031101729" defer></script>
-<script src="fz/fz.js?v=20261031101729" defer></script>
-<script src="gd/gd.js?v=20261031101729" defer></script>
+<script src="io/io.js?v=20261031102508" defer></script>
+<script src="vt/vt.js?v=20261031102508" defer></script>
+<script src="fz/fz.js?v=20261031102508" defer></script>
+<script src="gd/gd.js?v=20261031102508" defer></script>
 </body></html>

@@ -10,7 +10,7 @@ const HOUR_MS = 3600e3, DAY_MS = 24 * HOUR_MS, JST = 9 * HOUR_MS, SEASON_SHIFT =
 const SEASON_DAYS = 1, SEASON_DAY0 = 20743;
 const LOSE_LV = 2, DRAW_LV = 2, WIN_LV = 4, BOMB_LV = 2;
 const EMPTY_STEP_MS = 30 * 60 * 1000;
-const RANK_FIX = { 11: { "love": 3, "ｄｒａｇｏｎ": 4 }, 12: { "love": 2 } };   // 運営が決めた順位（index.html と同じ）
+const RANK_FIX = { 11: { "love": 3, "ｄｒａｇｏｎ": 4 }, 12: { "love": 2 }, 13: { "love": 2 } };   // 運営が決めた順位（index.html と同じ）
 const seasonNow = (t = Date.now()) => Math.floor((Math.floor((t + JST + SEASON_SHIFT) / DAY_MS) - SEASON_DAY0) / SEASON_DAYS);
 const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS * (s + 1)) * DAY_MS - JST - SEASON_SHIFT;
 const normName = t => String(t || "").normalize("NFKC").toLowerCase().replace(/\s+/g, "");
