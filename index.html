@@ -3712,7 +3712,7 @@ async function pullRemote(fromPush, force){
       // この端末で手に入れて、まだクラウドに送れていなかった魔物（クラウドの記録より後に手に入れたもの）は消さずに残す。図鑑の記録も多いほうを残す
       const keepU=(S.units||[]).filter(u=>u && u.t && u.t>ru && !r.units.some(z=>z.u===u.u && z.m===u.m)), gotL=S.got||{};
       const vtL=S.vtVoted, lvL=S.plv, wOld={}; WF.forEach(f=>wOld[f]=S[f]);   // 2026-10-28：この端末で投票した記録も消さずに残す（投票したのに投票前の画面にもどるバグ）
-      S=r; S.got=S.got||{}; for(const k in gotL){ if((gotL[k]||0)>(S.got[k]||0)) S.got[k]=gotL[k]; }
+      bakPre(S, aheadSeason?"別の端末の記録（新しいランク戦）に入れかわる前":"別の端末の記録に入れかわる前"); S=r; S.got=S.got||{}; for(const k in gotL){ if((gotL[k]||0)>(S.got[k]||0)) S.got[k]=gotL[k]; }
       if(vtL) S.vtVoted={...vtL, ...(S.vtVoted||{})};
       try{ walAdopt(wOld); }catch(e){}
       try{ if(lvL!==S.plv){ S.plvLog=(S.plvLog||[]).concat([[gnow(), lvL, S.plv, aheadSeason?"別の端末の記録（新しいランク戦）に入れかわった":"別の端末の記録に入れかわった"]]).slice(-40); } S._logLv=S.plv; }catch(e){}   // レベルの記録
@@ -3758,12 +3758,12 @@ async function startRemote(uid){
         else if(S.owner===uid) takeRemote=(d.updated||0) > (S.updated||0) || ((r.inAt||0) > (S.inAt||0));   // 2026-10-29：別の端末で最近遊んでいたら、そちらの記録を使う（古い端末がタイマーの保存だけで新しく見えても上書きしない）
         else takeRemote=(await askWhichSave(S,r))==="remote";       // ログイン前の記録 → 本人に選んでもらう
         lastRemote=d.updated||0; if(takeRemote) TOOK_REMOTE=true;
-        if(takeRemote){ S = r; fixPlayer(); applyLoginDecay(); fixGuard(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
+        if(takeRemote){ if(!lf) bakPre(S,"開いたときに別の端末の記録に入れかわる前"); S = r; fixPlayer(); applyLoginDecay(); fixGuard(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
       }
     }
     if(LOGIN_NAME) S.name=LOGIN_NAME;
     SID_AT=gnow(); try{ await remoteDoc.set({sid:SID, sidAt:SID_AT},{merge:true}); }catch(e){}   // この画面がいちばん新しい画面
-    S.owner=uid; DB=db; MYID=uid; remoteReady=true; try{ await walletStart(!TOOK_REMOTE); }catch(e){} hourlyDecay(); save(); render(); try{ titleRanks(); }catch(e){}
+    S.owner=uid; DB=db; MYID=uid; remoteReady=true; try{ await walletStart(!TOOK_REMOTE); }catch(e){} try{ await checkRestore(); }catch(e){} setTimeout(bakHourly,20000); hourlyDecay(); save(); render(); try{ titleRanks(); }catch(e){}
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
@@ -8218,6 +8218,50 @@ async function repClean(force){ if(!DB||!MYID) return; if(!force && Date.now()-r
 setInterval(()=>{ try{ repClean(false); }catch(e){} }, 60000);
 let LAST_PROF=null;
 // ふっかーだけ：その冒険者の冒険者レベルが変わった記録（新しい順）
+/* ---------- 💾 記録のバックアップ（2026-10-31） ----------
+   ・1時間ごとに、記録をクラウドの svbak/{uid}_h{0〜23}（24時間分）にとっておく
+   ・記録が別の記録に入れかわる前にも、この端末と svbak/{uid}_p{0〜2} にとっておく
+   ・ふっかーがプロフィールから「この記録に戻す」を押すと svrestore/{uid} ができて、その冒険者が次に開いたときに元に戻る */
+const bakSum=x=>({lv:x.plv||1, coins:Math.floor(x.coins||0), bank:Math.floor(x.bank||0), moko:Math.floor(x.moko||0), units:(x.units||[]).length, ss:x.season??0, upd:x.updated||0});
+function bakDoc(x,why){ const json=JSON.stringify(x); if(json.length>700000) return null; return {uid:MYID, name:String(myName()||"").slice(0,24), at:gnow(), why:String(why||"").slice(0,60), json, ...bakSum(x)}; }
+function bakPre(old,why){ try{ if(!old||!Array.isArray(old.units)) return;   /* 入れかわる前の記録をとっておく */
+    let L=[]; try{ L=JSON.parse(localStorage.getItem("toto-lbak")||"[]"); }catch(e){} L.push({at:gnow(), why, json:JSON.stringify(old)}); L=L.slice(-3); try{ localStorage.setItem("toto-lbak",JSON.stringify(L)); }catch(e){}
+    if(DB&&MYID){ let n=0; try{ n=(+localStorage.getItem("toto-pbak-n")||0)+1; localStorage.setItem("toto-pbak-n",String(n)); }catch(e){} const d=bakDoc(old,why); if(d) DB.doc("svbak/"+MYID+"_p"+(n%3)).set(d).catch(()=>{}); } }catch(e){} }
+function bakHourly(){ try{ if(!DB||!MYID||!remoteReady||REMOTE_LOCK||isFreshSave(S)) return; const h=Math.floor(gnow()/HOUR_MS); let last=0; try{ last=+localStorage.getItem("toto-hbak-"+MYID)||0; }catch(e){} if(last===h) return;
+    const d=bakDoc(S,"1時間ごと"); if(!d) return; DB.doc("svbak/"+MYID+"_h"+(h%24)).set(d).then(()=>{ try{ localStorage.setItem("toto-hbak-"+MYID,String(h)); }catch(e){} }).catch(()=>{}); }catch(e){} }
+setInterval(bakHourly, 5*60*1000);
+/* ふっかーが「戻す」を押した記録を、本人が開いたときに戻す */
+async function checkRestore(){ if(!DB||!MYID||REMOTE_LOCK) return; try{
+  const rd=await DB.doc("svrestore/"+MYID).get({source:"server"}); if(!rd.exists) return; const rq=rd.data()||{}; if(S.rstAt===rq.at) return;
+  const bd=await DB.doc("svbak/"+rq.src).get({source:"server"}); if(!bd.exists) return; const b=bd.data(); if(b.uid!==MYID) return;
+  let x=null; try{ x=JSON.parse(b.json); }catch(e){} if(!x||!Array.isArray(x.units)) return;
+  bakPre(S,"ふっかーが戻す前の記録");
+  const keepName=S.name; S=x; S.owner=MYID; if(LOGIN_NAME) S.name=LOGIN_NAME; else if(keepName) S.name=keepName; S.rstAt=rq.at; S.updated=gnow();
+  try{ S.plvLog=(S.plvLog||[]).concat([[gnow(), b.lv, S.plv, "ふっかーがバックアップの記録に戻した"]]).slice(-40); S._logLv=S.plv; }catch(e){}
+  fixPlayer(); fixGuard(); save(); try{ if(remoteTimer){ clearTimeout(remoteTimer); remoteTimer=null; } await pushRemote(); }catch(e){} try{ walletPush(); }catch(e){} queueProfile(true);
+  try{ await DB.doc("svrestore/"+MYID).delete(); }catch(e){}
+  try{ render(); }catch(e){}
+  const tm=new Date(b.at+9*HOUR_MS); const g=document.createElement("div"); g.className="sheet-bg center"; g.style.zIndex=99000;
+  g.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">💾</div><p>記録を元に戻しました</p><div class="note" style="margin:0;text-align:center">ふっかーが、${tm.getUTCMonth()+1}/${tm.getUTCDate()} ${String(tm.getUTCHours()).padStart(2,"0")}:${String(tm.getUTCMinutes()).padStart(2,"0")} の記録に戻しました。<br>冒険者Lv${S.plv||1} ・ 魔物${(S.units||[]).length}体 ・ ${Math.floor(S.coins||0).toLocaleString()}コイン</div><button class="btn gold" type="button">OK</button></div>`;
+  document.body.appendChild(g); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); };
+}catch(e){} }
+/* ふっかーだけ：その冒険者のバックアップの一覧と「この記録に戻す」 */
+async function openBackups(r){ if(!dexPeek()||!DB||!r.id) return;
+  const tm=t=>{ const d=new Date(t+9*HOUR_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`; };
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" style="max-height:82vh;overflow:auto;text-align:left"><p style="text-align:center">💾 ${esc(r.name||"")}さんのバックアップ</p><div id="bkL" class="note" style="margin:0">読み込み中…</div><button class="btn gold" type="button" id="bkX">とじる</button></div>`;
+  document.body.appendChild(bg); bg.querySelector("#bkX").onclick=()=>bg.remove();
+  let L=[], rq=null; try{ const [q,rr]=await Promise.all([withTO(DB.collection("svbak").where("uid","==",r.id).get({source:"server"}),20000), DB.doc("svrestore/"+r.id).get().catch(()=>null)]);
+    L=q.docs.map(d=>({id:d.id, ...d.data()})).map(x=>{ delete x.json; return x; }).sort((a,b)=>b.at-a.at); rq=rr&&rr.exists?rr.data():null; }
+  catch(e){ bg.querySelector("#bkL").textContent="読み込めませんでした（Firestoreのルールを確認してください）"; return; }
+  const el=bg.querySelector("#bkL");
+  el.innerHTML=(rq?`<div style="border:2px solid #e0a84b;border-radius:10px;padding:6px 8px;margin:0 0 8px">⏳ ${tm(rq.at)} に「戻す」を予約ずみ（本人が次に開いたときに戻ります）</div>`:"")+(L.length?L.map(x=>`<div style="border-top:1px solid rgba(255,255,255,.15);padding:8px 0;font-size:13px;line-height:1.6"><b>${tm(x.at)}</b>　<small>${esc(x.why||"")}</small><br>Lv${x.lv} ・ 魔物${x.units}体 ・ ${(x.coins||0).toLocaleString()}コイン ・ 貯金${(x.bank||0).toLocaleString()} ・ ${x.moko||0}モコ ・ ランク戦${x.ss}<br><button type="button" class="btn ghost" data-bk="${esc(x.id)}" style="margin:6px 0 0;font-size:13px;padding:6px 12px">この記録に戻す</button></div>`).join(""):"バックアップはまだありません（この冒険者が新しい版を開くと、1時間ごとにとられます）");
+  el.querySelectorAll("[data-bk]").forEach(b=>b.onclick=async()=>{ const x=L.find(z=>z.id===b.dataset.bk); if(!x) return;
+    const ok=await confirmBox(`${esc(r.name||"")}さんの記録を<br><b>${tm(x.at)}</b>（Lv${x.lv}・魔物${x.units}体・${(x.coins||0).toLocaleString()}コイン）<br>に戻しますか？<br><small>本人が次にゲームを開いたときに戻ります</small>`); if(!ok) return;
+    try{ await DB.doc("svrestore/"+r.id).set({at:gnow(), src:x.id, by:MYID}); toast("戻す予約をしました。本人が次に開いたときに戻ります"); bg.remove(); }catch(e){ toast("できませんでした（Firestoreのルールを確認してください）"); } }); }
+function confirmBox(html){ return new Promise(res=>{ const g=document.createElement("div"); g.className="sheet-bg center"; g.style.zIndex=99100;
+  g.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><p style="font-size:15px">${html}</p><button class="btn gold" type="button" id="cbY">戻す</button><button class="btn ghost" type="button" id="cbN">やめる</button></div>`;
+  document.body.appendChild(g); g.querySelector("#cbY").onclick=()=>{ g.remove(); res(true); }; g.querySelector("#cbN").onclick=()=>{ g.remove(); res(false); }; }); }
 async function openLvLog(r){ let L=[]; try{ let p=r; if(DB&&r.id){ const d=await withTO(DB.collection("profiles").doc(r.id).get()); if(d.exists) p=d.data(); } L=JSON.parse(p.plg||"[]"); }catch(e){}
   const tm=t=>{ const d=new Date(t+9*HOUR_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`; };
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
@@ -8253,13 +8297,14 @@ function openOtherProfile(r,rank){
       ${(r.kw||r.kc)?`<div><i class="st-ic" aria-hidden="true">🏯</i><small>魔ノ国の称号</small><b translate="no">${esc(knTitleText(r.kw||0,r.kc||0))}</b></div>`:""}
       <div><i class="st-ic" aria-hidden="true">⭐</i><small>最高冒険者Lv</small><b>${n(Math.max(r.mp||0,r.lv||1))}</b></div>
     </div>
-    ${dexPeek()?`<button type="button" class="btn ghost" id="profLvLog" style="margin:14px auto 0;display:block;font-size:13px">📜 冒険者レベルの記録（ふっかーだけ）</button>`:""}
+    ${dexPeek()?`<button type="button" class="btn ghost" id="profLvLog" style="margin:14px auto 0;display:block;font-size:13px">📜 冒険者レベルの記録（ふっかーだけ）</button><button type="button" class="btn ghost" id="profBak" style="margin:8px auto 0;display:block;font-size:13px">💾 バックアップ・元に戻す（ふっかーだけ）</button>`:""}
     ${DB&&MYID&&r.id&&r.id!==MYID?`<button type="button" class="btn ghost" id="profRpt" style="margin:14px auto 0;display:block;font-size:13px">🚨 この冒険者を通報する</button>`:""}
   </div>`);
   try{ defRecInto(bg.querySelector("#defRec"),r); }catch(e){}
   const pr=bg.querySelector("#profRep"); if(pr) pr.onclick=()=>openReplies(r);
   const rp=bg.querySelector("#profRpt"); if(rp) rp.onclick=()=>openReport(r);
   const ll=bg.querySelector("#profLvLog"); if(ll) ll.onclick=()=>openLvLog(r);
+  { const bk=bg.querySelector("#profBak"); if(bk) bk.onclick=()=>openBackups(r); }
 }
 // レーダーチャート：ガチャ回数・合成回数・魔物コンプ率・手持ちの魔物を、ランキングの平均と重ねて表示
 // 回数は人によって差が大きいので、ランキング内の最大値を外側として平方根でならす（コンプ率は0〜100%そのまま）
@@ -10531,8 +10576,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031104127" defer></script>
-<script src="vt/vt.js?v=20261031104127" defer></script>
-<script src="fz/fz.js?v=20261031104127" defer></script>
-<script src="gd/gd.js?v=20261031104127" defer></script>
+<script src="io/io.js?v=20261031125953" defer></script>
+<script src="vt/vt.js?v=20261031125953" defer></script>
+<script src="fz/fz.js?v=20261031125953" defer></script>
+<script src="gd/gd.js?v=20261031125953" defer></script>
 </body></html>
