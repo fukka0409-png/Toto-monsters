@@ -3395,6 +3395,7 @@ function fresh(){
 let S;
 try{ S = JSON.parse(localStorage.getItem(KEY)) }catch(e){}
 if(!S || !Array.isArray(S.units)) S = fresh();
+try{ slimSave(S); }catch(e){}
 S.units.forEach(u=>{ u.s=0; const cap=100+(u.a||0); if(u.l>cap) u.l=cap; });   // u.a = 覚醒の石で上がった分
 
 /* ---------- 冒険者レベル ----------
@@ -3591,7 +3592,7 @@ const WAL={ref:null, sv:null, ops:[], unsub:null, t:null, ready:false, sending:f
    ページを更新したり、アプリが急に閉じられたりしても、次に開いたときに必ず届けなおす（同じ足し引きは2回入らないように番号でたしかめる） */
 const walKey=()=>"toto-wal-"+MYID;
 function walSum(f){ let n=0; WAL.ops.forEach(o=>{ n+=Math.floor((o.d&&o.d[f])||0); }); return n; }
-function walSave(){ if(REMOTE_LOCK||!MYID||!WAL.sv) return; try{ localStorage.setItem(walKey(), JSON.stringify({sv:WAL.sv, ops:WAL.ops})); }catch(e){} }
+function walSave(){ if(REMOTE_LOCK||!MYID||!WAL.sv) return; try{ localStorage.setItem(walKey(), JSON.stringify({sv:WAL.sv, ops:WAL.ops, u:S.updated||0})); }catch(e){} }
 function walClamp(){ if((S.plv||0)<1) S.plv=1; if((S.coins||0)<0) S.coins=0; if((S.bank||0)<0) S.bank=0; if((S.moko||0)<0) S.moko=0; }
 async function walletStart(keepLocal){ if(!DB||!MYID||WAL.ref) return; const ref=DB.doc("wallet/"+MYID);
   let P=null; try{ P=JSON.parse(localStorage.getItem(walKey())||"null"); }catch(e){}
@@ -3601,7 +3602,7 @@ async function walletStart(keepLocal){ if(!DB||!MYID||WAL.ref) return; const ref
     const pOps=(P&&Array.isArray(P.ops))?P.ops.filter(o=>o&&o.id&&o.d):[];
     WF.forEach(f=>sv[f]=Math.floor(v[f]||0));
     /* この端末でまだ足し引きにしていなかった変化（更新の直前に増えたコインなど） */
-    const unq={}; WF.forEach(f=>{ let u=0; if(keepLocal && P && P.sv && S===S0){ u=st[f]-Math.floor(P.sv[f]||0); pOps.forEach(o=>{ u-=Math.floor(o.d[f]||0); }); } unq[f]=u; });
+    const unq={}; WF.forEach(f=>{ let u=0; if(keepLocal && P && P.sv && S===S0 && P.u===S.updated){   /* この端末のセーブと同じときに書いた記録だけ信じる */ u=st[f]-Math.floor(P.sv[f]||0); pOps.forEach(o=>{ u-=Math.floor(o.d[f]||0); }); } unq[f]=u; });
     WAL.ops=pOps.filter(o=>!done.includes(o.id)); WAL.sv=sv;
     WF.forEach(f=>{ S[f]=sv[f]+walSum(f)+unq[f]+(S===S0?Math.floor(S[f]||0)-st[f]:0); });
     walClamp(); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }catch(e){ return; }
@@ -3628,6 +3629,12 @@ async function walSend(){ if(WAL.sending||!WAL.ops.length||REMOTE_LOCK||!WAL.ref
   }catch(e){ WAL.sending=false; setTimeout(walSend,10000); } }
 /* 記録がまるごと入れかわったとき（別の端末の記録を読んだとき）：大事な数字はこの画面の数字のまま（クラウドの数字＋まだ届いていない分）。old がないときはクラウドの数字にもどす */
 function walAdopt(old){ if(!WAL.ready||!WAL.sv) return; WF.forEach(f=>{ S[f]=old?old[f]:WAL.sv[f]+walSum(f); }); walClamp(); }
+/* 2026-10-31：この端末への保存。入らなかったときは、いらないとっておきを消してもう一度。それでもだめならお知らせ */
+function lsSave(){ const j=JSON.stringify(S);
+  try{ localStorage.setItem(KEY,j); try{ walSave(); }catch(e){} return true; }catch(e){}
+  try{ ["toto-lbak","toto-pasttop","toto-pasttop2","toto-pasttop3"].forEach(k=>localStorage.removeItem(k)); localStorage.setItem(KEY,j); try{ walSave(); }catch(e){} return true; }catch(e){}
+  if(!lsSave.warned){ lsSave.warned=1; try{ toast("⚠️ この端末に記録を保存できませんでした（容量がいっぱいです）"); }catch(e){} }
+  return false; }
 function save(){
   if(REMOTE_LOCK) return;   // 止めた画面は保存しない
   try{ if(LAST_INPUT>(S.inAt||0)) S.inAt=LAST_INPUT; }catch(e){}   // 最後に画面をさわった時間（端末どうしの記録の新しさくらべに使う）
@@ -3635,7 +3642,8 @@ function save(){
   trackLv();
   try{ walletQueue(); }catch(e){}
   S.updated = gnow(); queueProfile();
-  try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
+  try{ slimSave(S); }catch(e){}
+  lsSave();
   if(remoteDoc && remoteReady){ clearTimeout(remoteTimer); remoteTimer = setTimeout(()=>{ remoteTimer=null; pushRemote(); }, 8000); }   // 書き込み回数を節約：操作が落ち着いてから8秒後にまとめて保存
 }
 window.addEventListener("pagehide",()=>{ try{ walletPush(); }catch(e){} try{ if(!REMOTE_LOCK) localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} });   /* 2026-10-30：閉じる・更新する直前に、この端末にも必ず書いておく */
@@ -3689,7 +3697,8 @@ async function pushRemote(){
       const u=S.updated, prev=lastRemote;
       lastRemote=u;                       // 送る前に記録しておく（返事を待つ間の読み込みで勘違いしないように）
       if(REMOTE_LOCK) return;
-      try{ await remoteDoc.set({json:JSON.stringify(S), updated:u, sid:SID, sidAt:SID_AT}); }catch(e){ lastRemote=prev; }
+      const js=JSON.stringify(S); if(js.length>1000000){ lastRemote=prev; if(!pushRemote.warned){ pushRemote.warned=1; try{ toast("⚠️ 記録が大きすぎて、クラウドに保存できませんでした"); }catch(e){} } return; }
+      try{ await remoteDoc.set({json:js, updated:u, sid:SID, sidAt:SID_AT}); }catch(e){ lastRemote=prev; if(!pushRemote.warned2){ pushRemote.warned2=1; try{ toast("⚠️ クラウドに保存できませんでした。電波のよいところで開き直してください"); }catch(e){} } }
     }catch(e){}
   })();
   try{ await pushing; } finally { pushing=null; }
@@ -3712,7 +3721,7 @@ async function pullRemote(fromPush, force){
       // この端末で手に入れて、まだクラウドに送れていなかった魔物（クラウドの記録より後に手に入れたもの）は消さずに残す。図鑑の記録も多いほうを残す
       const keepU=(S.units||[]).filter(u=>u && u.t && u.t>ru && !r.units.some(z=>z.u===u.u && z.m===u.m)), gotL=S.got||{};
       const vtL=S.vtVoted, lvL=S.plv, wOld={}; WF.forEach(f=>wOld[f]=S[f]);   // 2026-10-28：この端末で投票した記録も消さずに残す（投票したのに投票前の画面にもどるバグ）
-      bakPre(S, aheadSeason?"別の端末の記録（新しいランク戦）に入れかわる前":"別の端末の記録に入れかわる前"); S=r; S.got=S.got||{}; for(const k in gotL){ if((gotL[k]||0)>(S.got[k]||0)) S.got[k]=gotL[k]; }
+      bakPre(S, aheadSeason?"別の端末の記録（新しいランク戦）に入れかわる前":"別の端末の記録に入れかわる前"); S=r; slimSave(S); S.got=S.got||{}; for(const k in gotL){ if((gotL[k]||0)>(S.got[k]||0)) S.got[k]=gotL[k]; }
       if(vtL) S.vtVoted={...vtL, ...(S.vtVoted||{})};
       try{ walAdopt(wOld); }catch(e){}
       try{ if(lvL!==S.plv){ S.plvLog=(S.plvLog||[]).concat([[gnow(), lvL, S.plv, aheadSeason?"別の端末の記録（新しいランク戦）に入れかわった":"別の端末の記録に入れかわった"]]).slice(-40); } S._logLv=S.plv; }catch(e){}   // レベルの記録
@@ -3758,7 +3767,7 @@ async function startRemote(uid){
         else if(S.owner===uid) takeRemote=(d.updated||0) > (S.updated||0) || ((r.inAt||0) > (S.inAt||0));   // 2026-10-29：別の端末で最近遊んでいたら、そちらの記録を使う（古い端末がタイマーの保存だけで新しく見えても上書きしない）
         else takeRemote=(await askWhichSave(S,r))==="remote";       // ログイン前の記録 → 本人に選んでもらう
         lastRemote=d.updated||0; if(takeRemote) TOOK_REMOTE=true;
-        if(takeRemote){ if(!lf) bakPre(S,"開いたときに別の端末の記録に入れかわる前"); S = r; fixPlayer(); applyLoginDecay(); fixGuard(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
+        if(takeRemote){ if(!lf) bakPre(S,"開いたときに別の端末の記録に入れかわる前"); S = r; slimSave(S); fixPlayer(); applyLoginDecay(); fixGuard(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
       }
     }
     if(LOGIN_NAME) S.name=LOGIN_NAME;
@@ -4036,7 +4045,16 @@ const FMON_CACHE = {};
 // 融合でできる魔物のランク：どちらかが限定ランクなら限定ランク、それ以外（C〜Z・融合ランク）は融合ランク
 const fuseRank=(a,b)=>((mon(a)||{}).rank==='L'||(mon(b)||{}).rank==='L')?'L':'F';
 const rkName=r=>r==='L'?'限定':'融合';
-function fmonReg(id){ const f=((typeof S!=="undefined"&&S&&S.fmons)||{})[id]||FMON_CACHE[id]; if(!f||!f.img) return undefined;
+/* 2026-10-31：融合魔物の絵（大きい画像）はセーブに入れない。セーブには名前とランクだけ、絵は融合魔物の一覧（fusemon）から読む。
+   （絵がセーブに入っていると、記録が大きくなりすぎて保存できず、更新すると前の記録にもどってしまうバグ） */
+function slimSave(x){ try{ if(!x) return; for(const k in (x.fmons||{})){ const f=x.fmons[k]; if(f&&f.img){ FMON_CACHE[k]=Object.assign(FMON_CACHE[k]||{},{name:f.name,img:f.img,rk:f.rk}); delete f.img; } }
+  if(x.defShot&&x.defShot.img){ try{ localStorage.setItem("toto-defshot",JSON.stringify(x.defShot)); }catch(e){} x.defShot={at:x.defShot.at||0, has:1}; } }catch(e){} }
+const FMON_ASK={};
+function fmonFetch(id){ if(FMON_ASK[id]||typeof DB==="undefined"||!DB) return; FMON_ASK[id]=1;
+  DB.collection("fusemon").where("id","==",id).limit(1).get().then(q=>{ const x=q.docs[0]&&q.docs[0].data(); if(!x||!x.img) return; FMON_CACHE[id]=Object.assign(FMON_CACHE[id]||{},{name:x.name,img:x.img,rk:x.rk||"F"});
+    const m=MONSTERS.find(z=>z.id===id); if(m){ m.img=x.img; const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} try{ clearTimeout(fmonFetch.t); fmonFetch.t=setTimeout(()=>{ try{ if(!document.querySelector(".reveal,.sheet-bg,#ioG")) render(); }catch(e){} },400); }catch(e){} }; im.src=x.img; } }).catch(()=>{ FMON_ASK[id]=0; }); }
+function fmonReg(id){ const f0=((typeof S!=="undefined"&&S&&S.fmons)||{})[id], f1=FMON_CACHE[id]; if(!f0&&!(f1&&f1.img)) return undefined; const f=Object.assign({},f1||{},f0||{},{img:(f0&&f0.img)||(f1&&f1.img)||""});
+  if(!f.img){ const m={ id, name:f.name||"融合魔物", rank:f.rk==="L"?"L":"F", exp:10000, gift:1, fuse:1, img:"", recipe:{a:f.a, b:f.b, an:f.an, bn:f.bn} }; MONSTERS.push(m); fmonFetch(id); return m; }
   const m={ id, name:f.name||"融合魔物", rank:f.rk==="L"?"L":"F", exp:10000, gift:1, fuse:1, img:f.img, recipe:{a:f.a, b:f.b, an:f.an, bn:f.bn} }; MONSTERS.push(m);
   const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} try{ if(tab==="box"&&boxMode==="dexM"){ clearTimeout(fmonReg.t); fmonReg.t=setTimeout(()=>{ const y=$("#stage").scrollTop; render(); $("#stage").scrollTop=y; },150); } }catch(e){} }; im.src=f.img; return m; }
 const mon = id => MONSTERS.find(m=>m.id===id) || fmonReg(id);
@@ -4768,7 +4786,7 @@ async function fuSend(btn){ if(fuSel.length!==2) return; const cost=fuCost(); if
       DB.collection("fusemon").doc(known.id+"_"+ref.id).set({id:known.id, name:known.name, img:known.img, rk:known.rk||fuseRank(A.m,B.m), uid:MYID, req:ref.id, reqAt:at, a:A.m, b:B.m, an:mon(A.m).name, bn:mon(B.m).name, same:1, auto:1, at}).catch(()=>{}); }catch(e){}
     const an=mon(A.m).name, bn=mon(B.m).name;
     S.moko-=cost; if(!cost) S.fuFree1027=1; S.units=S.units.filter(z=>z.u!==A.u&&z.u!==B.u);
-    const krk=known.rk||fuseRank(A.m,B.m); S.fmons=S.fmons||{}; S.fmons[known.id]={name:known.name,img:known.img,rk:krk}; FMON_CACHE[known.id]=S.fmons[known.id]; mon(known.id);
+    const krk=known.rk||fuseRank(A.m,B.m); S.fmons=S.fmons||{}; S.fmons[known.id]={name:known.name,rk:krk}; FMON_CACHE[known.id]=Object.assign(FMON_CACHE[known.id]||{},{name:known.name,img:known.img,rk:krk}); mon(known.id);
     S.got[known.id]=(S.got[known.id]||0)+1; S.units.push({u:S.nextUid++,m:known.id,l:1,e:0,s:0,g:0,k:true,t:at}); fuSel=[]; fuStep=0; save();
     const g=document.createElement("div"); g.className="reveal";
     g.innerHTML=`<div class="burst"></div><h3>🧬 融合に成功しました！</h3><img src="${known.img}" alt="" style="width:min(64vw,260px);height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 18px #0008)"><p class="note" style="text-align:center;max-width:320px">「${esc(an)}」と「${esc(bn)}」が融合して<br><b style="font-size:18px">${esc(known.name)}</b><br>が生まれました！<br><span class="rk rk-${krk}">${rkName(krk)}</span> ランクとしてBOXに入りました（鍵つき）</p><button class="btn gold" type="button">やったー！</button>`;
@@ -8109,7 +8127,7 @@ async function checkItems(){
           gifts.push(who); S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
         if(b.item==="fmon"){   // 融合の完成（運営から届く）：オリジナルの限定魔物をBOXに入れて「融合に成功しました！」
           try{ const sn=await withTO(DB.collection("fusemon").doc(String(b.fid)).get()); const f=sn.exists?sn.data():null;
-            if(f&&f.img){ S.fmons=S.fmons||{}; S.fmons[f.id]={name:f.name,img:f.img,rk:f.rk||"F"}; FMON_CACHE[f.id]=S.fmons[f.id]; const m=mon(f.id);
+            if(f&&f.img){ S.fmons=S.fmons||{}; S.fmons[f.id]={name:f.name,rk:f.rk||"F"}; FMON_CACHE[f.id]=Object.assign(FMON_CACHE[f.id]||{},{name:f.name,img:f.img,rk:f.rk||"F"}); const m=mon(f.id);
               S.got[f.id]=(S.got[f.id]||0)+1; S.units.push({u:S.nextUid++,m:f.id,l:1,e:0,s:0,g:0,k:true,t:gnow()}); S.fuReqs=(S.fuReqs||[]).filter(r=>r.at!==f.reqAt);
               fuseDone.push({img:f.img,name:f.name,a:f.an,b:f.bn,rk:f.rk||"F"}); } }catch(e){}
           S.lastItem=Math.max(S.lastItem||0,b.at); continue; }
@@ -8225,7 +8243,7 @@ let LAST_PROF=null;
 const bakSum=x=>({lv:x.plv||1, coins:Math.floor(x.coins||0), bank:Math.floor(x.bank||0), moko:Math.floor(x.moko||0), units:(x.units||[]).length, ss:x.season??0, upd:x.updated||0});
 function bakDoc(x,why){ const json=JSON.stringify(x); if(json.length>700000) return null; return {uid:MYID, name:String(myName()||"").slice(0,24), at:gnow(), why:String(why||"").slice(0,60), json, ...bakSum(x)}; }
 function bakPre(old,why){ try{ if(!old||!Array.isArray(old.units)) return;   /* 入れかわる前の記録をとっておく */
-    let L=[]; try{ L=JSON.parse(localStorage.getItem("toto-lbak")||"[]"); }catch(e){} L.push({at:gnow(), why, json:JSON.stringify(old)}); L=L.slice(-3); try{ localStorage.setItem("toto-lbak",JSON.stringify(L)); }catch(e){}
+    try{ localStorage.removeItem("toto-lbak"); }catch(e){}   /* この端末には入れない（容量がいっぱいになると記録が保存できなくなるので）。クラウドにだけとっておく */
     if(DB&&MYID){ let n=0; try{ n=(+localStorage.getItem("toto-pbak-n")||0)+1; localStorage.setItem("toto-pbak-n",String(n)); }catch(e){} const d=bakDoc(old,why); if(d) DB.doc("svbak/"+MYID+"_p"+(n%3)).set(d).catch(()=>{}); } }catch(e){} }
 function bakHourly(){ try{ if(!DB||!MYID||!remoteReady||REMOTE_LOCK||isFreshSave(S)) return; const h=Math.floor(gnow()/HOUR_MS); let last=0; try{ last=+localStorage.getItem("toto-hbak-"+MYID)||0; }catch(e){} if(last===h) return;
     const d=bakDoc(S,"1時間ごと"); if(!d) return; DB.doc("svbak/"+MYID+"_h"+(h%24)).set(d).then(()=>{ try{ localStorage.setItem("toto-hbak-"+MYID,String(h)); }catch(e){} }).catch(()=>{}); }catch(e){} }
@@ -9771,14 +9789,14 @@ function defRecord(){ const R=defData().run; if(!R) return;
   const g=cv.getContext("2d"); g.font="900 18px sans-serif"; g.textAlign="right"; g.fillStyle="#fff"; g.strokeStyle="#000"; g.lineWidth=4;
   const d=new Date(gnow()), s=`🛡 ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; g.strokeText(s,590,28); g.fillText(s,590,28);
   let img; try{ img=cv.toDataURL("image/jpeg",0.72); }catch(e){ return defMsg("…"); }
-  const had=!!(S.defShot&&S.defShot.img);   // 写真は1枚だけ：撮るたびに前の写真と交換
-  S.defShot={img, at:gnow()}; save();
+  const had=!!(S.defShot&&(S.defShot.img||S.defShot.has));   // 写真は1枚だけ：撮るたびに前の写真と交換
+  S.defShot={at:gnow(), has:1}; try{ localStorage.setItem("toto-defshot",JSON.stringify({img, at:gnow()})); }catch(e){} save();   /* 写真はセーブに入れない（大きいので） */
   if(DB&&MYID) DB.collection("defshots").doc(MYID).set({img, at:gnow(), name:myName().slice(0,12)}).catch(()=>{});
   try{ SFX.reveal("S"); }catch(e){} DV.flash=0.5; defMsg("📸 "+defT(had?"プロフィールの「防衛の記録」を新しい写真に交換したよ！":"プロフィールに「防衛の記録」として貼ったよ！"));
 }
 // プロフィールの「防衛の記録」
 async function defRecInto(el,r){ if(!el) return; let rec=null;
-  if(r.id===MYID||!MYID) rec=S.defShot||null;
+  if(r.id===MYID||!MYID){ try{ rec=JSON.parse(localStorage.getItem("toto-defshot")||"null"); }catch(e){} if(!rec&&S.defShot&&S.defShot.img) rec=S.defShot; if(!rec&&DB&&MYID){ try{ const s=await withTO(DB.collection("defshots").doc(MYID).get(),8000); rec=s.exists?s.data():null; }catch(e){} } }
   else if(DB){ try{ const s=await withTO(DB.collection("defshots").doc(r.id).get(),8000); rec=s.exists?s.data():null; }catch(e){} }
   if(!rec||!rec.img||!/^data:image\/jpeg;base64,/.test(rec.img)) return;
   const d=new Date(rec.at||0);
@@ -10577,8 +10595,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031132111" defer></script>
-<script src="vt/vt.js?v=20261031132111" defer></script>
-<script src="fz/fz.js?v=20261031132111" defer></script>
-<script src="gd/gd.js?v=20261031132111" defer></script>
+<script src="io/io.js?v=20261031133036" defer></script>
+<script src="vt/vt.js?v=20261031133036" defer></script>
+<script src="fz/fz.js?v=20261031133036" defer></script>
+<script src="gd/gd.js?v=20261031133036" defer></script>
 </body></html>
