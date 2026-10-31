@@ -6383,7 +6383,7 @@ function renderRanking(segHtml){
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>魔物ランキング</h2>
     ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のランク戦の順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
     ${rankless()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🕐 順位がつくまで</small><b id="rlCd">${fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow())}</b></div><div class="note" style="display:block;margin:2px 0 0">ランク戦が始まってから1時間は順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます</div></div>`:""}
-    <div class="season-box"><div><small>ランク戦終了まで</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
+    <div class="season-box"><div><small>${LANG==="en"?`Ranked Match #${seasonNow()} ends in`:`第${seasonNow()}回ランク戦 終了まで`}</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
       <div class="note" style="display:block;margin:2px 0 0">ランク戦タイマーが0になると終了。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
       ${rankless()?`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスは、順位がつきはじめてから</div>`:`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>`}
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
@@ -10526,8 +10526,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031101341" defer></script>
-<script src="vt/vt.js?v=20261031101341" defer></script>
-<script src="fz/fz.js?v=20261031101341" defer></script>
-<script src="gd/gd.js?v=20261031101341" defer></script>
+<script src="io/io.js?v=20261031101729" defer></script>
+<script src="vt/vt.js?v=20261031101729" defer></script>
+<script src="fz/fz.js?v=20261031101729" defer></script>
+<script src="gd/gd.js?v=20261031101729" defer></script>
 </body></html>
