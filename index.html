@@ -3028,6 +3028,7 @@ const I18N_EN = {
 "金ノドラゴン": "Golden Dragon",
 "鍋キノコトト": "Hotpot Mushroom Toto",
 "ゴールデン勇者アヒル": "Golden Hero Duck",
+"勇者・ハロウィンアヒル": "Hero Halloween Duck",
 "メロメロバブリー": "Lovestruck Bubbly",
 "パンヒーロー": "Bread Hero",
 "トリプルスライミー": "Triple Slimey",
@@ -3242,6 +3243,7 @@ const MONSTERS = [
   { id: 111, name: "金ノドラゴン", rank: "L", exp: 10000, gift: 1, added: "2026-10-26", img: "im/d157b76f8203.png" },
   { id: 112, name: "鍋キノコトト", rank: "L", exp: 10000, gift: 1, added: "2026-10-27", img: "im/bd352eb7a50b.png" },
   { id: 113, name: "ゴールデン勇者アヒル", rank: "L", exp: 10000, gift: 1, added: "2026-10-30", img: "im/2fafdd1cdd4f.png" },
+  { id: 114, name: "勇者・ハロウィンアヒル", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/ae87d2609162.png" },
 ];
 const DEX_MONS = MONSTERS.filter(m=>m.rank!=="L"&&!m.gift);   // 図鑑・コンプ率の対象（限定ランクは入れない：持っている人の図鑑にだけ別に載る）
 const START_MONSTER = 1; // 最初から全員が持っている魔物
@@ -7259,6 +7261,7 @@ const NAMED_GIFTS = [
   { id:"ng-2026-10-23b-chun", stone:100, to:{ "ちゅん":1 } },
   { id:"ng-2026-10-24-fukka", coins:50000, to:{ "ふっかー":1 } },
   { id:"ng-2026-10-24-yoko-bakuen", mons:[105], to:{ "yoko★":1 } },
+  { id:"ng-2026-10-31-halloween11", mons:[114], ic:"👑", title:"遅れましたがシーズン11の上位3人に送られる限定キャラです！✨", en:"Sorry for the wait — a limited character for the top 3 of Season 11! ✨", to:{ "Riku":1, "し":1, "love":1 } },   // 第11回の1〜3位（Riku・し・love）に 限定ランク「勇者・ハロウィンアヒル」
   { id:"ng-2026-10-24-rice-kinnome", mons:[106], to:{ "ライス大好き":1 } },
   { id:"ng-2026-10-24-totoshinja", coins:100000, to:{ "トト神信者":1 } },
   { id:"ng-2026-10-25-toiro", coins:100000, to:{ "十色くん":1 } },
@@ -7349,7 +7352,7 @@ async function checkGiftNames(){ try{ if(!DB||!MYID||!dexPeek()) return; const s
 function checkNamedGift(){
   if(!MYID||isFreshSave(S)) return; S.ngift=S.ngift||[];
   const me=normName(myName()); let tk=0, cn=0, stn=0, mk=0; const ms=[];
-  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; if(g.title){ presentAdd({ic:g.ic||"🙏", title:g.title, en:g.en||"", coins:(g.coins||0)*n, ticket:(g.ticket||0)*n, stone:(g.stone||0)*n, moko:(g.moko||0)*n}); return; } tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; mk+=(g.moko||0)*n; (g.mons||[]).forEach(id=>{ if(mon(id)) ms.push({m:id,k:true}); }); });
+  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; if(g.title){ presentAdd({ic:g.ic||"🙏", title:g.title, en:g.en||"", coins:(g.coins||0)*n, ticket:(g.ticket||0)*n, stone:(g.stone||0)*n, moko:(g.moko||0)*n, mons:(g.mons||[]).filter(id=>mon(id)).map(id=>({m:id,k:true}))}); return; } tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; mk+=(g.moko||0)*n; (g.mons||[]).forEach(id=>{ if(mon(id)) ms.push({m:id,k:true}); }); });
   if(ms.length) presentAdd({ic:"👑", title:"運営からのプレゼント：限定キャラ", en:"A present from the team: limited character", mons:ms});
   if(!tk&&!cn&&!stn&&!mk){ save(); return; }
   presentAdd({ic:"🎁", title:"運営からのプレゼント", en:"A present from the team", coins:cn, ticket:tk, stone:stn, moko:mk}); return;
@@ -10623,9 +10626,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261031144208" defer></script>
-<script src="io/io.js?v=20261031144208" defer></script>
-<script src="vt/vt.js?v=20261031144208" defer></script>
-<script src="fz/fz.js?v=20261031144208" defer></script>
-<script src="gd/gd.js?v=20261031144208" defer></script>
+<script src="ts/ts.js?v=20261031150037" defer></script>
+<script src="io/io.js?v=20261031150037" defer></script>
+<script src="vt/vt.js?v=20261031150037" defer></script>
+<script src="fz/fz.js?v=20261031150037" defer></script>
+<script src="gd/gd.js?v=20261031150037" defer></script>
 </body></html>
