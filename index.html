@@ -8297,7 +8297,7 @@ function openOtherProfile(r,rank){
       ${(r.kw||r.kc)?`<div><i class="st-ic" aria-hidden="true">🏯</i><small>魔ノ国の称号</small><b translate="no">${esc(knTitleText(r.kw||0,r.kc||0))}</b></div>`:""}
       <div><i class="st-ic" aria-hidden="true">⭐</i><small>最高冒険者Lv</small><b>${n(Math.max(r.mp||0,r.lv||1))}</b></div>
     </div>
-    ${dexPeek()?`<button type="button" class="btn ghost" id="profLvLog" style="margin:14px auto 0;display:block;font-size:13px">📜 冒険者レベルの記録（ふっかーだけ）</button><button type="button" class="btn ghost" id="profBak" style="margin:8px auto 0;display:block;font-size:13px">💾 バックアップ・元に戻す（ふっかーだけ）</button>`:""}
+    ${dexPeek()?`<button type="button" class="btn ghost" id="profLvLog" style="margin:14px auto 0;display:block;font-size:13px">📜 冒険者レベルの記録（ふっかーだけ）</button><button type="button" class="btn ghost" id="profBak" style="margin:8px auto 0;display:block;font-size:13px">💾 バックアップ・元に戻す（ふっかーだけ）</button><div style="margin:8px 0 0;text-align:center;font-size:12px;opacity:.8;word-break:break-all">ID：<span translate="no" style="user-select:all">${esc(r.id||"")}</span> <button type="button" class="chip" id="profId" style="font-size:11px;padding:2px 8px">コピー</button></div>`:""}
     ${DB&&MYID&&r.id&&r.id!==MYID?`<button type="button" class="btn ghost" id="profRpt" style="margin:14px auto 0;display:block;font-size:13px">🚨 この冒険者を通報する</button>`:""}
   </div>`);
   try{ defRecInto(bg.querySelector("#defRec"),r); }catch(e){}
@@ -8305,6 +8305,7 @@ function openOtherProfile(r,rank){
   const rp=bg.querySelector("#profRpt"); if(rp) rp.onclick=()=>openReport(r);
   const ll=bg.querySelector("#profLvLog"); if(ll) ll.onclick=()=>openLvLog(r);
   { const bk=bg.querySelector("#profBak"); if(bk) bk.onclick=()=>openBackups(r); }
+  { const pi=bg.querySelector("#profId"); if(pi) pi.onclick=async()=>{ try{ await navigator.clipboard.writeText(r.id||""); toast("IDをコピーしました"); }catch(e){ toast("コピーできませんでした。IDを長押ししてコピーしてください"); } }; }
 }
 // レーダーチャート：ガチャ回数・合成回数・魔物コンプ率・手持ちの魔物を、ランキングの平均と重ねて表示
 // 回数は人によって差が大きいので、ランキング内の最大値を外側として平方根でならす（コンプ率は0〜100%そのまま）
@@ -10576,8 +10577,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031125953" defer></script>
-<script src="vt/vt.js?v=20261031125953" defer></script>
-<script src="fz/fz.js?v=20261031125953" defer></script>
-<script src="gd/gd.js?v=20261031125953" defer></script>
+<script src="io/io.js?v=20261031132111" defer></script>
+<script src="vt/vt.js?v=20261031132111" defer></script>
+<script src="fz/fz.js?v=20261031132111" defer></script>
+<script src="gd/gd.js?v=20261031132111" defer></script>
 </body></html>
