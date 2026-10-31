@@ -60,7 +60,7 @@ async function settle(ss, force) {
   const bks = pq.docs.map(d => { const p = d.data(); const v = (p.bkpS === ss && p.bkp != null) ? p.bkp : (p.bk || 0); return { id: d.id, v }; }).filter(x => x.v > 0);
   const bk = {}; bks.forEach(x => { bk[x.id] = 1 + bks.filter(o => o.v > x.v).length; });
   const top = Object.keys(r).sort((a, b) => r[a] - r[b]).slice(0, 10).map(id => ({ id, r: r[id], name: (L.find(x => x.id === id) || {}).name, sc: sc[id] }));
-  await ref.set({ ss, at: now, n: Object.keys(r).length, r, sc, bk, top });
+  await ref.set({ ss, at: now, n: Object.keys(r).length, r, sc, bk, top, fix, fx: L.filter(x => x.fx != null).map(x => x.id) });   // fix・fx：運営が決めた順位（画面がくらべて、ちがっていたら使わない）
   return { ss, n: Object.keys(r).length, top: top.slice(0, 3) };
 }
 

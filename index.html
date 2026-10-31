@@ -6080,9 +6080,10 @@ async function settleInvest(old, rank, q, mine, coinsSoFar, RR){
     else if(q||RR){
       const d=q?q.docs.find(x=>x.id===iv.def):null, ts=d?finalScore(d.id,d.data(),old):null;
       let tr=null; if(RR){ tr=(RR.r||{})[iv.def]??null; } else if(ts!=null){
-        const others=q.docs.filter(x=>x.id!==iv.def&&x.id!==MYID).map(x=>({score:finalScore(x.id,x.data(),old), ok:profOk(x.data(),old)})).filter(o=>o.score!=null);
-        others.push({score:mine, ok:prizeOk(old)});
-        tr=effRank(ts, profOk(d.data(),old), others); }
+        const others=q.docs.filter(x=>x.id!==iv.def&&x.id!==MYID&&!rankFixed(old,x.data())).map(x=>({score:finalScore(x.id,x.data(),old), ok:profOk(x.data(),old)})).filter(o=>o.score!=null);
+        if(!rankFixFor(old)) others.push({score:mine, ok:prizeOk(old)});
+        tr=rankShift(old, effRank(ts, profOk(d.data(),old), others)); }
+      if(d && rankFixed(old,d.data())){ const fk=Object.keys(RANK_FIX[old]).find(k=>normName(k)===normName(d.data().name)); if(fk!=null) tr=RANK_FIX[old][fk]; }   /* 2026-10-31：運営が決めた順位の人への投資は、その順位で */
       const mul=invMulOf(tr, old, !!(rank&&rank<=3));
       if(mul){ ivNet+=iv.amt*(mul-1); out.delta+=Math.floor(iv.amt*mul); out.lines.push(`💰 投資先の${nm}さんが${tr}位！ ${invNew(old)&&rank&&rank<=3?`（あなたが${rank}位なので2倍）`:""}+${Math.floor(iv.amt*mul).toLocaleString()}コイン`); }
       else { ivNet-=iv.amt*INV_LOSE; const more=Math.min(iv.amt*(INV_LOSE-(iv.paid?1:0)), S.coins+(S.bank||0)+coinsSoFar+out.delta); out.delta-=more; out.lines.push(`💸 投資先の${nm}さんは${tr?tr+"位":"順位なし"}…（−${((iv.paid?iv.amt:0)+more).toLocaleString()}コイン）`); }
@@ -6209,6 +6210,7 @@ function openInvestForm(r){
 }
 async function doInvest(r,a){
   if(!DB||!MYID) return false;
+  if(!(await invSync())){ toast("投資できませんでした。少し時間をおいてためしてください"); return false; }   /* 2026-10-31：先にサーバーの投資の記録とそろえる */
   const mine=myInvs();
   if(mine.length>=INV_MAX){ toast(`今回のランク戦はもう${INV_MAX}人に投資しています`); return false; }
   if(mine.some(x=>x.def===r.id)){ toast("この冒険者にはもう投資しています"); return false; }
@@ -6387,8 +6389,8 @@ function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[c
       c[ss]=top; }
     if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop4",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
     PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
-  }catch(e){} pastBusy=false; })(); }
-function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return "";
+  }catch(e){ PAST_TOP=null; } pastBusy=false; })(); }
+function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return `<div class="note" style="margin:8px 0">🏆 ${LANG==="en"?"Loading past results…":"過去のランク戦を読み込み中…"}</div>`;
   const md=["🥇","🥈","🥉"], L=LANG==="en";
   return `<details ${window.PAST_OPEN?"open":""} ontoggle="window.PAST_OPEN=this.open" style="display:block;margin:12px 0;padding:12px 14px;border:3px solid var(--gold,#e0a84b);border-radius:18px;background:rgba(0,0,0,.18)"><summary style="font-weight:900;cursor:pointer">🏆 ${L?"Past ranked matches — Top 3":"過去のランク戦 1〜3位"}</summary>${PAST_TOP.map(x=>`<div style="margin:10px 0 0"><div style="font-size:13px;opacity:.75;margin:0 0 2px">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</div>${x.top==null?`<div style="font-size:13px">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div style="font-size:13px">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:15px"><span style="flex:none">${md[t.r-1]||t.r}</span><span translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(t.name)}</span><span style="flex:none;min-width:86px;text-align:right">${t.fx?``:`<span style="font-size:12px;opacity:.75">Lv </span><span style="font-weight:900">${t.lv}</span>`}</span></div>`).join("")}</div>`).join("")}</details>`; }
 function renderRanking(segHtml){
@@ -6676,7 +6678,11 @@ const ITEM_REST_TXT = "🏁 ランク戦が始まってから1時間は、アイ
 const itemRest = () => gnow() < seasonEnd(seasonNow()-1) + HOUR_MS;
 const noAct = () => inFreeze() || (!!DB && !!MYID && S.season!=null && S.season<seasonNow());
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
-const RANKRES_WAIT = 40*60*1000;   // サーバーの集計（rankres）を待つ時間。これを過ぎてもなければ、自分で計算する
+const RANKRES_WAIT = 40*60*1000;
+/* サーバーの結果（rankres）が、今の「運営が決めた順位」と同じきまりで作られたか */
+const rrFixOk = (RR,ss) => { try{ const a=RANK_FIX[ss]||{}, b=RR.fix||{}; const ka=Object.keys(a).map(normName).sort(), kb=Object.keys(b).map(normName).sort(); return JSON.stringify(ka)===JSON.stringify(kb) && Object.keys(a).every(k=>{ const kk=Object.keys(b).find(z=>normName(z)===normName(k)); return kk!=null&&b[kk]===a[k]; }); }catch(e){ return false; } };
+/* サーバーの結果にのっていない人の順位：運営が決めた順位の人をのぞいて数えて、ずらす */
+const rrRankOf = (RR,ss,score) => { const fx=new Set(RR.fx||[]); return rankShift(ss, 1+Object.entries(RR.sc||{}).filter(([id,v])=>!fx.has(id)&&v>score).length); };   // サーバーの集計（rankres）を待つ時間。これを過ぎてもなければ、自分で計算する
 const RANK_PRIZE = [ null, {c:500000,st:50,mk:50}, {c:250000,st:40,mk:25}, {c:100000,st:30,mk:10} ];   // 1〜3位（2026-10-27〜：モコも）
 const RANK_PRIZE_OLD = [ null, {c:10000,st:20}, {c:7777,st:10}, {c:5000,st:5} ], PRIZE_NEW_SS = 10;   // シーズン9以前は前の賞品（シーズン10＝2026-10-27のランク戦から新しい賞品）
 const RANK_PRIZE_10 = {c:2000, st:2};                                          // 4〜10位
@@ -6853,8 +6859,10 @@ async function checkSeason(){
     let rank=null, q=null, RR=null;
     if(old>=cur-3){
       /* 2026-10-30：順位はサーバーが1回だけ決めた結果（rankres）を使う。みんな同じ結果になり、電波や古い画面でずれない */
-      let srv=false; try{ const rd=await DB.doc("rankres/"+old).get({source:"server"}); if(rd.exists) RR=rd.data(); else srv=(await DB.doc("rankres/"+(old-1)).get({source:"server"})).exists; }catch(e){}   /* 前の回の結果があれば、サーバーが動いている */
-      if(RR){ rank=(RR.r||{})[MYID] ?? (1+Object.values(RR.sc||{}).filter(v=>v>mine).length); }
+      let srv=false, rrErr=false; try{ const rd=await DB.doc("rankres/"+old).get({source:"server"}); if(rd.exists) RR=rd.data(); else srv=(await DB.doc("rankres/"+(old-1)).get({source:"server"})).exists; }catch(e){ rrErr=true; }   /* 前の回の結果があれば、サーバーが動いている */
+      if(rrErr && gnow()<seasonEnd(old)+RANKRES_WAIT){ seasonBusy=false; return; }   /* 2026-10-31：読めなかったときは、自分で計算しないで少しあとにやり直す */
+      if(RR && !rrFixOk(RR,old)) RR=null;   /* サーバーの結果が、運営が決めた順位を入れる前のものなら使わない */
+      if(RR){ rank=(RR.r||{})[MYID] ?? rrRankOf(RR,old,mine); }
       else if(srv && gnow()<seasonEnd(old)+RANKRES_WAIT){ if(S.rrWaitMsg!==old){ S.rrWaitMsg=old; try{ toast("🏁 ランク戦の結果を集計中です。少し待ってね"); }catch(e){} } seasonBusy=false; return; }   /* サーバーの集計を待つ（1分ごとに見直す） */
       else {   /* サーバーの結果がないとき（サーバーが止まっていたときなど）だけ、前と同じように自分で計算する */
       q=await DB.collection("profiles").limit(3000).get({source:"server"});   /* かならずサーバーから読む（電波がもどる前の、端末に残った古い一部の記録で順位を決めないように） */
@@ -6864,6 +6872,7 @@ async function checkSeason(){
       rank=rankShift(old, effRank(mine, prizeOk(old), others)); }
     }
     { const fx=rankFixFor(old); if(fx) rank=fx; }   // 運営が決めた順位
+    if(RANK_FIX[old]){ S["rkFix"+old]=1; S["invLove"+old]=1; }   /* 2026-10-31：運営が決めた順位を入れたあとの精算なら、あとからの直し（順位・投資）はいらない（二重に払わないように） */
     const w=S.stats.win||0, l=S.stats.lose||0, dr=S.stats.draw||0, t=w+l+dr, wr=t?w/t*100:0;
     let coins=0, stones=0, mokos=0; const lines=[];
     const eligible = prizeOk(old) || !!rankFixFor(old);
@@ -6976,6 +6985,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-31-season2", coins:1000 },   // ランク戦の精算や投資で、運営が決めた順位がうまく反映されないことがあった
   { id:"fix-2026-10-31-wallet2", coins:1000 },   // 電波が悪いときなどに、コインやレベルの足し引きが二重になったり消えたりすることがあった
   { id:"fix-2026-10-31-fmonimg", coins:1000 },   // 融合魔物の絵が出ず、名前だけになっていた
   { id:"fix-2026-10-31-bigsave2", coins:1000 },   // 売却の記録が大きくなりすぎて保存できず、更新するとホーム画面の設定などが前にもどっていた
@@ -7157,9 +7167,9 @@ async function fixLoveInv11(){ const SS=11; if(S.loveInv11||!DB||!MYID) return; 
     <button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }
 /* 2026-10-31：今のランク戦の投資は、サーバーの記録（invests）とくらべて、記録が前にもどって消えていたら元にもどす（だれでも・毎回だまって） */
-async function invSync(){ if(!DB||!MYID) return; let L; try{ const r=await withTO(DB.collection("invests").where("att","==",MYID).get(),12000); L=r.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.ss===seasonNow()&&!x.void); }catch(e){ return; }
+async function invSync(){ if(!DB||!MYID) return false; let L; try{ const r=await withTO(DB.collection("invests").where("att","==",MYID).get(),12000); L=r.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.ss===seasonNow()&&!x.void); }catch(e){ return false; }
   invFix(); let n=0; for(const x of L){ if(S.invs.some(iv=>invDocId(iv)===x.id)) continue; S.invs.push({ss:x.ss, doc:x.id, def:x.def, name:String(x.defName||""), icon:"", amt:x.amt||0, at:x.at||gnow(), paid:1}); n++; }
-  if(n){ save(); try{ queueProfile(true); }catch(e){} try{ render(); }catch(e){} } }
+  if(n){ save(); try{ queueProfile(true); }catch(e){} try{ render(); }catch(e){} } return true; }
 async function fixDragon1027(){ if(S.drFix1027||!DB||!MYID) return; let me; try{ me=normName(myName()); }catch(e){ return; } if(me!==normName("ＤＲＡＧＯＮ")) return;
   // 今シーズンの投資は、サーバーに残っている記録（invests）から元にもどす。読めなかったら、次に開いたときにもう一度
   let invs; try{ const r=await withTO(DB.collection("invests").where("att","==",MYID).get(),12000); invs=r.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.ss===seasonNow()&&!x.void); }catch(e){ return; }
@@ -7215,7 +7225,7 @@ async function fixYoko13(){ const SS=13, FL="fixY13";
   const mine=(S.sv||{})[SS]; if(mine==null){ S[FL]=1; save(); return; }
   let rank=null;
   try{ let RR=null; try{ const rd=await DB.doc("rankres/"+SS).get({source:"server"}); if(rd.exists) RR=rd.data(); }catch(e){}
-    if(RR){ rank=(RR.r||{})[MYID] ?? (1+Object.values(RR.sc||{}).filter(v=>v>mine).length); } else {
+    if(RR&&!rrFixOk(RR,SS)) RR=null; if(RR){ rank=(RR.r||{})[MYID] ?? rrRankOf(RR,SS,mine); } else {
     const q=await DB.collection("profiles").limit(3000).get({source:"server"}); if(q.size<5) return;
     await loadSeasonEvents(SS);
     const others=q.docs.filter(d=>d.id!==MYID&&!rankFixed(SS,d.data())).map(d=>({score:finalScore(d.id,d.data(),SS), ok:profOk(d.data(),SS)})).filter(o=>o.score!=null);
@@ -10613,9 +10623,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261031144110" defer></script>
-<script src="io/io.js?v=20261031144110" defer></script>
-<script src="vt/vt.js?v=20261031144110" defer></script>
-<script src="fz/fz.js?v=20261031144110" defer></script>
-<script src="gd/gd.js?v=20261031144110" defer></script>
+<script src="ts/ts.js?v=20261031144208" defer></script>
+<script src="io/io.js?v=20261031144208" defer></script>
+<script src="vt/vt.js?v=20261031144208" defer></script>
+<script src="fz/fz.js?v=20261031144208" defer></script>
+<script src="gd/gd.js?v=20261031144208" defer></script>
 </body></html>
