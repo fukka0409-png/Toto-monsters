@@ -4048,6 +4048,7 @@ const rkName=r=>r==='L'?'限定':'融合';
 /* 2026-10-31：融合魔物の絵（大きい画像）はセーブに入れない。セーブには名前とランクだけ、絵は融合魔物の一覧（fusemon）から読む。
    （絵がセーブに入っていると、記録が大きくなりすぎて保存できず、更新すると前の記録にもどってしまうバグ） */
 function slimSave(x){ try{ if(!x) return; for(const k in (x.fmons||{})){ const f=x.fmons[k]; if(f&&f.img){ FMON_CACHE[k]=Object.assign(FMON_CACHE[k]||{},{name:f.name,img:f.img,rk:f.rk}); delete f.img; } }
+  if(Array.isArray(x.sellLog)&&(x.sellLog.length>8||x.sellLog.some(e=>e&&e.units&&e.units.length>300))){ x.sellLog=x.sellLog.slice(-8).map(e=>e&&e.units&&e.units.length>300?{...e,units:e.units.slice(-300)}:e); }   /* 売却の記録は最近8回・1回300体まで（多いと記録が大きくなりすぎる） */
   if(x.defShot&&x.defShot.img){ try{ localStorage.setItem("toto-defshot",JSON.stringify(x.defShot)); }catch(e){} x.defShot={at:x.defShot.at||0, has:1}; } }catch(e){} }
 const FMON_ASK={};
 function fmonFetch(id){ if(FMON_ASK[id]||typeof DB==="undefined"||!DB) return; FMON_ASK[id]=1;
@@ -4265,7 +4266,7 @@ async function trimBox(){
     .sort((a,b)=>(RANKS.indexOf(mon(a.m).rank)-RANKS.indexOf(mon(b.m).rank)) || ((a.k?1:0)-(b.k?1:0)) || (a.l-b.l) || (a.u-b.u)).slice(0,over);
   const del=new Set(cand.map(u=>u.u)); let coins=0; const byRank={};
   cand.forEach(u=>{ let c=0; try{ c=sellPrice(u)||0; }catch(e){} coins+=c; const rk=mon(u.m).rank; byRank[rk]=(byRank[rk]||0)+1; });
-  S.sellLog=(S.sellLog||[]).concat({at:gnow(), units:cand.map(u=>({...u})), coins, plv:0, up:0, auto:"box800"}).slice(-30);   // 記録（あとで戻せるように）
+  S.sellLog=(S.sellLog||[]).concat({at:gnow(), units:cand.map(u=>({...u})).slice(-300), coins, plv:0, up:0, auto:"box800"}).slice(-8);   // 記録（あとで戻せるように）
   S.units=S.units.filter(u=>!del.has(u.u));
   if(S.dress && !isArt(S.dress.m) && !S.units.some(z=>z.m===S.dress.m)) S.dress.m=START_MONSTER;
   const rk=RANKS.filter(k=>byRank[k]).map(k=>`${k}${byRank[k]}`).join("・");
@@ -4891,7 +4892,7 @@ function doSell(uids){
   const lv=sellLv(list); if(lv){ S.plv+=lv; lvWhy("魔物の売却"); bumpMaxLv(); }
   const nL=list.filter(u=>mon(u.m).rank==="L").length, up=nL*LIMITED_SELL_LV; let raised=0;
   if(up){ S.units.forEach(z=>{ const c=capOf(z); if(evoLocked(z)){ if(z.l>=c) return; z.l=Math.min(c,z.l+up); } else { const b0=z.l; z.l+=up; z.a=(z.a||0)+Math.max(0,z.l-Math.max(b0,MAX_LV)); } if(z.l>=Math.min(c,MAX_LV)) z.e=0; raised++; }); queueProfile(true); }   // Lv100を超えた分も、覚醒の石と同じようにそのまま上がる
-  S.sellLog=(S.sellLog||[]).concat({at:gnow(), units:list.map(u=>({...u})), coins:total, plv:lv, up}).slice(-30);   // 売却の記録（あとで戻せるように）
+  S.sellLog=(S.sellLog||[]).concat({at:gnow(), units:list.map(u=>({...u})).slice(-300), coins:total, plv:lv, up}).slice(-8);   // 売却の記録（あとで戻せるように）
   S.coins+=total; save(); SFX.coin(); toast(`${list.length}体を売却 +${total.toLocaleString()}コイン`+(lv?` ・ 冒険者Lv+${lv}（Lv${S.plv}）`:"")+(up?` ・ 手持ちの魔物${raised}体のLv+${up}`:"")); if(lv) setTimeout(()=>{ try{ SFX.level(); }catch(e){} },350); return total;
 }
 function confirmSell(uids,onDone,fresh){
@@ -5615,7 +5616,7 @@ function profilePayload(){
     comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0), tr:S.tsRd?1:0, tp:S.tsRd?(S.tsPow||0):0,
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), plg:JSON.stringify((S.plvLog||[]).slice(-40)), bkp:S.bankPreS!=null?Math.floor(S.bankPre||0):null, bkpS:S.bankPreS??-1, iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, ioL:(S.io&&(S.io.L||S.io.b))||0, ioW:(S.io&&(S.io.W!=null?S.io.W:(S.io.b?10:0)))||0, iom:(S.io&&S.io.m)||((S.home&&typeof S.home.m==="number")?S.home.m:1),   /* 魔物サバイバルの最高記録（前に脱出した記録しかない冒険者は、その記録＋武器10個） */ pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), plg:JSON.stringify((S.plvLog||[]).slice(-40)), bkp:S.bankPreS!=null?Math.floor(S.bankPre||0):null, sz:(()=>{ try{ return JSON.stringify(S).length; }catch(e){ return 0; } })(), bkpS:S.bankPreS??-1, iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, ioL:(S.io&&(S.io.L||S.io.b))||0, ioW:(S.io&&(S.io.W!=null?S.io.W:(S.io.b?10:0)))||0, iom:(S.io&&S.io.m)||((S.home&&typeof S.home.m==="number")?S.home.m:1),   /* 魔物サバイバルの最高記録（前に脱出した記録しかない冒険者は、その記録＋武器10個） */ pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
 }
 function queueProfile(now){
@@ -6973,6 +6974,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-31-bigsave2", coins:1000 },   // 売却の記録が大きくなりすぎて保存できず、更新するとホーム画面の設定などが前にもどっていた
   { id:"fix-2026-10-31-bigsave", coins:1000 },   // 融合魔物の絵などで記録が大きくなりすぎて保存できず、更新すると前の記録にもどっていた
   { id:"fix-2026-10-30-rank1", coins:1000 },   // 電波がもどる前にランク戦の精算をすると、まちがった順位になることがあった
   { id:"fix-2026-10-30-heavy", coins:1000 },   // ページが重すぎて、iPhoneのホーム画面のアプリが開けないことがあった
@@ -8320,7 +8322,7 @@ function openOtherProfile(r,rank){
       ${(r.kw||r.kc)?`<div><i class="st-ic" aria-hidden="true">🏯</i><small>魔ノ国の称号</small><b translate="no">${esc(knTitleText(r.kw||0,r.kc||0))}</b></div>`:""}
       <div><i class="st-ic" aria-hidden="true">⭐</i><small>最高冒険者Lv</small><b>${n(Math.max(r.mp||0,r.lv||1))}</b></div>
     </div>
-    ${dexPeek()?`<button type="button" class="btn ghost" id="profLvLog" style="margin:14px auto 0;display:block;font-size:13px">📜 冒険者レベルの記録（ふっかーだけ）</button><button type="button" class="btn ghost" id="profBak" style="margin:8px auto 0;display:block;font-size:13px">💾 バックアップ・元に戻す（ふっかーだけ）</button><div style="margin:8px 0 0;text-align:center;font-size:12px;opacity:.8;word-break:break-all">ID：<span translate="no" style="user-select:all">${esc(r.id||"")}</span> <button type="button" class="chip" id="profId" style="font-size:11px;padding:2px 8px">コピー</button></div>`:""}
+    ${dexPeek()?`<button type="button" class="btn ghost" id="profLvLog" style="margin:14px auto 0;display:block;font-size:13px">📜 冒険者レベルの記録（ふっかーだけ）</button><button type="button" class="btn ghost" id="profBak" style="margin:8px auto 0;display:block;font-size:13px">💾 バックアップ・元に戻す（ふっかーだけ）</button><div style="margin:8px 0 0;text-align:center;font-size:12px;opacity:.8;word-break:break-all">ID：<span translate="no" style="user-select:all">${esc(r.id||"")}</span>${r.sz?`<br>記録の大きさ：${Math.round(r.sz/1000).toLocaleString()}KB${r.sz>900000?" ⚠️大きすぎ":""}`:""} <button type="button" class="chip" id="profId" style="font-size:11px;padding:2px 8px">コピー</button></div>`:""}
     ${DB&&MYID&&r.id&&r.id!==MYID?`<button type="button" class="btn ghost" id="profRpt" style="margin:14px auto 0;display:block;font-size:13px">🚨 この冒険者を通報する</button>`:""}
   </div>`);
   try{ defRecInto(bg.querySelector("#defRec"),r); }catch(e){}
@@ -10600,8 +10602,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031133202" defer></script>
-<script src="vt/vt.js?v=20261031133202" defer></script>
-<script src="fz/fz.js?v=20261031133202" defer></script>
-<script src="gd/gd.js?v=20261031133202" defer></script>
+<script src="io/io.js?v=20261031135111" defer></script>
+<script src="vt/vt.js?v=20261031135111" defer></script>
+<script src="fz/fz.js?v=20261031135111" defer></script>
+<script src="gd/gd.js?v=20261031135111" defer></script>
 </body></html>
