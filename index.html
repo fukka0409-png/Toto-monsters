@@ -3592,20 +3592,21 @@ const WAL={ref:null, sv:null, ops:[], unsub:null, t:null, ready:false, sending:f
    ページを更新したり、アプリが急に閉じられたりしても、次に開いたときに必ず届けなおす（同じ足し引きは2回入らないように番号でたしかめる） */
 const walKey=()=>"toto-wal-"+MYID;
 function walSum(f){ let n=0; WAL.ops.forEach(o=>{ n+=Math.floor((o.d&&o.d[f])||0); }); return n; }
-function walSave(){ if(REMOTE_LOCK||!MYID||!WAL.sv) return; try{ localStorage.setItem(walKey(), JSON.stringify({sv:WAL.sv, ops:WAL.ops, u:S.updated||0})); }catch(e){} }
+function walSave(){ if(REMOTE_LOCK||!MYID||!WAL.sv) return; try{ localStorage.setItem(walKey(), JSON.stringify({sv:WAL.sv, ops:WAL.ops, sent:(WAL.sent||[]).slice(-300), u:S.updated||0})); }catch(e){} }
 function walClamp(){ if((S.plv||0)<1) S.plv=1; if((S.coins||0)<0) S.coins=0; if((S.bank||0)<0) S.bank=0; if((S.moko||0)<0) S.moko=0; }
-async function walletStart(keepLocal){ if(!DB||!MYID||WAL.ref) return; const ref=DB.doc("wallet/"+MYID);
+async function walletStart(keepLocal, forceLocal, tries){ if(!DB||!MYID||WAL.ref) return; const ref=DB.doc("wallet/"+MYID);
+  const retry=()=>{ const n=(tries||0)+1; if(n<=6) setTimeout(()=>{ try{ if(!WAL.ref&&!REMOTE_LOCK) walletStart(keepLocal, forceLocal, n); }catch(e){} }, [10,30,60,120,300,600][n-1]*1000); };   /* 2026-10-31：読めなかったら、時間をあけてやり直す */
   let P=null; try{ P=JSON.parse(localStorage.getItem(walKey())||"null"); }catch(e){}
   const S0=S, st={}; WF.forEach(f=>st[f]=Math.floor(S[f]||0));   /* 読んでいるあいだに増えた分も消さない */
-  try{ await DB.runTransaction(async tx=>{ const sn=await tx.get(ref); if(!sn.exists){ const v={}; WF.forEach(f=>v[f]=Math.floor(S[f]||0)); v.ss=S.season??0; v.at=gnow(); v.ops=[]; tx.set(ref,v); if(P){ P.sv={...v}; P.ops=[]; } } }); }catch(e){ return; }
+  try{ await DB.runTransaction(async tx=>{ const sn=await tx.get(ref); if(!sn.exists){ const v={}; WF.forEach(f=>v[f]=Math.floor(S[f]||0)); v.ss=S.season??0; v.at=gnow(); v.ops=[]; tx.set(ref,v); if(P){ P.sv={...v}; P.ops=[]; } } }); }catch(e){ retry(); return; }
   try{ const s0=await ref.get(); const v=s0.data()||{}, done=v.ops||[], sv={};
-    const pOps=(P&&Array.isArray(P.ops))?P.ops.filter(o=>o&&o.id&&o.d):[];
+    const sent=(P&&Array.isArray(P.sent))?P.sent:[]; const pOps=(P&&Array.isArray(P.ops))?P.ops.filter(o=>o&&o.id&&o.d):[]; WAL.sent=sent.slice(-300);
     WF.forEach(f=>sv[f]=Math.floor(v[f]||0));
     /* この端末でまだ足し引きにしていなかった変化（更新の直前に増えたコインなど） */
-    const unq={}; WF.forEach(f=>{ let u=0; if(keepLocal && P && P.sv && S===S0 && P.u===S.updated){   /* この端末のセーブと同じときに書いた記録だけ信じる */ u=st[f]-Math.floor(P.sv[f]||0); pOps.forEach(o=>{ u-=Math.floor(o.d[f]||0); }); } unq[f]=u; });
-    WAL.ops=pOps.filter(o=>!done.includes(o.id)); WAL.sv=sv;
+    const unq={}; WF.forEach(f=>{ let u=0; if(forceLocal && S===S0){ u=st[f]-sv[f]; pOps.forEach(o=>{ if(!done.includes(o.id)&&!sent.includes(o.id)) u-=Math.floor(o.d[f]||0); }); }   /* 「この端末の記録」をえらんだ：この端末の数字にする */ else if(keepLocal && P && P.sv && S===S0 && P.u===S.updated){   /* この端末のセーブと同じときに書いた記録だけ信じる */ u=st[f]-Math.floor(P.sv[f]||0); pOps.forEach(o=>{ u-=Math.floor(o.d[f]||0); }); } unq[f]=u; });
+    WAL.ops=pOps.filter(o=>!done.includes(o.id)&&!sent.includes(o.id)); WAL.sv=sv;   /* もう届けたもの（サーバーの記録・この端末の記録）は送らない */
     WF.forEach(f=>{ S[f]=sv[f]+walSum(f)+unq[f]+(S===S0?Math.floor(S[f]||0)-st[f]:0); });
-    walClamp(); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }catch(e){ return; }
+    walClamp(); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }catch(e){ retry(); return; }
   WAL.ref=ref; WAL.ready=true; walSave();
   try{ await ref.update({sid:SID, sidAt:SID_AT||gnow()}); }catch(e){}   /* この画面がいちばん新しい画面（ほかの画面はすぐ止まる） */
   walletPush();
@@ -3621,11 +3622,12 @@ function walletPush(){ if(!WAL.ready||!WAL.ref||!WAL.sv||REMOTE_LOCK) return; if
   const d={}; let n=0; WF.forEach(f=>{ const x=Math.floor(S[f]||0)-WAL.sv[f]-walSum(f); if(x){ d[f]=x; n++; } });
   if(n){ WAL.ops.push({id:Math.random().toString(36).slice(2)+Date.now().toString(36), d}); walSave(); }
   walSend(); }
-async function walSend(){ if(WAL.sending||!WAL.ops.length||REMOTE_LOCK||!WAL.ref) return; WAL.sending=true; const batch=WAL.ops.slice();
+async function walSend(){ if(WAL.sending||!WAL.ops.length||REMOTE_LOCK||!WAL.ref) return; WAL.sending=true; const sent=WAL.sent||[]; const batch=WAL.ops.filter(o=>!sent.includes(o.id)).slice(0,30); if(!batch.length){ WAL.sending=false; return; }   /* 1回に30こまで */
   try{ await DB.runTransaction(async tx=>{ const sn=await tx.get(WAL.ref); const v=sn.exists?sn.data():{}, done=v.ops||[], add={}, ids=[];
       batch.forEach(o=>{ if(done.includes(o.id)) return; ids.push(o.id); WF.forEach(f=>{ if(o.d[f]) add[f]=(add[f]||0)+Math.floor(o.d[f]); }); });
-      if(!ids.length) return; const w={at:gnow(), ops:done.concat(ids).slice(-80)}; WF.forEach(f=>{ if(add[f]) w[f]=Math.floor(v[f]||0)+add[f]; }); tx.update(WAL.ref,w); });
-    WAL.sending=false; if(WAL.ops.some(o=>!batch.includes(o))) walSend();
+      if(!ids.length) return; const w={at:gnow(), ops:done.concat(ids).slice(-300)}; WF.forEach(f=>{ if(add[f]) w[f]=Math.floor(v[f]||0)+add[f]; }); tx.update(WAL.ref,w); });
+    WAL.sent=(WAL.sent||[]).concat(batch.map(o=>o.id)).slice(-300); walSave();   /* 届けた番号をこの端末にも書いておく（次に開いたとき二重に送らない） */
+    WAL.sending=false; if(WAL.ops.some(o=>!batch.includes(o)&&!(WAL.sent||[]).includes(o.id))) walSend();
   }catch(e){ WAL.sending=false; setTimeout(walSend,10000); } }
 /* 記録がまるごと入れかわったとき（別の端末の記録を読んだとき）：大事な数字はこの画面の数字のまま（クラウドの数字＋まだ届いていない分）。old がないときはクラウドの数字にもどす */
 function walAdopt(old){ if(!WAL.ready||!WAL.sv) return; WF.forEach(f=>{ S[f]=old?old[f]:WAL.sv[f]+walSum(f); }); walClamp(); }
@@ -3697,7 +3699,7 @@ async function pushRemote(){
       const u=S.updated, prev=lastRemote;
       lastRemote=u;                       // 送る前に記録しておく（返事を待つ間の読み込みで勘違いしないように）
       if(REMOTE_LOCK) return;
-      const js=JSON.stringify(S); if(js.length>1000000){ lastRemote=prev; if(!pushRemote.warned){ pushRemote.warned=1; try{ toast("⚠️ 記録が大きすぎて、クラウドに保存できませんでした"); }catch(e){} } return; }
+      const js=JSON.stringify(S); let jb=js.length; try{ jb=new Blob([js]).size; }catch(e){} if(jb>1000000){ lastRemote=prev; if(!pushRemote.warned){ pushRemote.warned=1; try{ toast("⚠️ 記録が大きすぎて、クラウドに保存できませんでした"); }catch(e){} } return; }
       try{ await remoteDoc.set({json:js, updated:u, sid:SID, sidAt:SID_AT}); }catch(e){ lastRemote=prev; if(!pushRemote.warned2){ pushRemote.warned2=1; try{ toast("⚠️ クラウドに保存できませんでした。電波のよいところで開き直してください"); }catch(e){} } }
     }catch(e){}
   })();
@@ -3765,14 +3767,14 @@ async function startRemote(uid){
         else if(lf) takeRemote=true;
         else if(S.owner && S.owner!==uid) takeRemote=true;            // 別の人の記録は使わない
         else if(S.owner===uid) takeRemote=(d.updated||0) > (S.updated||0) || ((r.inAt||0) > (S.inAt||0));   // 2026-10-29：別の端末で最近遊んでいたら、そちらの記録を使う（古い端末がタイマーの保存だけで新しく見えても上書きしない）
-        else takeRemote=(await askWhichSave(S,r))==="remote";       // ログイン前の記録 → 本人に選んでもらう
+        else { takeRemote=(await askWhichSave(S,r))==="remote"; if(!takeRemote) PICK_LOCAL=true; }       // ログイン前の記録 → 本人に選んでもらう
         lastRemote=d.updated||0; if(takeRemote) TOOK_REMOTE=true;
         if(takeRemote){ if(!lf) bakPre(S,"開いたときに別の端末の記録に入れかわる前"); S = r; slimSave(S); fixPlayer(); applyLoginDecay(); fixGuard(); try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
       }
     }
     if(LOGIN_NAME) S.name=LOGIN_NAME;
     SID_AT=gnow(); try{ await remoteDoc.set({sid:SID, sidAt:SID_AT},{merge:true}); }catch(e){}   // この画面がいちばん新しい画面
-    S.owner=uid; DB=db; MYID=uid; remoteReady=true; try{ await walletStart(!TOOK_REMOTE); }catch(e){} try{ await checkRestore(); }catch(e){} setTimeout(bakHourly,20000); hourlyDecay(); save(); render(); try{ titleRanks(); }catch(e){}
+    S.owner=uid; DB=db; MYID=uid; remoteReady=true; try{ await walletStart(!TOOK_REMOTE, PICK_LOCAL); }catch(e){} try{ await checkRestore(); }catch(e){} setTimeout(bakHourly,20000); hourlyDecay(); save(); render(); try{ titleRanks(); }catch(e){}
     setInterval(()=>{ if(document.visibilityState==="visible") pullRemote(); }, 60*1000);
     await setupNumber(db,uid);
     queueProfile(true); loadRanking();
@@ -3790,7 +3792,7 @@ async function startRemote(uid){
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
   }catch(e){ console.warn(e); remoteDoc = null; }
 }
-let giftTimer=null, LOGIN_NAME=null, TOOK_REMOTE=false;
+let giftTimer=null, LOGIN_NAME=null, TOOK_REMOTE=false, PICK_LOCAL=false;
 /* ---------- ホーム画面に追加（2026-10-27：新規登録のあとに案内） ---------- */
 let A2HS=null;
 window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); A2HS=e; });
@@ -5616,7 +5618,7 @@ function profilePayload(){
     comment:(cmtOpen()||myRank==null||myRank<=50)?(S.comment||"").slice(0,40):"", /* 順位のつかない1時間は、だれでもひとことコメントOK */ day:S.lastLogin||0,
     ivn:S.ivn||0, ivw:S.ivw||0, gc:gotCounts(), owned:DEX_MONS.filter(m=>S.got[m.id]).length, frames:FRAMES.filter(f=>S.frames[f.id]).length,
     units:S.units.length, missions:(S.stats.missions||0), tr:S.tsRd?1:0, tp:S.tsRd?(S.tsPow||0):0,
-    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), plg:JSON.stringify((S.plvLog||[]).slice(-40)), bkp:S.bankPreS!=null?Math.floor(S.bankPre||0):null, sz:(()=>{ try{ return JSON.stringify(S).length; }catch(e){ return 0; } })(), bkpS:S.bankPreS??-1, iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, ioL:(S.io&&(S.io.L||S.io.b))||0, ioW:(S.io&&(S.io.W!=null?S.io.W:(S.io.b?10:0)))||0, iom:(S.io&&S.io.m)||((S.home&&typeof S.home.m==="number")?S.home.m:1),   /* 魔物サバイバルの最高記録（前に脱出した記録しかない冒険者は、その記録＋武器10個） */ pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
+    gm:guardUnit()?guardUnit().m:0, gl:guardUnit()?guardUnit().l:0, gu:guardUnit()?guardUnit().u:0, ge:guardUnit()?0:1, cn:S.coins, ls:S.lateSeen??-1, lh:S.lastSeen??-1, w:S.stats.win||0, l:S.stats.lose||0, dr:S.stats.draw||0, tr:myTrend(), mp:Math.max(S.maxPlv||0,S.plv), ss:S.season??0, sv:S.sv||{}, best:S.best||0, f1:S.firsts||0, kw:(S.kn&&S.kn.w)||0, kc:(S.kn&&S.kn.c)||0, fOff:S.fOff?1:0, bk:Math.floor(S.bank||0), plg:JSON.stringify((S.plvLog||[]).slice(-40)), bkp:S.bankPreS!=null?Math.floor(S.bankPre||0):null, sz:(()=>{ try{ return new Blob([JSON.stringify(S)]).size; }catch(e){ return 0; } })(), bkpS:S.bankPreS??-1, iok:(S.io&&S.io.k)||0, iob:(S.io&&S.io.b)||0, io4:(S.io&&S.io.s)||0, ioL:(S.io&&(S.io.L||S.io.b))||0, ioW:(S.io&&(S.io.W!=null?S.io.W:(S.io.b?10:0)))||0, iom:(S.io&&S.io.m)||((S.home&&typeof S.home.m==="number")?S.home.m:1),   /* 魔物サバイバルの最高記録（前に脱出した記録しかない冒険者は、その記録＋武器10個） */ pub:gnow(), advT:S.advBestT||0, advL:S.advBestL||0, advN:S.advCount||0, advKk:(S.advP||0)*1e6+(S.advBestT||0), advLk:(S.advP||0)*1e6+(S.advBestL||0),
     advKkP:S.advPrev&&!S.advPrev.legacyT?S.advPrev.p*1e6+S.advPrev.t:0, advLkP:S.advPrev?S.advPrev.p*1e6+S.advPrev.l:0, ...(S.advPrev&&S.advPrev.legacyT?{advTkP:S.advPrev.p*1e9+S.advPrev.t}:{}) };
 }
 function queueProfile(now){
@@ -6974,6 +6976,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-31-wallet2", coins:1000 },   // 電波が悪いときなどに、コインやレベルの足し引きが二重になったり消えたりすることがあった
   { id:"fix-2026-10-31-fmonimg", coins:1000 },   // 融合魔物の絵が出ず、名前だけになっていた
   { id:"fix-2026-10-31-bigsave2", coins:1000 },   // 売却の記録が大きくなりすぎて保存できず、更新するとホーム画面の設定などが前にもどっていた
   { id:"fix-2026-10-31-bigsave", coins:1000 },   // 融合魔物の絵などで記録が大きくなりすぎて保存できず、更新すると前の記録にもどっていた
@@ -8257,7 +8260,7 @@ let LAST_PROF=null;
    ・記録が別の記録に入れかわる前にも、この端末と svbak/{uid}_p{0〜2} にとっておく
    ・ふっかーがプロフィールから「この記録に戻す」を押すと svrestore/{uid} ができて、その冒険者が次に開いたときに元に戻る */
 const bakSum=x=>({lv:x.plv||1, coins:Math.floor(x.coins||0), bank:Math.floor(x.bank||0), moko:Math.floor(x.moko||0), units:(x.units||[]).length, ss:x.season??0, upd:x.updated||0});
-function bakDoc(x,why){ const json=JSON.stringify(x); if(json.length>700000) return null; return {uid:MYID, name:String(myName()||"").slice(0,24), at:gnow(), why:String(why||"").slice(0,60), json, ...bakSum(x)}; }
+function bakDoc(x,why){ const json=JSON.stringify(x); let jb=json.length; try{ jb=new Blob([json]).size; }catch(e){} if(jb>900000) return null; return {uid:MYID, name:String(myName()||"").slice(0,24), at:gnow(), why:String(why||"").slice(0,60), json, ...bakSum(x)}; }
 function bakPre(old,why){ try{ if(!old||!Array.isArray(old.units)) return;   /* 入れかわる前の記録をとっておく */
     try{ localStorage.removeItem("toto-lbak"); }catch(e){}   /* この端末には入れない（容量がいっぱいになると記録が保存できなくなるので）。クラウドにだけとっておく */
     if(DB&&MYID){ let n=0; try{ n=(+localStorage.getItem("toto-pbak-n")||0)+1; localStorage.setItem("toto-pbak-n",String(n)); }catch(e){} const d=bakDoc(old,why); if(d) DB.doc("svbak/"+MYID+"_p"+(n%3)).set(d).catch(()=>{}); } }catch(e){} }
@@ -10610,9 +10613,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031141939" defer></script>
-<script src="vt/vt.js?v=20261031141939" defer></script>
-<script src="fz/fz.js?v=20261031141939" defer></script>
-<script src="gd/gd.js?v=20261031141939" defer></script>
+<script src="ts/ts.js?v=20261031144110" defer></script>
+<script src="io/io.js?v=20261031144110" defer></script>
+<script src="vt/vt.js?v=20261031144110" defer></script>
+<script src="fz/fz.js?v=20261031144110" defer></script>
+<script src="gd/gd.js?v=20261031144110" defer></script>
 </body></html>

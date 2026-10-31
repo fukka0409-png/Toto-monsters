@@ -67,7 +67,7 @@ const st = () => { S.ts=S.ts||{}; const t=S.ts; t.cols=t.cols||TS.COLS0; t.rows=
   // まだトトの戦略に追加していない魔物が置かれていたら外して、払ったコインを返す（2026-10-25）
   const bad=t.units.filter(u=>!okId(u.id)); if(bad.length){ let back=0; bad.forEach(u=>{ back+=costOf(u.id); }); t.units=t.units.filter(u=>okId(u.id)); S.coins=(S.coins||0)+back; try{ save(); }catch(e){} setTimeout(()=>{ try{ coinView(); msg(T(`まだ使えない魔物${bad.length}体を外して、${fmt(back)}コインを返しました`,`Removed ${bad.length} monsters not yet available and refunded ${fmt(back)} coins`)); }catch(e){} },600); }
   return t; };
-const IMGS={}; const imgOf = id => { if(!IMGS[id]){ const im=new Image(); const m=isItem(id)?null:mon(id); im.src=isItem(id)?TS_ITEMS[id].img:(m?m.img:""); IMGS[id]=im; } return IMGS[id]; };
+const IMGS={}; const imgOf = id => { if(!IMGS[id]){ const im=new Image(); const m=isItem(id)?null:mon(id); im.src=isItem(id)?TS_ITEMS[id].img:(m?m.img:""); if(isItem(id)||(m&&m.img)) IMGS[id]=im; else return im; } return IMGS[id]; };   /* 絵がまだ読めていない融合魔物はとっておかない */
 Object.keys(TS_ITEMS).forEach(imgOf);
 // 地雷が爆発する動き・壁がくずれる動き（各10コマ。[中心x, 下y, 幅, 高さ]）。基準：地雷1コマ目の幅＝1マス、壁1コマ目の高さ＝3マス
 const FX = {"mine":[[52.5,42.0,106,40],[50.2,56.7,100,55],[47.8,64.8,97,63],[56.0,77.3,109,75],[55.8,89.6,112,88],[52.3,86.8,114,83],[57.2,86.8,118,85],[54.4,82.6,113,80],[54.8,78.8,115,77],[46.6,70.0,104,68]],"wall":[[19.9,142.1,42,140],[18.2,141.0,43,139],[18.9,137.9,49,136],[21.5,135.1,57,133],[22.9,128.4,58,127],[26.4,113.7,63,112],[31.7,93.1,68,91],[39.4,68.9,75,67],[37.3,57.7,74,55],[36.1,37.1,74,35]]};
