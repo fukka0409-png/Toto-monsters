@@ -30,7 +30,7 @@ const WEAPONS=[1,2,3].map(n=>{ const im=new Image(); im.src="io/w"+n+".png"; ret
 const WSP={g:{lv:3,p:0.05,im:(()=>{ const i=new Image(); i.src="io/wg.png"; return i; })()}, r:{lv:10,p:0.0001,im:(()=>{ const i=new Image(); i.src="io/wr.png"; return i; })()}};
 const wLv=w=>w.k?WSP[w.k].lv:0;   // 2026-10-28：ふつうの武器を拾ってもレベルは上がらない（金・虹の武器はそのまま）
 const imgCache={};
-function img(id){ if(imgCache[id]) return imgCache[id]; const m=typeof mon==="function"&&mon(id); const im=new Image(); if(m&&m.img) im.src=m.img; return imgCache[id]=im; }
+function img(id){ if(imgCache[id]) return imgCache[id]; const m=typeof mon==="function"&&mon(id); const im=new Image(); if(m&&m.img){ im.src=m.img; imgCache[id]=im; } return im; }   /* 絵がまだ読めていない融合魔物は、とっておかずに次にもう一度 */
 function enemyPool(){ try{ return (typeof MONSTERS!=="undefined"?MONSTERS:[]).filter(m=>m&&m.img&&m.rank!=="L"&&m.rank!=="F"&&!m.gift).map(m=>m.id); }catch(e){ return [18]; } }
 function myMonId(){ try{ const h=homeCfg(); if(typeof h.m==="number") return h.m; }catch(e){} try{ return (S.units[0]||{m:1}).m; }catch(e){ return 1; } }
 

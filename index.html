@@ -4051,9 +4051,9 @@ function slimSave(x){ try{ if(!x) return; for(const k in (x.fmons||{})){ const f
   if(Array.isArray(x.sellLog)&&(x.sellLog.length>8||x.sellLog.some(e=>e&&e.units&&e.units.length>300))){ x.sellLog=x.sellLog.slice(-8).map(e=>e&&e.units&&e.units.length>300?{...e,units:e.units.slice(-300)}:e); }   /* 売却の記録は最近8回・1回300体まで（多いと記録が大きくなりすぎる） */
   if(x.defShot&&x.defShot.img){ try{ localStorage.setItem("toto-defshot",JSON.stringify(x.defShot)); }catch(e){} x.defShot={at:x.defShot.at||0, has:1}; } }catch(e){} }
 const FMON_ASK={};
-function fmonFetch(id){ if(FMON_ASK[id]||typeof DB==="undefined"||!DB) return; FMON_ASK[id]=1;
+function fmonFetch(id){ if(FMON_ASK[id]) return; if(typeof DB==="undefined"||!DB){ FMON_ASK[id]=1; setTimeout(()=>{ FMON_ASK[id]=0; fmonFetch(id); },3000); return; } FMON_ASK[id]=1;   /* ログインがまだなら、少し待ってからもう一度 */
   DB.collection("fusemon").where("id","==",id).limit(1).get().then(q=>{ const x=q.docs[0]&&q.docs[0].data(); if(!x||!x.img) return; FMON_CACHE[id]=Object.assign(FMON_CACHE[id]||{},{name:x.name,img:x.img,rk:x.rk||"F"});
-    const m=MONSTERS.find(z=>z.id===id); if(m){ m.img=x.img; const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} try{ clearTimeout(fmonFetch.t); fmonFetch.t=setTimeout(()=>{ try{ if(!document.querySelector(".reveal,.sheet-bg,#ioG")) render(); }catch(e){} },400); }catch(e){} }; im.src=x.img; } }).catch(()=>{ FMON_ASK[id]=0; }); }
+    const m=MONSTERS.find(z=>z.id===id); if(m){ m.img=x.img; const im=new Image(); im.onload=()=>{ IMG[id]=im; try{ cardCache.forEach((v,k)=>{ if(k.startsWith(id+"|")) cardCache.delete(k); }); }catch(e){} try{ clearTimeout(fmonFetch.t); fmonFetch.t=setTimeout(()=>{ try{ if(!document.querySelector(".reveal,.sheet-bg,#ioG")) render(); }catch(e){} },400); }catch(e){} }; im.src=x.img; } }).catch(()=>{ setTimeout(()=>{ FMON_ASK[id]=0; fmonFetch(id); },8000); }); }
 function fmonReg(id){ const f0=((typeof S!=="undefined"&&S&&S.fmons)||{})[id], f1=FMON_CACHE[id]; if(!f0&&!(f1&&f1.img)) return undefined; const f=Object.assign({},f1||{},f0||{},{img:(f0&&f0.img)||(f1&&f1.img)||""});
   if(!f.img){ const m={ id, name:f.name||"融合魔物", rank:f.rk==="L"?"L":"F", exp:10000, gift:1, fuse:1, img:"", recipe:{a:f.a, b:f.b, an:f.an, bn:f.bn} }; MONSTERS.push(m); fmonFetch(id); return m; }
   const m={ id, name:f.name||"融合魔物", rank:f.rk==="L"?"L":"F", exp:10000, gift:1, fuse:1, img:f.img, recipe:{a:f.a, b:f.b, an:f.an, bn:f.bn} }; MONSTERS.push(m);
@@ -6974,6 +6974,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-10-31-fmonimg", coins:1000 },   // 融合魔物の絵が出ず、名前だけになっていた
   { id:"fix-2026-10-31-bigsave2", coins:1000 },   // 売却の記録が大きくなりすぎて保存できず、更新するとホーム画面の設定などが前にもどっていた
   { id:"fix-2026-10-31-bigsave", coins:1000 },   // 融合魔物の絵などで記録が大きくなりすぎて保存できず、更新すると前の記録にもどっていた
   { id:"fix-2026-10-30-rank1", coins:1000 },   // 電波がもどる前にランク戦の精算をすると、まちがった順位になることがあった
@@ -10610,8 +10611,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031135554" defer></script>
-<script src="vt/vt.js?v=20261031135554" defer></script>
-<script src="fz/fz.js?v=20261031135554" defer></script>
-<script src="gd/gd.js?v=20261031135554" defer></script>
+<script src="io/io.js?v=20261031140319" defer></script>
+<script src="vt/vt.js?v=20261031140319" defer></script>
+<script src="fz/fz.js?v=20261031140319" defer></script>
+<script src="gd/gd.js?v=20261031140319" defer></script>
 </body></html>
