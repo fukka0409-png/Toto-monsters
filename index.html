@@ -6362,9 +6362,9 @@ function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[c
     if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop2",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
     PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
   }catch(e){} pastBusy=false; })(); }
-function pastTopHtml(){ if(!DB||!dexPeek()) return "";   /* ふっかーだけ */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return "";
+function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return "";
   const md=["🥇","🥈","🥉"], L=LANG==="en";
-  return `<details open style="display:block;margin:12px 0;padding:12px 14px;border:3px solid var(--gold,#e0a84b);border-radius:18px;background:rgba(0,0,0,.18)"><summary style="font-weight:900;cursor:pointer">🏆 ${L?"Past ranked matches — Top 3 (only you)":"過去のランク戦 1〜3位（ふっかーだけ）"}</summary>${PAST_TOP.map(x=>`<div style="margin:10px 0 0"><div style="font-size:13px;opacity:.75;margin:0 0 2px">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</div>${x.top==null?`<div style="font-size:13px">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div style="font-size:13px">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:15px"><span style="flex:none">${md[t.r-1]||t.r}</span><span translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(t.name)}</span><span style="flex:none;min-width:86px;text-align:right"><span style="font-size:12px;opacity:.75">Lv </span><span style="font-weight:900">${t.lv}</span></span></div>`).join("")}</div>`).join("")}</details>`; }
+  return `<details open style="display:block;margin:12px 0;padding:12px 14px;border:3px solid var(--gold,#e0a84b);border-radius:18px;background:rgba(0,0,0,.18)"><summary style="font-weight:900;cursor:pointer">🏆 ${L?"Past ranked matches — Top 3":"過去のランク戦 1〜3位"}</summary>${PAST_TOP.map(x=>`<div style="margin:10px 0 0"><div style="font-size:13px;opacity:.75;margin:0 0 2px">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</div>${x.top==null?`<div style="font-size:13px">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div style="font-size:13px">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:15px"><span style="flex:none">${md[t.r-1]||t.r}</span><span translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(t.name)}</span><span style="flex:none;min-width:86px;text-align:right"><span style="font-size:12px;opacity:.75">Lv </span><span style="font-weight:900">${t.lv}</span></span></div>`).join("")}</div>`).join("")}</details>`; }
 function renderRanking(segHtml){
   if(!BANK_RK&&!bankErr) loadBankRank();   // 貯金ランキング1〜3位の金色の枠のため
   let body;
@@ -10526,8 +10526,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031102508" defer></script>
-<script src="vt/vt.js?v=20261031102508" defer></script>
-<script src="fz/fz.js?v=20261031102508" defer></script>
-<script src="gd/gd.js?v=20261031102508" defer></script>
+<script src="io/io.js?v=20261031102815" defer></script>
+<script src="vt/vt.js?v=20261031102815" defer></script>
+<script src="fz/fz.js?v=20261031102815" defer></script>
+<script src="gd/gd.js?v=20261031102815" defer></script>
 </body></html>
