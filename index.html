@@ -6347,19 +6347,24 @@ function seenMark(r){
 /* 2026-10-31：過去3回のランク戦の1〜3位（終わったランク戦の結果は変わらないので、この端末にとっておく） */
 let PAST_TOP=null, pastBusy=false;
 function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[cur-1,cur-2,cur-3].filter(x=>x>=0);
-  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop3")||"{}")||{}; }catch(e){}
+  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop4")||"{}")||{}; }catch(e){}
   PAST_TOP=want.map(ss=>({ss, top:c[ss]||null}));
   const need=want.filter(ss=>!c[ss]); if(!need.length) return;
   pastBusy=true; (async()=>{ try{ let q=null;
     for(const ss of need){ let top=null;
-      try{ const rd=await DB.doc("rankres/"+ss).get(); if(rd.exists&&Array.isArray(rd.data().top)) top=rd.data().top.filter(x=>x.r<=3).map(x=>({r:x.r, name:x.name||"", lv:Math.floor((x.sc||0)/1e6)})); }catch(e){}
+      try{ const rd=await DB.doc("rankres/"+ss).get(); if(rd.exists&&Array.isArray(rd.data().top)) top=rd.data().top.map(x=>({r:x.r, name:x.name||"", lv:Math.floor((x.sc||0)/1e6)})); }catch(e){}
       if(!top){ if(!q) q=await withTO(DB.collection("profiles").limit(3000).get({source:"server"}),20000);
         const fix=RANK_FIX[ss]||{}, fk=Object.keys(fix), fxOf=n=>{ const k=fk.find(k=>normName(k)===normName(n)); return k!=null?fix[k]:null; };
         const L=q.docs.map(d=>{ const p=d.data(), sc=seasonScore(p,ss); return {name:p.name||"名無しの召喚士", sc, fx:fxOf(p.name)}; }).filter(x=>x.sc!=null||x.fx!=null);
         const free=L.filter(x=>x.fx==null).sort((a,b)=>b.sc-a.sc), fixed=L.filter(x=>x.fx!=null); top=[]; let r=1, i=0;
-        while(top.length<3 && (i<free.length||fixed.some(x=>x.fx===r))){ const f=fixed.find(x=>x.fx===r); const x=f||free[i++]; top.push({r, name:x.name, lv:Math.floor((x.sc||0)/1e6), fx:!!f}); r++; } }
+        while(top.length<6 && (i<free.length||fixed.some(x=>x.fx===r))){ const f=fixed.find(x=>x.fx===r); const x=f||free[i++]; top.push({r, name:x.name, lv:Math.floor((x.sc||0)/1e6), fx:!!f}); r++; } }
+      { const fix=RANK_FIX[ss]||{}, isFx=n=>Object.keys(fix).some(k=>normName(k)===normName(n));   /* 運営が決めた順位の人は、上と下の順位の人の真ん中くらいのレベルで出す */
+        top=top.slice().sort((a,b)=>a.r-b.r); top.forEach((t,i)=>{ t.fx=isFx(t.name); });
+        top.forEach((t,i)=>{ if(!t.fx) return; const up=top.slice(0,i).reverse().find(x=>!x.fx), dn=top.slice(i+1).find(x=>!x.fx);
+          t.lv=up&&dn?Math.round((up.lv+dn.lv)/2):up?Math.max(1,up.lv-1):dn?dn.lv+1:t.lv; t.fx=false; });
+        top=top.filter(x=>x.r<=3); }
       c[ss]=top; }
-    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop3",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
+    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop4",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
     PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
   }catch(e){} pastBusy=false; })(); }
 function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return "";
@@ -10526,8 +10531,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031103957" defer></script>
-<script src="vt/vt.js?v=20261031103957" defer></script>
-<script src="fz/fz.js?v=20261031103957" defer></script>
-<script src="gd/gd.js?v=20261031103957" defer></script>
+<script src="io/io.js?v=20261031104127" defer></script>
+<script src="vt/vt.js?v=20261031104127" defer></script>
+<script src="fz/fz.js?v=20261031104127" defer></script>
+<script src="gd/gd.js?v=20261031104127" defer></script>
 </body></html>
