@@ -7111,13 +7111,13 @@ async function fixRank11(SS=11){ const fx=rankFixFor(SS), FK=SS===11?"rkFix11":"
 // 2026-10-28：loveさんの投資（シーズン11：Rikuさんに2億・ＤＲＡＧＯＮさんに5000万）がバグで消えたので、その報酬を送る（1回だけ）
 // loveさんは3位なので、投資先が4位以内なら2倍（invMulOf）
 // 2026-10-29：loveさん：ランク戦12の最終レベル（1756）がプロフィールから消えていたので戻す（ほかの冒険者の「前のランク戦の結果」に出るように）
-/* 2026-10-31：loveさんのメイドトランプうさぎのレベルを10万にもどす（バグで下がっていた・運営より・1回だけ） */
-function fixLoveMaid(){ try{ if(S.loveMaid10m||!MYID||normName(myName())!==normName("love")) return; S.loveMaid10m=1;
+/* 2026-10-31：loveさんのメイドトランプうさぎのレベルを100852にもどす（バグで下がっていた・運営より・1回だけ。先に10万にした人も100852にする） */
+function fixLoveMaid(){ try{ if(S.loveMaid852||!MYID||normName(myName())!==normName("love")) return; S.loveMaid852=1; S.loveMaid10m=1; const LV=100852;
   const L=S.units.filter(u=>u&&u.m===93); let u=(guardUnit()&&guardUnit().m===93)?guardUnit():L.sort((a,b)=>(b.l||0)-(a.l||0))[0];
   if(!u){ u={u:S.nextUid++,m:93,l:1,e:0,s:0,g:0,k:true,t:gnow()}; S.units.push(u); S.got[93]=(S.got[93]||0)+1; }
-  const before=u.l||1; u.a=Math.max(u.a||0,100000-100); u.l=100000; u.e=0; save(); queueProfile(true); try{ render(); }catch(e){}
+  const before=u.l||1; u.a=Math.max(u.a||0,LV-100); u.l=LV; u.e=0; save(); queueProfile(true); try{ render(); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=63;
-  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🙏</div><p>魔物のレベルを元にもどしました</p><div class="note" style="margin:0;text-align:center">バグで下がっていた「メイドトランプうさぎ」のレベルを元にもどしました。<br>Lv${before.toLocaleString()} → <b>Lv100,000</b></div><button class="btn gold" type="button">OK</button></div>`;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🙏</div><p>魔物のレベルを元にもどしました</p><div class="note" style="margin:0;text-align:center">バグで下がっていた「メイドトランプうさぎ」のレベルを元にもどしました。<br>Lv${before.toLocaleString()} → <b>Lv${LV.toLocaleString()}</b></div><button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }catch(e){} }
 function fixLoveSv12(){ try{ if(S.loveSv12||!MYID||normName(myName())!==normName("love")) return; S.loveSv12=1; S.sv=S.sv||{}; if((S.sv[12]||0)<1756e6) S.sv[12]=1756e6; save(); queueProfile(true); }catch(e){} }
 // 2026-10-29：ランク戦12でloveさんに投資していた冒険者：本当は2位だったので、2位の配当にする（負けた分を戻して、配当を足す）
@@ -10610,8 +10610,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031135311" defer></script>
-<script src="vt/vt.js?v=20261031135311" defer></script>
-<script src="fz/fz.js?v=20261031135311" defer></script>
-<script src="gd/gd.js?v=20261031135311" defer></script>
+<script src="io/io.js?v=20261031135554" defer></script>
+<script src="vt/vt.js?v=20261031135554" defer></script>
+<script src="fz/fz.js?v=20261031135554" defer></script>
+<script src="gd/gd.js?v=20261031135554" defer></script>
 </body></html>
