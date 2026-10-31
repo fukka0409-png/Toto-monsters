@@ -3029,6 +3029,7 @@ const I18N_EN = {
 "鍋キノコトト": "Hotpot Mushroom Toto",
 "ゴールデン勇者アヒル": "Golden Hero Duck",
 "勇者・ハロウィンアヒル": "Hero Halloween Duck",
+"ハロウィントト": "Halloween Toto",
 "メロメロバブリー": "Lovestruck Bubbly",
 "パンヒーロー": "Bread Hero",
 "トリプルスライミー": "Triple Slimey",
@@ -3244,6 +3245,7 @@ const MONSTERS = [
   { id: 112, name: "鍋キノコトト", rank: "L", exp: 10000, gift: 1, added: "2026-10-27", img: "im/bd352eb7a50b.png" },
   { id: 113, name: "ゴールデン勇者アヒル", rank: "L", exp: 10000, gift: 1, added: "2026-10-30", img: "im/2fafdd1cdd4f.png" },
   { id: 114, name: "勇者・ハロウィンアヒル", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/ae87d2609162.png" },
+  { id: 115, name: "ハロウィントト", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/e6aae24103f6.png" },
 ];
 const DEX_MONS = MONSTERS.filter(m=>m.rank!=="L"&&!m.gift);   // 図鑑・コンプ率の対象（限定ランクは入れない：持っている人の図鑑にだけ別に載る）
 const START_MONSTER = 1; // 最初から全員が持っている魔物
@@ -6392,6 +6394,9 @@ function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[c
     if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop4",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
     PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
   }catch(e){ PAST_TOP=null; } pastBusy=false; })(); }
+/* 2026-10-31：今のランク戦の1〜3位がもらえる限定キャラを、ランキング画面で宣伝する */
+function limPromoHtml(){ const ss=seasonNow(), id=SEASON_LIMITED[ss], m=id&&mon(id); if(!m) return ""; const L=LANG==="en";
+  return `<div style="display:flex;align-items:center;gap:12px;margin:12px 0;padding:12px 14px;border:3px solid #b26bff;border-radius:18px;background:linear-gradient(135deg,rgba(178,107,255,.28),rgba(255,140,40,.18));box-shadow:0 0 16px rgba(178,107,255,.45)"><img src="${cardURL(m.id,0)}" alt="${esc(m.name)}" style="width:96px;height:96px;flex:none;border-radius:12px"><div style="min-width:0"><div style="font-weight:900;font-size:15px;line-height:1.4">🎁 ${L?`Top 3 of Ranked Match #${ss} get a limited character!`:`第${ss}回ランク戦の1〜3位に限定キャラをプレゼント！`}</div><div style="margin:6px 0 0"><span class="rk rk-L">${L?"Limited":"限定"}</span> <b translate="no">「${esc(m.name)}」</b></div><div style="font-size:12px;opacity:.8;margin:4px 0 0">${L?"Finish in the top 3 when the ranked match ends to get it.":"ランク戦が終わったときに3位以内に入るともらえます"}</div></div></div>`; }
 function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return `<div class="note" style="margin:8px 0">🏆 ${LANG==="en"?"Loading past results…":"過去のランク戦を読み込み中…"}</div>`;
   const md=["🥇","🥈","🥉"], L=LANG==="en";
   return `<details ${window.PAST_OPEN?"open":""} ontoggle="window.PAST_OPEN=this.open" style="display:block;margin:12px 0;padding:12px 14px;border:3px solid var(--gold,#e0a84b);border-radius:18px;background:rgba(0,0,0,.18)"><summary style="font-weight:900;cursor:pointer">🏆 ${L?"Past ranked matches — Top 3":"過去のランク戦 1〜3位"}</summary>${PAST_TOP.map(x=>`<div style="margin:10px 0 0"><div style="font-size:13px;opacity:.75;margin:0 0 2px">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</div>${x.top==null?`<div style="font-size:13px">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div style="font-size:13px">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:15px"><span style="flex:none">${md[t.r-1]||t.r}</span><span translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(t.name)}</span><span style="flex:none;min-width:86px;text-align:right">${t.fx?``:`<span style="font-size:12px;opacity:.75">Lv </span><span style="font-weight:900">${t.lv}</span>`}</span></div>`).join("")}</div>`).join("")}</details>`; }
@@ -6419,7 +6424,7 @@ function renderRanking(segHtml){
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
-    ${pastTopHtml()}
+    ${limPromoHtml()}${pastTopHtml()}
     <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button>${dexPeek()?`<button class="chip" id="prevRank" type="button">🏆 前のランク戦の結果</button>`:""}<button class="chip" id="rkGuard" type="button" style="margin-left:auto">🛡 魔物を配置${guardUnit()?`（${esc(mon(guardUnit().m).name)} Lv${guardUnit().l}）`:""}</button></div>
     ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
@@ -6842,7 +6847,7 @@ const rankFixed = (s,p) => { try{ const t=RANK_FIX[s]; if(!t) return false; cons
 // 決めた順位の冒険者をのぞいて数えた順位を、その人たちの席をよけてずらす（例：3位・4位が決まっていたら、3位→5位）
 const rankShift = (s,r) => { const t=RANK_FIX[s]; if(!t||!r) return r; Object.values(t).sort((a,b)=>a-b).forEach(v=>{ if(v<=r) r++; }); return r; };
 const rankFixFor = s => { try{ const t=RANK_FIX[s]; if(!t) return null; const me=normName(myName()); for(const k in t) if(normName(k)===me) return t[k]; }catch(e){} return null; };
-const SEASON_LIMITED = { 4: 99, 5: 100, 6: 101 };
+const SEASON_LIMITED = { 4: 99, 5: 100, 6: 101, 14: 115 };   // 14：ハロウィントト（2026-10-31）
 async function checkSeason(){
   if(seasonBusy||!DB||!MYID) return;
   if((S.season??0)>=seasonNow()) return;
@@ -10626,9 +10631,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261031150037" defer></script>
-<script src="io/io.js?v=20261031150037" defer></script>
-<script src="vt/vt.js?v=20261031150037" defer></script>
-<script src="fz/fz.js?v=20261031150037" defer></script>
-<script src="gd/gd.js?v=20261031150037" defer></script>
+<script src="ts/ts.js?v=20261031151539" defer></script>
+<script src="io/io.js?v=20261031151539" defer></script>
+<script src="vt/vt.js?v=20261031151539" defer></script>
+<script src="fz/fz.js?v=20261031151539" defer></script>
+<script src="gd/gd.js?v=20261031151539" defer></script>
 </body></html>
