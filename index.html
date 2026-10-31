@@ -6347,7 +6347,7 @@ function seenMark(r){
 /* 2026-10-31：過去3回のランク戦の1〜3位（終わったランク戦の結果は変わらないので、この端末にとっておく） */
 let PAST_TOP=null, pastBusy=false;
 function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[cur-1,cur-2,cur-3].filter(x=>x>=0);
-  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop2")||"{}")||{}; }catch(e){}
+  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop3")||"{}")||{}; }catch(e){}
   PAST_TOP=want.map(ss=>({ss, top:c[ss]||null}));
   const need=want.filter(ss=>!c[ss]); if(!need.length) return;
   pastBusy=true; (async()=>{ try{ let q=null;
@@ -6357,14 +6357,14 @@ function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[c
         const fix=RANK_FIX[ss]||{}, fk=Object.keys(fix), fxOf=n=>{ const k=fk.find(k=>normName(k)===normName(n)); return k!=null?fix[k]:null; };
         const L=q.docs.map(d=>{ const p=d.data(), sc=seasonScore(p,ss); return {name:p.name||"名無しの召喚士", sc, fx:fxOf(p.name)}; }).filter(x=>x.sc!=null||x.fx!=null);
         const free=L.filter(x=>x.fx==null).sort((a,b)=>b.sc-a.sc), fixed=L.filter(x=>x.fx!=null); top=[]; let r=1, i=0;
-        while(top.length<3 && (i<free.length||fixed.some(x=>x.fx===r))){ const f=fixed.find(x=>x.fx===r); const x=f||free[i++]; top.push({r, name:x.name, lv:Math.floor((x.sc||0)/1e6)}); r++; } }
+        while(top.length<3 && (i<free.length||fixed.some(x=>x.fx===r))){ const f=fixed.find(x=>x.fx===r); const x=f||free[i++]; top.push({r, name:x.name, lv:Math.floor((x.sc||0)/1e6), fx:!!f}); r++; } }
       c[ss]=top; }
-    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop2",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
+    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop3",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
     PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
   }catch(e){} pastBusy=false; })(); }
 function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return "";
   const md=["🥇","🥈","🥉"], L=LANG==="en";
-  return `<details open style="display:block;margin:12px 0;padding:12px 14px;border:3px solid var(--gold,#e0a84b);border-radius:18px;background:rgba(0,0,0,.18)"><summary style="font-weight:900;cursor:pointer">🏆 ${L?"Past ranked matches — Top 3":"過去のランク戦 1〜3位"}</summary>${PAST_TOP.map(x=>`<div style="margin:10px 0 0"><div style="font-size:13px;opacity:.75;margin:0 0 2px">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</div>${x.top==null?`<div style="font-size:13px">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div style="font-size:13px">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:15px"><span style="flex:none">${md[t.r-1]||t.r}</span><span translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(t.name)}</span><span style="flex:none;min-width:86px;text-align:right"><span style="font-size:12px;opacity:.75">Lv </span><span style="font-weight:900">${t.lv}</span></span></div>`).join("")}</div>`).join("")}</details>`; }
+  return `<details open style="display:block;margin:12px 0;padding:12px 14px;border:3px solid var(--gold,#e0a84b);border-radius:18px;background:rgba(0,0,0,.18)"><summary style="font-weight:900;cursor:pointer">🏆 ${L?"Past ranked matches — Top 3":"過去のランク戦 1〜3位"}</summary>${PAST_TOP.map(x=>`<div style="margin:10px 0 0"><div style="font-size:13px;opacity:.75;margin:0 0 2px">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</div>${x.top==null?`<div style="font-size:13px">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div style="font-size:13px">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:15px"><span style="flex:none">${md[t.r-1]||t.r}</span><span translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(t.name)}</span><span style="flex:none;min-width:86px;text-align:right">${t.fx?`<span style="font-size:12px;opacity:.75">${L?"set by the team":"運営が決めた順位"}</span>`:`<span style="font-size:12px;opacity:.75">Lv </span><span style="font-weight:900">${t.lv}</span>`}</span></div>`).join("")}</div>`).join("")}</details>`; }
 function renderRanking(segHtml){
   if(!BANK_RK&&!bankErr) loadBankRank();   // 貯金ランキング1〜3位の金色の枠のため
   let body;
@@ -10526,8 +10526,8 @@ async function titleRanks(){
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
 <script src="ts/ts.js?v=47" defer></script>
-<script src="io/io.js?v=20261031102815" defer></script>
-<script src="vt/vt.js?v=20261031102815" defer></script>
-<script src="fz/fz.js?v=20261031102815" defer></script>
-<script src="gd/gd.js?v=20261031102815" defer></script>
+<script src="io/io.js?v=20261031103244" defer></script>
+<script src="vt/vt.js?v=20261031103244" defer></script>
+<script src="fz/fz.js?v=20261031103244" defer></script>
+<script src="gd/gd.js?v=20261031103244" defer></script>
 </body></html>
