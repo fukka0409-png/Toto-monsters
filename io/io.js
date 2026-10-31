@@ -118,7 +118,7 @@ function open(){ if(G) return;
 // 2026-10-28：コンピューターの魔物の4割は融合ランクの魔物（融合ランクがまだ読みこめていなければ、ふつうの魔物）
 function fusedPool(){ try{ return [...new Set([...Object.keys(FMON_CACHE),...Object.keys((S&&S.fmons)||{})].map(Number))].filter(id=>{ const m=mon(id); return m&&m.img&&m.rank==="F"; }); }catch(e){ return []; } }
 const SLIME_MAX=LV_MAX-1;   // 2026-10-28：スライムのレベル上限はなし（自分のレベルに合わせて出てくる）
-function slimePool(){ try{ return MONSTERS.filter(m=>m&&m.img&&/スライム/.test(m.name)).map(m=>m.id); }catch(e){ return [18]; } }
+function slimePool(){ try{ return MONSTERS.filter(m=>m&&m.img&&/スライム/.test(m.name)&&m.rank!=="L"&&!m.gift).map(m=>m.id);   /* 限定キャラのスライムは敵に出さない */ }catch(e){ return [18]; } }
 const hiRate=pl=>0.4+0.4*Math.min(1,Math.max(0,(pl-1)/99));
 // 2026-10-30：敵の2割は、ほかの冒険者の過去のデータ（名前と、その冒険者が使った魔物）。レベルの決まり方はスライムと同じ
 const ADV_RATE=0.2;

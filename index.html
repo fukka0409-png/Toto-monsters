@@ -3030,6 +3030,7 @@ const I18N_EN = {
 "ゴールデン勇者アヒル": "Golden Hero Duck",
 "勇者・ハロウィンアヒル": "Hero Halloween Duck",
 "ハロウィントト": "Halloween Toto",
+"虹鉱石スライム": "Rainbow Ore Slime",
 "メロメロバブリー": "Lovestruck Bubbly",
 "パンヒーロー": "Bread Hero",
 "トリプルスライミー": "Triple Slimey",
@@ -3246,6 +3247,7 @@ const MONSTERS = [
   { id: 113, name: "ゴールデン勇者アヒル", rank: "L", exp: 10000, gift: 1, added: "2026-10-30", img: "im/2fafdd1cdd4f.png" },
   { id: 114, name: "勇者・ハロウィンアヒル", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/ae87d2609162.png" },
   { id: 115, name: "ハロウィントト", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/e6aae24103f6.png" },
+  { id: 116, name: "虹鉱石スライム", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/7e20be712f13.png" },
 ];
 const DEX_MONS = MONSTERS.filter(m=>m.rank!=="L"&&!m.gift);   // 図鑑・コンプ率の対象（限定ランクは入れない：持っている人の図鑑にだけ別に載る）
 const START_MONSTER = 1; // 最初から全員が持っている魔物
@@ -6847,7 +6849,7 @@ const rankFixed = (s,p) => { try{ const t=RANK_FIX[s]; if(!t) return false; cons
 // 決めた順位の冒険者をのぞいて数えた順位を、その人たちの席をよけてずらす（例：3位・4位が決まっていたら、3位→5位）
 const rankShift = (s,r) => { const t=RANK_FIX[s]; if(!t||!r) return r; Object.values(t).sort((a,b)=>a-b).forEach(v=>{ if(v<=r) r++; }); return r; };
 const rankFixFor = s => { try{ const t=RANK_FIX[s]; if(!t) return null; const me=normName(myName()); for(const k in t) if(normName(k)===me) return t[k]; }catch(e){} return null; };
-const SEASON_LIMITED = { 4: 99, 5: 100, 6: 101, 14: 115 };   // 14：ハロウィントト（2026-10-31）
+const SEASON_LIMITED = { 4: 99, 5: 100, 6: 101, 14: 115, 15: 116 };   // 14：ハロウィントト・15：虹鉱石スライム（2026-10-31）
 async function checkSeason(){
   if(seasonBusy||!DB||!MYID) return;
   if((S.season??0)>=seasonNow()) return;
@@ -10631,9 +10633,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261031151539" defer></script>
-<script src="io/io.js?v=20261031151539" defer></script>
-<script src="vt/vt.js?v=20261031151539" defer></script>
-<script src="fz/fz.js?v=20261031151539" defer></script>
-<script src="gd/gd.js?v=20261031151539" defer></script>
+<script src="ts/ts.js?v=20261031224949" defer></script>
+<script src="io/io.js?v=20261031224949" defer></script>
+<script src="vt/vt.js?v=20261031224949" defer></script>
+<script src="fz/fz.js?v=20261031224949" defer></script>
+<script src="gd/gd.js?v=20261031224949" defer></script>
 </body></html>
