@@ -2528,6 +2528,7 @@ const I18N_EN = {
 "（投資した分もふくめて・0コインまで）": " (including what you invested; down to 0 coins)",
 "・投資は1回のランク戦で1人だけ。投資した時点でコインが減ります": "• 1 investment per season. Coins are taken when you invest",
 "・投資は1回のランク戦で2人まで。投資した時点でコインが減ります": "• Invest in up to 2 adventurers per season. Coins are taken when you invest",
+"・1人の冒険者に投資できるのは、1回のランク戦で3人まで": "• Each adventurer can have up to 3 investors per season",
 "・投資は1回のランク戦で2人まで（同じ人には1回だけ）。投資した時点でコインが減ります": "• Invest in up to 2 adventurers per season (once each). Coins are taken when you invest",
 "あなたの投資（{0}/{1}人）": "Your investments ({0}/{1})",
 "今回のランク戦はもう{0}人に投資しました。": "You've already invested in {0} adventurers this season.",
@@ -5977,6 +5978,7 @@ const INV_RESET_AT = Date.parse("2026-10-17T19:45:00+09:00");   // これより�
 const invValid = x => x && !x.void && (x.at||0) >= INV_RESET_AT;
 // 投資は1回のランク戦で2人まで（S.invs）。1人目のデータは invests/{uid}_{ss}、2人目は invests/{uid}_{ss}_2
 const INV_MAX = 2;
+const INV_PER_TARGET = 3;   // 2026-11-01：1人の冒険者に投資できるのは、1回のランク戦で3人まで
 function invFix(){ if(S.inv!==undefined){ if(S.inv) (S.invs=S.invs||[]).push(S.inv); delete S.inv; } S.invs=(S.invs||[]).filter(Boolean); S.invs.forEach(iv=>{ if(!iv.doc&&MYID) iv.doc=MYID+"_"+iv.ss; }); return S.invs; }
 const invDocId = iv => iv.doc || (MYID+"_"+iv.ss);
 function resetOldInvest(){
@@ -6105,7 +6107,7 @@ async function settleInvest(old, rank, q, mine, coinsSoFar, RR){
   return out;
 }
 const invRow=(r,i)=>`<li data-iv="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button">${avatarImg(r.icon,56)}
-  <div class="rk-body"><div class="rk-name">${uname(r.name)}</div><div class="rk-sub">現在${rkNo(r._rank)}${rankless()?"":"位"} ・ Lv${esc(r.lv||1)}</div>${INV_CNT[r.id]?`<div class="rk-inv">💰 投資家 ${INV_CNT[r.id]}人</div>`:""}</div>
+  <div class="rk-body"><div class="rk-name">${uname(r.name)}</div><div class="rk-sub">現在${rkNo(r._rank)}${rankless()?"":"位"} ・ Lv${esc(r.lv||1)}</div>${INV_CNT[r.id]?`<div class="rk-inv">💰 投資家 ${Math.min(INV_CNT[r.id],INV_PER_TARGET)}/${INV_PER_TARGET}人${INV_CNT[r.id]>=INV_PER_TARGET?"（いっぱい）":""}</div>`:""}</div>
   <button class="inv-info" type="button" data-ivinfo="${i}">詳細</button></li>`;
 // 前回のランク戦のランキング結果（上位5人）：0:00の集計とまったく同じ計算で出す
 let LAST_RES={s:null, list:null};
@@ -6142,7 +6144,7 @@ function openInvestHelp(intro){
     <div class="news-body">
       <p>${intro?"ホームの黄色いボタンから、ほかの冒険者にコインを投資できるようになりました！":"ホームの黄色いボタンから、ほかの冒険者にコインを投資できます。"}</p>
       <p>🥇 投資先がランク戦1位 → <b>投資額の7倍</b>もらえる<br>🥈 2位 → <b>5倍</b> ／ 🥉 3位 → <b>2倍</b> ／ 4位 → <b>1.5倍</b><br>💸 5位以下 → <b>投資額の10倍を失う</b>（0コインまで）</p>
-      <p>👑 自分がランク戦終了時に3位以内なら、投資先が4位以内で順位に関係なく<b>2倍</b><br>・投資は1回のランク戦で2人まで。投資した時点でコインが減ります<br>・投資できるのはランク戦が始まってから、終了の10時間前まで<br>・3位以内の冒険者も投資できます<br>・投資された人は投資額の${invPct()}%をもらえる</p>
+      <p>👑 自分がランク戦終了時に3位以内なら、投資先が4位以内で順位に関係なく<b>2倍</b><br>・投資は1回のランク戦で2人まで。投資した時点でコインが減ります<br>・1人の冒険者に投資できるのは、1回のランク戦で3人まで<br>・投資できるのはランク戦が始まってから、終了の10時間前まで<br>・3位以内の冒険者も投資できます<br>・投資された人は投資額の${invPct()}%をもらえる</p>
       <p>強い冒険者を見きわめて、一発逆転をねらおう！</p></div>
     <button class="btn gold" type="button" id="ivGoInv">投資してみる</button><button class="btn ghost" type="button" id="ivIntroX">とじる</button></div>`;
   document.body.appendChild(bg);
@@ -6170,7 +6172,7 @@ function renderInvest(){
       🥇1位 <b class="up">投資額の7倍もらえる</b> ／ 🥈2位 <b class="up">5倍</b> ／ 🥉3位 <b class="up">2倍</b> ／ 4位 <b class="up">1.5倍</b><br>
       5位以下 <b class="down">投資額の10倍を失う</b>（投資した分もふくめて・0コインまで）<br>
       👑 あなたがランク戦終了時に<b>3位以内</b>なら、投資先が<b>4位以内</b>で順位に関係なく<b class="up">2倍</b>（5位以下なら10倍を失う）<br>
-      ・投資は1回のランク戦で2人まで（同じ人には1回だけ）。投資した時点でコインが減ります<br>
+      ・投資は1回のランク戦で2人まで（同じ人には1回だけ）。投資した時点でコインが減ります<br>・1人の冒険者に投資できるのは、1回のランク戦で3人まで<br>
       ・投資できるのはランク戦終了の10時間前まで<br>
       ・3位以内の冒険者も投資できます<br>
       ・投資された冒険者は、投資されたときに、すぐに投資額の${invPct()}%をもらえる</div>${body}`;
@@ -6227,8 +6229,12 @@ async function doInvest(r,a){
   if(r.id===MYID){ toast("自分には投資できません"); return false; }
   if(top3Locked()){ toast("今回のランク戦に3位以内に入ったので、今回のランク戦はもう投資できません"); return false; }
   const ss=seasonNow(), base=MYID+"_"+ss, doc=mine.some(x=>invDocId(x)===base)?base+"_2":base;   // 空いている方の枠を使う
-  try{ await withTO(DB.doc("invests/"+doc).set({att:MYID, def:r.id, amt:a, ss, at:gnow(), defName:String(r.name||"").slice(0,12)})); }
-  catch(e){ toast("投資できませんでした。少し時間をおいてためしてください"); return false; }
+  /* 2026-11-01：1人の冒険者に投資できるのは3人まで。数はサーバーの invcnt/{相手}_{ランク戦} で数える（同時に投資しても4人目にならない） */
+  let c0=0; try{ const q=await withTO(DB.collection("invests").where("def","==",r.id).get(),12000); c0=q.docs.map(d=>d.data()).filter(x=>x.ss===ss&&invValid(x)).length; }catch(e){ toast("投資できませんでした。少し時間をおいてためしてください"); return false; }
+  if(c0>=INV_PER_TARGET){ INV_CNT[r.id]=c0; toast(`この冒険者への投資は、もう${INV_PER_TARGET}人でいっぱいです（1回のランク戦で${INV_PER_TARGET}人まで）`); return false; }
+  try{ await DB.runTransaction(async tx=>{ const cr=DB.doc("invcnt/"+r.id+"_"+ss), cs=await tx.get(cr); const n=Math.max(cs.exists?(cs.data().n||0):0, c0); if(n>=INV_PER_TARGET) throw new Error("full");
+      tx.set(cr,{n:n+1, def:r.id, ss, at:gnow()}); tx.set(DB.doc("invests/"+doc),{att:MYID, def:r.id, amt:a, ss, at:gnow(), defName:String(r.name||"").slice(0,12)}); }); }
+  catch(e){ if(String(e&&e.message)==="full"){ INV_CNT[r.id]=INV_PER_TARGET; toast(`この冒険者への投資は、もう${INV_PER_TARGET}人でいっぱいです（1回のランク戦で${INV_PER_TARGET}人まで）`); } else toast("投資できませんでした。少し時間をおいてためしてください"); return false; }
   if(a>invAvail()){ toast("コインが足りません"); return false; }
   { const fc=Math.min(a,Math.floor(S.coins)); S.coins-=fc; S.bank=Math.max(0,(S.bank||0)-(a-fc)); } renderCoins();   // 所持コインから先に使い、足りない分は貯金から
   invFix().push({ss, doc, def:r.id, name:String(r.name||""), icon:r.icon||"", amt:a, at:gnow(), paid:1}); save();
@@ -6416,7 +6422,7 @@ function renderRanking(segHtml){
       <span class="rk-no">${rkNo(i+1)}</span>${avatarImg(r.icon,56)}
       <div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div>
         <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div>${tsReadyOf(r)?`<div class="rk-ts">⚔️ 合戦可能</div>`:""}${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)!=null?`<div class="rk-ivp">📈 投資の素質 <b>${ivPct(r.id===MYID?{ivn:S.ivn,ivw:S.ivw}:r)}%</b></div>`:""}
-        ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${INV_CNT[r.id]}人ついています</div>`:""}
+        ${INV_CNT[r.id]?`<div class="rk-inv">💰 この冒険者には投資家が${Math.min(INV_CNT[r.id],INV_PER_TARGET)}人ついています${INV_CNT[r.id]>=INV_PER_TARGET?"（いっぱい）":""}</div>`:""}
         ${(cmtOpen()||i<50)&&r.comment?`<div class="rk-cmt" translate="no">「${esc(r.comment)}」</div><button type="button" class="rk-rep" data-rep="${i}">💬 ${LANG==="en"?"Reply":"返信"}</button>`:""}</div>
       ${r.gm&&mon(r.gm)?`<img class="rk-guard" src="${cardURL(r.gm,0,96)}" alt="配置魔物">`:`<span class="rk-guard none" title="配置なし"></span>`}
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
@@ -10637,9 +10643,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261101185543" defer></script>
-<script src="io/io.js?v=20261101185543" defer></script>
-<script src="vt/vt.js?v=20261101185543" defer></script>
-<script src="fz/fz.js?v=20261101185543" defer></script>
-<script src="gd/gd.js?v=20261101185543" defer></script>
+<script src="ts/ts.js?v=20261101220255" defer></script>
+<script src="io/io.js?v=20261101220255" defer></script>
+<script src="vt/vt.js?v=20261101220255" defer></script>
+<script src="fz/fz.js?v=20261101220255" defer></script>
+<script src="gd/gd.js?v=20261101220255" defer></script>
 </body></html>
