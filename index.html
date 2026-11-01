@@ -2547,6 +2547,8 @@ const I18N_EN = {
 "Cを全部選ぶ": "Select all C",
 "Bを全部選ぶ": "Select all B",
 "Aを全部選ぶ": "Select all A",
+"Sを全部選ぶ": "Select all S",
+"Zを全部選ぶ": "Select all Z",
 "投資するとすぐに {0}コイン 減ります": "{0} coins will be taken right away",
 "投資したコインはすでに支払い済みです。": "Your invested coins have already been paid. ",
 "{0}結果はランク戦終了（毎日0:00）のあと、次にアプリを開いたときに反映されます。": "{0}Results apply the next time you open the app after the season ends (daily at 0:00).",
@@ -4832,7 +4834,7 @@ function renderBox(){
     <button class="chip" id="lockToggle" type="button" aria-pressed="${lockMode}" style="margin-left:auto">${lockMode?"鍵をおわる":"🔒 鍵をかける"}</button>
     ${boxMode==="sell"?"":`<button class="chip" id="sellToggle" type="button" aria-pressed="${sellMode}">${sellMode?"売却をやめる":"まとめて売却"}</button>`}</div>
   ${sellMode?`<div class="sellbar"><span>${sellSel.size}体 ・ <b>+${total.toLocaleString()}</b>コイン</span>
-    <button class="chip" type="button" data-sellr="C">Cを全部選ぶ</button><button class="chip" type="button" data-sellr="B">Bを全部選ぶ</button><button class="chip" type="button" data-sellr="A">Aを全部選ぶ</button><button class="chip" id="sellClear" type="button">解除</button>
+    <button class="chip" type="button" data-sellr="C">Cを全部選ぶ</button><button class="chip" type="button" data-sellr="B">Bを全部選ぶ</button><button class="chip" type="button" data-sellr="A">Aを全部選ぶ</button><button class="chip" type="button" data-sellr="S">Sを全部選ぶ</button><button class="chip" type="button" data-sellr="Z">Zを全部選ぶ</button><button class="chip" id="sellClear" type="button">解除</button>
     <button class="btn gold" id="sellGo" type="button" ${sellSel.size?"":"disabled"}>売却</button></div>`:""}
   ${lockMode?`<div class="sellbar"><span>${lockSel.size}体えらんだ</span>
     <button class="chip" type="button" id="lockAll">表示中を全部選ぶ</button><button class="chip" id="lockClear" type="button">選ぶのをやめる</button>
@@ -10633,9 +10635,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261031224949" defer></script>
-<script src="io/io.js?v=20261031224949" defer></script>
-<script src="vt/vt.js?v=20261031224949" defer></script>
-<script src="fz/fz.js?v=20261031224949" defer></script>
-<script src="gd/gd.js?v=20261031224949" defer></script>
+<script src="ts/ts.js?v=20261101102345" defer></script>
+<script src="io/io.js?v=20261101102345" defer></script>
+<script src="vt/vt.js?v=20261101102345" defer></script>
+<script src="fz/fz.js?v=20261101102345" defer></script>
+<script src="gd/gd.js?v=20261101102345" defer></script>
 </body></html>
