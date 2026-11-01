@@ -149,8 +149,9 @@ function ngPage(){ const el=shell("🛍 グッズガチャ");
     <a class="gd-buyb" href="${SHOP_URL}" target="_blank" rel="noopener"><img src="gd/shop.jpg" alt="ショップ"></a>
     <p style="font-weight:900;font-size:13px;margin:10px 0 14px;color:#c62828">▲ タップでショップが開きます</p>
     <div class="gd-safe" style="text-align:left">本人かどうか確かめるために記入する名前は、<b>ショップに登録してある本名</b>でお願いします！<br>（本名はふっかーのみが確認できます！）</div>
+    <p style="font-weight:900;margin:12px 0 0">申請が通らない場合、TikTokもしくはインスタのDMにてメッセージを送ってください！🙏</p>
     <button class="gd-go" type="button" id="gdRe2">もう一度申請する</button></div>`;
-  el.querySelector("#gdRe2").onclick=()=>{ tap(); regPage(); }; }
+  el.querySelector("#gdRe2").onclick=()=>{ tap(); regPage(); }; noticeCheck(); }
 function regPage(){ const el=shell("📝 登録画面");
   el.innerHTML=`<div class="gd-safe">🔒 名前を含む個人情報は、ほかの冒険者からは見えません！<br>見られるのは運営（ふっかー）だけです。安心して入力してね。</div>
     <div class="gd-card"><b>BASEのPay IDに登録している名前を記入</b>
@@ -361,7 +362,8 @@ function stkPage(){ page="stk"; const el=shell("🏷 ステッカー集め",home
 // お知らせ：発送された・クーポンコードが届いた
 function noticeCheck(){ try{ S.gdSeen=S.gdSeen||{}; const msgs=[];
   WINS.filter(w=>w.st==="sent"&&!S.gdSeen[w.id]).forEach(w=>{ S.gdSeen[w.id]=1; msgs.push(`📦 ${w.r}賞「${esc(w.name)}」が発送されました！`); });
-  TREQ.filter(r=>(r.st==="ok"||r.st==="ng")&&!S.gdSeen["tr"+r.id]).forEach(r=>{ S.gdSeen["tr"+r.id]=1; msgs.push(r.st==="ok"?`🎫 申請したチケット${r.n}枚が届きました！`:`🙏 チケット${r.n}枚の申請は通りませんでした（条件を確認してね）`); });
+  TREQ.filter(r=>(r.st==="ok"||r.st==="ng")&&!S.gdSeen["tr"+r.id]).forEach(r=>{ S.gdSeen["tr"+r.id]=1; msgs.push(r.st==="ok"?`🎫 申請したチケット${r.n}枚が届きました！`:`🙏 チケット${r.n}枚の申請は通りませんでした（条件を確認してね）<br>申請が通らない場合、TikTokもしくはインスタのDMにてメッセージを送ってください！🙏`); });
+  if(ACC&&ACC.st==="ng"&&!S.gdSeen["ng"+(ACC.ngAt||0)]){ S.gdSeen["ng"+(ACC.ngAt||0)]=1; msgs.push(`🙏 ショップに登録されてない名前だったので、承認が却下されました<br>申請が通らない場合、TikTokもしくはインスタのDMにてメッセージを送ってください！🙏`); }   /* 2026-11-01：却下されたときもお知らせ */
   if(ACC&&ACC.cp&&ACC.cp.st==="sent"&&!S.gdSeen["cp"+ACC.cp.at]){ S.gdSeen["cp"+ACC.cp.at]=1; msgs.push(`🎟 クーポンコードが届きました！<br><b translate="no" style="font-size:20px;color:#1565c0">${esc(ACC.cp.code||"")}</b>`); }
   if(!msgs.length) return; save();
   const d=document.createElement("div"); d.className="gd-res"; d.innerHTML=`<div><h3>🛍 お知らせ</h3><p style="line-height:1.8">${msgs.join("<br>")}</p><button type="button">OK</button></div>`;
