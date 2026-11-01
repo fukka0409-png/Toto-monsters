@@ -58,7 +58,7 @@ css.textContent=`
 #vto .vt-slot.empty{display:flex;align-items:center;justify-content:center;color:#a08a63;font:900 34px/1 var(--f-body)}
 #vto .vt-slot.empty span{display:block;line-height:1;transform:translateY(-.08em)}
 #vto .vt-info{flex:1;min-width:0;text-align:left}
-#vto .vt-info b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#vto .vt-info b{display:block;font-size:14px;white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.35}
 #vto .vt-info small{display:block;font-size:11.5px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #vto .vt-cnt{font:900 18px var(--f-pix,monospace);color:#b5651d}
 #vto .vt-b{flex:none;min-width:110px;padding:11px 12px;border-radius:8px;border:3px solid #1d2733;background:#4a5b74;color:#fff;font:900 15px var(--f-body);box-shadow:0 3px 0 #1d2733,inset 0 2px 0 #7f93b3}
