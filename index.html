@@ -635,7 +635,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .mission .cd{flex:0 0 auto;min-width:96px;font-size:12px}
 .mission .cd .t{display:block;font-size:15px}
 .sheet-bg.center{align-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.swear{background:var(--bark);border:2px solid var(--staff);border-radius:20px;padding:20px 18px;max-width:340px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;animation:tin .2s ease-out}
+.swear{background:var(--bark);border:2px solid var(--staff);border-radius:20px;padding:20px 18px;max-width:340px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;animation:tin .2s ease-out;max-height:calc(100dvh - 32px);overflow-y:auto;-webkit-overflow-scrolling:touch}
 .swear-face{font-size:44px;line-height:1}
 .swear p{margin:0;font-weight:900;font-size:17px;line-height:1.6}
 .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 64px);transform:translateX(-50%);background:var(--mist);color:var(--night);font-weight:900;padding:8px 16px;border-radius:999px;z-index:60;box-shadow:0 6px 20px #0006;font-size:14px;max-width:90vw;text-align:center;animation:tin .25s ease-out}
@@ -4916,7 +4916,8 @@ function confirmSell(uids,onDone,fresh){
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="sellT">
     <p id="sellT">${list.length===1?mon(list[0].m).name+" (Lv"+list[0].l+")":list.length+"体"}を売却しますか？</p>
     <div class="m-text" style="color:var(--staff);font-family:var(--f-pix);font-size:20px">+${total.toLocaleString()}コイン</div>${sellLv(list)?`<div class="m-text" style="color:#5fd36a;font-weight:900;font-size:17px">冒険者Lv +${sellLv(list)}</div>`:""}${list.some(u=>mon(u.m).rank==="L")?`<div class="m-text" style="color:#ffd75e;font-weight:900;font-size:16px">✨ 手持ちの魔物すべてのLv +${list.filter(u=>mon(u.m).rank==="L").length*LIMITED_SELL_LV}（Lv${MAX_LV}を超えてもそのまま上がる）</div>`:""}
-    ${rare.length?`<div class="note" style="color:var(--berry);margin:0">${rare.map(u=>(mon(u.m).rank==="L"?"限定":mon(u.m).rank==="F"?"融合":mon(u.m).rank)+"ランク「"+mon(u.m).name+"」").join("・")} が含まれています</div>`:""}
+    ${rare.length?(()=>{ const c=new Map(); rare.forEach(u=>{ const m=mon(u.m), k=(m.rank==="L"?"限定":m.rank==="F"?"融合":m.rank)+"ランク「"+m.name+"」"; c.set(k,(c.get(k)||0)+1); });   /* 2026-11-01：同じ魔物はまとめて「×数」に。多いときは枠の中でスクロール */
+      return `<div class="note" style="color:var(--berry);margin:0;max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;text-align:left;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:6px 8px">⚠️ レアな魔物が${rare.length}体含まれています<br>${[...c].map(([k,n])=>esc(k)+(n>1?" ×"+n:"")).join("<br>")}</div>`; })():""}
     ${locked.length?`<div class="note" style="margin:0;color:#ffb35c">⏳ 新しい魔物${locked.length}体は、手に入れてから12時間たつまで売却できないので、のぞきました</div>`:""}
     <div class="note" style="margin:0">売却した魔物は戻りません。図鑑の記録は残ります。売却価格は、全冒険者の図鑑の獲得数で決まります（多く獲得されている魔物ほど安い）。</div>
     <button class="btn gold" id="sellOk" type="button">売却する</button><button class="btn ghost" id="sellNo" type="button">やめる</button></div>`;
@@ -6996,6 +6997,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-11-01-sellrare", coins:1000 },   // レアな魔物をたくさん売るとき、確認の画面が長すぎて売却ボタンが押せなかった
   { id:"fix-2026-10-31-season2", coins:1000 },   // ランク戦の精算や投資で、運営が決めた順位がうまく反映されないことがあった
   { id:"fix-2026-10-31-wallet2", coins:1000 },   // 電波が悪いときなどに、コインやレベルの足し引きが二重になったり消えたりすることがあった
   { id:"fix-2026-10-31-fmonimg", coins:1000 },   // 融合魔物の絵が出ず、名前だけになっていた
@@ -10635,9 +10637,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261101102345" defer></script>
-<script src="io/io.js?v=20261101102345" defer></script>
-<script src="vt/vt.js?v=20261101102345" defer></script>
-<script src="fz/fz.js?v=20261101102345" defer></script>
-<script src="gd/gd.js?v=20261101102345" defer></script>
+<script src="ts/ts.js?v=20261101102615" defer></script>
+<script src="io/io.js?v=20261101102615" defer></script>
+<script src="vt/vt.js?v=20261101102615" defer></script>
+<script src="fz/fz.js?v=20261101102615" defer></script>
+<script src="gd/gd.js?v=20261101102615" defer></script>
 </body></html>
