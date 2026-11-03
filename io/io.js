@@ -280,11 +280,11 @@ function close(){ if(!G) return; cancelAnimationFrame(G.raf); removeEventListene
 const RK={at:0,v:null};
 async function ranks(){ const io=S.io||{k:0,b:0,s:0}; if(typeof DB==="undefined"||!DB) return null; if(RK.v&&Date.now()-RK.at<60000) return RK.v;
   const one=async(f,v)=>{ try{ const q=DB.collection("profiles").where(f,">",v||0); const n=q.count?(await q.count().get()).data().count:(await q.get()).size; return n+1; }catch(e){ return null; } };
-  const [a,b,c]=await Promise.all([one("iok",io.k),one("iob",io.b),one("io4",io.s)]); RK.v={k:a,b,s:c}; RK.at=Date.now(); return RK.v; }
+  const [a,b,c,n]=await Promise.all([one("iok",io.k),one("iob",io.b),one("io4",io.s),one("iok",0)]); RK.v={k:a,b,s:c,n:n?n-1:null};   /* n：魔物サバイバルの参加者（敵を1匹以上倒した冒険者）の人数 */ RK.at=Date.now(); return RK.v; }
 async function fillStats(){ const el=$id("ioStats"); if(!el) return; const io=S.io||{k:0,b:0,s:0}, r=await ranks()||{};
   const t=(v,u,rk)=>`${(v||0).toLocaleString()}${u}${rk?`（${rk}位）`:""}`;
   if(!$id("ioStats")) return;
-  $id("ioStats").innerHTML=`倒した敵 ${t(io.k,"匹",r.k)}<br>最高脱出レベル ${t(io.b,"",r.b)}<br>四天王回数 ${t(io.s,"回",r.s)}`; }
+  $id("ioStats").innerHTML=`${r.n!=null?`👥 参加者 ${r.n.toLocaleString()}人<br>`:""}倒した敵 ${t(io.k,"匹",r.k)}<br>最高脱出レベル ${t(io.b,"",r.b)}<br>四天王回数 ${t(io.s,"回",r.s)}`; }
 window.ioOpen=open; window.ioFillStats=fillStats; window.__ioG=()=>G;   // テスト用
  window.ioRankReset=()=>{ RK.v=null; };
 })();
