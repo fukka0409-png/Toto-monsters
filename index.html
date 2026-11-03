@@ -3437,7 +3437,7 @@ let decayNote = 0;
 function applyLoginDecay(){
   fixPlayer();
   // 「1日」はランク戦タイマーの区切り（ランク戦の番号）で数える。冒険者レベルはランク戦ごとにリセットされるので、休んだ分の減少はなし
-  const today="ss"+seasonNow();
+  const today="ss"+seasonRaw();
   if(S.lastLogin!==today){ S.lastLogin=today; try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
 }
 setTimeout(applyLoginDecay,0);
@@ -4526,7 +4526,7 @@ renderSnd();
 const $ = s=>document.querySelector(s);
 let dexSort="no"; try{ dexSort=localStorage.getItem("toto-dex-sort")||"no"; }catch(e){}
 let tab="home", homeMode="scene", gachaMode="mon", dexMode="mon", boxFilter="all", boxMode="menu";
-const today=()=>"ss"+seasonNow();   // 「今日」＝今のランク戦（ランク戦タイマーが切り替わると次の日）
+const today=()=>"ss"+seasonRaw();   // 「今日」＝今のランク戦（ランク戦タイマーが切り替わると次の日）
 function toast(t){ document.querySelectorAll(".toast").forEach(x=>x.remove()); const el=document.createElement("div"); el.className="toast"; el.textContent=t; el.setAttribute("role","status"); document.body.appendChild(el); setTimeout(()=>el.remove(),2200); }
 const dailyReady=()=>false;   // 2026-10-21：毎日ボーナス・15分ボーナスは終了
 const hourlyLeft=()=>Math.max(0,(S.lastHourly||0)+HOURLY_MS-gnow());
@@ -4622,8 +4622,8 @@ function renderSide(){
   const top=(RANK||[]).slice(0,10);
   const row=(r,i)=>`<li class="sd-row ${r.id===MYID?"me":""}" data-sdr="${esc(r.id)}" data-sdn="${i+1}"><span class="no ${i<3&&!rankless()?"t"+(i+1):""}">${rkNo(i+1)}</span>${avatarImg(r.icon,34)}<span class="nm">${uname(r.name)}</span><span class="lv" translate="no">Lv${esc(r.lv||1)}</span></li>`;
   const rk=tab==="rank"?"":`<section class="sd-box"><div class="sd-h"><b>🏆 ランキング</b><button class="chip" type="button" id="sdMore">すべて見る</button></div>
-    ${myRank?`<p class="note" style="margin:0 0 6px">あなたは <b>${myRank}位</b>${RANK_TOTAL?` / ${RANK_TOTAL.toLocaleString()}人`:""}</p>`:""}
-    ${!DB?`<p class="note" style="margin:0">ログインするとランキングが見られます</p>`:RANK?`<ol class="sd-list">${top.map(row).join("")}</ol>`:`<p class="note" style="margin:0">読み込み中…</p>`}</section>`;
+    ${myRank&&!rankPaused()?`<p class="note" style="margin:0 0 6px">あなたは <b>${myRank}位</b>${RANK_TOTAL?` / ${RANK_TOTAL.toLocaleString()}人`:""}</p>`:""}
+    ${rankPaused()?`<p class="note" style="margin:0">ランキングはお休み中です</p>`:!DB?`<p class="note" style="margin:0">ログインするとランキングが見られます</p>`:RANK?`<ol class="sd-list">${top.map(row).join("")}</ol>`:`<p class="note" style="margin:0">読み込み中…</p>`}</section>`;
   let fr="";
   if(DB&&MYID&&typeof FR!=="undefined"){
     const L=[...FR.friends].sort((a,b)=>frUnread(b)-frUnread(a)||intimacy(b.id)-intimacy(a.id)).slice(0,12);
@@ -4631,7 +4631,7 @@ function renderSide(){
       ${FR.reqIn.length?`<p class="note" style="margin:0 0 6px">📨 フレンド申請が${FR.reqIn.length}件届いています</p>`:""}
       ${L.length?`<ol class="sd-list">${L.map(f=>{ const p=FR.prof[f.id]||{}; return `<li class="sd-row" data-sdf="${esc(f.id)}"><span class="no">💞</span>${avatarImg(p.icon,34)}<span class="nm">${uname(p.name)}</span><span class="lv" translate="no">${frUnread(f)?'<span class="sd-new">💬</span>':intimacy(f.id)}</span></li>`; }).join("")}</ol>`:`<p class="note" style="margin:0">${FR.loaded?"まだフレンドがいません":"読み込み中…"}</p>`}</section>`;
   }
-  const t=`<section class="sd-box"><div class="sd-h"><b>⏳ ランク戦終了まで</b></div><div style="font-family:var(--f-pix);font-size:26px;font-weight:900;text-align:center" id="sdCd" translate="no">${fmtDays(seasonEnd(seasonNow())-gnow())}</div></section>`;
+  const t=rankPaused()?`<section class="sd-box"><div class="sd-h"><b>🏁 ランク戦はお休み中</b></div><p class="note" style="margin:0">再開するときはお知らせします</p></section>`:`<section class="sd-box"><div class="sd-h"><b>⏳ ランク戦終了まで</b></div><div style="font-family:var(--f-pix);font-size:26px;font-weight:900;text-align:center" id="sdCd" translate="no">${fmtDays(seasonEnd(seasonNow())-gnow())}</div></section>`;
   el.innerHTML=t+rk+fr;
   el.querySelectorAll("[data-sdr]").forEach(li=>li.onclick=()=>{ const r=findRank(li.dataset.sdr); if(r) openOtherProfile(r,+li.dataset.sdn); });
   el.querySelectorAll("[data-sdf]").forEach(li=>li.onclick=()=>openChat(li.dataset.sdf));
@@ -4950,6 +4950,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:18, t:"🏁 ランク戦はしばらくお休みです。第17回で一旦おしまい（ランキングと上位キープボーナス・投資もお休み）。再開するときはお知らせします！"},
   {ss:16, t:"💰 投資のルール変更：1人の冒険者に投資できるのは、1回のランク戦で3人までになりました（3人に投資されている冒険者には投資できません）"},
   {ss:13, t:"🛍 グッズ特典が登場！ タイトル画面の「グッズ特典」から、本物のグッズが当たるグッズガチャと、50%クーポンがもらえるステッカー集めができます（ログインしている冒険者だけ）"},
   {ss:12, t:"🎰 装飾ガチャを終了しました（持っている背景・床・装飾はそのまま使えます）"},
@@ -5473,7 +5474,7 @@ const DMS = [
 ];
 const DM_C_GOAL = 500;
 // デイリーミッションは、ランク戦の切り替わり（毎日22:00）でリセット
-function dmFix(){ S.dm=S.dm||{}; const k="ss"+seasonNow(); if(S.dm.day!==k){ S.dm.day=k; S.dm.done={}; } S.dm.done=S.dm.done||{}; }
+function dmFix(){ S.dm=S.dm||{}; const k="ss"+seasonRaw(); if(S.dm.day!==k){ S.dm.day=k; S.dm.done={}; } S.dm.done=S.dm.done||{}; }
 const dmCount = m => { dmFix(); return S.dm.done[m.k]||0; };
 function dmMet(m){ dmFix();
   if(m.k==="c") return (S.dm.c||0)>=DM_C_GOAL;
@@ -5895,7 +5896,7 @@ function renderHome(){
         <span class="hm-id"><b id="hmName"></b><span class="hm-lv">冒険者 Lv <b>${S.plv}</b></span></span>
         <span class="hm-moko ${dexPeek()?"op":""}" aria-label="モコ">${dexPeek()?`<span class="hm-login" id="hmLogin">👥ログイン <b>${LOGIN_N.s===seasonNow()&&LOGIN_N.n!=null?LOGIN_N.n.toLocaleString():"…"}</b>人</span>`:""}<img src="moko.png" alt=""><b>${mokoFmt(S.moko||0)}</b><small>モコ</small></span>
         <span class="hm-shield" id="hmShield" role="button" tabindex="0" aria-label="盾"><i>🛡</i><small>${shieldOn()?`耐久${shEquipped().dur}${S.shieldList.length>1?`+${S.shieldList.length-1}`:""}`:"盾"}</small></span>
-        <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
+        <span class="hm-rank" id="hmRank"><small>ランキング</small><b>${myRank&&!rankPaused()?myRank+"位":"―"}</b>${RANK_TOTAL?`<small>/${RANK_TOTAL.toLocaleString()}人</small>`:""}</span>
       </button>
       <div class="hm-row"><div class="hm-left">
       <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${activeInvs().length?`<small>投資中 ${activeInvs().length}/${INV_MAX}</small>`:""}</button>
@@ -5991,7 +5992,7 @@ function resetOldInvest(){
     try{ DB&&MYID&&DB.doc("invests/"+invDocId(iv)).update({void:true}).catch(()=>{}); }catch(e){} });
   S.invs=S.invs.filter(iv=>!old.includes(iv)); save(); renderCoins();
 }
-const invOpen = () => gnow() < seasonEnd(seasonNow()) - INV_CLOSE_MS;
+const invOpen = () => !rankPaused() && gnow() < seasonEnd(seasonNow()) - INV_CLOSE_MS;   /* お休み中は投資できない */
 let INV_LIST=null, INV_CNT={}, invQ="", invErr=false;
 const myInvs=()=>invFix().filter(iv=>iv.ss===seasonNow());
 const myInv=()=>{ const L=myInvs(); return L.length?L[L.length-1]:null; };   // いちばん新しい投資
@@ -6265,7 +6266,7 @@ async function bankRankAt(ss,mine){ try{
   let n=0; for(const id in m){ const r=m[id], v=(r.bkpS===ss&&r.bkp!=null)?r.bkp:(r.bk||0); if(v>mine) n++; }
   return n+1; }catch(e){ return null; } }   // シーズン12（2026-10-28 22:00〜10-29 22:00 のランク戦）から   // 引き出しは1シーズン（ランク戦）に1回・1000万コインまで
 const bankTop3=()=>new Map((BANK_RK||[]).slice(0,3).map((r,i)=>[r.id,i+1]));   // 貯金ランキング1〜3位の冒険者（id→順位）
-const bankOutDone=()=>S.bankOutSS===seasonNow();
+const bankOutDone=()=>S.bankOutSS===seasonRaw();
 async function loadBankRank(force){ if(!DB) return; if(!force&&BANK_RK&&gnow()-BANK_AT<60000) return;
   try{ const q=await withTO(DB.collection("profiles").orderBy("bk","desc").limit(10).get()); BANK_RK=q.docs.map(d=>({id:d.id,...d.data()})).filter(r=>(r.bk||0)>0); BANK_AT=gnow(); bankErr=false;
     try{ const qc=DB.collection("profiles").where("bk",">",0); BANK_N=qc.count?(await withTO(qc.count().get())).data().count:(await withTO(qc.get())).size; }catch(e){ try{ BANK_N=(await withTO(DB.collection("profiles").where("bk",">",0).get())).size; }catch(e2){} } }   // 2026-10-29：貯金している冒険者の人数
@@ -6287,7 +6288,7 @@ function renderBank(segHtml){
   const amt=()=>Math.floor(Number($("#bkAmt").value)||0);
   const done=t=>{ save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(t); setTimeout(()=>loadBankRank(true),1500); render(); };
   const dep=a=>{ a=Math.min(a,Math.floor(S.coins)); if(a<=0) return toast("貯金できるコインがありません"); S.coins-=a; S.bank=(S.bank||0)+a; S.bankEver=1; done(`🏦 ${a.toLocaleString()}コインを貯金しました`); };
-  const wd=a=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); a=Math.min(a,BANK_OUT_MAX,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（5億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; S.bankOutSS=seasonNow(); done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
+  const wd=a=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); a=Math.min(a,BANK_OUT_MAX,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（5億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; S.bankOutSS=seasonRaw(); done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
   $("#bkIn").onclick=()=>{ const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>S.coins) return toast("所持コインが足りません"); dep(a); };
   $("#bkOut").onclick=()=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>BANK_OUT_MAX) return toast("引き出せるのは1000万コインまでです"); if(a>(S.bank||0)) return toast("貯金が足りません"); if(a>room) return toast(`所持コインは5億までなので、引き出せるのは ${room.toLocaleString()}コイン までです`); wd(a); };
   $("#bkAllIn").onclick=()=>dep(Math.floor(S.coins));
@@ -6330,7 +6331,7 @@ function renderMe(segHtml){
     <div class="prof-top">${avatarImg(S.avatar,108)}
       <div class="prof-id"><div class="prof-name" id="pName" translate="no"></div>
         <button class="chip" id="editName" type="button">名前を変える</button></div>
-      <div class="prof-rank"><small>ランキング</small><b>${myRank?myRank+"位":"―"}</b></div></div>
+      <div class="prof-rank"><small>ランキング</small><b>${myRank&&!rankPaused()?myRank+"位":"―"}</b></div></div>
     <div class="plv"><span>冒険者 Lv</span><b>${S.plv}</b></div>
     ${guardBox()}
     <div class="xp"><b style="width:${Math.min(100,S.pexp/need*100)}%"></b></div>
@@ -6420,6 +6421,7 @@ function renderRanking(segHtml){
   let body;
   if(!DB) body=loginBox("ランキングを見たり参加したりするには、ログインが必要です。");
   else if(rankErr) body=`<div class="empty">ランキングを読み込めませんでした。少し時間をおいて開き直してください。</div>`;
+  else if(rankPaused()) body=`<div class="empty">🏁 ${LANG==="en"?"Rankings are paused for now.":"ランキングは今お休み中です。"}</div>`;
   else if(!RANK) body=`<div class="empty">読み込み中…</div>`;
   else if(!RANK.length) body=`<div class="empty">まだ誰もいません</div>`;
   else body=`<ol class="rank">${RANK.map((r,i)=>`<li class="${r.id===MYID?"me":""} ${i<3&&!rankless()?"top"+(i+1):""} ${bankTop3().has(r.id)?"bkg bk"+bankTop3().get(r.id):""}" data-ri="${i}" data-nm="${esc(normName(r.name||"名無しの召喚士"))}" tabindex="0" role="button" aria-label="${esc(r.name||"名無しの召喚士")}のプロフィール">
@@ -6432,17 +6434,17 @@ function renderRanking(segHtml){
       <div class="rk-lv"><small>Lv</small>${esc(r.lv)}${TREND_ICON[r.tr]||""}</div></li>`).join("")}</ol>`;
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>魔物ランキング</h2>
     ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のランク戦の順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
-    ${rankless()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🕐 順位がつくまで</small><b id="rlCd">${fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow())}</b></div><div class="note" style="display:block;margin:2px 0 0">ランク戦が始まってから1時間は順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます</div></div>`:""}
-    <div class="season-box"><div><small>${LANG==="en"?`Ranked Match #${seasonNow()} ends in`:`第${seasonNow()}回ランク戦 終了まで`}</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
+    ${rankless()&&!rankPaused()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🕐 順位がつくまで</small><b id="rlCd">${fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow())}</b></div><div class="note" style="display:block;margin:2px 0 0">ランク戦が始まってから1時間は順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます</div></div>`:""}
+    ${rankPaused()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🏁 ${LANG==="en"?"Ranked matches are taking a break":"ランク戦はお休み中です"}</small></div><div class="note" style="display:block;margin:2px 0 0">${LANG==="en"?"Ranked Match #17 was the last one for now. We'll let you know when it starts again!":"第17回で一旦おしまいです。再開するときはお知らせします！"}</div></div>`:`<div class="season-box"><div><small>${LANG==="en"?`Ranked Match #${seasonNow()} ends in`:`第${seasonNow()}回ランク戦 終了まで`}</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
       <div class="note" style="display:block;margin:2px 0 0">ランク戦タイマーが0になると終了。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
       ${rankless()?`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスは、順位がつきはじめてから</div>`:`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>`}
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
       🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 2,000コイン＋覚醒の石2個<br>
-      勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>
+      勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>`}
     ${limPromoHtml()}${pastTopHtml()}
-    <p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>
+    ${rankPaused()?"":`<p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>`}
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button>${dexPeek()?`<button class="chip" id="prevRank" type="button">🏆 前のランク戦の結果</button>`:""}<button class="chip" id="rkGuard" type="button" style="margin-left:auto">🛡 魔物を配置${guardUnit()?`（${esc(mon(guardUnit().m).name)} Lv${guardUnit().l}）`:""}</button></div>
-    ${RANK&&RANK.length?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
+    ${RANK&&RANK.length&&!rankPaused()?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
   $("#rkGuard").onclick=()=>openGuardPick();
   { const pr=$("#prevRank"); if(pr) pr.onclick=()=>openPrevRank(); }
   $("#reRank").onclick=async()=>{ RANK=null; render(); await loadRanking(true); if(!rankErr) toast("全員の最新の状態に更新しました"); };
@@ -6477,7 +6479,7 @@ async function searchOutside(){
   hit.querySelectorAll("li[data-xi]").forEach(li=>{ const r=list[+li.dataset.xi]; const open=()=>openOtherProfile(r, r._rank||"―");
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } }; });
 }
-const todayN=()=>seasonNow();   // バトル・ボットの「1日1回」もランク戦タイマーで区切る
+const todayN=()=>seasonRaw();   // バトル・ボットの「1日1回」もランク戦タイマーで区切る
 // 魔物合戦：ホームで準備完了した冒険者どうしが、トトの戦略の配置で戦う（回数の制限なし。勝つと相手の配置は取り消される）
 // 魔物合戦の遊び方
 function openTsHelp(){
@@ -6537,7 +6539,7 @@ window.tsFightDone=(opp,res)=>{
 // 負けていたら、配置はすべて取り消し（置くのに使ったコインの3分の1が返ってくる）＋お知らせ
 // 毎日ログインボーナス（2026-10-26）：ランキングのタイマー（シーズン）が新しくなるたびに、ログインした冒険者に3000コインと1モコ
 const LOGIN_BONUS = { coins:3000, moko:5 };   // 2026-10-26：1モコ→10モコ／2026-10-27：10モコ→5モコ
-function checkLoginBonus(){ try{ if(!MYID) return; const s=seasonNow(); if(S.lbS===s) return;
+function checkLoginBonus(){ try{ if(!MYID) return; const s=seasonRaw(); if(S.lbS===s) return;
   S.lbS=s; S.coins=(S.coins||0)+LOGIN_BONUS.coins; S.moko=(S.moko||0)+LOGIN_BONUS.moko; save(); render();
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎁</div><p>毎日ログインボーナス！</p>
@@ -6680,7 +6682,11 @@ const SEASON_DAYS = 1, SEASON_DAY0 = 20743;   // 20743 = 2026-10-17
 const JST = 9*HOUR_MS, DAY_MS = 24*HOUR_MS;
 // ランク戦は毎日 22:00（日本時間）に終わる（SEASON_SHIFT=2時間ぶん前にずらす）
 const SEASON_SHIFT = 2*HOUR_MS;
-const seasonNow = () => Math.floor((Math.floor((gnow()+JST+SEASON_SHIFT)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);
+const seasonRaw = () => Math.floor((Math.floor((gnow()+JST+SEASON_SHIFT)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);   // 毎日22:00に1つ進む（1日1回のものに使う）
+/* 2026-11-03：ランク戦はお休み。第17回（11/3 22:00に終わる回）で一旦ラスト。RANK_STOP の回からは、ランク戦のタイマーもランキングも止める（再開するときは RANK_STOP を大きくする） */
+const RANK_STOP = 18;
+const rankPaused = () => seasonRaw() >= RANK_STOP;
+const seasonNow = () => Math.min(seasonRaw(), RANK_STOP);   // ランク戦の回（お休み中は進まない）
 const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1))*DAY_MS - JST - SEASON_SHIFT;
 // ランク戦が始まってから1時間は順位をつけない（その間は上位3人もふくめ、だれでも投資できる）。上位キープボーナスもなし
 const RANKLESS_MS = 0;   // 2026-10-21：ランク戦が始まってすぐ順位がつく（休戦タイムなし）
@@ -6745,7 +6751,7 @@ const tickNow = () => Math.floor(gnow()/TICK_MS);
 let TICKS={s:null, list:[]};
 async function loadTicks(s){ try{ const q=await DB.collection("ticks").where("ss","==",s).get(); return q.docs.map(x=>x.data()).sort((a,b)=>a.n-b.n); }catch(e){ return []; } }
 async function snapTick(){
-  if(!DB||!RANK||!RANK.length||rankless()) return;   // 順位がない1時間は、上位キープボーナスなし
+  if(!DB||!RANK||!RANK.length||rankless()||rankPaused()) return;   /* お休み中は上位キープボーナスなし */   // 順位がない1時間は、上位キープボーナスなし
   const n=tickNow(); if(snapTick.done===n) return;
   try{ const ref=DB.doc("ticks/"+n); const ex=await ref.get();
     if(!ex.exists) await ref.set({n, ss:seasonNow(), at:gnow(), t10:RANK.slice(0,10).map(r=>r.id), t30:RANK.slice(10,30).map(r=>r.id)});
@@ -6934,7 +6940,7 @@ async function checkSeason(){
       <p class="season-rank">${rank?`あなたの順位 <b>${rank}位</b>`:"順位の集計期間が過ぎていました"}</p>${limGift?`<img src="${cardURL(limGift.id,0)}" alt="" style="width:min(52vw,220px);height:auto;margin:4px 0 6px">`:""}
       <p class="note" style="text-align:center;max-width:330px">冒険者Lv${beforeLv} ・ 勝率 ${t?Math.round(wr*10)/10+"%":"―"}（${w}勝${l}敗${dr}分）<br><br>
       ${coins>0||stones||mokos||limGift?"":(eligible&&!lines.length?"今回は賞品はありませんでした<br>":"")}${lines.join("<br>")}<br><br>
-      冒険者レベルと勝率がリセットされました。新しいランク戦のはじまり！<br>最高順位：<b>${bestText()}</b></p>
+      冒険者レベルと勝率がリセットされました。${rankPaused()?"ランク戦はしばらくお休みです。再開するときはお知らせします！":"新しいランク戦のはじまり！"}<br>最高順位：<b>${bestText()}</b></p>
       <button class="btn gold" type="button">OK</button>`;
     document.body.appendChild(bg); limGift?SFX.reveal("Z"):(coins||stones)?SFX.reveal("S"):SFX.coin();
     bg.querySelector(".btn").onclick=()=>{ bg.remove(); render(); };
@@ -7633,7 +7639,7 @@ const WING_IMG="im/cc5b3e46107b.png";
 const HEART_IMG="im/455b54baa6c4.png";
 const pairId=(a,b)=>a<b?a+"_"+b:b+"_"+a;
 const intimacy=id=>((S.hs||{})[id]||0)+((S.hr||{})[id]||0);
-function wingFix(){ const s=seasonNow(); if(S.wingSs!==s){ S.wing=WING_MAX; S.wingSs=s; save(); } }   // ランク戦が変わるたびに10個に補充
+function wingFix(){ const s=seasonRaw(); if(S.wingSs!==s){ S.wing=WING_MAX; S.wingSs=s; save(); } }   // ランク戦が変わるたびに10個に補充
 const FR={friends:[], reqIn:[], loaded:false, prof:{}};
 let frMode="menu", frBusy=false;
 const isFriend=id=>FR.friends.some(x=>x.id===id);
@@ -7951,14 +7957,14 @@ async function sendArt(r,x,n){
 }
 // 爆弾とマグネットは1シーズン（ランク戦）に30回まで使える（ファイヤーボールは制限なし）
 const SEASON_USE_MAX = { bomb:30, magnet:30 };
-const useCnt = () => { const s=seasonNow(); if(!S.useCnt||S.useCnt.s!==s) S.useCnt={s}; return S.useCnt; };
+const useCnt = () => { const s=seasonRaw(); if(!S.useCnt||S.useCnt.s!==s) S.useCnt={s}; return S.useCnt; };
 const useLeft = k => SEASON_USE_MAX[k]==null ? Infinity : Math.max(0, SEASON_USE_MAX[k]-(useCnt()[k]||0));
 const useLimitTxt = k => `${itemOf(k).name}は1シーズンに${SEASON_USE_MAX[k]}回まで使えます（今シーズンはもう使えません）`;
 // 2026-10-27：運営がブロックした冒険者は、ほかの冒険者にアイテムを使えない（名前で指定。大文字・小文字は区別しない）
 const ITEM_BLOCKED = [];
 // 2026-10-27：同じ冒険者に1時間に10回以上攻撃アイテムを使うと、今のランク戦の残り＋次の2シーズンのあいだアイテムを使えない
 const BAN_N = 10, BAN_SS = 2;
-const itemBanned = () => S.itemBanSS!=null && seasonNow()<=S.itemBanSS;
+const itemBanned = () => S.itemBanSS!=null && seasonRaw()<=S.itemBanSS;
 const itemBlocked = () => { if(itemBanned()) return true; try{ const me=normName(myName()); return ITEM_BLOCKED.some(n=>normName(n)===me); }catch(e){ return false; } };
 const ITEM_BLOCK_TXT0 = "⛔ 運営により、アイテムの使用が制限されています";
 const itemBlockTxt = () => itemBanned() ? `⛔ 同じ冒険者に連続でアイテムを使いすぎたため、アイテムが使えません（あと${fmtDays(seasonEnd(S.itemBanSS)-gnow())}）` : ITEM_BLOCK_TXT0;
@@ -8005,7 +8011,7 @@ async function useItem(r,k,qty=1){
   try{
     await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(d.name||"").slice(0,12),
       item:k, qty, coins, defM:d.gm||0, defU:d.gu||0, at:gnow(), ...(reveal?{an:String(myName()).slice(0,24)}:{})}));
-    if(atk){ S.atkLog[r.id]=(S.atkLog[r.id]||[]).concat(gnow()); if(S.atkLog[r.id].length>=BAN_N){ S.itemBanSS=seasonNow()+BAN_SS; S.atkLog={}; banHit=true; } }
+    if(atk){ S.atkLog[r.id]=(S.atkLog[r.id]||[]).concat(gnow()); if(S.atkLog[r.id].length>=BAN_N){ S.itemBanSS=seasonRaw()+BAN_SS; S.atkLog={}; banHit=true; } }
   }catch(e){ { toast("アイテムを使えませんでした。少し時間をおいてためしてください"); return false; } }
   addItem(k,-qty); S.coins-=cost; if(SEASON_USE_MAX[k]!=null){ const u=useCnt(); u[k]=(u[k]||0)+qty; if(k==="magnet"){ u.mt=u.mt||{}; u.mt[r.id]=(u.mt[r.id]||0)+qty; } } save(); closeSheet(); render();   // マグネットのコインは、相手が開いたときに（盾で防がれなければ）届く
   const i=itemOf(k), who=esc(d.name||"相手");
@@ -10660,9 +10666,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261103172735" defer></script>
-<script src="io/io.js?v=20261103172735" defer></script>
-<script src="vt/vt.js?v=20261103172735" defer></script>
-<script src="fz/fz.js?v=20261103172735" defer></script>
-<script src="gd/gd.js?v=20261103172735" defer></script>
+<script src="ts/ts.js?v=20261103204742" defer></script>
+<script src="io/io.js?v=20261103204742" defer></script>
+<script src="vt/vt.js?v=20261103204742" defer></script>
+<script src="fz/fz.js?v=20261103204742" defer></script>
+<script src="gd/gd.js?v=20261103204742" defer></script>
 </body></html>
