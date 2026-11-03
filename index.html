@@ -3037,6 +3037,7 @@ const I18N_EN = {
 "虹鉱石スライム": "Rainbow Ore Slime",
 "青龍": "Azure Dragon",
 "アメジストドラゴン": "Amethyst Dragon",
+"トラドラゴン": "Tiger Dragon",
 "メロメロバブリー": "Lovestruck Bubbly",
 "パンヒーロー": "Bread Hero",
 "トリプルスライミー": "Triple Slimey",
@@ -3256,6 +3257,7 @@ const MONSTERS = [
   { id: 116, name: "虹鉱石スライム", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/7e20be712f13.png" },
   { id: 117, name: "青龍", rank: "L", exp: 10000, gift: 1, added: "2026-11-02", img: "im/5079203b14f2.png" },
   { id: 118, name: "アメジストドラゴン", rank: "L", exp: 10000, gift: 1, added: "2026-11-03", img: "im/bc873a3e0a8e.png" },
+  { id: 119, name: "トラドラゴン", rank: "L", exp: 10000, gift: 1, added: "2026-11-03", img: "im/bd368eea290d.png" },
 ];
 const DEX_MONS = MONSTERS.filter(m=>m.rank!=="L"&&!m.gift);   // 図鑑・コンプ率の対象（限定ランクは入れない：持っている人の図鑑にだけ別に載る）
 const START_MONSTER = 1; // 最初から全員が持っている魔物
@@ -4956,7 +4958,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
   {ss:18, t:"🎁 毎日ログインボーナスが 2万コイン＋5モコ にアップ！"},
-  {ss:18, t:"🏁 第18回ランク戦は11/18スタート！ 景品は 1位 グッズチケット10枚・2位 5枚・3位 2枚＋いつもの賞品（ランキングのページにスタートまでのタイマーがあります）"},
+  {ss:18, t:"🏁 第18回ランク戦は11/18スタート！ 景品は 1位 グッズチケット10枚・2位 5枚・3位 2枚＋いつもの賞品＋限定キャラ「トラドラゴン」（ランキングのページにスタートまでのタイマーがあります）"},
   {ss:18, t:"🏁 ランク戦はしばらくお休みです。第17回で一旦おしまい（ランキングと上位キープボーナス・投資もお休み）。再開するときはお知らせします！"},
   {ss:16, t:"💰 投資のルール変更：1人の冒険者に投資できるのは、1回のランク戦で3人までになりました（3人に投資されている冒険者には投資できません）"},
   {ss:13, t:"🛍 グッズ特典が登場！ タイトル画面の「グッズ特典」から、本物のグッズが当たるグッズガチャと、50%クーポンがもらえるステッカー集めができます（ログインしている冒険者だけ）"},
@@ -6421,7 +6423,7 @@ function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[c
 /* 第18回ランク戦：はじまるまでのタイマーと景品（ランキングのページ） */
 function rank18Box(){ if(seasonNow()!==RANK_GAP_SS) return ""; const wait=gnow()<RANK18_START;
   return `<div class="season-box" style="border-color:#ffcf4a;display:block"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><small>${wait?"⏳ 第18回ランク戦スタートまで":"🏁 第18回ランク戦 開催中！"}</small>${wait?`<b id="r18Cd">${fmtDays(RANK18_START-gnow())}</b>`:""}</div>
-    <div class="note" style="display:block;margin:6px 0 0;line-height:1.7">${wait?"15日後に第18回ランク戦があります！<br>":""}景品は以下の通り<br>🥇1位 <b>グッズチケット10枚</b><br><span style="font-size:12px">＋500,000コイン＋覚醒の石50個＋50モコ</span><br>🥈2位 <b>グッズチケット5枚</b><br><span style="font-size:12px">＋250,000コイン＋覚醒の石40個＋25モコ</span><br>🥉3位 <b>グッズチケット2枚</b><br><span style="font-size:12px">＋100,000コイン＋覚醒の石30個＋10モコ</span></div></div>`; }
+    <div class="note" style="display:block;margin:6px 0 0;line-height:1.7">${wait?"15日後に第18回ランク戦があります！<br>":""}景品は以下の通り<br>🥇1位 <b>グッズチケット10枚</b><br><span style="font-size:12px">＋500,000コイン＋覚醒の石50個＋50モコ</span><br>🥈2位 <b>グッズチケット5枚</b><br><span style="font-size:12px">＋250,000コイン＋覚醒の石40個＋25モコ</span><br>🥉3位 <b>グッズチケット2枚</b><br><span style="font-size:12px">＋100,000コイン＋覚醒の石30個＋10モコ</span><br>🎁 1〜3位には限定キャラ「<b>トラドラゴン</b>」も！</div></div>`; }
 function limPromoHtml(){ const ss=seasonNow(), id=SEASON_LIMITED[ss], m=id&&mon(id); if(!m) return ""; const L=LANG==="en";
   return `<div style="display:flex;align-items:center;gap:12px;margin:12px 0;padding:12px 14px;border:3px solid #b26bff;border-radius:18px;background:linear-gradient(135deg,rgba(178,107,255,.28),rgba(255,140,40,.18));box-shadow:0 0 16px rgba(178,107,255,.45)"><img src="${cardURL(m.id,0)}" alt="${esc(m.name)}" style="width:96px;height:96px;flex:none;border-radius:12px"><div style="min-width:0"><div style="font-weight:900;font-size:15px;line-height:1.4">🎁 ${L?`Top 3 of Ranked Match #${ss} get a limited character!`:`第${ss}回ランク戦の1〜3位に限定キャラをプレゼント！`}</div><div style="margin:6px 0 0"><span class="rk rk-L">${L?"Limited":"限定"}</span> <b translate="no">「${esc(m.name)}」</b></div><div style="font-size:12px;opacity:.8;margin:4px 0 0">${L?"Finish in the top 3 when the ranked match ends to get it.":"ランク戦が終わったときに3位以内に入るともらえます"}</div></div></div>`; }
 function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return `<div class="note" style="margin:8px 0">🏆 ${LANG==="en"?"Loading past results…":"過去のランク戦を読み込み中…"}</div>`;
@@ -6866,7 +6868,7 @@ let seasonBusy=false;
 function rs18Check(){ try{ if(!MYID||S.rs18||seasonBusy||seasonNow()!==RANK_GAP_SS||gnow()<RANK18_START||(S.season??0)!==RANK_GAP_SS) return;
   S.rs18=1; lvWhy("第18回ランク戦のはじまり（リセット）"); S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1; save(); try{ queueProfile(true); }catch(e){} try{ render(); }catch(e){}
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
-  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏁</div><p>第18回ランク戦がはじまりました！</p><div class="note" style="margin:0;text-align:left">冒険者レベルと勝率がリセットされました。<br><br>🥇1位 グッズチケット10枚＋50万コイン＋覚醒の石50個＋50モコ<br>🥈2位 グッズチケット5枚＋25万コイン＋覚醒の石40個＋25モコ<br>🥉3位 グッズチケット2枚＋10万コイン＋覚醒の石30個＋10モコ</div><button class="btn gold" type="button">OK</button></div>`;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏁</div><p>第18回ランク戦がはじまりました！</p><div class="note" style="margin:0;text-align:left">冒険者レベルと勝率がリセットされました。<br><br>🥇1位 グッズチケット10枚＋50万コイン＋覚醒の石50個＋50モコ<br>🥈2位 グッズチケット5枚＋25万コイン＋覚醒の石40個＋25モコ<br>🥉3位 グッズチケット2枚＋10万コイン＋覚醒の石30個＋10モコ<br>🎁 1〜3位には限定キャラ「トラドラゴン」も！</div><button class="btn gold" type="button">OK</button></div>`;
   document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }catch(e){} }
 setInterval(rs18Check, 30*1000); setTimeout(rs18Check, 8000);
 function checkSeasonEndMsg(){
@@ -6891,7 +6893,7 @@ const rankFixed = (s,p) => { try{ const t=RANK_FIX[s]; if(!t) return false; cons
 // 決めた順位の冒険者をのぞいて数えた順位を、その人たちの席をよけてずらす（例：3位・4位が決まっていたら、3位→5位）
 const rankShift = (s,r) => { const t=RANK_FIX[s]; if(!t||!r) return r; Object.values(t).sort((a,b)=>a-b).forEach(v=>{ if(v<=r) r++; }); return r; };
 const rankFixFor = s => { try{ const t=RANK_FIX[s]; if(!t) return null; const me=normName(myName()); for(const k in t) if(normName(k)===me) return t[k]; }catch(e){} return null; };
-const SEASON_LIMITED = { 4: 99, 5: 100, 6: 101, 14: 115, 15: 116, 16: 117, 17: 118 };   // 17：アメジストドラゴン（2026-11-03）   // 16：青龍（2026-11-02）   // 14：ハロウィントト・15：虹鉱石スライム（2026-10-31）
+const SEASON_LIMITED = { 4: 99, 5: 100, 6: 101, 14: 115, 15: 116, 16: 117, 17: 118, 18: 119 };   // 18：トラドラゴン（2026-11-03）   // 17：アメジストドラゴン（2026-11-03）   // 16：青龍（2026-11-02）   // 14：ハロウィントト・15：虹鉱石スライム（2026-10-31）
 async function checkSeason(){
   if(seasonBusy||!DB||!MYID) return;
   if((S.season??0)>=seasonNow()) return;
@@ -10696,9 +10698,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261103231545" defer></script>
-<script src="io/io.js?v=20261103231545" defer></script>
-<script src="vt/vt.js?v=20261103231545" defer></script>
-<script src="fz/fz.js?v=20261103231545" defer></script>
-<script src="gd/gd.js?v=20261103231545" defer></script>
+<script src="ts/ts.js?v=20261103233615" defer></script>
+<script src="io/io.js?v=20261103233615" defer></script>
+<script src="vt/vt.js?v=20261103233615" defer></script>
+<script src="fz/fz.js?v=20261103233615" defer></script>
+<script src="gd/gd.js?v=20261103233615" defer></script>
 </body></html>
