@@ -1777,6 +1777,7 @@ const I18N_EN = {
 "🥈2位 250,000コイン＋覚醒の石40個＋25モコ": "🥈2nd: 250,000 coins + 40 Awakening Stones + 25 Moko",
 "🥉3位 100,000コイン＋覚醒の石30個＋10モコ": "🥉3rd: 100,000 coins + 30 Awakening Stones + 10 Moko",
 "4〜10位 2,000コイン＋覚醒の石2個": "4th–10th: 2,000 coins + 2 Awakening Stones",
+"4〜10位 10,000コイン＋覚醒の石2個": "4th–10th: 10,000 coins + 2 Awakening Stones",
 "⚔️ 勝率でも景品！（5戦以上）": "⚔️ Win-rate prizes too! (5+ battles)",
 "勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個": "100% win rate: 100 Awakening Stones / 50%+: 50 / 30%+: 30",
 "集計のあと、冒険者レベルと勝率はリセット。プロフィールには今までの最高順位が残ります。": "After the tally, Adventurer Level and win rate reset. Your best rank stays on your profile.",
@@ -3854,7 +3855,7 @@ function openNews(force){
       <p>⚔️ 相手の配置魔物が変われば、同じ相手とまた戦えます。</p>
       <h4 style="margin-top:18px">🏆 毎日のランク戦</h4>
       <p>ランク戦タイマーが0になるとランキングを集計して、順位に応じて景品がもらえます！のこり時間はランキングのページで確認できます。</p>
-      <p>🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 2,000コイン＋覚醒の石2個</p>
+      <p>🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 10,000コイン＋覚醒の石2個</p>
       <p>⚔️ 勝率でも景品！（5戦以上）<br>勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個</p>
       <p>集計のあと、冒険者レベルと勝率はリセット。プロフィールには今までの最高順位が残ります。</p>
       <h4 style="margin-top:18px">🎰 アイテムガチャ</h4>
@@ -6449,7 +6450,7 @@ function renderRanking(segHtml){
       <div class="note" style="display:block;margin:2px 0 0">ランク戦タイマーが0になると終了。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
       ${rankless()?`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスは、順位がつきはじめてから</div>`:`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>`}
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
-      ${seasonNow()===RANK_GAP_SS?"🥇1位 グッズチケット10枚＋500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 グッズチケット5枚＋250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 グッズチケット2枚＋100,000コイン＋覚醒の石30個＋10モコ<br>":"🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>"}4〜10位 2,000コイン＋覚醒の石2個<br>
+      ${seasonNow()===RANK_GAP_SS?"🥇1位 グッズチケット10枚＋500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 グッズチケット5枚＋250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 グッズチケット2枚＋100,000コイン＋覚醒の石30個＋10モコ<br>":"🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>"}4〜10位 10,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>`}
     ${limPromoHtml()}${pastTopHtml()}
     ${rankPaused()?"":`<p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>`}
@@ -6727,7 +6728,7 @@ const rrFixOk = (RR,ss) => { try{ const a=RANK_FIX[ss]||{}, b=RR.fix||{}; const 
 const rrRankOf = (RR,ss,score) => { const fx=new Set(RR.fx||[]); return rankShift(ss, 1+Object.entries(RR.sc||{}).filter(([id,v])=>!fx.has(id)&&v>score).length); };   // サーバーの集計（rankres）を待つ時間。これを過ぎてもなければ、自分で計算する
 const RANK_PRIZE = [ null, {c:500000,st:50,mk:50}, {c:250000,st:40,mk:25}, {c:100000,st:30,mk:10} ];   // 1〜3位（2026-10-27〜：モコも）
 const RANK_PRIZE_OLD = [ null, {c:10000,st:20}, {c:7777,st:10}, {c:5000,st:5} ], PRIZE_NEW_SS = 10;   // シーズン9以前は前の賞品（シーズン10＝2026-10-27のランク戦から新しい賞品）
-const RANK_PRIZE_10 = {c:2000, st:2};                                          // 4〜10位
+const RANK_PRIZE_10 = {c:10000, st:2};   // 2026-11-03：2000→1万コイン                                          // 4〜10位
 const WR_MIN_BATTLES = 5;                                                       // 勝率賞品に必要なバトル数
 const WR_PRIZE = [ [100,100], [50,50], [30,30] ];                               // [勝率%, 覚醒の石]
 function bestText(){ if(!S.best) return "―"; return S.best===1 && (S.firsts||0)>1 ? `1位×${S.firsts}` : `${S.best}位`; }
@@ -10695,9 +10696,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261103231327" defer></script>
-<script src="io/io.js?v=20261103231327" defer></script>
-<script src="vt/vt.js?v=20261103231327" defer></script>
-<script src="fz/fz.js?v=20261103231327" defer></script>
-<script src="gd/gd.js?v=20261103231327" defer></script>
+<script src="ts/ts.js?v=20261103231545" defer></script>
+<script src="io/io.js?v=20261103231545" defer></script>
+<script src="vt/vt.js?v=20261103231545" defer></script>
+<script src="fz/fz.js?v=20261103231545" defer></script>
+<script src="gd/gd.js?v=20261103231545" defer></script>
 </body></html>
