@@ -6457,7 +6457,7 @@ function renderRanking(segHtml){
     ${limPromoHtml()}${pastTopHtml()}
     ${rankPaused()?"":`<p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>`}
     <div class="toolbar"><button class="chip" id="reRank" type="button">更新</button>${dexPeek()?`<button class="chip" id="prevRank" type="button">🏆 前のランク戦の結果</button>`:""}<button class="chip" id="rkGuard" type="button" style="margin-left:auto">🛡 魔物を配置${guardUnit()?`（${esc(mon(guardUnit().m).name)} Lv${guardUnit().l}）`:""}</button></div>
-    ${RANK&&RANK.length&&!rankPaused()?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
+    ${DB&&(rankPaused()||RANK&&RANK.length)?`<div class="rk-search"><span aria-hidden="true">🔍</span><input id="rkQ" type="search" placeholder="名前で検索" maxlength="12" autocomplete="off" aria-label="名前で検索" value="${esc(rankQ)}"></div><div id="rkHit"></div>`:""}${body}`;
   $("#rkGuard").onclick=()=>openGuardPick();
   { const pr=$("#prevRank"); if(pr) pr.onclick=()=>openPrevRank(); }
   $("#reRank").onclick=async()=>{ RANK=null; render(); await loadRanking(true); if(!rankErr) toast("全員の最新の状態に更新しました"); };
@@ -6471,6 +6471,13 @@ function renderRanking(segHtml){
 // 名前検索：読み込んだランキングの中は打つたびに絞り込み、見つからなければランキング外も探せる
 function filterRank(){
   const q=normName(rankQ), hit=$("#rkHit"); let n=0;
+  if(rankPaused()){   /* 2026-11-04：ランキングがお休み中でも、名前で冒険者をさがしてプロフィールを見られる */
+    if(!hit) return 0; if(!q){ hit.innerHTML=""; return 0; }
+    const L=(RANK||[]).filter(r=>normName(r.name||"名無しの召喚士").includes(q)).slice(0,30);
+    hit.innerHTML=L.length?`<p class="sub" style="margin:0 0 6px">${L.length}人 見つかりました</p><ol class="rank">${L.map((r,i)=>`<li data-pi="${i}" tabindex="0" role="button"><span class="rk-no">―</span>${avatarImg(r.icon,56)}<div class="rk-body"><div class="rk-name">${uname(r.name)}${r.id===MYID?" <em>あなた</em>":""}</div><div class="rk-sub">コンプ ${esc(r.comp??0)}%</div></div><div class="rk-lv"><small>Lv</small>${esc(r.lv||1)}</div></li>`).join("")}</ol>`
+      :`<div class="empty" style="padding:14px">見つかりませんでした<br><button class="chip" type="button" id="rkOut" style="margin-top:8px">「${esc(rankQ.trim())}」さんをもっと探す</button></div>`;
+    hit.querySelectorAll("li[data-pi]").forEach(li=>{ const r=L[+li.dataset.pi]; const open=()=>openOtherProfile(r,"―"); li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } }; });
+    $("#rkOut")?.addEventListener("click",searchOutside); return L.length; }
   document.querySelectorAll(".rank li[data-ri]").forEach(li=>{ const ok=!q||li.dataset.nm.includes(q); li.hidden=!ok; if(ok) n++; });
   if(hit) hit.innerHTML = !q ? "" : n ? `<p class="sub" style="margin:0 0 6px">${n}人 見つかりました</p>`
     : `<div class="empty" style="padding:14px">上位${(RANK||[]).length}人の中には見つかりませんでした<br><button class="chip" type="button" id="rkOut" style="margin-top:8px">ランキング外から「${esc(rankQ.trim())}」さんを探す</button></div>`;
@@ -6486,10 +6493,10 @@ async function searchOutside(){
   if(!list.length){ hit.innerHTML=`<div class="empty" style="padding:14px">「${esc(q)}」さんは見つかりませんでした<br><small>ランキング外の人は、名前を正確に入力してね</small></div>`; return; }
   for(const r of list){ try{ const h=await DB.collection("profiles").where("score",">",r.score||0).get(); r._rank=h.size+1; }catch(e){ r._rank=0; } }
   RANK_EXTRA=list;
-  hit.innerHTML=`<p class="sub" style="margin:0 0 6px">ランキング外で見つかりました</p><ol class="rank">${list.map((r,i)=>`<li data-xi="${i}" tabindex="0" role="button">
-    <span class="rk-no">${rankless()?"―":(r._rank||"―")}</span>${avatarImg(r.icon,56)}<div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}</div>
+  hit.innerHTML=`<p class="sub" style="margin:0 0 6px">${rankPaused()?"見つかりました":"ランキング外で見つかりました"}</p><ol class="rank">${list.map((r,i)=>`<li data-xi="${i}" tabindex="0" role="button">
+    <span class="rk-no">${rankless()||rankPaused()?"―":(r._rank||"―")}</span>${avatarImg(r.icon,56)}<div class="rk-body"><div class="rk-name">${(r.lv||1)<SAFE_LV?"🔰":""}${uname(r.name)}</div>
     <div class="rk-sub">コンプ ${esc(r.comp??0)}% ・ 勝率 ${winRate(r.w,r.l,r.dr)}</div></div><div class="rk-lv"><small>Lv</small>${esc(r.lv||1)}</div></li>`).join("")}</ol>`;
-  hit.querySelectorAll("li[data-xi]").forEach(li=>{ const r=list[+li.dataset.xi]; const open=()=>openOtherProfile(r, r._rank||"―");
+  hit.querySelectorAll("li[data-xi]").forEach(li=>{ const r=list[+li.dataset.xi]; const open=()=>openOtherProfile(r, rankPaused()?"―":(r._rank||"―"));
     li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } }; });
 }
 const todayN=()=>seasonRaw();   // バトル・ボットの「1日1回」もランク戦タイマーで区切る
@@ -10698,9 +10705,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261103233615" defer></script>
-<script src="io/io.js?v=20261103233615" defer></script>
-<script src="vt/vt.js?v=20261103233615" defer></script>
-<script src="fz/fz.js?v=20261103233615" defer></script>
-<script src="gd/gd.js?v=20261103233615" defer></script>
+<script src="ts/ts.js?v=20261104001857" defer></script>
+<script src="io/io.js?v=20261104001857" defer></script>
+<script src="vt/vt.js?v=20261104001857" defer></script>
+<script src="fz/fz.js?v=20261104001857" defer></script>
+<script src="gd/gd.js?v=20261104001857" defer></script>
 </body></html>
