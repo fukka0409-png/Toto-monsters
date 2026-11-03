@@ -3035,6 +3035,7 @@ const I18N_EN = {
 "ハロウィントト": "Halloween Toto",
 "虹鉱石スライム": "Rainbow Ore Slime",
 "青龍": "Azure Dragon",
+"アメジストドラゴン": "Amethyst Dragon",
 "メロメロバブリー": "Lovestruck Bubbly",
 "パンヒーロー": "Bread Hero",
 "トリプルスライミー": "Triple Slimey",
@@ -3253,6 +3254,7 @@ const MONSTERS = [
   { id: 115, name: "ハロウィントト", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/e6aae24103f6.png" },
   { id: 116, name: "虹鉱石スライム", rank: "L", exp: 10000, gift: 1, added: "2026-10-31", img: "im/7e20be712f13.png" },
   { id: 117, name: "青龍", rank: "L", exp: 10000, gift: 1, added: "2026-11-02", img: "im/5079203b14f2.png" },
+  { id: 118, name: "アメジストドラゴン", rank: "L", exp: 10000, gift: 1, added: "2026-11-03", img: "im/bc873a3e0a8e.png" },
 ];
 const DEX_MONS = MONSTERS.filter(m=>m.rank!=="L"&&!m.gift);   // 図鑑・コンプ率の対象（限定ランクは入れない：持っている人の図鑑にだけ別に載る）
 const START_MONSTER = 1; // 最初から全員が持っている魔物
@@ -3798,7 +3800,7 @@ async function startRemote(uid){
     try{ if(!S.loveLv1519 && MYID && normName(myName())===normName("love")){ S.loveLv1519=1; if((S.plv||1)<1519){ S.plv=1519; S.pexp=0; lvWhy("運営の調整（1519にもどす）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1519に（画面が2つ動いていたバグで下がった分）
     try{ if(!S.loveMokoM80 && MYID && normName(myName())===normName("love")){ S.loveMokoM80=1; S.moko=Math.max(0,(S.moko||0)-80); save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんのモコを1回だけ80へらす（運営より）
     checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); bankIntroNotice(); invRuleNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); await checkLimRetro(12, 113, "duckG12", "Golden Hero Duck"); checkCheatReset(); checkCheatRestore(); checkNamedGift(); checkGiftNames(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixRank11(13); fixLoveSv12(); fixLoveMaid(); fixInvLove12(); fixInvLove12(13); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); await fixYoko13(); checkApology(); invSync(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); await checkLimRetro(12, 113, "duckG12", "Golden Hero Duck"); await checkLimRetro(17, 118, "ameG17", "Amethyst Dragon");   /* 第17回：結果発表のあとに決めたので、もう精算した人にもとどける（結果発表でもらった人は二重にならない） */ checkCheatReset(); checkCheatRestore(); checkNamedGift(); checkGiftNames(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixRank11(13); fixLoveSv12(); fixLoveMaid(); fixInvLove12(); fixInvLove12(13); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); await fixYoko13(); checkApology(); invSync(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -6868,7 +6870,7 @@ const rankFixed = (s,p) => { try{ const t=RANK_FIX[s]; if(!t) return false; cons
 // 決めた順位の冒険者をのぞいて数えた順位を、その人たちの席をよけてずらす（例：3位・4位が決まっていたら、3位→5位）
 const rankShift = (s,r) => { const t=RANK_FIX[s]; if(!t||!r) return r; Object.values(t).sort((a,b)=>a-b).forEach(v=>{ if(v<=r) r++; }); return r; };
 const rankFixFor = s => { try{ const t=RANK_FIX[s]; if(!t) return null; const me=normName(myName()); for(const k in t) if(normName(k)===me) return t[k]; }catch(e){} return null; };
-const SEASON_LIMITED = { 4: 99, 5: 100, 6: 101, 14: 115, 15: 116, 16: 117 };   // 16：青龍（2026-11-02）   // 14：ハロウィントト・15：虹鉱石スライム（2026-10-31）
+const SEASON_LIMITED = { 4: 99, 5: 100, 6: 101, 14: 115, 15: 116, 16: 117, 17: 118 };   // 17：アメジストドラゴン（2026-11-03）   // 16：青龍（2026-11-02）   // 14：ハロウィントト・15：虹鉱石スライム（2026-10-31）
 async function checkSeason(){
   if(seasonBusy||!DB||!MYID) return;
   if((S.season??0)>=seasonNow()) return;
@@ -10666,9 +10668,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261103204742" defer></script>
-<script src="io/io.js?v=20261103204742" defer></script>
-<script src="vt/vt.js?v=20261103204742" defer></script>
-<script src="fz/fz.js?v=20261103204742" defer></script>
-<script src="gd/gd.js?v=20261103204742" defer></script>
+<script src="ts/ts.js?v=20261103220028" defer></script>
+<script src="io/io.js?v=20261103220028" defer></script>
+<script src="vt/vt.js?v=20261103220028" defer></script>
+<script src="fz/fz.js?v=20261103220028" defer></script>
+<script src="gd/gd.js?v=20261103220028" defer></script>
 </body></html>
