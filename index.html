@@ -4600,6 +4600,7 @@ setInterval(()=>{
   if(r!==wasReady || mr!==wasMission){ const changed=wasReady!==null; wasReady=r; wasMission=mr; renderCoins(); if(changed && tab==="mission") return render(); }
   const cd=$("#hourlyCd"); if(cd) cd.firstChild.textContent=fmt(left);
   const sc=$("#seasonCd"); if(sc) sc.textContent=fmtDays(seasonEnd(seasonNow())-gnow());
+  const r18=$("#r18Cd"); if(r18){ const l=RANK18_START-gnow(); if(l<=0){ try{ render(); }catch(e){} } else r18.textContent=fmtDays(l); }
   const ic=$("#invCd"); if(ic) ic.textContent=fmtDays(seasonEnd(seasonNow())-gnow());
   markActive();
   const tk=$("#tickCd"); if(tk) tk.textContent=fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"");
@@ -4633,7 +4634,7 @@ function renderSide(){
       ${FR.reqIn.length?`<p class="note" style="margin:0 0 6px">📨 フレンド申請が${FR.reqIn.length}件届いています</p>`:""}
       ${L.length?`<ol class="sd-list">${L.map(f=>{ const p=FR.prof[f.id]||{}; return `<li class="sd-row" data-sdf="${esc(f.id)}"><span class="no">💞</span>${avatarImg(p.icon,34)}<span class="nm">${uname(p.name)}</span><span class="lv" translate="no">${frUnread(f)?'<span class="sd-new">💬</span>':intimacy(f.id)}</span></li>`; }).join("")}</ol>`:`<p class="note" style="margin:0">${FR.loaded?"まだフレンドがいません":"読み込み中…"}</p>`}</section>`;
   }
-  const t=rankPaused()?`<section class="sd-box"><div class="sd-h"><b>🏁 ランク戦はお休み中</b></div><p class="note" style="margin:0">再開するときはお知らせします</p></section>`:`<section class="sd-box"><div class="sd-h"><b>⏳ ランク戦終了まで</b></div><div style="font-family:var(--f-pix);font-size:26px;font-weight:900;text-align:center" id="sdCd" translate="no">${fmtDays(seasonEnd(seasonNow())-gnow())}</div></section>`;
+  const t=seasonNow()===RANK_GAP_SS&&gnow()<RANK18_START?`<section class="sd-box"><div class="sd-h"><b>⏳ 第18回ランク戦スタートまで</b></div><div style="font-family:var(--f-pix);font-size:22px;font-weight:900;text-align:center" translate="no">${fmtDays(RANK18_START-gnow())}</div></section>`:rankPaused()?`<section class="sd-box"><div class="sd-h"><b>🏁 ランク戦はお休み中</b></div><p class="note" style="margin:0">再開するときはお知らせします</p></section>`:`<section class="sd-box"><div class="sd-h"><b>⏳ ランク戦終了まで</b></div><div style="font-family:var(--f-pix);font-size:26px;font-weight:900;text-align:center" id="sdCd" translate="no">${fmtDays(seasonEnd(seasonNow())-gnow())}</div></section>`;
   el.innerHTML=t+rk+fr;
   el.querySelectorAll("[data-sdr]").forEach(li=>li.onclick=()=>{ const r=findRank(li.dataset.sdr); if(r) openOtherProfile(r,+li.dataset.sdn); });
   el.querySelectorAll("[data-sdf]").forEach(li=>li.onclick=()=>openChat(li.dataset.sdf));
@@ -4952,6 +4953,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:18, t:"🏁 第18回ランク戦は11/18 22:00スタート！ 景品は 1位 グッズチケット10枚・2位 5枚・3位 2枚（ランキングのページにスタートまでのタイマーがあります）"},
   {ss:18, t:"🏁 ランク戦はしばらくお休みです。第17回で一旦おしまい（ランキングと上位キープボーナス・投資もお休み）。再開するときはお知らせします！"},
   {ss:16, t:"💰 投資のルール変更：1人の冒険者に投資できるのは、1回のランク戦で3人までになりました（3人に投資されている冒険者には投資できません）"},
   {ss:13, t:"🛍 グッズ特典が登場！ タイトル画面の「グッズ特典」から、本物のグッズが当たるグッズガチャと、50%クーポンがもらえるステッカー集めができます（ログインしている冒険者だけ）"},
@@ -5693,7 +5695,7 @@ function normRank(r,now=gnow()){
       // コンプ率は、持っている魔物の数（owned）と今の図鑑の数から計算しなおす（新しい魔物が増えても全員の%が今の基準になる）
       if(r.id===MYID) r.comp=compPct(); else if(r.owned!=null) r.comp=Math.round(Math.min(r.owned,DEX_MONS.length)/DEX_MONS.length*1000)/10;
       if(r.id===MYID){ r.lv=S.plv; r.exp=S.pexp; r.gm=guardUnit()?guardUnit().m:0; r.w=S.stats.win||0; r.l=S.stats.lose||0; r.dr=S.stats.draw||0; }
-      else if((r.ss??0)<seasonNow()){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新しいランク戦を開いていない人はリセット後の状態で表示
+      else if((r.ss??0)<seasonNow() || (seasonNow()===RANK_GAP_SS && gnow()>=RANK18_START && (r.pub||0)<RANK18_START)){ r.lv=1; r.exp=0; r.w=0; r.l=0; r.dr=0; }   // まだ新しいランク戦を開いていない人はリセット後の状態で表示
       else if(!r.gm && r.ge && r.pub){ const h=Math.floor((now-r.pub)/HOUR_MS); if(h>0){ r.lv=Math.max(1,(r.lv||1)-emptyDropFor(now-r.pub)); r.exp=0; r.tr=r.tr==="up"||r.tr==="mix"?"mix":"down"; } }
       if(r.id===MYID) r.tr=myTrend(); else if(r.pub && now-r.pub>TREND_MS && !(r.ge&&!r.gm)) r.tr="";   // 古い情報の矢印は出さない
       return r;
@@ -6413,6 +6415,10 @@ function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[c
     PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
   }catch(e){ PAST_TOP=null; } pastBusy=false; })(); }
 /* 2026-10-31：今のランク戦の1〜3位がもらえる限定キャラを、ランキング画面で宣伝する */
+/* 第18回ランク戦：はじまるまでのタイマーと景品（ランキングのページ） */
+function rank18Box(){ if(seasonNow()!==RANK_GAP_SS) return ""; const wait=gnow()<RANK18_START;
+  return `<div class="season-box" style="border-color:#ffcf4a;display:block"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><small>${wait?"⏳ 第18回ランク戦スタートまで":"🏁 第18回ランク戦 開催中！"}</small>${wait?`<b id="r18Cd">${fmtDays(RANK18_START-gnow())}</b>`:""}</div>
+    <div class="note" style="display:block;margin:6px 0 0;line-height:1.7">${wait?"15日後に第18回ランク戦があります！<br>":""}景品は以下の通り<br>🥇1位 <b>グッズチケット10枚</b><br>🥈2位 <b>グッズチケット5枚</b><br>🥉3位 <b>グッズチケット2枚</b></div></div>`; }
 function limPromoHtml(){ const ss=seasonNow(), id=SEASON_LIMITED[ss], m=id&&mon(id); if(!m) return ""; const L=LANG==="en";
   return `<div style="display:flex;align-items:center;gap:12px;margin:12px 0;padding:12px 14px;border:3px solid #b26bff;border-radius:18px;background:linear-gradient(135deg,rgba(178,107,255,.28),rgba(255,140,40,.18));box-shadow:0 0 16px rgba(178,107,255,.45)"><img src="${cardURL(m.id,0)}" alt="${esc(m.name)}" style="width:96px;height:96px;flex:none;border-radius:12px"><div style="min-width:0"><div style="font-weight:900;font-size:15px;line-height:1.4">🎁 ${L?`Top 3 of Ranked Match #${ss} get a limited character!`:`第${ss}回ランク戦の1〜3位に限定キャラをプレゼント！`}</div><div style="margin:6px 0 0"><span class="rk rk-L">${L?"Limited":"限定"}</span> <b translate="no">「${esc(m.name)}」</b></div><div style="font-size:12px;opacity:.8;margin:4px 0 0">${L?"Finish in the top 3 when the ranked match ends to get it.":"ランク戦が終わったときに3位以内に入るともらえます"}</div></div></div>`; }
 function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return `<div class="note" style="margin:8px 0">🏆 ${LANG==="en"?"Loading past results…":"過去のランク戦を読み込み中…"}</div>`;
@@ -6437,11 +6443,11 @@ function renderRanking(segHtml){
   $("#stage").innerHTML=`${segHtml}${rulesBtn()}<h2>魔物ランキング</h2>
     ${inFreeze()?`<div class="season-box" style="border-color:#ff8a3d"><div><small>🏁 集計中…結果発表まで</small><b id="freezeCd">${fmt(freezeLeft())}</b></div><div class="note" style="display:block;margin:2px 0 0">前のランク戦の順位を、全員の最新の状態で集計しています。0:03に結果発表＆報酬！<br>${FREEZE_TXT}</div></div>`:""}
     ${rankless()&&!rankPaused()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🕐 順位がつくまで</small><b id="rlCd">${fmt(seasonEnd(seasonNow()-1)+RANKLESS_MS-gnow())}</b></div><div class="note" style="display:block;margin:2px 0 0">ランク戦が始まってから1時間は順位がつきません（上位キープボーナスもなし）。この間は、だれでも冒険者に投資できます</div></div>`:""}
-    ${rankPaused()?`<div class="season-box" style="border-color:#7fd05a"><div><small>🏁 ${LANG==="en"?"Ranked matches are taking a break":"ランク戦はお休み中です"}</small></div><div class="note" style="display:block;margin:2px 0 0">${LANG==="en"?"Ranked Match #17 was the last one for now. We'll let you know when it starts again!":"第17回で一旦おしまいです。再開するときはお知らせします！"}</div></div>`:`<div class="season-box"><div><small>${LANG==="en"?`Ranked Match #${seasonNow()} ends in`:`第${seasonNow()}回ランク戦 終了まで`}</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
+    ${rank18Box()}${rankPaused()&&!(seasonNow()===RANK_GAP_SS)?`<div class="season-box" style="border-color:#7fd05a"><div><small>🏁 ${LANG==="en"?"Ranked matches are taking a break":"ランク戦はお休み中です"}</small></div><div class="note" style="display:block;margin:2px 0 0">${LANG==="en"?"We'll let you know when it starts again!":"再開するときはお知らせします！"}</div></div>`:rankPaused()?"":`<div class="season-box"><div><small>${LANG==="en"?`Ranked Match #${seasonNow()} ends in`:`第${seasonNow()}回ランク戦 終了まで`}</small><b id="seasonCd">${fmtDays(seasonEnd(seasonNow())-gnow())}</b></div>
       <div class="note" style="display:block;margin:2px 0 0">ランク戦タイマーが0になると終了。ランキングは、ログインしていない人の分も最新の状態に更新されます${RANK_AT?`（最終更新 ${new Date(RANK_AT+JST).toISOString().slice(11,16)}）`:""}</div>
       ${rankless()?`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスは、順位がつきはじめてから</div>`:`<div class="note" style="display:block;margin:4px 0 0">⏱ 上位キープボーナスまで <b id="tickCd" style="font-family:var(--f-pix);font-size:15px;color:var(--mist)">${fmt(TICK_MS-(gnow()%TICK_MS)).replace(/^0:/,"")}</b><br><span style="font-size:11px;opacity:.85">10分ごとに 1〜10位：冒険者Lv+1＆${TOP10_COIN}コイン／11〜30位：${TOP30_COIN}コイン（ログインしたときに受け取れます）</span></div>`}
       <details><summary>景品</summary><div class="note" style="margin:6px 0 0">ランク戦タイマーが0になったら集計。次にアプリを開いたときに受け取れます。<br>
-      🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>4〜10位 2,000コイン＋覚醒の石2個<br>
+      ${seasonNow()===RANK_GAP_SS?"🥇1位 グッズチケット10枚<br>🥈2位 グッズチケット5枚<br>🥉3位 グッズチケット2枚<br>":"🥇1位 500,000コイン＋覚醒の石50個＋50モコ<br>🥈2位 250,000コイン＋覚醒の石40個＋25モコ<br>🥉3位 100,000コイン＋覚醒の石30個＋10モコ<br>"}4〜10位 2,000コイン＋覚醒の石2個<br>
       勝率100% 覚醒の石100個 ／ 50%以上 50個 ／ 30%以上 30個（${WR_MIN_BATTLES}戦以上）<br>集計のあと、冒険者レベルと勝率はリセットされます。</div></details></div>`}
     ${limPromoHtml()}${pastTopHtml()}
     ${rankPaused()?"":`<p class="sub" style="margin-bottom:4px">最近3時間のレベル：<span class="tr up">▲</span>上昇中 <span class="tr down">▼</span>下降中 <span class="tr mix">▶</span>上がったり下がったり</p><div class="rank-total">👥 参加者 <b>${RANK_TOTAL?RANK_TOTAL.toLocaleString():"―"}</b>人${myRank?` ・ あなたは <b>${myRank}位</b>`:""}</div><p class="sub">${cmtOpen()?"冒険者レベルの上位100人を表示しています。ランク戦が始まって1時間は、だれでもひとことコメントを残せます！":"冒険者レベルの上位100人を表示しています。50位以内はひとことコメントを残せます。"}</p>`}
@@ -6685,11 +6691,15 @@ const JST = 9*HOUR_MS, DAY_MS = 24*HOUR_MS;
 // ランク戦は毎日 22:00（日本時間）に終わる（SEASON_SHIFT=2時間ぶん前にずらす）
 const SEASON_SHIFT = 2*HOUR_MS;
 const seasonRaw = () => Math.floor((Math.floor((gnow()+JST+SEASON_SHIFT)/DAY_MS) - SEASON_DAY0) / SEASON_DAYS);   // 毎日22:00に1つ進む（1日1回のものに使う）
-/* 2026-11-03：ランク戦はお休み。第17回（11/3 22:00に終わる回）で一旦ラスト。RANK_STOP の回からは、ランク戦のタイマーもランキングも止める（再開するときは RANK_STOP を大きくする） */
-const RANK_STOP = 18;
-const rankPaused = () => seasonRaw() >= RANK_STOP;
-const seasonNow = () => Math.min(seasonRaw(), RANK_STOP);   // ランク戦の回（お休み中は進まない）
-const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1))*DAY_MS - JST - SEASON_SHIFT;
+/* 2026-11-03：ランク戦はお休み。第17回（11/3 22:00に終わる回）で一旦ラスト。
+   第18回は15日後（11/18 22:00）からスタートして、11/19 22:00に終わる。お休みの15日間も「第18回」の中（ランキングは止める）。
+   第18回が終わったら、またお休み（第19回は指示があるまで始まらない） */
+const RANK_GAP_SS = 18, RANK_GAP_DAYS = 15, RANK_LAST_SS = 18;
+const seasonNow = () => { const r=seasonRaw(); if(r<RANK_GAP_SS) return r; return Math.min(RANK_LAST_SS+1, Math.max(RANK_GAP_SS, r-RANK_GAP_DAYS)); };   // ランク戦の回
+const seasonEnd = s => (SEASON_DAY0 + SEASON_DAYS*(s+1) + (s>=RANK_GAP_SS?RANK_GAP_DAYS:0))*DAY_MS - JST - SEASON_SHIFT;
+const RANK18_START = (SEASON_DAY0 + SEASON_DAYS*(RANK_GAP_SS+1) + RANK_GAP_DAYS - 1)*DAY_MS - JST - SEASON_SHIFT;   // 第18回のはじまり（11/18 22:00）
+const rankPaused = () => { const s=seasonNow(); return s>RANK_LAST_SS || (s===RANK_GAP_SS && gnow()<RANK18_START); };
+const RANK18_TK = {1:10, 2:5, 3:2};   // 第18回の景品：グッズチケット（その場ではわたさない。インスタのDMで報告してもらう）
 // ランク戦が始まってから1時間は順位をつけない（その間は上位3人もふくめ、だれでも投資できる）。上位キープボーナスもなし
 const RANKLESS_MS = 0;   // 2026-10-21：ランク戦が始まってすぐ順位がつく（休戦タイムなし）
 const cmtOpen = () => gnow() < seasonEnd(seasonNow()-1) + HOUR_MS;   // ランク戦が始まって1時間は、だれでもひとことコメントを書ける
@@ -6739,7 +6749,7 @@ function liveAdjust(r){
 }
 async function loadSeasonEvents(s, live, force){
   if(live && !force && LIVE_EV.s===s && gnow()-RANK_AT<9*60*1000) return;
-  const from=seasonEnd(s-1), to=seasonEnd(s); const list=[];
+  const from=s===RANK_GAP_SS?RANK18_START:seasonEnd(s-1), to=seasonEnd(s); const list=[];   /* 第18回はスタートしてからのバトルだけ */
   try{ const b=await DB.collection("battles").where("at",">=",from).get(); b.docs.forEach(x=>{ const v=x.data(); if(v.at<to) list.push({...v, k:"battle"}); }); }catch(e){}
   // 爆弾は盾で防がれることがある（盾は本人にしか分からない）ので、ここでは数えない
   if(live){ LIVE_EV={s, list:list.sort((a,b)=>a.at-b.at)}; RANK_AT=gnow(); }
@@ -6821,6 +6831,7 @@ function seasonScore(p, s){
   if(p.sv && p.sv[s]!=null) return p.sv[s];
   if((p.ss ?? 0)!==s) return null;
   let lv=p.lv||1, exp=p.exp||0;
+  if(s===RANK_GAP_SS && (p.pub||0)<RANK18_START){ lv=1; exp=0; }   /* 第18回がはじまってから開いていない人は、お休み中のレベルを数えない */
   if(!p.gm && p.ge && p.pub){ const h=Math.floor((Math.min(gnow(),seasonEnd(s))-p.pub)/HOUR_MS); if(h>0){ lv=Math.max(1,lv-emptyDropFor(Math.min(gnow(),seasonEnd(s))-p.pub)); exp=0; } }
   return lv*1e6+exp;
 }
@@ -6848,6 +6859,13 @@ setTimeout(markActive,0); setInterval(markActive,60*1000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") markActive(); });
 let seasonBusy=false;
 // ランク戦が終わって精算もすんだあと、順位のつかない1時間のうちに1回だけお知らせ
+/* 第18回のはじまり（11/18 22:00）：お休み中に上がったレベルをリセットする（1回だけ） */
+function rs18Check(){ try{ if(!MYID||S.rs18||seasonBusy||seasonNow()!==RANK_GAP_SS||gnow()<RANK18_START||(S.season??0)!==RANK_GAP_SS) return;
+  S.rs18=1; lvWhy("第18回ランク戦のはじまり（リセット）"); S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1; save(); try{ queueProfile(true); }catch(e){} try{ render(); }catch(e){}
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏁</div><p>第18回ランク戦がはじまりました！</p><div class="note" style="margin:0;text-align:left">冒険者レベルと勝率がリセットされました。<br><br>🥇1位 グッズチケット10枚<br>🥈2位 グッズチケット5枚<br>🥉3位 グッズチケット2枚</div><button class="btn gold" type="button">OK</button></div>`;
+  document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }catch(e){} }
+setInterval(rs18Check, 30*1000); setTimeout(rs18Check, 8000);
 function checkSeasonEndMsg(){
   try{ if(!cmtOpen() || (S.season??0)<seasonNow() || seasonBusy) return; const n=seasonNow()-1; if(n<0 || S.ssEndMsg===n) return;
     if(document.querySelector(".ss-end-msg")) return;
@@ -6907,7 +6925,8 @@ async function checkSeason(){
     let coins=0, stones=0, mokos=0; const lines=[];
     const eligible = prizeOk(old) || !!rankFixFor(old);
     if(!eligible) lines.push(S.lateSeen!==old?"⏰ 終了前の6時間以内にログインしていなかったので、ランキング外あつかいになり、景品はもらえませんでした":"⏰ 終了前の1時間以内にログインしていなかったので、ランキング外あつかいになり、景品はもらえませんでした");
-    if(rank && eligible){ const pz=(old>=PRIZE_NEW_SS?RANK_PRIZE:RANK_PRIZE_OLD)[rank] || (rank<=10?RANK_PRIZE_10:null);
+    if(old===RANK_GAP_SS && rank && rank<=3 && eligible){ const n=RANK18_TK[rank]; S.gt18={rank, n}; lines.push(`🎫 <b>グッズチケットを${n}枚獲得しました！</b><br>インスタのDMにて報告し、チケットをゲットしましょう！`); }   /* 第18回の1〜3位：その場ではわたさない */
+    else if(rank && eligible){ const pz=(old>=PRIZE_NEW_SS?RANK_PRIZE:RANK_PRIZE_OLD)[rank] || (rank<=10?RANK_PRIZE_10:null);
       if(pz){ coins+=pz.c; stones+=pz.st; mokos+=pz.mk||0; lines.push(`🏆 ${rank}位の賞品：${pz.c.toLocaleString()}コイン＋覚醒の石${pz.st}個${pz.mk?`＋${pz.mk}モコ`:""}`); } }
     if(eligible && t>=WR_MIN_BATTLES){ const wp=WR_PRIZE.find(([th])=>wr>=th);
       if(wp){ stones+=wp[1]; lines.push(`⚔️ 勝率${Math.round(wr*10)/10}%の賞品：覚醒の石${wp[1]}個`); } }
@@ -6935,6 +6954,7 @@ async function checkSeason(){
     // リセット
     const beforeLv=S.plv;
     lvWhy("ランク戦の終わり（リセット）"); S.plv=1; S.pexp=0; S.stats.win=0; S.stats.lose=0; S.stats.draw=0; S.lvHist=[]; S._lastLv=1;
+    if(cur===RANK_GAP_SS && gnow()>=RANK18_START) S.rs18=1;
     S.season=cur; Object.keys(S.sv).forEach(k=>{ if(+k<cur-3) delete S.sv[k]; });
     save(); queueProfile(true); render();
     const bg=document.createElement("div"); bg.className="reveal";
@@ -10668,9 +10688,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261103220028" defer></script>
-<script src="io/io.js?v=20261103220028" defer></script>
-<script src="vt/vt.js?v=20261103220028" defer></script>
-<script src="fz/fz.js?v=20261103220028" defer></script>
-<script src="gd/gd.js?v=20261103220028" defer></script>
+<script src="ts/ts.js?v=20261103221307" defer></script>
+<script src="io/io.js?v=20261103221307" defer></script>
+<script src="vt/vt.js?v=20261103221307" defer></script>
+<script src="fz/fz.js?v=20261103221307" defer></script>
+<script src="gd/gd.js?v=20261103221307" defer></script>
 </body></html>
