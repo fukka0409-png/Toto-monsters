@@ -4954,7 +4954,8 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
-  {ss:18, t:"🏁 第18回ランク戦は11/18 22:00スタート！ 景品は 1位 グッズチケット10枚・2位 5枚・3位 2枚（ランキングのページにスタートまでのタイマーがあります）"},
+  {ss:18, t:"🎁 毎日ログインボーナスが 2万コイン＋5モコ にアップ！"},
+  {ss:18, t:"🏁 第18回ランク戦は11/18スタート！ 景品は 1位 グッズチケット10枚・2位 5枚・3位 2枚（ランキングのページにスタートまでのタイマーがあります）"},
   {ss:18, t:"🏁 ランク戦はしばらくお休みです。第17回で一旦おしまい（ランキングと上位キープボーナス・投資もお休み）。再開するときはお知らせします！"},
   {ss:16, t:"💰 投資のルール変更：1人の冒険者に投資できるのは、1回のランク戦で3人までになりました（3人に投資されている冒険者には投資できません）"},
   {ss:13, t:"🛍 グッズ特典が登場！ タイトル画面の「グッズ特典」から、本物のグッズが当たるグッズガチャと、50%クーポンがもらえるステッカー集めができます（ログインしている冒険者だけ）"},
@@ -6547,13 +6548,13 @@ window.tsFightDone=(opp,res)=>{
 // 留守中の魔物合戦：勝っていたら通知＋冒険者Lv+1・1000コイン。
 // 負けていたら、配置はすべて取り消し（置くのに使ったコインの3分の1が返ってくる）＋お知らせ
 // 毎日ログインボーナス（2026-10-26）：ランキングのタイマー（シーズン）が新しくなるたびに、ログインした冒険者に3000コインと1モコ
-const LOGIN_BONUS = { coins:3000, moko:5 };   // 2026-10-26：1モコ→10モコ／2026-10-27：10モコ→5モコ
+const LOGIN_BONUS = { coins:20000, moko:5 };   // 2026-11-03：3000コイン→2万コイン   // 2026-10-26：1モコ→10モコ／2026-10-27：10モコ→5モコ
 function checkLoginBonus(){ try{ if(!MYID) return; const s=seasonRaw(); if(S.lbS===s) return;
   S.lbS=s; S.coins=(S.coins||0)+LOGIN_BONUS.coins; S.moko=(S.moko||0)+LOGIN_BONUS.moko; save(); render();
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=70;
   bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🎁</div><p>毎日ログインボーナス！</p>
     <div class="note" style="margin:0;font-size:15px">🪙 <b>${LOGIN_BONUS.coins.toLocaleString()}コイン</b><br><img src="moko.png" alt="" style="width:28px;height:28px;vertical-align:-8px"> <b>${LOGIN_BONUS.moko}モコ</b></div>
-    <div class="note" style="margin:0">ランキングのタイマーが新しくなるたびにもらえます。モコは「魔物レアガチャ」で使えます</div>
+    <div class="note" style="margin:0">1日1回、毎日もらえます。モコは「魔物レアガチャ」で使えます</div>
     <button class="btn gold" type="button">受け取る</button></div>`;
   document.body.appendChild(bg); try{ SFX.coin(); }catch(e){} bg.querySelector("button").onclick=()=>bg.remove(); }catch(e){} }
 async function checkTsBattles(){ if(!DB||!MYID) return;
@@ -10693,9 +10694,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261103225243" defer></script>
-<script src="io/io.js?v=20261103225243" defer></script>
-<script src="vt/vt.js?v=20261103225243" defer></script>
-<script src="fz/fz.js?v=20261103225243" defer></script>
-<script src="gd/gd.js?v=20261103225243" defer></script>
+<script src="ts/ts.js?v=20261103225536" defer></script>
+<script src="io/io.js?v=20261103225536" defer></script>
+<script src="vt/vt.js?v=20261103225536" defer></script>
+<script src="fz/fz.js?v=20261103225536" defer></script>
+<script src="gd/gd.js?v=20261103225536" defer></script>
 </body></html>
