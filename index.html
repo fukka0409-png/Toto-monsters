@@ -6546,12 +6546,13 @@ document.addEventListener("click",e=>{ if(e.target.closest("[data-tsmy]")){ try{
 function tsFightBox(r){
   if(!DB||!tsHome()||r.id===MYID) return "";
   let body;
-  if(!tsReadyOf(r)) body=`<div class="note" style="margin:0">この冒険者は、まだ魔物合戦の準備ができていません</div>`;
+  if(rankPaused()) body=`<div class="note" style="margin:0">🏁 ランク戦がお休み中なので、魔物合戦はできません</div>`;   /* 2026-11-05 */
+  else if(!tsReadyOf(r)) body=`<div class="note" style="margin:0">この冒険者は、まだ魔物合戦の準備ができていません</div>`;
   else if(!S.tsRd) body=`<div class="note" style="margin:0;color:var(--berry)">戦うには、${tsInHome()?"ホーム":"ランキングの自分のプロフィール"}で魔物を置いて「準備完了」を押してください</div>`;
   else body=`<button class="btn gold" type="button" data-tsfight="${esc(r.id)}">⚔️ 魔物合戦</button>`;
   return `<div class="guard-box"><div class="gb-body"><div class="pick-label" style="margin:0">魔物合戦</div><div class="note" style="margin:0 0 6px">${tsReadyOf(r)?(()=>{ const t=tsTier(r.tp); return `相手の配置の強さ <b>${(r.tp||0).toLocaleString()}</b> → 勝つと冒険者Lv+${t.lv}・${t.c.toLocaleString()}コイン`; })():"勝つと、相手の配置の強さに合わせて冒険者Lv+1〜5・100〜10,000コイン"}。負けた相手の配置は取り消される</div>${body}</div></div>`;
 }
-document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsfight]"); if(!b) return; const r=findRank(b.dataset.tsfight)||{id:b.dataset.tsfight};
+document.addEventListener("click",async e=>{ const b=e.target.closest("[data-tsfight]"); if(!b) return; if(rankPaused()) return toast("🏁 ランク戦がお休み中なので、魔物合戦はできません"); const r=findRank(b.dataset.tsfight)||{id:b.dataset.tsfight};
   b.disabled=true; b.textContent="相手の配置を読みこみ中…";
   try{ const d=await DB.collection("tsp").doc(r.id).get(); const x=d.exists?d.data():null;
     if(!x||!x.rd||!Array.isArray(x.units)||!x.units.length||!tsLayoutOk(x)){ b.textContent="相手の準備ができていません"; return; }
@@ -10744,9 +10745,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261105000523" defer></script>
-<script src="io/io.js?v=20261105000523" defer></script>
-<script src="vt/vt.js?v=20261105000523" defer></script>
-<script src="fz/fz.js?v=20261105000523" defer></script>
-<script src="gd/gd.js?v=20261105000523" defer></script>
+<script src="ts/ts.js?v=20261105000648" defer></script>
+<script src="io/io.js?v=20261105000648" defer></script>
+<script src="vt/vt.js?v=20261105000648" defer></script>
+<script src="fz/fz.js?v=20261105000648" defer></script>
+<script src="gd/gd.js?v=20261105000648" defer></script>
 </body></html>
