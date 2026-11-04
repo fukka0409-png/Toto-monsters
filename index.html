@@ -6597,6 +6597,7 @@ async function checkTsBattles(){ if(!DB||!MYID) return;
     document.body.appendChild(bg); bg.querySelector("button").onclick=()=>bg.remove(); }catch(e){} }
 function fightButton(r){
   if(!DB) return "";
+  if(rankPaused()) return `<div class="note" style="margin:0">${PAUSE_ATK_TXT}</div>`;
   if(noAct()) return `<div class="note" style="margin:0">${FREEZE_TXT}</div>`;
   if(!r.gm) return "";
   if((r.lv||1)<SAFE_LV) return `<div class="note" style="margin:0">🔰 Lv${SAFE_LV}になるまでは守られています（攻撃できません）</div>`;
@@ -6616,6 +6617,7 @@ async function busyRun(btn,label,fn){
 // 通信が止まったままにならないよう時間切れにする
 function withTO(p,ms=10000){ return Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error("timeout")),ms))]); }
 function confirmFight(r){
+  if(rankPaused()) return toast(PAUSE_ATK_TXT);
   if(noAct()) return toast(FREEZE_TXT);
   const g=guardUnit(); if(!g) return;
   const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=55;
@@ -6629,6 +6631,7 @@ function confirmFight(r){
 }
 async function doFight(r){
   const g=guardUnit(); if(!g||!DB) return;
+  if(rankPaused()){ toast(PAUSE_ATK_TXT); closeSheet(); return false; }
   if(noAct()){ toast(FREEZE_TXT); closeSheet(); return false; }
   let d; try{ const snap=await withTO(DB.doc("profiles/"+r.id).get()); d=snap.exists?snap.data():null; }catch(e){ toast("通信できませんでした。電波のよい所でもう一度ためしてください"); return false; }
   if(!d||!d.gm||!mon(d.gm)) return toast("相手は魔物を配置していません");
@@ -6682,7 +6685,7 @@ let botItemQueue = [];
 function genBotEvents(){
   const out=[];
   if(!DB||!MYID||S.plv<SAFE_LV) return out;
-  if(itemRest()||noAct()) return out;   // ランク戦が始まって1時間は、CPUもアイテム・攻撃をしない（その日の分は1時間たってから）
+  if(itemRest()||noAct()||rankPaused()) return out;   /* 2026-11-04：ランク戦がお休み中は、CPUもバトル・アイテムをしない */   // ランク戦が始まって1時間は、CPUもアイテム・攻撃をしない（その日の分は1時間たってから）
   const day=todayN(); S.botDay=S.botDay||{};
   BOTS.forEach((bt,i)=>{
     if(S.botDay[i]===day) return; S.botDay[i]=day;
@@ -6741,6 +6744,7 @@ const FREEZE_TXT = "🏁 ランク戦の集計中は、攻撃もアイテムも�
 // ランク戦が終わって（次のランク戦が始まって）1時間は、ランキングでアイテムを使えない
 const ITEM_REST_TXT = "🏁 ランク戦が始まってから1時間は、アイテムを使えません（少し待ってね）";
 const itemRest = () => gnow() < seasonEnd(seasonNow()-1) + HOUR_MS;
+const PAUSE_ATK_TXT = "🏁 ランク戦がお休み中なので、バトルと攻撃のアイテム（マグネット・爆弾・ファイヤーボールなど）は使えません";
 const noAct = () => inFreeze() || (!!DB && !!MYID && S.season!=null && S.season<seasonNow());
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
 const RANKRES_WAIT = 40*60*1000;
@@ -7060,6 +7064,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-11-04-pausebot", coins:1000 },   // ランク戦がお休み中なのに、CPUがバトルやアイテム（マグネットなど）を使っていた
   { id:"fix-2026-11-01-sellrare", coins:1000 },   // レアな魔物をたくさん売るとき、確認の画面が長すぎて売却ボタンが押せなかった
   { id:"fix-2026-10-31-season2", coins:1000 },   // ランク戦の精算や投資で、運営が決めた順位がうまく反映されないことがあった
   { id:"fix-2026-10-31-wallet2", coins:1000 },   // 電波が悪いときなどに、コインやレベルの足し引きが二重になったり消えたりすることがあった
@@ -8030,6 +8035,7 @@ const magLeft = id => { const u=useCnt(); return Math.max(0, MAGNET_PER_TARGET-(
 const magLimitTxt = () => `マグネットは同じ冒険者に1シーズン${MAGNET_PER_TARGET}個までしか使えません（今シーズン、この冒険者にはもう使えません）`;
 function confirmItem(r,k,direct){
   if(itemBlocked()) return toast(itemBlockTxt());
+  if(rankPaused() && !SENDABLE.includes(k)) return toast(PAUSE_ATK_TXT);
   if(k==="bomb" && !direct) return bombChoice(r);
   if(noAct()) return toast(FREEZE_TXT);
   if(useLeft(k)<=0) return toast(useLimitTxt(k));
@@ -8050,6 +8056,7 @@ function confirmItem(r,k,direct){
 async function useItem(r,k,qty=1){
   if(!DB||!MYID||inv(k)<qty) return false;
   if(itemBlocked()){ toast(itemBlockTxt()); return false; }
+  if(rankPaused() && !SENDABLE.includes(k)){ toast(PAUSE_ATK_TXT); return false; }
   if(noAct()){ toast(FREEZE_TXT); return false; }
   if(itemRest()){ toast(ITEM_REST_TXT); return false; }
   // 相手の最新プロフィールを読む。読めなかったときも、贈り物（神からの贈り物・チケット）は相手の情報がいらないので、手元のランキングの情報で贈れるようにする
@@ -10722,9 +10729,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261104143212" defer></script>
-<script src="io/io.js?v=20261104143212" defer></script>
-<script src="vt/vt.js?v=20261104143212" defer></script>
-<script src="fz/fz.js?v=20261104143212" defer></script>
-<script src="gd/gd.js?v=20261104143212" defer></script>
+<script src="ts/ts.js?v=20261104194008" defer></script>
+<script src="io/io.js?v=20261104194008" defer></script>
+<script src="vt/vt.js?v=20261104194008" defer></script>
+<script src="fz/fz.js?v=20261104194008" defer></script>
+<script src="gd/gd.js?v=20261104194008" defer></script>
 </body></html>
