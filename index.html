@@ -6744,7 +6744,7 @@ const FREEZE_TXT = "🏁 ランク戦の集計中は、攻撃もアイテムも�
 // ランク戦が終わって（次のランク戦が始まって）1時間は、ランキングでアイテムを使えない
 const ITEM_REST_TXT = "🏁 ランク戦が始まってから1時間は、アイテムを使えません（少し待ってね）";
 const itemRest = () => gnow() < seasonEnd(seasonNow()-1) + HOUR_MS;
-const PAUSE_ATK_TXT = "🏁 ランク戦がお休み中なので、バトルと攻撃のアイテム（マグネット・爆弾・ファイヤーボールなど）は使えません";
+const PAUSE_ATK_TXT = "🏁 ランク戦がお休み中なので、バトルと、ほかの冒険者へのアイテムは使えません";
 const noAct = () => inFreeze() || (!!DB && !!MYID && S.season!=null && S.season<seasonNow());
 const fmtDays = ms => { ms=Math.max(0,ms); const d=Math.floor(ms/DAY_MS); return (d?d+"日 ":"")+fmt(ms-d*DAY_MS); };
 const RANKRES_WAIT = 40*60*1000;
@@ -8003,6 +8003,7 @@ document.addEventListener("click",e=>{
 
 function itemBox(r){
   if(!DB) return "";
+  if(rankPaused() && r.id!==MYID) return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="note" style="margin:0">${PAUSE_ATK_TXT}</div></div>`;
   if(noAct() && r.id!==MYID) return `<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="note" style="margin:0">${FREEZE_TXT}</div></div>`;
   if(r.id===MYID) return inv("gift")?`<div class="item-box"><div class="pick-label" style="margin:0 0 6px">アイテムを使う</div><div class="item-use"><button type="button" class="iu gift" data-selfgift="1"><img src="${itemOf("gift").img}" alt=""><b>神からの贈り物を自分に使う</b><small>×${inv("gift")}</small></button></div></div>`:"";
   const safe=(r.lv||1)<SAFE_LV;
@@ -8018,11 +8019,13 @@ function itemBox(r){
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-item]"); if(b&&!b.disabled){ const r=findRank(b.dataset.to); if(r) confirmItem(r,b.dataset.item); } });
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-artgift]"); if(!b) return; const r=findRank(b.dataset.to), x=ARTS.find(z=>z.k===b.dataset.artgift); if(!r||!x) return;
+  if(rankPaused()) return toast(PAUSE_ATK_TXT);
   if(noAct()) return toast(FREEZE_TXT);
   const who=esc(r.name||"名無しの召喚士");
   qtyDialog({img:x.img, title:`${who}さんに${esc(x.name)}を贈る`, max:S.arts[x.k]||0, ok:"贈る！",
     desc:n=>`${who}さんに「${esc(x.name)}」が${n}枚届きます。あなたの持っている数は${n}枚へります。<br>相手には次にアプリを開いたときに届きます。`}, n=>sendArt(r,x,n)); });
 async function sendArt(r,x,n){
+  if(rankPaused()){ toast(PAUSE_ATK_TXT); return false; }
   if(!DB||!MYID||(S.arts[x.k]||0)<n) return false;
   try{ await withTO(DB.collection("items").add({att:MYID, def:r.id, attP:S.plv, defName:String(r.name||"").slice(0,12), item:"art:"+x.k, qty:n, coins:0, at:gnow()})); }
   catch(e){ toast("贈れませんでした。少し時間をおいてためしてください"); return false; }
@@ -8047,7 +8050,7 @@ const magLeft = id => { const u=useCnt(); return Math.max(0, MAGNET_PER_TARGET-(
 const magLimitTxt = () => `マグネットは同じ冒険者に1シーズン${MAGNET_PER_TARGET}個までしか使えません（今シーズン、この冒険者にはもう使えません）`;
 function confirmItem(r,k,direct){
   if(itemBlocked()) return toast(itemBlockTxt());
-  if(rankPaused() && !SENDABLE.includes(k)) return toast(PAUSE_ATK_TXT);
+  if(rankPaused()) return toast(PAUSE_ATK_TXT);   /* 2026-11-05：お休み中は、ほかの冒険者へのアイテムはすべて使えない */
   if(k==="bomb" && !direct) return bombChoice(r);
   if(noAct()) return toast(FREEZE_TXT);
   if(useLeft(k)<=0) return toast(useLimitTxt(k));
@@ -8068,7 +8071,7 @@ function confirmItem(r,k,direct){
 async function useItem(r,k,qty=1){
   if(!DB||!MYID||inv(k)<qty) return false;
   if(itemBlocked()){ toast(itemBlockTxt()); return false; }
-  if(rankPaused() && !SENDABLE.includes(k)){ toast(PAUSE_ATK_TXT); return false; }
+  if(rankPaused()){ toast(PAUSE_ATK_TXT); return false; }
   if(noAct()){ toast(FREEZE_TXT); return false; }
   if(itemRest()){ toast(ITEM_REST_TXT); return false; }
   // 相手の最新プロフィールを読む。読めなかったときも、贈り物（神からの贈り物・チケット）は相手の情報がいらないので、手元のランキングの情報で贈れるようにする
@@ -10741,9 +10744,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261104233208" defer></script>
-<script src="io/io.js?v=20261104233208" defer></script>
-<script src="vt/vt.js?v=20261104233208" defer></script>
-<script src="fz/fz.js?v=20261104233208" defer></script>
-<script src="gd/gd.js?v=20261104233208" defer></script>
+<script src="ts/ts.js?v=20261105000523" defer></script>
+<script src="io/io.js?v=20261105000523" defer></script>
+<script src="vt/vt.js?v=20261105000523" defer></script>
+<script src="fz/fz.js?v=20261105000523" defer></script>
+<script src="gd/gd.js?v=20261105000523" defer></script>
 </body></html>
