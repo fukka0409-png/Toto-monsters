@@ -4959,6 +4959,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:18, t:"🏦 貯金の引き出しが「1時間に1回・1億コインまで」になりました（毎時間ログインすれば1日で最大24億コイン）"},
   {ss:18, t:"🎁 下のタブの「ショップ」が「呪文・QR」になりました（タイトル画面の「呪文・QRコード」はここに引っこし）。モコの販売はお休みです"},
   {ss:18, t:"🎁 毎日ログインボーナスが 2万コイン＋5モコ にアップ！"},
   {ss:18, t:"🏁 第18回ランク戦は11/18スタート！ 景品は 1位 グッズチケット10枚・2位 5枚・3位 2枚＋いつもの賞品＋限定キャラ「トラドラゴン」（ランキングのページにスタートまでのタイマーがあります）"},
@@ -6278,7 +6279,7 @@ function renderRankTab(){
   bindSeg(k=>{ profMode=k; if(k==="rank") loadRanking(); if(k==="bank") loadBankRank(true); render(); $("#stage").scrollTop=0; });
 }
 // 貯金（2026-10-27）：所持コインは10億まで、貯金に上限はない。貯金ランキングは上位10人だけ
-let BANK_RK=null, BANK_AT=0, bankErr=false, BANK_N=null; const BANK_OUT_MAX=10000000, BANK_TAX_OVER=100000000, BANK_TAX=5000000, BANK_TAX_SS=12;
+let BANK_RK=null, BANK_AT=0, bankErr=false, BANK_N=null; const BANK_OUT_MAX=100000000, BANK_TAX_OVER=100000000, BANK_TAX=5000000, BANK_TAX_SS=12;
 // 2026-10-28：貯金が1億コイン以上の冒険者だけ、貯金ランキングの順位で％引かれる。1位30%・2位20%・3位10%・4位以下5%
 const BANK_TAX_PCT={1:0.30,2:0.20,3:0.10}, BANK_TAX_PCT_OVER=0.05, BANK_SAFE_RANK=10;
 // 精算するときの貯金ランキングの順位。先に精算して税で減った冒険者は、減る前の貯金（bkp）でくらべる
@@ -6288,7 +6289,8 @@ async function bankRankAt(ss,mine){ try{
   let n=0; for(const id in m){ const r=m[id], v=(r.bkpS===ss&&r.bkp!=null)?r.bkp:(r.bk||0); if(v>mine) n++; }
   return n+1; }catch(e){ return null; } }   // シーズン12（2026-10-28 22:00〜10-29 22:00 のランク戦）から   // 引き出しは1シーズン（ランク戦）に1回・1000万コインまで
 const bankTop3=()=>new Map((BANK_RK||[]).slice(0,3).map((r,i)=>[r.id,i+1]));   // 貯金ランキング1〜3位の冒険者（id→順位）
-const bankOutDone=()=>S.bankOutSS===seasonRaw();
+const bankOutH=()=>Math.floor(gnow()/HOUR_MS);
+const bankOutDone=()=>S.bankOutH===bankOutH();   /* 2026-11-05：引き出しは1時間に1回・1億コインまで */
 async function loadBankRank(force){ if(!DB) return; if(!force&&BANK_RK&&gnow()-BANK_AT<60000) return;
   try{ const q=await withTO(DB.collection("profiles").orderBy("bk","desc").limit(10).get()); BANK_RK=q.docs.map(d=>({id:d.id,...d.data()})).filter(r=>(r.bk||0)>0); BANK_AT=gnow(); bankErr=false;
     try{ const qc=DB.collection("profiles").where("bk",">",0); BANK_N=qc.count?(await withTO(qc.count().get())).data().count:(await withTO(qc.get())).size; }catch(e){ try{ BANK_N=(await withTO(DB.collection("profiles").where("bk",">",0).get())).size; }catch(e2){} } }   // 2026-10-29：貯金している冒険者の人数
@@ -6300,19 +6302,19 @@ function renderBank(segHtml){
     <div style="margin:0 0 10px;padding:12px 14px;border-radius:14px;background:linear-gradient(#ffe16b,#f2b631);border:3px solid #1d1d1d;box-shadow:0 3px 0 #1d1d1d;color:#1d1d1d;font-weight:900;text-align:center;font-size:15px;line-height:1.5">🛡🧲 貯金したコインは<br><span style="font-size:19px">コインマグネットで取られません！</span><br><span style="font-size:14px">🛡 魔物ランキング10位以内なら、ランク戦が終わっても貯金は減りません！</span></div>
     <div class="season-box"><div><small>🏦 あなたの貯金</small><b translate="no">${n(bk)}</b></div>
 </div>
-    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>5億</b>まで。貯金には<b>上限がありません</b>。所持コインが5億をこえたら、こえた分を貯金してください。<br>💰 <b>投資</b>には、所持コインに加えて<b>貯金も使えます</b>（投資で所持コインより多くマイナスになったときは、貯金から引かれます）。<br>貯金は<b>いつでも・いくらでも</b>できます。<br><b style="color:var(--berry)">⚠️ ランク戦が終わるたびに、貯金が1億コイン以上の冒険者は、貯金ランキングの順位で貯金が減ります：1位 30%・2位 20%・3位 10%・4位以下 5%</b><br><b style="color:#2e7d32">🛡 魔物ランキングで10位以内に入れば、貯金は守られます（減りません）！</b><br><b>引き出しは1シーズン（ランク戦）に1回、1000万コインまで</b>です。<br>${bankOutDone()?`<b style="color:var(--berry)">今シーズンはもう引き出しました（次のランク戦から引き出せます）</b>`:`<b>今シーズンはまだ引き出せます</b>`}</div>
+    <div class="note" style="margin:8px 0 0;text-align:left">所持コインは<b>5億</b>まで。貯金には<b>上限がありません</b>。所持コインが5億をこえたら、こえた分を貯金してください。<br>💰 <b>投資</b>には、所持コインに加えて<b>貯金も使えます</b>（投資で所持コインより多くマイナスになったときは、貯金から引かれます）。<br>貯金は<b>いつでも・いくらでも</b>できます。<br><b style="color:var(--berry)">⚠️ ランク戦が終わるたびに、貯金が1億コイン以上の冒険者は、貯金ランキングの順位で貯金が減ります：1位 30%・2位 20%・3位 10%・4位以下 5%</b><br><b style="color:#2e7d32">🛡 魔物ランキングで10位以内に入れば、貯金は守られます（減りません）！</b><br><b>引き出しは1時間に1回、1億コインまで</b>です（毎時間ログインすれば、1日で最大24億コイン引き出せます）。<br>${bankOutDone()?`<b style="color:var(--berry)">この1時間はもう引き出しました（あと${fmt(HOUR_MS-gnow()%HOUR_MS)}で引き出せます）</b>`:`<b>今は引き出せます</b>`}</div>
       <div class="bank-in"><input id="bkAmt" type="number" inputmode="numeric" min="1" placeholder="コインの数" class="fr-ta" style="width:100%;box-sizing:border-box;margin:8px 0 6px">
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn gold" type="button" id="bkIn" style="flex:1">貯金する</button><button class="btn" type="button" id="bkOut" style="flex:1">引き出す</button></div>
-      <div style="display:flex;gap:6px;margin-top:6px"><button class="chip" type="button" id="bkAllIn">所持コインを全部貯金</button><button class="chip" type="button" id="bkAllOut">1000万コイン引き出す</button></div></div>
+      <div style="display:flex;gap:6px;margin-top:6px"><button class="chip" type="button" id="bkAllIn">所持コインを全部貯金</button><button class="chip" type="button" id="bkAllOut">1億コイン引き出す</button></div></div>
     <p class="sub" style="margin:10px 0 4px">貯金の多い冒険者の上位10人です。 <button class="chip" type="button" id="bkR">更新</button></p>
     ${!DB?`<div class="empty">ログインすると貯金ランキングが見られます</div>`:bankErr?`<div class="empty">読み込めませんでした</div>`:!BANK_RK?`<div class="empty">読み込み中…</div>`:!BANK_RK.length?`<div class="empty">まだ貯金している冒険者はいません</div>`:
       `<ol class="sd-list">${BANK_RK.map((r,i)=>`<li class="sd-row ${r.id===MYID?"me":""}" data-bkr="${esc(r.id)}"><span class="no ${i<3?"t"+(i+1):""}">${i+1}</span>${avatarImg(r.icon,34)}<span class="nm">${uname(r.name)}</span><span class="lv" translate="no">🏦 ${n(r.bk)}</span></li>`).join("")}</ol>`}`;
   const amt=()=>Math.floor(Number($("#bkAmt").value)||0);
   const done=t=>{ save(); try{ queueProfile(true); }catch(e){} try{ SFX.coin(); }catch(e){} toast(t); setTimeout(()=>loadBankRank(true),1500); render(); };
   const dep=a=>{ a=Math.min(a,Math.floor(S.coins)); if(a<=0) return toast("貯金できるコインがありません"); S.coins-=a; S.bank=(S.bank||0)+a; S.bankEver=1; done(`🏦 ${a.toLocaleString()}コインを貯金しました`); };
-  const wd=a=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); a=Math.min(a,BANK_OUT_MAX,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（5億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; S.bankOutSS=seasonRaw(); done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
+  const wd=a=>{ if(bankOutDone()) return toast("この1時間はもう引き出しました（引き出しは1時間に1回・1億コインまで）"); a=Math.min(a,BANK_OUT_MAX,Math.floor(S.bank||0),Math.max(0,COIN_MAX-S.coins)); if(a<=0) return toast(S.coins>=COIN_MAX?"所持コインが上限（5億）なので引き出せません":"引き出せるコインがありません"); S.bank-=a; S.coins+=a; S.bankOutH=bankOutH(); done(`🏦 ${a.toLocaleString()}コインを引き出しました`); };
   $("#bkIn").onclick=()=>{ const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>S.coins) return toast("所持コインが足りません"); dep(a); };
-  $("#bkOut").onclick=()=>{ if(bankOutDone()) return toast("今シーズンはもう引き出しました（引き出しは1シーズンに1回・1000万コインまで）"); const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>BANK_OUT_MAX) return toast("引き出せるのは1000万コインまでです"); if(a>(S.bank||0)) return toast("貯金が足りません"); if(a>room) return toast(`所持コインは5億までなので、引き出せるのは ${room.toLocaleString()}コイン までです`); wd(a); };
+  $("#bkOut").onclick=()=>{ if(bankOutDone()) return toast("この1時間はもう引き出しました（引き出しは1時間に1回・1億コインまで）"); const a=amt(); if(a<=0) return toast("コインの数を入れてね"); if(a>BANK_OUT_MAX) return toast("引き出せるのは1億コインまでです"); if(a>(S.bank||0)) return toast("貯金が足りません"); if(a>room) return toast(`所持コインは5億までなので、引き出せるのは ${room.toLocaleString()}コイン までです`); wd(a); };
   $("#bkAllIn").onclick=()=>dep(Math.floor(S.coins));
   $("#bkAllOut").onclick=()=>wd(Math.floor(S.bank||0));
   $("#bkR").onclick=()=>loadBankRank(true);
@@ -8198,7 +8200,7 @@ function bankIntroNotice(){ if(S.nBankIntro1029||S.bankEver||(S.bank||0)>0) retu
     if(S.nBankIntro1029||S.bankEver||(S.bank||0)>0) return; S.nBankIntro1029=1; save();
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏦</div><p>コインを貯金できます！</p>
-      <div class="note" style="margin:0;text-align:left">「ランキング」の上のタブ<b>「貯金ランキング」</b>から、持っているコインを貯金できます。<br><br>🛡🧲 <b style="color:var(--berry)">貯金したコインは、コインマグネットで取られません！</b><br>💰 投資にも貯金を使えます。<br>📤 引き出しは1シーズン（ランク戦）に1回・1000万コインまで。<br>🏦 貯金が多い冒険者は貯金ランキングにのります。</div>
+      <div class="note" style="margin:0;text-align:left">「ランキング」の上のタブ<b>「貯金ランキング」</b>から、持っているコインを貯金できます。<br><br>🛡🧲 <b style="color:var(--berry)">貯金したコインは、コインマグネットで取られません！</b><br>💰 投資にも貯金を使えます。<br>📤 引き出しは1時間に1回・1億コインまで。<br>🏦 貯金が多い冒険者は貯金ランキングにのります。</div>
       <button class="btn gold" type="button" id="biGo">貯金しに行く</button><button class="btn ghost" type="button" id="biNo">あとで</button></div>`;
     document.body.appendChild(bg);
     bg.querySelector("#biGo").onclick=()=>{ bg.remove(); try{ tab="rank"; profMode="bank"; loadBankRank(true); render(); $("#stage").scrollTop=0; }catch(e){} };
@@ -10745,9 +10747,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261105010051" defer></script>
-<script src="io/io.js?v=20261105010051" defer></script>
-<script src="vt/vt.js?v=20261105010051" defer></script>
-<script src="fz/fz.js?v=20261105010051" defer></script>
-<script src="gd/gd.js?v=20261105010051" defer></script>
+<script src="ts/ts.js?v=20261105011456" defer></script>
+<script src="io/io.js?v=20261105011456" defer></script>
+<script src="vt/vt.js?v=20261105011456" defer></script>
+<script src="fz/fz.js?v=20261105011456" defer></script>
+<script src="gd/gd.js?v=20261105011456" defer></script>
 </body></html>
