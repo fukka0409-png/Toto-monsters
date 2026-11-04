@@ -5597,8 +5597,19 @@ async function qrCamera(){
     setTimeout(tick,180); };
   tick();
 }
+/* グッズチケットのQRコード：サーバーのルールに書いてある30コだけ使える。使うと gdqr/{コード} ができて、もう使えない */
+async function gtQr(v){ if(!DB||!MYID) return qrSay("グッズチケットのQRコードは、ログインしてから読み取ってね",false);
+  const acc=DB.doc("gdacc/"+MYID), used=DB.doc("gdqr/"+v); let n=0;
+  try{ await DB.runTransaction(async tx=>{ const a=await tx.get(acc), u=await tx.get(used); if(u.exists) throw new Error("used"); if(!a.exists) throw new Error("noacc"); const x=a.data(); if(x.st!=="ok") throw new Error("wait");
+      n=(x.tk||0)+1; tx.set(used,{uid:MYID, at:gnow()}); tx.update(acc,{tk:n, lq:v}); }); }
+  catch(e){ const m=String(e&&e.message);
+    return qrSay(m==="used"?"このグッズチケットのQRコードは、もう使われています":m==="noacc"?"先にグッズガチャの登録をしてね（ホームのグッズガチャから登録できます）":m==="wait"?"グッズガチャの登録が承認されてから読み取ってね":"このQRコードは使えませんでした（もう一度ためすか、ふっかーに連絡してね）",false); }
+  try{ S.gdCache=null; save(); }catch(e){} try{ SFX.reveal("S"); }catch(e){}
+  qrSay(`🎫 グッズチケットを1枚受け取りました！（今 ${n}枚）グッズガチャで使えます`,true); }
 async function qrRedeem(txt){
-  const v=String(txt).trim(); let h; try{ h=await sha256(v); }catch(e){ return qrSay("この画面ではQRコードを確認できませんでした",false); }
+  const v=String(txt).trim();
+  if(/^TOTOGT-[A-Z0-9]{12}$/.test(v)) return gtQr(v);   /* 2026-11-04：グッズチケット1枚のQRコード（1つのQRコードは1回だけ） */
+  let h; try{ h=await sha256(v); }catch(e){ return qrSay("この画面ではQRコードを確認できませんでした",false); }
   const c=QR_CODES.find(x=>x.h===h);
   if(!c) return qrSay("このQRコードは、トトと魔物たちの報酬のQRコードではありません",false);
   S.qrUsed=S.qrUsed||[];
@@ -10710,9 +10721,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261104134339" defer></script>
-<script src="io/io.js?v=20261104134339" defer></script>
-<script src="vt/vt.js?v=20261104134339" defer></script>
-<script src="fz/fz.js?v=20261104134339" defer></script>
-<script src="gd/gd.js?v=20261104134339" defer></script>
+<script src="ts/ts.js?v=20261104134858" defer></script>
+<script src="io/io.js?v=20261104134858" defer></script>
+<script src="vt/vt.js?v=20261104134858" defer></script>
+<script src="fz/fz.js?v=20261104134858" defer></script>
+<script src="gd/gd.js?v=20261104134858" defer></script>
 </body></html>
