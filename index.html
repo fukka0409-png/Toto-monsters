@@ -3806,7 +3806,7 @@ async function startRemote(uid){
     try{ if(!S.loveLv1519 && MYID && normName(myName())===normName("love")){ S.loveLv1519=1; if((S.plv||1)<1519){ S.plv=1519; S.pexp=0; lvWhy("運営の調整（1519にもどす）"); bumpMaxLv(); } save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんの冒険者レベルを1519に（画面が2つ動いていたバグで下がった分）
     try{ if(!S.loveMokoM80 && MYID && normName(myName())===normName("love")){ S.loveMokoM80=1; S.moko=Math.max(0,(S.moko||0)-80); save(); queueProfile(true); } }catch(e){}   // 2026-10-29：loveさんのモコを1回だけ80へらす（運営より）
     checkLoginBonus(); shieldNotice(); cheatNotice(); bankTaxNotice(); bankIntroNotice(); invRuleNotice(); ioNotice(); fuseNotice(); fuFreeNotice(); checkMokoPay();
-    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); await checkLimRetro(12, 113, "duckG12", "Golden Hero Duck"); await checkLimRetro(17, 118, "ameG17", "Amethyst Dragon");   /* 第17回：結果発表のあとに決めたので、もう精算した人にもとどける（結果発表でもらった人は二重にならない） */ checkCheatReset(); checkCheatRestore(); checkNamedGift(); checkGiftNames(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixRank11(13); fixLoveSv12(); fixLoveMaid(); fixInvLove12(); fixInvLove12(13); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); await fixYoko13(); fixBest2Yoko(); checkApology(); invSync(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
+    fixGuard(); queueProfile(true); await checkBattles(); await checkTsBattles(); await checkItems(); await checkTicks(); await checkSeason(); await checkUsagiGift(); await checkMaidGift(); await checkBritGift(); await checkPinkGift(); await checkLimRetro(6, 101, "redChk", "Red Dragon Hoodie Toto-Trump"); await checkLimRetro(12, 113, "duckG12", "Golden Hero Duck"); await checkLimRetro(17, 118, "ameG17", "Amethyst Dragon");   /* 第17回：結果発表のあとに決めたので、もう精算した人にもとどける（結果発表でもらった人は二重にならない） */ checkCheatReset(); checkCheatRestore(); checkNamedGift(); checkGiftNames(); try{ trimBox(); }catch(e){} ivBackfill(); await checkComp1019(); checkComp1019b(); checkComp1019d(); checkComp1019e(); await checkComp1019c(); await checkTicks(); await checkGifts(db); await checkFriends(); await checkRefs(); await checkInvestIncoming(); fixTop3Yoko(); fixTop3All(); await fixInvChun(); await fixTop3Yoko4(); await fixLoveL(); fixEastblue(); fixDragon1027(); fixRank11(); fixRank11(12); fixRank11(13); fixLoveSv12(); fixLoveMaid(); fixInvLove12(); fixInvLove12(13); fixLoveInv11(); noteTapioka(); fixBest4Yoko(); await fixYoko13(); fixBest2Yoko(); fixRikuBank(); checkApology(); invSync(); setTimeout(showInvestIntro, 900); setTimeout(checkSeasonEndMsg, 2500);
     clearInterval(giftTimer); giftTimer=setInterval(()=>{ checkGifts(db); checkBattles(); checkTsBattles(); checkItems(); checkLoginBonus(); checkMokoPay(); }, 5*60*1000);
     clearInterval(window.__invInT); window.__invInT=setInterval(()=>{ if(document.visibilityState==="visible") checkInvestIncoming(); }, 60*1000);   // 投資されたらすぐ（1分ごとに確認）
     setInterval(()=>{ if(seasonNow()>(S.season??0)) checkSeason(); }, 60*1000);   // ランク戦の切り替わりだけ毎分確認（通信は切り替わった時だけ）
@@ -7328,6 +7328,12 @@ async function fixYoko13(){ const SS=13, FL="fixY13";
     document.body.appendChild(g); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
   show(); }
 /* 2026-11-03：yoko★さんの過去最高順位を2位にする（運営の指定・1回だけ） */
+/* 2026-11-04：Rikuさんがまちがって5億コインを貯金したので、貯金から5億コインを所持コインにもどす（運営より・1回だけ） */
+function fixRikuBank(){ try{ if(S.rikuBank1104||!MYID||normName(myName())!==normName("Riku")) return; S.rikuBank1104=1;
+  const m=Math.min(500000000, Math.floor(S.bank||0)); S.bank=Math.floor(S.bank||0)-m; S.coins=Math.floor(S.coins||0)+m; save(); try{ queueProfile(true); }catch(e){} try{ renderCoins(); render(); }catch(e){}
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=63;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🏦</div><p>貯金をもどしました</p><div class="note" style="margin:0;text-align:center">まちがって貯金した分を、所持コインにもどしました。<br>🏦 貯金 −${m.toLocaleString()}コイン<br>🪙 所持コイン +${m.toLocaleString()}コイン</div><button class="btn gold" type="button">OK</button></div>`;
+  document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }catch(e){} }
 function fixBest2Yoko(){ if(S.fixB2y) return; S.fixB2y=1;
   if(normName(myName())===normName("yoko★")){ S.best=2; S.firsts=0; queueProfile(true); try{ render(); }catch(e){} }
   save(); }
@@ -10735,9 +10741,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261104232131" defer></script>
-<script src="io/io.js?v=20261104232131" defer></script>
-<script src="vt/vt.js?v=20261104232131" defer></script>
-<script src="fz/fz.js?v=20261104232131" defer></script>
-<script src="gd/gd.js?v=20261104232131" defer></script>
+<script src="ts/ts.js?v=20261104233208" defer></script>
+<script src="io/io.js?v=20261104233208" defer></script>
+<script src="vt/vt.js?v=20261104233208" defer></script>
+<script src="fz/fz.js?v=20261104233208" defer></script>
+<script src="gd/gd.js?v=20261104233208" defer></script>
 </body></html>
