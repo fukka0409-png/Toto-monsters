@@ -1279,7 +1279,7 @@ html[lang=en] .kn-bt span{font-size:38px}
   <button class="ttl-corner ttl-set" id="ttlSet" type="button" aria-label="設定"><img src="title/set.png" alt="" draggable="false"><span>設定</span></button>
   <button class="ttl-corner ttl-code ttl-upd" id="ttlUpd" type="button"><span>📖 ゲーム情報</span></button>
   <button class="ttl-corner ttl-code ttl-news" id="ttlNews" type="button"><span>📢 お知らせ</span><b class="ttl-news-dot" id="ttlNewsDot" hidden></b></button>
-  <button class="ttl-corner ttl-code" id="ttlCode" type="button" aria-label="呪文・QRプレゼント"><span>🎁 呪文・QRコード</span></button>
+  <button class="ttl-corner ttl-code" id="ttlCode" type="button" aria-label="呪文・QRプレゼント" hidden style="display:none"><span>🎁 呪文・QRコード</span></button>
   <div class="ttl-lang" translate="no"><button type="button" data-tl="ja">日本語</button><button type="button" data-tl="en">English</button></div>
 </div>
 <script>
@@ -1337,7 +1337,7 @@ html[lang=en] .kn-bt span{font-size:38px}
   <div class="tabs"><nav role="tablist">
     <button role="tab" data-tab="home" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ホーム</button>
     <button role="tab" data-tab="box" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-4 9 4v9l-9 4-9-4z"/><path d="M3 8l9 4 9-4M12 12v9"/></svg>BOX</button>
-    <button role="tab" data-tab="mission" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>ショップ</span></button>
+    <button role="tab" data-tab="mission" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M3 12h18M12 8v13M12 8c-2-4-6-4-6-1s4 1 6 1c2 0 6 2 6-1s-4-3-6 1"/></svg><span>呪文・QR</span></button>
     <button role="tab" data-tab="gacha" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M5 10h14M8 21h8M12 17v4"/></svg>ガチャ</button>
     <button role="tab" data-tab="rank" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg><span class="tab2"><small>ランキング</small>戦闘</span></button>
   </nav></div>
@@ -2074,6 +2074,7 @@ const I18N_EN = {
 "呪文": "Spells",
 "QRコード": "QR code",
 "ショップ": "Shop",
+"呪文・QR": "Spells & QR",
 "🎁 呪文・QRプレゼント": "🎁 Spells & QR gifts",
 "🎁 呪文・QRコード": "🎁 Spells & QR",
 "に合言葉を入れるとプレゼントがもらえることも…？": " on the Missions tab and you might get a present…?",
@@ -4559,7 +4560,7 @@ function bigUnitWarn(){ const n=S.units.length;
 // 呪文でまとめて売却する方法（お知らせに表示）
 const byeSpellHtml = L => L
   ? `<div class="ubw-spell"><b>✨ Sell many at once with a spell</b><br>Go to <b>Presents / Missions → Spells</b> and enter<br><code>Cランクさようなら</code><br>to sell all C-rank monsters at once (works for B / A / S / Z too, e.g. <code>Bランクさようなら</code>). Locked and placed monsters are kept.</div>`
-  : `<div class="ubw-spell"><b>✨ 呪文でまとめて売却できます</b><br>「プレゼント／ミッション」の<b>呪文</b>に<br><code>Cランクさようなら</code><br>ととなえると、Cランクの魔物をまとめて売却できます（<code>Bランクさようなら</code>のように、B・A・S・Zでも使えます）。鍵をかけた魔物と配置中の魔物は残ります。</div>`;
+  : `<div class="ubw-spell"><b>✨ 呪文でまとめて売却できます</b><br>下のタブ「呪文・QR」の<b>呪文</b>に<br><code>Cランクさようなら</code><br>ととなえると、Cランクの魔物をまとめて売却できます（<code>Bランクさようなら</code>のように、B・A・S・Zでも使えます）。鍵をかけた魔物と配置中の魔物は残ります。</div>`;
 // 魔物が800体以上の冒険者には、ゲームを開くたびにタイトル画面で注意する
 let ttlUnitWarnDone=false;
 function titleUnitWarn(){
@@ -4781,7 +4782,7 @@ function renderFusion(){ fuSel=fuSel.filter(u=>S.units.some(z=>z.u===u));
   if(!fuMokoTip && !free && (S.moko||0)<FUSE_MOKO){ fuMokoTip=1;
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=60;
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><img src="moko.png" alt="" style="width:72px;height:72px;margin:0 auto"><p>モコが足りません</p>
-      <div class="note" style="margin:0">融合には <b>${FUSE_MOKO}モコ</b> 必要です（今 ${mokoFmt(S.moko||0)}モコ）。<br>モコはログインボーナスやランキング報酬の他にショップから購入することも可能です！</div>
+      <div class="note" style="margin:0">融合には <b>${FUSE_MOKO}モコ</b> 必要です（今 ${mokoFmt(S.moko||0)}モコ）。<br>モコはログインボーナスやランキング報酬でもらえます！</div>
       <button class="btn gold" type="button" id="fmShop">ショップを見る</button><button class="btn ghost" type="button" id="fmOk">OK</button></div>`;
     document.body.appendChild(bg); bg.querySelector("#fmOk").onclick=()=>bg.remove();
     bg.querySelector("#fmShop").onclick=()=>{ bg.remove(); tab="mission"; render(); try{ $("#stage").scrollTop=0; }catch(e){} }; }
@@ -4957,6 +4958,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:18, t:"🎁 下のタブの「ショップ」が「呪文・QR」になりました（タイトル画面の「呪文・QRコード」はここに引っこし）。モコの販売はお休みです"},
   {ss:18, t:"🎁 毎日ログインボーナスが 2万コイン＋5モコ にアップ！"},
   {ss:18, t:"🏁 第18回ランク戦は11/18スタート！ 景品は 1位 グッズチケット10枚・2位 5枚・3位 2枚＋いつもの賞品＋限定キャラ「トラドラゴン」（ランキングのページにスタートまでのタイマーがあります）"},
   {ss:18, t:"🏁 ランク戦はしばらくお休みです。第17回で一旦おしまい（ランキングと上位キープボーナス・投資もお休み）。再開するときはお知らせします！"},
@@ -5013,7 +5015,7 @@ function openRules(){
   const n=v=>Number(v).toLocaleString();
   const secs=[
     ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>ランク戦終了時の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
-    ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：下のタブ「呪文・QRコード」の「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）</li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
+    ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：下のタブ「呪文・QR」の「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）</li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
     ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連・500連（BOXの魔物が500体以下のときだけ）もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span></li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b></li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
@@ -5431,18 +5433,17 @@ const mviewTxt=n=>MVIEW&&MVIEW["v"+n]?`👀 ${Number(MVIEW["v"+n]).toLocaleStrin
 async function loadMview(){ if(!DB) return; try{ const d=await withTO(DB.collection("shopcnt").doc("moko_"+seasonNow()).get()); MVIEW=d.exists?d.data():{}; document.querySelectorAll("[data-mview]").forEach(e=>e.textContent=mviewTxt(+e.dataset.mview)); }catch(e){} }
 document.addEventListener("click",e=>{ const a=e.target.closest("[data-mshop]"); if(!a||!DB||!MYID) return; const n=a.dataset.mshop; if(!S.mview||S.mview.s!==seasonNow()) S.mview={s:seasonNow()}; if(S.mview[n]) return;
   S.mview[n]=1; save(); try{ DB.collection("shopcnt").doc("moko_"+seasonNow()).set({["v"+n]:firebase.firestore.FieldValue.increment(1)},{merge:true}).then(loadMview).catch(()=>{}); }catch(err){} });
+/* 2026-11-04：ショップのタブは「呪文・QR」に。モコの販売（MOKO_SHOP・Stripe・特定商取引法の表記）はここに出さない（設定は残してある） */
 function renderMission(){
   const done=MISSIONS.filter((_,i)=>missionLeft(i)>0).length;
-  $("#stage").innerHTML=`<h2>ショップ</h2>${!MISSIONS.length?"":`<p class="sub">達成したら「達成」を押してね。それぞれ1日1回、クリアから24時間でまた挑戦できます。</p>
+  $("#stage").innerHTML=`<h2>🎁 呪文・QRコード</h2><div id="tabCode"></div>${!MISSIONS.length?"":`<p class="sub">達成したら「達成」を押してね。それぞれ1日1回、クリアから24時間でまた挑戦できます。</p>
   <div class="progress"><div class="bar"><b style="width:${done/MISSIONS.length*100}%"></b></div><span class="pct">${done}/${MISSIONS.length}</span></div>
   <div class="missions">${MISSIONS.map((m,i)=>{ const left=missionLeft(i), big=m.coins>=500; return `<div class="mission ${left?"cleared":"open"} ${big?"big":""}">
     <div class="m-body"><div class="m-no">MISSION ${i+1}${big?" ・ スペシャル":""}</div><div class="m-text">${m.text}</div><div class="amt">+${m.coins}コイン</div></div>
     ${left?`<div class="cd">クリア済み<span class="t" data-mcd="${i}">${fmt(left)}</span><small>次の挑戦まで</small></div>`:`<button class="btn ${big?"gold":""}" type="button" data-mi="${i}">達成</button>`}
-  </div>`}).join("")}</div>`}
-  ${MOKO_SHOP.map(x=>`<a class="shop-banner moko-banner" href="${mokoHref(x)}" target="_blank" rel="noopener" data-mshop="${x.n}"><img src="${x.img}" alt="${x.n}モコ（オンラインショップ）" loading="lazy"></a><div class="shop-views" data-mview="${x.n}">${mviewTxt(x.n)}</div>`).join("")}<p class="shop-law"><a href="tokushoho.html" target="_blank" rel="noopener">特定商取引法に基づく表記</a></p>${[].map(sh=>{ const left=shopLeft(sh.k); return `<a class="shop-banner" href="${sh.url}" target="_blank" rel="noopener" data-shop="${sh.k}"><img src="${sh.img}" alt="${sh.name}（オンラインショップ）"></a>
-    <div class="shop-cd ${left?"":"ready"}">${left?`報酬は受け取り済み ・ 次の報酬まで <b data-shopcd="${sh.k}">${fmt(left)}</b>`:`🎁 タップしてショップを${SHOP_STAY/1000}秒見ると <b>+${SHOP_REWARD.toLocaleString()}コイン</b>`}</div>`; }).join("")}`;
+  </div>`}).join("")}</div>`}`;
+  try{ renderBonus($("#tabCode")); }catch(e){}
   document.querySelectorAll("[data-mi]").forEach(b=>b.onclick=()=>confirmMission(+b.dataset.mi));
-  loadMview();
 }
 function confirmMission(i){
   if(missionLeft(i)>0) return;
@@ -5470,7 +5471,7 @@ function openItemList(){
 function renderGachaShop(){ renderGacha(); }
 // ミッションのページにボーナス（毎日・15分・1時間）と呪文をのせる
 function renderMissionPage(){
-  renderMission();   // 2026-10-25：呪文・QRコードは、タイトル画面の「🎁 呪文・QRコード」へ移した
+  renderMission();   // 2026-11-04：呪文・QRコードは、下のタブ「呪文・QR」に移した（タイトル画面のボタンはなくした）
   // デイリーミッションは2026-10-24になくした
 }
 /* ---------- デイリーミッション（それぞれ1日2回まで） ----------
@@ -10709,9 +10710,9 @@ async function titleRanks(){
 </script>
 <script src="mc/mc.js?v=8" defer></script>
 <script src="mb/mb.js?v=45" defer></script>
-<script src="ts/ts.js?v=20261104002329" defer></script>
-<script src="io/io.js?v=20261104002329" defer></script>
-<script src="vt/vt.js?v=20261104002329" defer></script>
-<script src="fz/fz.js?v=20261104002329" defer></script>
-<script src="gd/gd.js?v=20261104002329" defer></script>
+<script src="ts/ts.js?v=20261104134339" defer></script>
+<script src="io/io.js?v=20261104134339" defer></script>
+<script src="vt/vt.js?v=20261104134339" defer></script>
+<script src="fz/fz.js?v=20261104134339" defer></script>
+<script src="gd/gd.js?v=20261104134339" defer></script>
 </body></html>
