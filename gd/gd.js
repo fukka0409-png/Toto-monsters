@@ -426,6 +426,11 @@ async function delOjiOji(){ try{ if(!DB||!MYID||typeof dexPeek!=="function"||!de
 async function fixDn1030(){ try{ if(!DB||!MYID||typeof dexPeek!=="function"||!dexPeek()) return;
   await DB.runTransaction(async tx=>{ const sn=await tx.get(stockRef()); const st=sn.exists?sn.data():{}; if(st.fixD1030) return; tx.set(stockRef(),{...st, Dn:(st.Dn||0)+9, fixD1030:1}); }); try{ load().catch(()=>{}); }catch(e){} }catch(e){} }
 setTimeout(function tryFixD(){ if(typeof DB!=="undefined"&&DB&&MYID) fixDn1030(); else setTimeout(tryFixD,3000); }, 4500);
+/* 2026-11-06：ライス大好きさんのグッズガチャ登録を承認する（ふっかーが開いたときに1回だけ） */
+async function okRice1106(){ try{ if(!DB||!MYID||typeof dexPeek!=="function"||!dexPeek()||S.gdOkRice1106) return;
+  const q=await withTO(DB.collection("gdacc").get()); let n=0; for(const d of q.docs){ const x=d.data()||{}; if(normName(x.adv)===normName("ライス大好き") && x.st!=="ok"){ await withTO(DB.doc("gdacc/"+d.id).update({st:"ok", okAt:gnow()})); n++; } }
+  S.gdOkRice1106=1; save(); ADMC=null; if(n) T("ライス大好きさんのグッズガチャ登録を承認しました"); }catch(e){} }
+setTimeout(function tryOkRice(){ if(typeof DB!=="undefined"&&DB&&MYID) okRice1106(); else setTimeout(tryOkRice,3000); }, 5500);
 setTimeout(function tryDel(){ if(typeof DB!=="undefined"&&DB&&MYID) delOjiOji(); else setTimeout(tryDel,3000); }, 5000);
 setTimeout(function tryReset(){ if(typeof DB!=="undefined"&&DB&&MYID) resetFukka(); else setTimeout(tryReset,3000); }, 4000);
 
