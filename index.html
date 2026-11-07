@@ -309,7 +309,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .home.io .io-ch{bottom:28%}
 .io-note{position:absolute;z-index:3;right:4%;width:42%;bottom:calc(11% + 104px);text-align:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000;line-height:1.3}
 .io-bg{position:absolute;inset:0;background:url(io/home.jpg) center bottom/cover no-repeat;border-radius:inherit}
-/* トトの森の砦のホーム（ふっかーだけ・2026-11-07） */
+/* トトの森のホーム（ふっかーだけ・2026-11-07） */
 .tr-bg{position:absolute;inset:0;background:#2a1d3a url(toride/title.jpg?v=2) center 72%/cover no-repeat;border-radius:inherit}
 .tr-logo{position:absolute;z-index:2;left:0;right:0;top:38%;text-align:center;pointer-events:none;font-family:'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP',system-ui,sans-serif}
 .tr-logo .l1{font-size:22px;font-weight:900;color:#fff7e0;letter-spacing:.3em;text-indent:.3em;text-shadow:0 2px 0 #5a2d0c,0 0 10px rgba(0,0,0,.6)}
@@ -5337,7 +5337,7 @@ const tsHome = () => true;
 // 2026-10-28（ふっかーだけ・試作）：魔物合戦はランキングの自分のプロフィールから開く。ホームは前の（魔物を飾る）ホームにもどす
 const tsInHome = () => false;   // 2026-10-28：全員公開。ホームは魔物サバイバル、魔物合戦はプロフィールから
 const ioOn = () => true;
-const trHome = () => dexPeek();   // 2026-11-07：ホームの魔物サバイバルを「トトの森の砦」に交代（まだ公開しない：ふっかーだけ）
+const trHome = () => dexPeek();   // 2026-11-07：ホームの魔物サバイバルを「トトの森」に交代（まだ公開しない：ふっかーだけ）
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 // 図鑑：まだ出会っていない魔物の入手方法
 function howToGet(m){ const L=[];
@@ -5954,7 +5954,7 @@ function renderHome(){
         <button class="hm-btn" type="button" id="hmMini">🎮 ミニゲーム</button>
       </div></div>
     </div>
-    ${tsInHome()?`<div class="hm-ts" id="hmTs"></div>`:trHome()?`<div class="tr-logo"><div class="l1">トトの</div><div class="l2">森の砦</div><div class="l3">〜 SURVIVAL 3D 〜</div></div><div class="tr-go"><div class="tr-wrap"><button class="tr-start" type="button" id="trStart">スタート</button><span class="tr-finger">👆</span></div><div class="tr-sub">タップしてはじめよう</div></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
+    ${tsInHome()?`<div class="hm-ts" id="hmTs"></div>`:trHome()?`<div class="tr-logo"><div class="l1">トトの</div><div class="l2">森</div><div class="l3">〜 SURVIVAL 3D 〜</div></div><div class="tr-go"><div class="tr-wrap"><button class="tr-start" type="button" id="trStart">スタート</button><span class="tr-finger">👆</span></div><div class="tr-sub">タップしてはじめよう</div></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
     <div class="hm-stand ${isArt(h.m)?"art":""}"><img class="hm-mon" src="${m.img}" alt="${esc(m.name)}"></div>
     <div class="hm-name ${ioOn()?"io-hide":""}">${esc(m.name)}</div>
     ${ioOn()?`<button class="io-btn io-ch" type="button" id="ioChange">チェンジ</button><div class="io-stats" id="ioStats">倒した敵 …<br>最高脱出レベル …<br>四天王回数 …</div><div class="io-note">選んだ魔物のレベルやランクは関係ないです！</div><button class="io-btn io-go" type="button" id="ioStart">スタート</button>`
@@ -5966,7 +5966,7 @@ function renderHome(){
   if($("#hmStats")) $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   if($("#hmChange")) $("#hmChange").onclick=()=>openHomeEdit("m");
   if($("#ioChange")) $("#ioChange").onclick=()=>{ try{ SFX.tap(); }catch(e){} openHomeEdit("m"); };
-  if($(".tr-logo")){ const tp=$(".hm-top"), lg=$(".tr-logo"), go=$(".tr-go"); if(tp&&lg){ const top=tp.offsetTop+tp.offsetHeight+10; lg.style.top=top+"px"; if(go&&lg.offsetTop+lg.offsetHeight>go.offsetTop-6) lg.style.top=Math.max(0,go.offsetTop-6-lg.offsetHeight)+"px"; } }   /* 森の砦の文字がボタンに隠れないように */
+  if($(".tr-logo")){ const tp=$(".hm-top"), lg=$(".tr-logo"), go=$(".tr-go"); if(tp&&lg){ const top=tp.offsetTop+tp.offsetHeight+10; lg.style.top=top+"px"; if(go&&lg.offsetTop+lg.offsetHeight>go.offsetTop-6) lg.style.top=Math.max(0,go.offsetTop-6-lg.offsetHeight)+"px"; } }   /* トトの森の文字がボタンに隠れないように */
   if($("#trStart")) $("#trStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.openToride) window.openToride(true); };
   if($("#ioStart")) $("#ioStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.ioOpen) window.ioOpen(); };
   if($("#ioStats")) setTimeout(()=>{ try{ window.ioFillStats&&window.ioFillStats(); }catch(e){} },50);
@@ -10719,7 +10719,7 @@ async function titleRanks(){
       <div class="mg-pick"><button type="button" id="mgDef"><i>🛡</i><span><b>${L?"Defense":"防衛作戦"}</b><small>${L?"An idle game — guard your base for 24 hours and earn coins":"放置ゲーム。24時間土台を守ってコインをかせごう"}</small>${st?`<small><em id="mgDefSt">${st}</em></small>`:""}</span></button>
       <button type="button" id="mgMb" class="mg-mb" hidden><img src="mb/banner.jpg" alt=""><span><b>⚔️ ${L?"Monster Battle":"魔物バトル"}</b><small>${L?"Build a team of 6 and battle players or quests!":"6体の魔物を編成して、みんなやクエストと対戦しよう！"}</small></span></button>
       <button type="button" id="mgMc" class="mg-mc" hidden><img src="mc/banner.jpg" alt=""><span><b>🎯 ${L?"Monster Catcher":"魔物キャッチャー"}</b><small>${L?"A claw machine — grab monsters with arms drawn by everyone!":"UFOキャッチャー。みんなが描いたアームで魔物をつかもう！"}</small></span></button>
-      <button type="button" id="mgAdv"><i>🗡</i><span><b>${L?"Toto's Adventure":"トトの冒険"}</b><small>${L?"Action — defeat monsters for 5 minutes and climb the ranking":"アクション。5分間魔物を倒してランキング上位をめざそう"}</small></span></button>${trHome()?`<button type="button" id="mgIo"><i>🏃</i><span><b>${L?"Monster Survival":"魔物サバイバル"}</b><small>${L?"Normally on the home screen (your home shows Forest Fort now)":"ふつうはホーム画面にあるゲーム（ふっかーのホームは今、森の砦になっています）"}</small></span></button>`:""}${dexPeek()&&!trHome()?`<button type="button" id="mgTr"><i>🌲</i><span><b>${L?"Toto's Forest Fort (dev)":"トトの森の砦（開発中）"}</b><small>${L?"3D survival — chop trees, build walls and survive the night. Only you can see this":"3Dサバイバル。木を伐って壁や砲台を作り、夜の魔物から焚き火を守ろう。ふっかーだけに見えています"}</small></span></button>`:""}
+      <button type="button" id="mgAdv"><i>🗡</i><span><b>${L?"Toto's Adventure":"トトの冒険"}</b><small>${L?"Action — defeat monsters for 5 minutes and climb the ranking":"アクション。5分間魔物を倒してランキング上位をめざそう"}</small></span></button>${trHome()?`<button type="button" id="mgIo"><i>🏃</i><span><b>${L?"Monster Survival":"魔物サバイバル"}</b><small>${L?"Normally on the home screen (your home shows Toto's Forest now)":"ふつうはホーム画面にあるゲーム（ふっかーのホームは今、トトの森になっています）"}</small></span></button>`:""}${dexPeek()&&!trHome()?`<button type="button" id="mgTr"><i>🌲</i><span><b>${L?"Toto's Forest (dev)":"トトの森（開発中）"}</b><small>${L?"3D survival — chop trees, build walls and survive the night. Only you can see this":"3Dサバイバル。木を伐って壁や砲台を作り、夜の魔物から焚き火を守ろう。ふっかーだけに見えています"}</small></span></button>`:""}
       <div class="mg-rk"><div class="mg-rkh">🏆 ${L?"Toto's Adventure Ranking":"トトの冒険ランキング"}</div><div class="mg-rkg"><div><small>${L?"Defeated":"倒した数"}</small><b id="mgR1">―</b></div><div><small>${L?"Best Lv":"最高レベル"}</small><b id="mgR2">―</b></div></div><div class="mg-nx" id="mgNx"></div><div class="mg-rt" id="mgRt"></div></div></div>
       <button class="btn ghost" type="button" id="mgX">${L?"Close":"閉じる"}</button></div>`;
     document.body.appendChild(bg);
@@ -10732,11 +10732,11 @@ async function titleRanks(){
     bg.querySelector("#mgMc").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.openMC) openMC(); };
     bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); }; const bio=bg.querySelector("#mgIo"); if(bio) bio.onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.ioOpen) window.ioOpen(); };
     const btr=bg.querySelector("#mgTr"); if(btr) btr.onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} openToride(); }; }); };
-  // トトの森の砦（3Dサバイバル・2026-11-07・まだ公開しない：ふっかーだけ）。toride/index.html を全画面で開く
+  // トトの森（3Dサバイバル・2026-11-07・まだ公開しない：ふっかーだけ）。toride/index.html を全画面で開く
   function openToride(go){ if(document.getElementById("toride")) return;
     const w=document.createElement("div"); w.id="toride"; w.setAttribute("translate","no");
     w.style.cssText="position:fixed;inset:0;z-index:9000;background:#0d1530";
-    w.innerHTML=`<iframe src="toride/index.html?v=3${go?"&go=1":""}" title="トトの森の砦" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
+    w.innerHTML=`<iframe src="toride/index.html?v=4${go?"&go=1":""}" title="トトの森" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
     document.body.appendChild(w);
     const onMsg=e=>{ if(e.data&&e.data.toride==="close"){ window.removeEventListener("message",onMsg); w.remove(); } };
     window.addEventListener("message",onMsg); }
