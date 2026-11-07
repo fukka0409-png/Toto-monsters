@@ -323,6 +323,8 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .tr-rk li{display:flex;justify-content:space-between;gap:6px;padding:0 4px;border-radius:6px;font-size:12px}
 .tr-rk li.me{background:rgba(255,200,90,.3);font-weight:900}
 .tr-rk .my{margin-top:4px;text-align:center;font-weight:800;color:#ffe9b8;font-size:11px}
+.tr-rk .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-rk li b{flex:none}
 .tr-rk .no{text-align:center;opacity:.75}
 .tr-go{position:absolute;z-index:3;left:0;right:0;bottom:5%;display:flex;flex-direction:column;align-items:center}
 .tr-wrap{position:relative;animation:trPulse 1.5s ease-in-out infinite}
@@ -5352,12 +5354,14 @@ const trHome = () => true;   // 2026-11-07：ホームの魔物サバイバル�
 let TR_RK=null, TR_RK_AT=0, TR_RK_BUSY=false;
 function trRkHtml(){ const h="<h4>🏆 生き残りランキング</h4>"; const R=TR_RK; if(!R) return h+'<div class="no">読み込み中…</div>';
   if(!R.top.length) return h+'<div class="no">まだ記録がありません</div>';
-  let i=0,prev=-1,rank=0; const rows=R.top.map(t=>{ i++; if(t.d!==prev){ rank=i; prev=t.d; } return `<li class="${t.me?"me":""}"><span>${rank}位${t.me?"（あなた）":""}</span><b>${t.d}日</b></li>`; }).join("");
+  let i=0,prev=-1,rank=0; const rows=R.top.map(t=>{ i++; if(t.d!==prev){ rank=i; prev=t.d; } return `<li class="${t.me?"me":""}"><span class="nm">${rank}位 ${esc(t.nm||"？？？")}</span><b>${t.d}日</b></li>`; }).join("");
   return h+`<ol>${rows}</ol>`+(R.md?`<div class="my">あなた：${R.md}日（${R.mr}位/${R.n}人）</div>`:""); }
 async function trRkLoad(force){ const el=()=>document.getElementById("trRk");
   if(!DB||!MYID||TR_RK_BUSY) return; if(!force&&TR_RK&&Date.now()-TR_RK_AT<60000){ return; }
   TR_RK_BUSY=true;
-  try{ const col=DB.collection("trdays"); const q=await col.orderBy("d","desc").limit(3).get(); const top=[]; q.forEach(d=>top.push({d:d.data().d|0, me:d.id===MYID}));
+  try{ const col=DB.collection("trdays"); if(dexPeek()&&!S.trFix12&&window.trSaveDays){ try{ await window.trSaveDays(12); S.trFix12=1; save(); }catch(e){} }
+    const q=await col.orderBy("d","desc").limit(3).get(); const top=[]; q.forEach(d=>top.push({id:d.id, d:d.data().d|0, me:d.id===MYID}));
+    await Promise.all(top.map(async t=>{ try{ const pr=await DB.doc("profiles/"+t.id).get(); t.nm=pr.exists?(pr.data().name||""):""; }catch(e){ t.nm=""; } }));
     const mine=await col.doc(MYID).get(); const md=mine.exists?(mine.data().d|0):0; let mr=0, n=top.length;
     try{ if(md){ const a=col.where("d",">",md); mr=(a.count?(await a.count().get()).data().count:(await a.get()).size)+1; } n=col.count?(await col.count().get()).data().count:n; }catch(e){}
     TR_RK={top,md,mr,n}; TR_RK_AT=Date.now(); const e=el(); if(e) e.innerHTML=trRkHtml(); }
@@ -10771,7 +10775,7 @@ async function titleRanks(){
   function openToride(go){ if(document.getElementById("toride")) return;
     const w=document.createElement("div"); w.id="toride"; w.setAttribute("translate","no");
     w.style.cssText="position:fixed;inset:0;z-index:9000;background:#0d1530";
-    w.innerHTML=`<iframe src="toride/index.html?v=9${go?"&go=1":""}" title="トトの森" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
+    w.innerHTML=`<iframe src="toride/index.html?v=10${go?"&go=1":""}" title="トトの森" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
     document.body.appendChild(w);
     const onMsg=e=>{ if(e.data&&e.data.toride==="close"){ window.removeEventListener("message",onMsg); w.remove(); try{ trRkLoad(true); }catch(_){} } };
     window.addEventListener("message",onMsg); }
@@ -10781,7 +10785,6 @@ async function titleRanks(){
   window.trDB=()=>({db:DB,uid:MYID});   /* トトの森（iframe）からランキングを読む用 */
   /* 書きこみはこっち（本体）で作ったデータで行う。iframeで作ったオブジェクトをそのまま渡すとFirebaseに「ふつうのオブジェクトではない」とはじかれていた（2026-11-07修正） */
   /* ふっかーの12日の記録（保存されなかった分）を1回だけ入れる */
-  setTimeout(async()=>{ try{ if(typeof dexPeek==="function"&&dexPeek()&&!S.trFix12&&DB&&MYID){ await window.trSaveDays(12); S.trFix12=1; save(); } }catch(e){} },12000);
   window.trSaveDays=async d=>{ d=Math.max(1,Math.min(100000,Math.floor(+d||0))); if(!DB||!MYID) return false;
     const ref=DB.collection("trdays").doc(MYID); const cur=await ref.get(); const old=cur.exists?(cur.data().d|0):0;
     if(d>old) await ref.set({d:d, at:Date.now()}); TR_RK_AT=0; return true; };

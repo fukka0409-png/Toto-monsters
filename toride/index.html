@@ -953,7 +953,7 @@ function nearBuildings(x,z,cb){const i0=Math.round(x/2),j0=Math.round(z/2);for(l
 
 /* ---------- game flow ---------- */
 const MON_CAP=isMobile?45:70; // 同時に出る魔物の上限（重さ対策）
-const CYCLE=160,NIGHT_START=90; // 1日160秒（夜70秒）
+const CYCLE=200,NIGHT_START=130; // 1日200秒（昼130秒・夜70秒）2026-11-07 昼を40秒長く
 function resetWorld(){
   trees.forEach(t=>scene.remove(t.outer));rocks.forEach(r=>scene.remove(r.m));monsters.forEach(m=>scene.remove(m.g));
   arrows.forEach(a=>scene.remove(a.m));particles.forEach(p=>scene.remove(p.m));floats.forEach(f=>f.d.remove());
@@ -980,7 +980,9 @@ async function rkHtml(){const p=PDB();if(!p)return '<div class="rk"><h3>🏆 生
   try{const col=p.db.collection('trdays');const q=await col.orderBy('d','desc').limit(10).get();
     const mine=await col.doc(p.uid).get();const md=mine.exists?(mine.data().d|0):0;
     let myRank=0,total=q.size;try{const a=col.where('d','>',md);myRank=md?(a.count?(await a.count().get()).data().count:(await a.get()).size)+1:0;total=col.count?(await col.count().get()).data().count:q.size}catch(e){}
-    let rows='';let i=0,prev=-1,rank=0;q.forEach(doc=>{i++;const d=doc.data().d|0;if(d!==prev){rank=i;prev=d}rows+=`<li class="${doc.id===p.uid?'me':''}"><span>${rank}位${doc.id===p.uid?'（あなた）':''}</span><b>${d}日</b></li>`});
+    const L=[];q.forEach(doc=>L.push({id:doc.id,d:doc.data().d|0}));await Promise.all(L.map(async t=>{try{const pr=await p.db.doc('profiles/'+t.id).get();t.nm=pr.exists?String(pr.data().name||''):''}catch(e){t.nm=''}}));
+    const esc=x=>x.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    let rows='';let i=0,prev=-1,rank=0;L.forEach(t=>{i++;const d=t.d;if(d!==prev){rank=i;prev=d}rows+=`<li class="${t.id===p.uid?'me':''}"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${rank}位 ${esc(t.nm||'？？？')}</span><b style="flex:none;margin-left:6px">${d}日</b></li>`});
     return `<div class="rk"><h3>🏆 生き残りランキング</h3>${rows?`<ol>${rows}</ol>`:'<div style="text-align:center;opacity:.7">まだ記録がありません</div>'}${md?`<div class="my">あなたの最高：${md}日（${myRank}位 / ${total}人）</div>`:''}</div>`}
   catch(e){return '<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">読み込めませんでした</div></div>'}}
 async function rkFill(el){if(!el)return;el.innerHTML='<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">読み込み中…</div></div>';el.innerHTML=await rkHtml()}
