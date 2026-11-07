@@ -126,6 +126,15 @@ body.tmin #tutD,body.tmin #tutN{display:none}
 #card .mode{display:block;width:100%;margin:10px 0 0;text-align:left;padding:12px 16px;border-radius:16px;font-size:20px}
 #card .mode small{display:block;font-size:12px;font-weight:700;opacity:.8;margin-top:2px}
 #card .mode.p{background:linear-gradient(180deg,#bfe8ff,#6fb6ff);box-shadow:0 6px 20px rgba(80,160,255,.35)}
+/* 焚き火が画面の外にあるときの矢印（2026-11-08） */
+#fireDir{position:fixed;z-index:4;left:0;top:0;width:54px;height:54px;margin:-27px 0 0 -27px;display:none;pointer-events:none}
+#fireDir .a{position:absolute;inset:0;border-radius:50%;background:rgba(255,140,40,.92);box-shadow:0 0 14px rgba(255,150,40,.8);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+#fireDir .a::after{content:"";position:absolute;inset:0}
+#fireDir .ar{position:absolute;left:50%;top:50%;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:14px solid #ff9a3c;transform-origin:50% 0;filter:drop-shadow(0 0 4px rgba(255,140,40,.9))}
+#fireDir .c{position:absolute;inset:7px;border-radius:50%;background:rgba(20,14,30,.85);border:2px solid #ffb35c;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;line-height:1}
+#fireDir .c small{font-size:9px;font-weight:800;color:#ffd27a;margin-top:1px}
+#fireDir.low .c{border-color:#ff4d4d;animation:fdblink .6s infinite}
+@keyframes fdblink{50%{background:rgba(120,20,20,.85)}}
 </style>
 </head>
 <body>
@@ -142,6 +151,7 @@ body.tmin #tutD,body.tmin #tutN{display:none}
 </div>
 <div id="toast" class="pill"></div>
 <button id="quit" type="button">🏠 もどる</button>
+<div id="fireDir"><div class="ar" id="fireAr"></div><div class="c">🔥<small id="fireDist">0m</small></div></div>
 <div id="hint" class="pill">🌲 木に近づいて ⚔️ で伐採</div>
 <div id="joyzone"></div>
 <div id="joy"><div id="knob"></div></div>
@@ -1349,6 +1359,19 @@ function updateUI(dt){
   if($('hint').textContent!==h)$('hint').textContent=h;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').classList.remove('show')}
   const W=innerWidth,H=innerHeight;
+  { /* 焚き火が画面の外なら、画面のはしに方向を出す */
+    const fd=$('fireDir');v3.set(core.x,1,core.z).project(camera);let sx=(v3.x*.5+.5)*W,sy=(-v3.y*.5+.5)*H;const behind=v3.z>1;
+    const mT=150,mB=195,mS=34,inView=!behind&&sx>mS&&sx<W-mS&&sy>mT&&sy<H-mB;
+    if(inView){if(fd.style.display!=='none')fd.style.display='none'}
+    else{if(behind){sx=W-sx;sy=H-sy}
+      const cx=W/2,cy=H/2;let dx=sx-cx,dy=sy-cy;if(Math.abs(dx)<1e-3&&Math.abs(dy)<1e-3)dy=1;
+      const kx=dx?((dx>0?W-mS:mS)-cx)/dx:1e9,ky=dy?((dy>0?H-mB:mT)-cy)/dy:1e9,k=Math.min(Math.abs(kx),Math.abs(ky));
+      const px=cx+dx*k,py=cy+dy*k,ang=Math.atan2(dy,dx);
+      fd.style.display='block';fd.style.transform=`translate(${px}px,${py}px)`;
+      $('fireAr').style.transform=`translate(-50%,0) rotate(${ang*180/Math.PI+90}deg) translateY(-38px)`;
+      const dm=Math.round(Math.hypot(P.x-core.x,P.z-core.z))+'m';if($('fireDist').textContent!==dm)$('fireDist').textContent=dm;
+      fd.classList.toggle('low',core.hp<30)}
+  }
   for(const f of floats){f.t+=dt;f.p.y+=dt*1.6;v3.copy(f.p).project(camera);f.d.style.left=((v3.x*.5+.5)*W)+'px';f.d.style.top=((-v3.y*.5+.5)*H)+'px';f.d.style.opacity=Math.max(0,1-f.t/1.1);if(f.t>1.1)f.d.remove()}
   floats=floats.filter(f=>f.t<=1.1);
 }

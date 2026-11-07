@@ -10775,7 +10775,7 @@ async function titleRanks(){
   function openToride(go){ if(document.getElementById("toride")) return;
     const w=document.createElement("div"); w.id="toride"; w.setAttribute("translate","no");
     w.style.cssText="position:fixed;inset:0;z-index:9000;background:#0d1530";
-    w.innerHTML=`<iframe src="toride/index.html?v=14${go?"&go=1":""}" title="トトの森" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
+    w.innerHTML=`<iframe src="toride/index.html?v=15${go?"&go=1":""}" title="トトの森" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
     document.body.appendChild(w);
     const onMsg=e=>{ if(e.data&&e.data.toride==="close"){ window.removeEventListener("message",onMsg); w.remove(); try{ trRkLoad(true); }catch(_){} } };
     window.addEventListener("message",onMsg); }
