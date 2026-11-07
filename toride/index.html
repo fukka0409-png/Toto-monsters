@@ -545,6 +545,13 @@ const MTYPES={
   brute: {hp:34, spd:1.7,dmg:18,s:1.65,col:0x6b2b3a,eye:0xffb02e,drop:()=>4+(Math.random()<.4?1:0)},
   boss:  {hp:230,spd:1.35,dmg:38,s:2.6, col:0x22142e,eye:0xffe040,drop:()=>15}
 };
+function monPow(n,k){
+  const E={hp:[.6,.75,.9,1.25],dmg:[.6,.7,.8,1]}[k];   // 1〜4日目
+  if(n<=4)return E[Math.max(0,n-1)];
+  const g5=k==='hp'?1.38:1.2;                          // 5〜10日目：1日ごと×1.38（攻撃×1.2）
+  let v=E[3]*Math.pow(g5,Math.min(n,10)-4);
+  for(let i=1;i<=n-10;i++)v*=k==='hp'?1.25+.04*i:1.12+.02*i;   // 11日目〜：1日ごとの上がり方もどんどん大きく
+  return v}
 function makeMonster(kind,night){
   const T=MTYPES[kind],s=T.s,big=kind==='brute'||kind==='boss';
   const g=new THREE.Group();
@@ -568,9 +575,9 @@ function makeMonster(kind,night){
   const a=Math.random()*6.283,R=rand(44,54);
   g.position.set(Math.cos(a)*R,-1.2,Math.sin(a)*R);scene.add(g);
   // 日が経つほど強くなる
-  // 1日ごとに体力+60%・攻撃+28%。10日目以降はさらに毎日 体力×1.2・攻撃×1.13 ずつ上乗せ
+  // 2026-11-07 強さの段階：1〜3日目は弱め／4日目から少しずつ／5〜10日目はしっかりレベルアップ／11日目からは毎日どんどん大きく上がる（上がり方も日ごとに増える）
   const late=Math.max(0,night-10);
-  const hp=T.hp*(1+.6*(night-1))*Math.pow(1.2,late),dmg=Math.round(T.dmg*(1+.28*(night-1))*Math.pow(1.13,late));
+  const hp=T.hp*monPow(night,'hp'),dmg=Math.max(1,Math.round(T.dmg*monPow(night,'dmg')));
   return {g,body:bodyM,bm,baseEm,feet,arms,bar,kind,x:g.position.x,z:g.position.z,y:-1.2,r:.48*s,s,hp,max:hp,
     spd:T.spd*Math.min(1.6,1+.035*(night-1)+.02*late)*rand(.9,1.1),dmg,cd:0,flash:0,lunge:0,t:Math.random()*10,wob:rand(-.35,.35),kx:0,kz:0,dead:false};
 }
