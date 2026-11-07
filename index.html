@@ -309,6 +309,24 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .home.io .io-ch{bottom:28%}
 .io-note{position:absolute;z-index:3;right:4%;width:42%;bottom:calc(11% + 104px);text-align:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000;line-height:1.3}
 .io-bg{position:absolute;inset:0;background:url(io/home.jpg) center bottom/cover no-repeat;border-radius:inherit}
+/* トトの森の砦のホーム（ふっかーだけ・2026-11-07） */
+.tr-bg{position:absolute;inset:0;background:#2a1d3a url(toride/title.jpg?v=2) center 72%/cover no-repeat;border-radius:inherit}
+.tr-logo{position:absolute;z-index:2;left:0;right:0;top:29%;text-align:center;pointer-events:none;font-family:'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP',system-ui,sans-serif}
+.tr-logo .l1{font-size:22px;font-weight:900;color:#fff7e0;letter-spacing:.3em;text-indent:.3em;text-shadow:0 2px 0 #5a2d0c,0 0 10px rgba(0,0,0,.6)}
+.tr-logo .l2{font-size:64px;font-weight:900;line-height:1.05;letter-spacing:.05em;background:linear-gradient(180deg,#fff6c8 0%,#ffd45a 45%,#ff8a1f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #4a1f06) drop-shadow(0 0 2px #2a1003) drop-shadow(0 0 14px rgba(255,140,40,.55))}
+.tr-logo .l3{margin-top:2px;font-size:13px;font-weight:800;color:#ffe9b8;letter-spacing:.25em;text-indent:.25em;text-shadow:0 2px 3px #000}
+.tr-bg::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(180deg,rgba(20,10,30,0),rgba(20,10,30,.5));border-radius:inherit}
+.tr-go{position:absolute;z-index:3;left:0;right:0;bottom:5%;display:flex;flex-direction:column;align-items:center}
+.tr-wrap{position:relative;animation:trPulse 1.5s ease-in-out infinite}
+.tr-start{position:relative;overflow:hidden;font:inherit;font-size:26px;font-weight:900;letter-spacing:8px;text-indent:8px;color:#3a1600;padding:11px 42px 13px;border-radius:999px;border:4px solid #3a1600;background:linear-gradient(180deg,#fff6b8 0%,#ffd84a 42%,#ff9d24 100%);box-shadow:0 8px 0 #3a1600,0 14px 26px rgba(0,0,0,.5),inset 0 4px 0 rgba(255,255,255,.75),inset 0 -5px 0 rgba(200,90,0,.35);cursor:pointer;transition:transform .06s,box-shadow .06s}
+.tr-start::after{content:"";position:absolute;top:-10%;left:-60%;width:38%;height:120%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.8),transparent);transform:skewX(-20deg);animation:trShine 2.6s ease-in-out infinite}
+.tr-start:active{transform:translateY(7px);box-shadow:0 1px 0 #3a1600,0 4px 10px rgba(0,0,0,.5),inset 0 4px 0 rgba(255,255,255,.75)}
+.tr-finger{position:absolute;right:-14px;bottom:-28px;font-size:42px;pointer-events:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5));animation:trTap 1s ease-in-out infinite}
+.tr-sub{margin-top:14px;font-size:12px;font-weight:900;color:#fff;letter-spacing:2px;text-shadow:0 2px 4px #000;animation:trBlink 1.5s ease-in-out infinite}
+@keyframes trPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes trShine{0%{left:-60%}55%,100%{left:135%}}
+@keyframes trTap{0%,100%{transform:translate(0,0) rotate(-18deg)}50%{transform:translate(-8px,-12px) rotate(-18deg)}}
+@keyframes trBlink{0%,100%{opacity:1}50%{opacity:.45}}
 .io-btn{position:absolute;z-index:3;border:5px solid #1d1d1d;font:inherit;font-weight:900;color:#1d1d1d;box-shadow:0 4px 0 #1d1d1d}
 .io-ch{left:4%;bottom:24%;background:#fff;font-size:26px;padding:8px 18px}
 .io-go{right:4%;bottom:5%;width:42%;background:#f2dc3a;font-size:30px;padding:20px 6px;outline:5px solid #555;outline-offset:-12px}
@@ -5319,6 +5337,7 @@ const tsHome = () => true;
 // 2026-10-28（ふっかーだけ・試作）：魔物合戦はランキングの自分のプロフィールから開く。ホームは前の（魔物を飾る）ホームにもどす
 const tsInHome = () => false;   // 2026-10-28：全員公開。ホームは魔物サバイバル、魔物合戦はプロフィールから
 const ioOn = () => true;
+const trHome = () => dexPeek();   // 2026-11-07：ホームの魔物サバイバルを「トトの森の砦」に交代（まだ公開しない：ふっかーだけ）
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 // 図鑑：まだ出会っていない魔物の入手方法
 function howToGet(m){ const L=[];
@@ -5914,8 +5933,8 @@ function renderHome(){
   if(homeMode==="invest") return renderInvest();
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
   const h=homeCfg(), m=isArt(h.m)?artOf(h.m):mon(h.m);
-  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":ioOn()?" io":""}">
-    ${tsInHome()?"":ioOn()?`<div class="io-bg"></div>`:`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
+  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":trHome()?" tr":ioOn()?" io":""}">
+    ${tsInHome()?"":trHome()?`<div class="tr-bg"></div>`:ioOn()?`<div class="io-bg"></div>`:`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
     <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>`}
     <div class="hm-top hm-top2">
       <button class="hm-card" type="button" id="hmProf" aria-label="プロフィールを見る">
@@ -5935,7 +5954,7 @@ function renderHome(){
         <button class="hm-btn" type="button" id="hmMini">🎮 ミニゲーム</button>
       </div></div>
     </div>
-    ${tsInHome()?`<div class="hm-ts" id="hmTs"></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
+    ${tsInHome()?`<div class="hm-ts" id="hmTs"></div>`:trHome()?`<div class="tr-logo"><div class="l1">トトの</div><div class="l2">森の砦</div><div class="l3">〜 SURVIVAL 3D 〜</div></div><div class="tr-go"><div class="tr-wrap"><button class="tr-start" type="button" id="trStart">スタート</button><span class="tr-finger">👆</span></div><div class="tr-sub">タップしてはじめよう</div></div>`:`${decoHtml(h.dl,"l")}${decoHtml(h.dr,"r")}
     <div class="hm-stand ${isArt(h.m)?"art":""}"><img class="hm-mon" src="${m.img}" alt="${esc(m.name)}"></div>
     <div class="hm-name ${ioOn()?"io-hide":""}">${esc(m.name)}</div>
     ${ioOn()?`<button class="io-btn io-ch" type="button" id="ioChange">チェンジ</button><div class="io-stats" id="ioStats">倒した敵 …<br>最高脱出レベル …<br>四天王回数 …</div><div class="io-note">選んだ魔物のレベルやランクは関係ないです！</div><button class="io-btn io-go" type="button" id="ioStart">スタート</button>`
@@ -5947,6 +5966,7 @@ function renderHome(){
   if($("#hmStats")) $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   if($("#hmChange")) $("#hmChange").onclick=()=>openHomeEdit("m");
   if($("#ioChange")) $("#ioChange").onclick=()=>{ try{ SFX.tap(); }catch(e){} openHomeEdit("m"); };
+  if($("#trStart")) $("#trStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.openToride) window.openToride(true); };
   if($("#ioStart")) $("#ioStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.ioOpen) window.ioOpen(); };
   if($("#ioStats")) setTimeout(()=>{ try{ window.ioFillStats&&window.ioFillStats(); }catch(e){} },50);
   if($("#hmTsNew")) $("#hmTsNew").onclick=()=>{ try{ SFX.tap(); }catch(e){} openTsHelp(); };
@@ -10712,13 +10732,14 @@ async function titleRanks(){
     bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); };
     const btr=bg.querySelector("#mgTr"); if(btr) btr.onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} openToride(); }; }); };
   // トトの森の砦（3Dサバイバル・2026-11-07・まだ公開しない：ふっかーだけ）。toride/index.html を全画面で開く
-  function openToride(){ if(document.getElementById("toride")) return;
+  function openToride(go){ if(document.getElementById("toride")) return;
     const w=document.createElement("div"); w.id="toride"; w.setAttribute("translate","no");
     w.style.cssText="position:fixed;inset:0;z-index:9000;background:#0d1530";
-    w.innerHTML=`<iframe src="toride/index.html?v=1" title="トトの森の砦" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
+    w.innerHTML=`<iframe src="toride/index.html?v=3${go?"&go=1":""}" title="トトの森の砦" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
     document.body.appendChild(w);
     const onMsg=e=>{ if(e.data&&e.data.toride==="close"){ window.removeEventListener("message",onMsg); w.remove(); } };
     window.addEventListener("message",onMsg); }
+  window.openToride=openToride;
   // トトの戦略（試作）：まだ公開しないので、冒険者「ふっかー」にだけボタンを出す
   { const tb=document.getElementById("ttlTs"); tb.onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.openTS) openTS(); };
     tb.hidden=true; }   // トトの戦略の試作ボタンは消した（魔物合戦はホームから）

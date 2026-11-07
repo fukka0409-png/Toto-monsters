@@ -67,9 +67,38 @@ canvas{display:block;position:fixed;inset:0}
 #card button{font:inherit;font-size:18px;font-weight:800;color:#2a1405;border:0;border-radius:999px;padding:13px 40px;background:linear-gradient(180deg,#ffd27a,#ff9a3c);box-shadow:0 6px 20px rgba(255,140,40,.45);cursor:pointer}
 #card button.back{display:none;margin:12px auto 0;font-size:14px;padding:9px 28px;color:#fff;background:rgba(255,255,255,.14);box-shadow:none;border:1px solid rgba(255,255,255,.25)}
 body.emb #card button.back{display:block}
+.tback{display:none;position:absolute;left:calc(10px + env(safe-area-inset-left));top:calc(10px + env(safe-area-inset-top));font:inherit;font-size:13px;font-weight:800;color:#fff;padding:7px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(15,20,30,.55)}
+body.emb .tback{display:block}
 #quit{display:none;position:fixed;left:calc(10px + env(safe-area-inset-left));top:calc(118px + env(safe-area-inset-top));z-index:6;font:inherit;font-size:12px;font-weight:800;color:#fff;padding:6px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(15,20,30,.55)}
 body.emb #quit{display:block}
 #card .stat{font-size:16px;line-height:1.8;margin:10px 0 18px}
+
+/* タイトル画面 */
+#title{position:fixed;inset:0;z-index:12;background:#2a1d3a;overflow:hidden}
+#title .tbg{position:absolute;inset:0;background:url(title.jpg) center 62%/cover no-repeat}
+.tlogo{position:absolute;left:0;right:0;top:calc(7% + env(safe-area-inset-top));text-align:center;pointer-events:none;font-family:'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP',system-ui,sans-serif}
+.tlogo .l1{font-size:min(8vw,34px);font-weight:900;color:#fff7e0;letter-spacing:.3em;text-indent:.3em;text-shadow:0 3px 0 #5a2d0c,0 0 12px rgba(0,0,0,.6)}
+.tlogo .l2{font-size:min(22vw,96px);font-weight:900;line-height:1.05;letter-spacing:.05em;background:linear-gradient(180deg,#fff6c8 0%,#ffd45a 45%,#ff8a1f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 5px 0 #4a1f06) drop-shadow(0 0 2px #2a1003) drop-shadow(0 0 18px rgba(255,140,40,.55))}
+.tlogo .l3{margin-top:4px;font-size:min(5vw,20px);font-weight:800;color:#ffe9b8;letter-spacing:.25em;text-indent:.25em;text-shadow:0 2px 3px #000}
+#title .tbg::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,rgba(20,10,30,0),rgba(20,10,30,.55))}
+#title .tbtm{position:absolute;left:0;right:0;bottom:calc(5% + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px}
+.swrap{position:relative;animation:spulse 1.5s ease-in-out infinite}
+.startbtn{position:relative;overflow:hidden;font:inherit;font-size:28px;font-weight:900;letter-spacing:8px;text-indent:8px;color:#3a1600;padding:12px 48px 14px;border-radius:999px;border:4px solid #3a1600;
+  background:linear-gradient(180deg,#fff6b8 0%,#ffd84a 42%,#ff9d24 100%);box-shadow:0 8px 0 #3a1600,0 14px 26px rgba(0,0,0,.5),inset 0 4px 0 rgba(255,255,255,.75),inset 0 -5px 0 rgba(200,90,0,.35);cursor:pointer;transition:transform .06s,box-shadow .06s}
+.startbtn::after{content:"";position:absolute;top:-10%;left:-60%;width:38%;height:120%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.8),transparent);transform:skewX(-20deg);animation:sshine 2.6s ease-in-out infinite}
+.startbtn:active{transform:translateY(7px);box-shadow:0 1px 0 #3a1600,0 4px 10px rgba(0,0,0,.5),inset 0 4px 0 rgba(255,255,255,.75),inset 0 -5px 0 rgba(200,90,0,.35)}
+.finger{position:absolute;right:-14px;bottom:-30px;font-size:44px;pointer-events:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5));animation:stap 1s ease-in-out infinite}
+.tsub{margin-top:14px;font-size:13px;font-weight:800;color:#fff;letter-spacing:2px;text-shadow:0 2px 4px #000;animation:sblink 1.5s ease-in-out infinite}
+.tlink{font:inherit;font-size:13px;font-weight:800;color:#fff;padding:7px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,15,35,.55);cursor:pointer}
+@keyframes spulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes sshine{0%{left:-60%}55%,100%{left:135%}}
+@keyframes stap{0%,100%{transform:translate(0,0) rotate(-18deg)}50%{transform:translate(-8px,-12px) rotate(-18deg)}}
+@keyframes sblink{0%,100%{opacity:1}50%{opacity:.45}}
+#how{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,8,18,.6)}
+#how .hcard2{max-width:340px;margin:20px;padding:20px;border-radius:20px;background:rgba(18,22,34,.92)}
+#how h2{margin:0 0 8px;text-align:center;font-size:20px}
+#how ul{padding-left:4px;list-style:none;font-size:14px;line-height:1.75;margin:0 0 14px}
+#how button{display:block;margin:0 auto;font:inherit;font-weight:800;font-size:15px;color:#2a1405;border:0;border-radius:999px;padding:9px 34px;background:linear-gradient(180deg,#ffd27a,#ff9a3c);cursor:pointer}
 </style>
 </head>
 <body>
@@ -107,22 +136,34 @@ body.emb #quit{display:block}
   <div id="hRows"></div>
   <button id="hClose">閉じる</button>
 </div></div>
-<div id="ov"><div id="card" class="pill">
-  <h1>トトの森の砦</h1>
-  <div class="sub">3Dサバイバル（開発中・ふっかーだけに表示）</div>
-  <ul>
-    <li>🕹️ 左側をドラッグで移動（PCはWASD）</li>
-    <li>🪓 ⚔️で木を伐る・岩を砕く・魔物を斬る</li>
-    <li>🧱 木材で壁、🏹 木材+石で砲台を建てる</li>
-    <li>💎 魔物を倒すと「魔物石」を落とす</li>
-    <li>💣 地雷・💥 大砲（自分か兵隊が操作）も作れる</li>
-    <li>⬆️ 魔物石で装置を最大Lv7まで強化</li>
-    <li>👥 魔物石で木こり・石掘り・兵隊・石拾いを雇える</li>
-    <li>🔥 焚き火は時間で弱まる。近くで⚔️を押して薪🪵をくべよう</li>
-    <li>💀 火が消えるか、自分が倒れたらゲームオーバー</li>
-  </ul>
-  <button id="start">はじめる</button><button class="back" type="button">🏠 もどる</button>
-</div></div>
+<div id="ov" style="display:none"><div id="card" class="pill"></div></div>
+<div id="title">
+  <div class="tbg"></div>
+  <div class="tlogo"><div class="l1">トトの</div><div class="l2">森の砦</div><div class="l3">〜 SURVIVAL 3D 〜</div></div>
+  <div class="tbtm">
+    <div class="swrap"><button id="start" class="startbtn" type="button">スタート</button><span class="finger">👆</span></div>
+    <div class="tsub">タップしてはじめよう</div>
+    <button id="howBtn" class="tlink" type="button">❓ 遊び方</button>
+  </div>
+  <button class="back tback" type="button">🏠 もどる</button>
+  <div style="display:none">
+  </div>
+  <div id="how"><div class="pill hcard2">
+    <h2>遊び方</h2>
+    <ul>
+      <li>🕹️ 左側をドラッグで移動（PCはWASD）</li>
+      <li>🪓 ⚔️で木を伐る・岩を砕く・魔物を斬る</li>
+      <li>🧱 木材で壁、🏹 木材+石で砲台を建てる</li>
+      <li>💎 魔物を倒すと「魔物石」を落とす</li>
+      <li>💣 地雷・💥 大砲（自分か兵隊が操作）も作れる</li>
+      <li>⬆️ 魔物石で装置を最大Lv7まで強化</li>
+      <li>👥 魔物石で木こり・石掘り・兵隊・石拾いを雇える</li>
+      <li>🔥 焚き火は時間で弱まる。近くで⚔️を押して薪🪵をくべよう</li>
+      <li>💀 火が消えるか、自分が倒れたらゲームオーバー</li>
+    </ul>
+    <button id="howX" type="button">とじる</button>
+  </div></div>
+</div>
 
 <script src="../lib/three.min.js?v=149"></script>
 <script>
@@ -924,10 +965,15 @@ function gameOver(msg){
   $('ov').style.display='flex';
   $('again').onclick=()=>{$('ov').style.display='none';resetWorld();toast('☀️ Day 1 — 夜までに備えよう')};
 }
-$('start').onclick=()=>{
-  try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
-  $('ov').style.display='none';resetWorld();toast('☀️ Day 1 — 夜までに備えよう');
-};
+function startGame(){
+  try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}
+  $('title').style.display='none';$('ov').style.display='none';resetWorld();toast('☀️ Day 1 — 夜までに備えよう');
+}
+$('start').onclick=startGame;
+$('howBtn').onclick=()=>{$('how').style.display='flex'};
+$('howX').onclick=()=>{$('how').style.display='none'};
+// 音は最初のタップで有効にする（タイトルを飛ばして始めたとき用）
+addEventListener('pointerdown',()=>{try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}},{passive:true});
 
 /* ---------- lighting ---------- */
 const C=(h)=>new THREE.Color(h);
@@ -1233,7 +1279,7 @@ resetWorld();S.running=false;S.time=20;
 let last=performance.now(),T=0;
 function loop(now){
   requestAnimationFrame(loop);
-  let dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
+  let dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;T+=dt;
   if(S.running&&!S.paused){update(dt,T);updateUI(dt)}
   else{updateLighting(S.time%CYCLE,T);const fl=1+Math.sin(T*14)*.08,cf=core.hp>0?.15+.85*core.hp/core.max:.01;flame1.scale.set(cf,fl*cf,cf);flame2.scale.set(cf,cf,cf);camLook.set(Math.sin(T*.1)*3,.5,4);}
   updateCamera(dt);
@@ -1246,6 +1292,7 @@ const EMB=window.parent!==window;if(EMB)document.body.classList.add('emb');
 const goBack=()=>{try{window.parent.postMessage({toride:'close'},'*')}catch(e){}};
 document.addEventListener('click',e=>{if(e.target.closest('.back'))goBack()});
 $('quit').addEventListener('click',()=>{if(S.running&&!S.paused){S.paused=true;$('card').innerHTML=`<h1>ひと休み</h1><div class="sub">ゲームを止めています</div><button id="resume">つづける</button><button class="back" type="button">🏠 もどる（記録は残りません）</button>`;$('ov').style.display='flex';$('resume').onclick=()=>{$('ov').style.display='none';S.paused=false;last=performance.now()}}else goBack()});
+if(/[?&]go=1/.test(location.search))startGame(); // ホームの「スタート」から開いたときはタイトルを飛ばす
 })();
 </script>
 </body>
