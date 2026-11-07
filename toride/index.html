@@ -975,8 +975,7 @@ function resetWorld(){
 }
 /* ---------- 何日生き残ったかの匿名ランキング（2026-11-07） trdays/{uid} = {d, at} ---------- */
 const PDB=()=>{try{const w=window.parent;if(!w||w===window)return null;const r=typeof w.trDB==='function'?w.trDB():null;return r&&r.db&&r.uid?r:null}catch(e){return null}};
-async function rkSave(d){const p=PDB();if(!p)return;const ref=p.db.collection('trdays').doc(p.uid);
-  try{const cur=await ref.get();const old=cur.exists?(cur.data().d|0):0;if(d>old)await ref.set({d,at:Date.now()})}catch(e){console.warn('trdays',e)}}
+async function rkSave(d){try{const w=window.parent;if(w&&w!==window&&typeof w.trSaveDays==='function')await w.trSaveDays(d)}catch(e){console.warn('trdays',e)}}
 async function rkHtml(){const p=PDB();if(!p)return '<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">ゲーム本体から開くと見られます</div></div>';
   try{const col=p.db.collection('trdays');const q=await col.orderBy('d','desc').limit(10).get();
     const mine=await col.doc(p.uid).get();const md=mine.exists?(mine.data().d|0):0;

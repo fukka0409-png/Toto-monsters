@@ -7118,6 +7118,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-11-07-trdays", coins:1000 },   // トトの森の生き残りランキングに記録が保存されていなかった
   { id:"fix-2026-11-04-pausebot", coins:1000 },   // ランク戦がお休み中なのに、CPUがバトルやアイテム（マグネットなど）を使っていた
   { id:"fix-2026-11-01-sellrare", coins:1000 },   // レアな魔物をたくさん売るとき、確認の画面が長すぎて売却ボタンが押せなかった
   { id:"fix-2026-10-31-season2", coins:1000 },   // ランク戦の精算や投資で、運営が決めた順位がうまく反映されないことがあった
@@ -10770,14 +10771,20 @@ async function titleRanks(){
   function openToride(go){ if(document.getElementById("toride")) return;
     const w=document.createElement("div"); w.id="toride"; w.setAttribute("translate","no");
     w.style.cssText="position:fixed;inset:0;z-index:9000;background:#0d1530";
-    w.innerHTML=`<iframe src="toride/index.html?v=8${go?"&go=1":""}" title="トトの森" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
+    w.innerHTML=`<iframe src="toride/index.html?v=9${go?"&go=1":""}" title="トトの森" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
     document.body.appendChild(w);
     const onMsg=e=>{ if(e.data&&e.data.toride==="close"){ window.removeEventListener("message",onMsg); w.remove(); try{ trRkLoad(true); }catch(_){} } };
     window.addEventListener("message",onMsg); }
   window.openToride=openToride;
   /* 2026-11-07：トトの森の報酬。生き残った日数×500コイン（1回のプレイで1回だけ） */
   const TR_DONE=new Set();
-  window.trDB=()=>({db:DB,uid:MYID});   /* トトの森（iframe）からランキングを読み書きする用 */
+  window.trDB=()=>({db:DB,uid:MYID});   /* トトの森（iframe）からランキングを読む用 */
+  /* 書きこみはこっち（本体）で作ったデータで行う。iframeで作ったオブジェクトをそのまま渡すとFirebaseに「ふつうのオブジェクトではない」とはじかれていた（2026-11-07修正） */
+  /* ふっかーの12日の記録（保存されなかった分）を1回だけ入れる */
+  setTimeout(async()=>{ try{ if(typeof dexPeek==="function"&&dexPeek()&&!S.trFix12&&DB&&MYID){ await window.trSaveDays(12); S.trFix12=1; save(); } }catch(e){} },12000);
+  window.trSaveDays=async d=>{ d=Math.max(1,Math.min(100000,Math.floor(+d||0))); if(!DB||!MYID) return false;
+    const ref=DB.collection("trdays").doc(MYID); const cur=await ref.get(); const old=cur.exists?(cur.data().d|0):0;
+    if(d>old) await ref.set({d:d, at:Date.now()}); TR_RK_AT=0; return true; };
   window.trReward=(runId,d)=>{ d=Math.max(1,Math.min(1000,Math.floor(+d||0))); if(!runId||TR_DONE.has(runId)) return 0; TR_DONE.add(runId);
     const c=d*500; S.coins=(S.coins||0)+c; try{ capCoins(); }catch(e){} save(); try{ renderCoins(); }catch(e){} return c; };
   // トトの戦略（試作）：まだ公開しないので、冒険者「ふっかー」にだけボタンを出す
