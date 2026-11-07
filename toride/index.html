@@ -690,8 +690,7 @@ function destroyBuilding(b,byPlayer){
   buildings.delete(key(b.i,b.j));scene.remove(b.g);
   burst(b.x,1,b.z,b.lv>=4?0x8d8f93:0x8b5a2b,20,6,1.5);burst(b.x,.5,b.z,b.lv===5?0xb46bff:0x8d8f93,10,4,1.3);sfx('break');
   if(byPlayer){
-    const c=b.cost||COST[b.type],w=Math.floor(c.w/2),s=Math.floor(c.s/2);
-    S.wood+=w;S.stone+=s;floatText(b.x,2.4,b.z,'解体 +'+w+'🪵'+(s?' +'+s+'🪨':''),'wood');
+    floatText(b.x,2.4,b.z,'解体','wood');   /* 2026-11-07：壊しても材料は戻らない */
   }else toast(NAMES[b.type]+'が壊された！',1.8);
 }
 function upTarget(){
@@ -1295,7 +1294,7 @@ function updateUI(dt){
   else if(S.day===1&&S.stone<5)h='🪨 岩を砕くと石が手に入る';
   else if(S.mst>=5&&!workers.length)h='👥 魔物石で仲間を雇える（右下の👥）';
   else if(S.mst>=3)h='⬆️ 魔物石で壁・砲台を強化できる';
-  else h='🧱 壁と砲台で焚き火を固めよう（自分の建物も⚔️で解体できる）';
+  else h='🧱 壁と砲台で焚き火を固めよう（自分の建物も⚔️で解体できる・材料は戻らない）';
   if($('hint').textContent!==h)$('hint').textContent=h;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').classList.remove('show')}
   const W=innerWidth,H=innerHeight;
