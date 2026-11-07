@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>トトの森の砦</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#0d1530;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;color:#fff}
+canvas{display:block;position:fixed;inset:0}
+.pill{background:rgba(15,20,30,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+#top{position:fixed;left:0;right:0;top:0;padding:10px 10px 0;display:flex;gap:8px;align-items:flex-start;justify-content:space-between;pointer-events:none;z-index:5}
+#res{padding:8px 12px;display:flex;flex-direction:column;gap:3px;font-size:15px;font-weight:700}
+#res span{display:flex;gap:6px;align-items:center}
+#clock{padding:7px 14px;text-align:center;font-weight:800;font-size:15px;min-width:110px}
+#clock small{display:block;font-weight:600;font-size:11px;opacity:.8;margin-top:2px}
+#skip{pointer-events:auto;font:inherit;font-size:11px;font-weight:800;color:#fff;margin-top:6px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(110,90,200,.6);cursor:pointer}
+#cyc{height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin-top:5px;overflow:hidden}
+#cycf{height:100%;width:0;background:linear-gradient(90deg,#ffd36b,#ff8a4c,#7d8cff)}
+#bars{padding:8px 10px;display:flex;flex-direction:column;gap:6px;width:118px}
+.bar{display:flex;align-items:center;gap:6px;font-size:13px}
+.bar .t{flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}
+.bar .f{height:100%;width:100%;border-radius:5px;transition:width .15s}
+#hpf{background:linear-gradient(90deg,#ff4d6d,#ff8fa3)}
+#coref{background:linear-gradient(90deg,#ff8a1f,#ffd25e)}
+#hint{position:fixed;left:50%;transform:translateX(-50%);top:calc(122px + env(safe-area-inset-top));padding:7px 14px;font-size:13px;font-weight:600;white-space:nowrap;pointer-events:none;z-index:5;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#toast{position:fixed;left:50%;top:calc(164px + env(safe-area-inset-top));transform:translate(-50%,-10px);padding:10px 18px;font-weight:800;font-size:16px;opacity:0;transition:all .35s;pointer-events:none;z-index:6;text-align:center;max-width:86vw}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#joyzone{position:fixed;left:0;bottom:0;width:58%;height:70%;z-index:3}
+#joy{position:fixed;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.25);display:none;pointer-events:none;z-index:4}
+#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 2px 10px rgba(0,0,0,.3)}
+#ctrl{position:fixed;right:calc(14px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));z-index:5;display:flex;align-items:flex-end;gap:10px}
+#builds{display:grid;grid-template-columns:repeat(2,64px);gap:7px;direction:rtl}
+#builds>*{direction:ltr}
+.bb{width:64px;padding:5px 0 4px;text-align:center;font-size:20px;line-height:1.1;cursor:pointer;color:#fff;border-radius:14px}
+.bb small{display:block;font-size:9px;font-weight:700;opacity:.9;margin-top:2px}
+.bb.on{background:rgba(80,200,120,.55);border-color:#9effc0}
+.bb.no{opacity:.45}
+#cancel{display:none;background:rgba(200,60,60,.55)}
+#hire{position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(5,8,18,.55)}
+#hcard{width:min(92vw,380px);padding:16px 14px;border-radius:20px;background:rgba(18,22,34,.88)}
+.hhead{display:flex;justify-content:space-between;font-size:18px;margin-bottom:4px}
+.hnote{font-size:11px;opacity:.7;margin-bottom:10px}
+.hrow{display:flex;align-items:center;gap:8px;padding:9px 6px;border-top:1px solid rgba(255,255,255,.1)}
+.hic{font-size:28px;width:36px;text-align:center}
+.hinfo{flex:1;min-width:0}.hinfo small{display:block;font-size:11px;opacity:.75;margin-top:2px}
+.hinfo .lv{font-size:11px;font-weight:800;color:#ffe27a;margin-left:4px}
+.hb{font:inherit;font-size:12px;font-weight:800;line-height:1.25;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:6px 0;width:58px;background:rgba(80,200,120,.55);cursor:pointer}
+.hb.up{background:rgba(160,90,255,.6)}.hb.off{opacity:.4}
+#hClose{font:inherit;display:block;margin:12px auto 0;font-size:15px;font-weight:800;color:#2a1405;border:0;border-radius:999px;padding:9px 34px;background:linear-gradient(180deg,#ffd27a,#ff9a3c);cursor:pointer}
+#bMine.on,#bCan.on{background:rgba(255,140,40,.6);border-color:#ffd27a}
+#act.cannon{background:radial-gradient(circle at 35% 30%,rgba(255,90,90,.85),rgba(150,20,20,.85))}
+#bUp.on{background:rgba(160,90,255,.6);border-color:#d6b8ff}
+.ft.mst{color:#e3c4ff}.ft.lv{color:#ffe27a;font-size:20px}
+#coref.low{animation:blink .6s infinite}@keyframes blink{50%{opacity:.35}}
+#act{width:92px;height:92px;border-radius:50%;font-size:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:radial-gradient(circle at 35% 30%,rgba(255,180,90,.75),rgba(190,80,30,.75));border:2px solid rgba(255,230,190,.6)}
+#act small{font-size:11px;font-weight:800;margin-top:-2px}
+#act.press{transform:scale(.92)}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+.ft{position:absolute;font-weight:900;font-size:16px;text-shadow:0 2px 4px rgba(0,0,0,.7);transform:translate(-50%,-50%);white-space:nowrap}
+.ft.dmg{color:#ffd1d1}.ft.wood{color:#ffe0a8}.ft.stone{color:#dfe7f0}.ft.ok{color:#a6ffbf}
+#vig{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;box-shadow:inset 0 0 120px 40px rgba(255,0,30,.75);transition:opacity .25s}
+#ov{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(10,20,40,.55),rgba(5,8,18,.9))}
+#card{max-width:340px;margin:20px;padding:24px 22px;text-align:center;border-radius:22px}
+#card h1{margin:0 0 4px;font-size:34px;letter-spacing:2px;background:linear-gradient(180deg,#fff2c8,#ffb35c);-webkit-background-clip:text;background-clip:text;color:transparent}
+#card .sub{opacity:.8;font-size:13px;margin-bottom:16px}
+#card ul{text-align:left;padding-left:4px;list-style:none;font-size:14px;line-height:1.75;margin:0 0 18px}
+#card button{font:inherit;font-size:18px;font-weight:800;color:#2a1405;border:0;border-radius:999px;padding:13px 40px;background:linear-gradient(180deg,#ffd27a,#ff9a3c);box-shadow:0 6px 20px rgba(255,140,40,.45);cursor:pointer}
+#card button.back{display:none;margin:12px auto 0;font-size:14px;padding:9px 28px;color:#fff;background:rgba(255,255,255,.14);box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+body.emb #card button.back{display:block}
+#quit{display:none;position:fixed;left:calc(10px + env(safe-area-inset-left));top:calc(118px + env(safe-area-inset-top));z-index:6;font:inherit;font-size:12px;font-weight:800;color:#fff;padding:6px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(15,20,30,.55)}
+body.emb #quit{display:block}
+#card .stat{font-size:16px;line-height:1.8;margin:10px 0 18px}
+</style>
+</head>
+<body>
+<div id="vig"></div>
+<div id="fx"></div>
+<div id="top">
+  <div id="res" class="pill"><span>🪵 <b id="wood">0</b></span><span>🪨 <b id="stone">0</b></span><span>💎 <b id="mst">0</b></span></div>
+  <div id="clock" class="pill"><span id="clockT">Day 1 ☀️</span><small id="clockS">木を集めよう</small><div id="cyc"><div id="cycf"></div></div><button id="skip">⏩ 昼をスキップ</button></div>
+  <div id="bars" class="pill">
+    <div class="bar">❤️<div class="t"><div class="f" id="hpf"></div></div></div>
+    <div class="bar">🔥<div class="t"><div class="f" id="coref"></div></div></div>
+    <div style="font-size:10px;opacity:.75;text-align:right" id="fuelT">火力 100%</div>
+  </div>
+</div>
+<div id="toast" class="pill"></div>
+<button id="quit" type="button">🏠 もどる</button>
+<div id="hint" class="pill">🌲 木に近づいて ⚔️ で伐採</div>
+<div id="joyzone"></div>
+<div id="joy"><div id="knob"></div></div>
+<div id="ctrl">
+  <div id="builds">
+    <div class="bb pill" id="bHire">👥<small>仲間 💎</small></div>
+    <div class="bb pill" id="bUp">⬆️<small>強化 💎</small></div>
+    <div class="bb pill" id="bWall">🧱<small>壁 🪵3</small></div>
+    <div class="bb pill" id="bTur">🏹<small>砲台 🪵10🪨5</small></div>
+    <div class="bb pill" id="bMine">💣<small>地雷 🪵2🪨3</small></div>
+    <div class="bb pill" id="bCan">💥<small>大砲 🪵15🪨15</small></div>
+    <div class="bb pill" id="cancel">✖<small>やめる</small></div>
+  </div>
+  <div id="act" class="pill"><span id="actI">⚔️</span><small id="actL">攻撃/伐採</small></div>
+</div>
+<div id="hire" style="display:none"><div id="hcard" class="pill">
+  <div class="hhead"><b>👥 仲間を雇う</b><span>💎 <b id="hMst">0</b></span></div>
+  <div class="hnote">魔物石で人を雇ったり、職業ごとにレベルを上げられます（開いている間は時間が止まります）</div>
+  <div id="hRows"></div>
+  <button id="hClose">閉じる</button>
+</div></div>
+<div id="ov"><div id="card" class="pill">
+  <h1>トトの森の砦</h1>
+  <div class="sub">3Dサバイバル（開発中・ふっかーだけに表示）</div>
+  <ul>
+    <li>🕹️ 左側をドラッグで移動（PCはWASD）</li>
+    <li>🪓 ⚔️で木を伐る・岩を砕く・魔物を斬る</li>
+    <li>🧱 木材で壁、🏹 木材+石で砲台を建てる</li>
+    <li>💎 魔物を倒すと「魔物石」を落とす</li>
+    <li>💣 地雷・💥 大砲（自分か兵隊が操作）も作れる</li>
+    <li>⬆️ 魔物石で装置を最大Lv7まで強化</li>
+    <li>👥 魔物石で木こり・石掘り・兵隊・石拾いを雇える</li>
+    <li>🔥 焚き火は時間で弱まる。近くで⚔️を押して薪🪵をくべよう</li>
+    <li>💀 火が消えるか、自分が倒れたらゲームオーバー</li>
+  </ul>
+  <button id="start">はじめる</button><button class="back" type="button">🏠 もどる</button>
+</div></div>
+
+<script src="../lib/three.min.js?v=149"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const rand=(a,b)=>a+Math.random()*(b-a);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const smooth=(a,b,x)=>{x=clamp((x-a)/(b-a),0,1);return x*x*(3-2*x)};
+const isMobile=matchMedia('(pointer:coarse)').matches;
+
+/* ---------- renderer / scene ---------- */
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile?1.4:2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x9fd3f0,40,90);
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.5,120);
+
+const hemi=new THREE.HemisphereLight(0xcfe8ff,0x3b5a2a,0.85);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff0d0,1.1);
+sun.castShadow=true;
+sun.shadow.mapSize.set(isMobile?1024:2048,isMobile?1024:2048);
+Object.assign(sun.shadow.camera,{left:-26,right:26,top:26,bottom:-26,near:1,far:120});
+sun.shadow.bias=-0.0006;sun.shadow.camera.updateProjectionMatrix();
+scene.add(sun,sun.target);
+
+const matCache={};
+function M(c,o){const k=c+'|'+(o?JSON.stringify(o):'');if(!matCache[k])matCache[k]=new THREE.MeshStandardMaterial(Object.assign({color:c,flatShading:true,roughness:.85,metalness:0},o||{}));return matCache[k]}
+function mesh(geo,mat,cast=true,recv=true){const m=new THREE.Mesh(geo,mat);m.castShadow=cast;m.receiveShadow=recv;return m}
+const basic=c=>new THREE.MeshBasicMaterial({color:c});
+
+/* ---------- ground ---------- */
+const noise=(x,z)=>(Math.sin(x*.15)+Math.sin(z*.13+1.3)+Math.sin((x+z)*.07+.5)+Math.sin((x-z)*.21))/4;
+{
+  const G=new THREE.PlaneGeometry(240,240,90,90);G.rotateX(-Math.PI/2);
+  const p=G.attributes.position,cols=[],c=new THREE.Color(),dirt=new THREE.Color(0x8a6a44);
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),z=p.getZ(i),n=noise(x,z),d=Math.hypot(x,z);
+    p.setY(i,n*.22+(d>66?(d-66)*.06:0));
+    c.setHSL(.26+n*.035,.42+n*.08,.30+n*.05+Math.random()*.035);
+    c.lerp(dirt,1-smooth(2.5,6,d));
+    cols.push(c.r,c.g,c.b);
+  }
+  G.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));G.computeVertexNormals();
+  const ground=mesh(G,new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:1}),false,true);
+  scene.add(ground);
+  // grass
+  const gg=new THREE.ConeGeometry(.07,.55,3);gg.translate(0,.27,0);
+  const N=isMobile?1500:2800;
+  const grass=new THREE.InstancedMesh(gg,new THREE.MeshStandardMaterial({flatShading:true,roughness:1}),N);
+  const o=new THREE.Object3D();
+  for(let i=0;i<N;i++){
+    const a=Math.random()*6.283,r=5+Math.sqrt(Math.random())*75;
+    o.position.set(Math.cos(a)*r,0,Math.sin(a)*r);o.rotation.set(rand(-.3,.3),rand(0,6),rand(-.3,.3));
+    o.scale.setScalar(rand(.6,1.5));o.updateMatrix();grass.setMatrixAt(i,o.matrix);
+    grass.setColorAt(i,c.setHSL(rand(.22,.32),rand(.45,.65),rand(.28,.45)));
+  }
+  grass.receiveShadow=true;scene.add(grass);
+  const fg=new THREE.IcosahedronGeometry(.09,0);fg.translate(0,.3,0);
+  const NF=300,flowers=new THREE.InstancedMesh(fg,new THREE.MeshStandardMaterial({flatShading:true,roughness:.6}),NF);
+  const fc=[0xffffff,0xffe066,0xff8fb1,0xb39cff];
+  for(let i=0;i<NF;i++){const a=Math.random()*6.283,r=6+Math.random()*60;o.position.set(Math.cos(a)*r,0,Math.sin(a)*r);o.rotation.set(0,0,0);o.scale.setScalar(rand(.8,1.4));o.updateMatrix();flowers.setMatrixAt(i,o.matrix);flowers.setColorAt(i,c.set(fc[i%4]))}
+  scene.add(flowers);
+}
+
+/* ---------- fireflies ---------- */
+const ffTex=(()=>{const cv=document.createElement('canvas');cv.width=cv.height=64;const g=cv.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,200,1)');gr.addColorStop(.3,'rgba(220,255,120,.6)');gr.addColorStop(1,'rgba(200,255,100,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(cv)})();
+const FFN=110,ffGeo=new THREE.BufferGeometry(),ffPos=new Float32Array(FFN*3),ffSeed=[];
+for(let i=0;i<FFN;i++){const a=Math.random()*6.283,r=rand(4,52);ffSeed.push({x:Math.cos(a)*r,z:Math.sin(a)*r,y:rand(.5,2.5),p:Math.random()*10})}
+ffGeo.setAttribute('position',new THREE.BufferAttribute(ffPos,3));
+const ffMat=new THREE.PointsMaterial({map:ffTex,size:.7,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0});
+const fireflies=new THREE.Points(ffGeo,ffMat);fireflies.frustumCulled=false;scene.add(fireflies);
+
+/* ---------- shared geometries ---------- */
+const GEO={
+  trunk:(()=>{const g=new THREE.CylinderGeometry(.18,.28,1.4,6);g.translate(0,.7,0);return g})(),
+  stump:(()=>{const g=new THREE.CylinderGeometry(.24,.3,.35,7);g.translate(0,.17,0);return g})(),
+  pine:[[1.3,1.8,1.9],[1.0,1.5,2.8],[.65,1.2,3.6]].map(([r,h,y])=>{const g=new THREE.ConeGeometry(r,h,7);g.translate(0,y,0);return g}),
+  ball:new THREE.IcosahedronGeometry(1,0),
+  log:(()=>{const g=new THREE.CylinderGeometry(.3,.33,2,7);g.translate(0,1.35,0);return g})(),
+  logTip:(()=>{const g=new THREE.ConeGeometry(.3,.5,7);g.translate(0,2.6,0);return g})(),
+  box:new THREE.BoxGeometry(1,1,1),
+  part:new THREE.BoxGeometry(.15,.15,.15),
+  mBody:new THREE.IcosahedronGeometry(.55,1),
+  horn:new THREE.ConeGeometry(.09,.35,5),
+  eye:new THREE.SphereGeometry(.075,8,6),
+  sph:new THREE.SphereGeometry(1,8,6),
+  arrow:(()=>{const g=new THREE.CylinderGeometry(.035,.035,.9,4);g.rotateX(Math.PI/2);return g})(),
+  plane:new THREE.PlaneGeometry(1,1)
+};
+const LEAF=[0x3f7d3a,0x4a8f3c,0x2f6b34,0x5a9a3f,0x3a7344];
+const WORLD_R=60; // 遊べる範囲の半径（軽量化のため74→60に縮小）
+/* 外周の飾りの森：インスタンス描画でまとめて軽量化 */
+{
+  const ND=isMobile?190:280,o=new THREE.Object3D(),c=new THREE.Color();
+  const tm=new THREE.InstancedMesh(GEO.trunk,new THREE.MeshStandardMaterial({color:0x6b4423,flatShading:true,roughness:.9}),ND);
+  const cones=GEO.pine.map(g=>new THREE.InstancedMesh(g,new THREE.MeshStandardMaterial({flatShading:true,roughness:.9}),ND));
+  for(let i=0;i<ND;i++){
+    const a=Math.random()*6.283,r=rand(WORLD_R+3,WORLD_R+30),x=Math.cos(a)*r,z=Math.sin(a)*r,d=Math.hypot(x,z);
+    o.position.set(x,d>66?(d-66)*.06:0,z);o.rotation.set(0,rand(0,6),0);o.scale.setScalar(rand(.9,1.6));o.updateMatrix();
+    tm.setMatrixAt(i,o.matrix);
+    c.setHex(LEAF[i%LEAF.length]).offsetHSL(0,0,rand(-.04,.03));
+    cones.forEach(cm=>{cm.setMatrixAt(i,o.matrix);cm.setColorAt(i,c)});
+  }
+  [tm,...cones].forEach(m=>{m.receiveShadow=true;scene.add(m)});
+}
+/* 森の濃さ（場所によって森・草原・岩場ができる） */
+const forestN=(x,z)=>(Math.sin(x*.06+1)+Math.sin(z*.07+2.2)+Math.sin((x+z)*.045)+Math.sin((x-z)*.09+.7))/4;
+
+/* ---------- world state ---------- */
+let trees=[],rocks=[],monsters=[],arrows=[],particles=[],floats=[],drops=[];
+const buildings=new Map();
+const key=(i,j)=>i+','+j;
+const S={};
+
+/* ---------- trees ---------- */
+function makeTree(x,z,decor){
+  const outer=new THREE.Group(),inner=new THREE.Group();outer.add(inner);
+  const s=rand(.8,1.3);
+  inner.add(mesh(GEO.trunk,M(0x6b4423),!decor,true));
+  const lc=LEAF[Math.floor(Math.random()*LEAF.length)];
+  if(Math.random()<.55){GEO.pine.forEach(g=>inner.add(mesh(g,M(lc),!decor,true)))}
+  else{
+    const a=mesh(GEO.ball,M(lc),!decor,true);a.scale.set(1.35,1.15,1.35);a.position.y=2.5;a.rotation.set(rand(0,3),rand(0,3),0);inner.add(a);
+    const b=mesh(GEO.ball,M(LEAF[(LEAF.indexOf(lc)+1)%LEAF.length]),!decor,true);b.scale.setScalar(.85);b.position.set(rand(-.5,.5),3.3,rand(-.5,.5));inner.add(b);
+  }
+  const stump=mesh(GEO.stump,M(0x7a5230));stump.visible=false;outer.add(stump);
+  outer.position.set(x,0,z);outer.scale.setScalar(s);scene.add(outer);
+  return {outer,inner,stump,x,z,s,r:.45*s,hp:4,state:'alive',t:0,shake:0,decor};
+}
+function makeRock(x,z){
+  const g=new THREE.DodecahedronGeometry(.9,0),p=g.attributes.position;
+  for(let i=0;i<p.count;i++){p.setXYZ(i,p.getX(i)*rand(.85,1.15),p.getY(i)*rand(.85,1.15),p.getZ(i)*rand(.85,1.15))}
+  g.computeVertexNormals();
+  const s=rand(.7,1.15),m=mesh(g,M(Math.random()<.5?0x8a8f96:0x777c84));
+  m.position.set(x,.3*s,z);m.scale.set(s,s*.7,s);m.rotation.y=rand(0,6);scene.add(m);
+  return {m,x,z,s,r:.8*s,hp:5,state:'alive',t:0,shake:0};
+}
+function freeSpot(x,z,minD){
+  for(const t of trees)if(!t.decor&&Math.hypot(t.x-x,t.z-z)<minD)return false;
+  for(const r of rocks)if(Math.hypot(r.x-x,r.z-z)<minD)return false;
+  return true;
+}
+
+/* ---------- campfire (core) ---------- */
+const core={x:0,z:0,r:1.5,hp:100,max:100}; // hp = 火力（燃料）
+const FUEL_BURN=.62,FUEL_PER_WOOD=9; // 1秒あたりの減り / 木材1つで回復する量
+const coreG=new THREE.Group();scene.add(coreG);
+for(let i=0;i<9;i++){const a=i/9*6.283,s=mesh(new THREE.DodecahedronGeometry(.28,0),M(0x7c7f86));s.position.set(Math.cos(a)*.95,.15,Math.sin(a)*.95);s.rotation.set(rand(0,3),rand(0,3),0);coreG.add(s)}
+for(let i=0;i<4;i++){const l=mesh(GEO.box,M(0x5a3a1e));l.scale.set(.2,.2,1.5);l.position.y=.2;l.rotation.set(.35,i*Math.PI/4,0);coreG.add(l)}
+const flame1=new THREE.Mesh(new THREE.ConeGeometry(.45,1.3,7),new THREE.MeshBasicMaterial({color:0xff7a1a,transparent:true,opacity:.92}));flame1.position.y=.75;coreG.add(flame1);
+const flame2=new THREE.Mesh(new THREE.ConeGeometry(.25,.85,7),basic(0xffe07a));flame2.position.y=.6;coreG.add(flame2);
+const fireLight=new THREE.PointLight(0xff9a3c,2,20,1.6);fireLight.position.y=1.6;coreG.add(fireLight);
+
+/* 焚き火は1つだけ（増設システムは削除） */
+const fires=()=>[core];
+const litFires=()=>[core];
+const jobMax=()=>5; // 各職業の最大人数
+const costOf=t=>COST[t];
+
+/* ---------- player（もこもこ角つきの主人公） ---------- */
+const P={x:0,z:4,face:0,hp:100,max:100,cd:0,swing:0,lastHit:99,walk:0};
+const pG=new THREE.Group();scene.add(pG);pG.scale.setScalar(.82);
+const SOFT=(c,o)=>M(c,Object.assign({flatShading:false,roughness:1},o||{}));
+const FUR=SOFT(0xf6eef0),GRAY=SOFT(0x707074,{roughness:.8}),ANT=SOFT(0xb8733f,{roughness:.75}),LEAFM=SOFT(0x86c24f,{roughness:.7});
+const body=new THREE.Group();body.position.y=.78;pG.add(body);
+{ // もこもこの体：芯の球＋表面のふくらみ
+  const core0=mesh(new THREE.SphereGeometry(.6,24,18),FUR);body.add(core0);
+  const pg=new THREE.SphereGeometry(1,12,10),N=70;
+  for(let k=0;k<N;k++){
+    const y=1-(k+.5)/N*2,r=Math.sqrt(1-y*y),a=k*2.39996;
+    const nx=Math.cos(a)*r,nz=Math.sin(a)*r;
+    if(nz>.55&&y>-.5&&y<.45&&Math.abs(nx)<.6)continue; // 顔の部分はあける
+    const s=rand(.14,.21),p=mesh(pg,FUR);p.scale.setScalar(s);p.position.set(nx*.56,y*.56,nz*.56);body.add(p);
+  }
+  // 顔
+  const face=new THREE.Group();face.position.set(0,0,.607);body.add(face);
+  [-1,1].forEach(sd=>{
+    const e=new THREE.Mesh(GEO.sph,SOFT(0x1b1b1f,{roughness:.3}));e.scale.set(.05,.075,.035);e.position.set(sd*.16,.1,0);e.rotation.y=sd*.27;face.add(e);
+    const hl=new THREE.Mesh(GEO.sph,basic(0xffffff));hl.scale.setScalar(.016);hl.position.set(sd*.16+.012,.13,.033);face.add(hl);
+  });
+  const mouth=new THREE.Mesh(new THREE.CircleGeometry(.11,20,Math.PI,Math.PI),SOFT(0xd9506f,{side:THREE.DoubleSide}));mouth.position.set(0,-.04,.015);mouth.scale.set(1,.9,1);face.add(mouth);
+  const tongue=new THREE.Mesh(new THREE.CircleGeometry(.055,16,0,Math.PI),SOFT(0xff9aae,{side:THREE.DoubleSide}));tongue.position.set(0,-.125,.02);face.add(tongue);
+  // 角（枝分かれ）
+  const seg=(g,x1,y1,z1,x2,y2,z2,r)=>{const a=new THREE.Vector3(x1,y1,z1),b=new THREE.Vector3(x2,y2,z2),len=a.distanceTo(b);
+    const c=mesh(new THREE.CylinderGeometry(r*.85,r,len,10),ANT);c.position.copy(a).add(b).multiplyScalar(.5);c.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());g.add(c);
+    const e=mesh(GEO.sph,ANT);e.scale.setScalar(r*.85);e.position.copy(b);g.add(e);const s=mesh(GEO.sph,ANT);s.scale.setScalar(r);s.position.copy(a);g.add(s)};
+  [-1,1].forEach(sd=>{const g=new THREE.Group();g.position.set(sd*.24,.46,-.06);g.scale.x=sd;
+    seg(g,0,0,0,.12,.42,0,.085);seg(g,.12,.42,0,.08,.72,0,.075);
+    seg(g,.06,.22,0,.26,.36,0,.06);seg(g,.26,.36,0,.3,.52,0,.055);
+    seg(g,.11,.5,0,-.08,.62,0,.055);
+    body.add(g)});
+  // 葉っぱの羽
+  const sh=new THREE.Shape();sh.moveTo(0,0);sh.quadraticCurveTo(.15,.32,.5,.42);sh.quadraticCurveTo(.46,.26,.58,.16);sh.quadraticCurveTo(.44,.1,.5,-.04);sh.quadraticCurveTo(.36,-.02,.34,-.16);sh.quadraticCurveTo(.16,-.04,0,0);
+  const wg=new THREE.ExtrudeGeometry(sh,{depth:.035,bevelEnabled:true,bevelThickness:.02,bevelSize:.02,bevelSegments:2,curveSegments:8});wg.translate(0,0,-.02);
+  P.wings=[-1,1].map(sd=>{const pv=new THREE.Group();pv.position.set(sd*.5,.18,-.18);const w=mesh(wg,LEAFM);w.scale.set(sd*1.1,1.1,1);pv.add(w);pv.rotation.y=sd*.5;body.add(pv);return pv});
+}
+// 足
+const legL=mesh(GEO.sph,GRAY),legR=mesh(GEO.sph,GRAY);
+[legL,legR].forEach((l,i)=>{l.scale.set(.17,.13,.2);l.position.set(i?.24:-.24,.12,0);pG.add(l)});
+// 手（肩を支点に回す）
+const armL=new THREE.Group(),armR=new THREE.Group();armL.position.set(-.5,.82,.05);armR.position.set(.5,.82,.05);pG.add(armL,armR);
+[armL,armR].forEach((a,i)=>{const h=mesh(GEO.sph,GRAY);h.scale.setScalar(.17);h.position.set(i?.12:-.12,-.2,.12);a.add(h)});
+// 杖（右手）
+const axe=new THREE.Group();axe.position.set(.14,-.2,.2);armR.add(axe);
+{const stick=mesh(new THREE.CylinderGeometry(.035,.045,1.1,8),ANT);stick.position.y=.2;axe.add(stick);
+ const curl=mesh(new THREE.TorusGeometry(.15,.055,10,24,Math.PI*1.65),ANT);curl.position.set(0,.88,0);curl.rotation.set(0,Math.PI/2,-.6);axe.add(curl);
+ const orb=new THREE.Mesh(new THREE.SphereGeometry(.075,16,12),new THREE.MeshStandardMaterial({color:0xa23cff,emissive:0x8a1fff,emissiveIntensity:1,roughness:.2,metalness:.1}));orb.position.set(0,.87,0);axe.add(orb);
+ const ring=mesh(new THREE.TorusGeometry(.085,.022,8,16),SOFT(0xc98a50));ring.position.set(0,.87,0);ring.rotation.y=Math.PI/2;axe.add(ring);
+ P.orb=orb;}
+const torch=new THREE.PointLight(0xe2c6ff,0,11,1.8);torch.position.set(0,2.2,0);pG.add(torch);
+
+/* ---------- buildings ---------- */
+function hpBar(w,y){
+  const g=new THREE.Group();g.position.y=y;g.visible=false;
+  const bg=new THREE.Mesh(GEO.plane,new THREE.MeshBasicMaterial({color:0x111111,depthTest:false,transparent:true,opacity:.7}));bg.scale.set(w+.06,.14,1);bg.renderOrder=10;
+  const fg=new THREE.Mesh(GEO.plane,new THREE.MeshBasicMaterial({color:0xff4d4d,depthTest:false}));fg.scale.set(w,.09,1);fg.position.z=.001;fg.renderOrder=11;
+  g.add(bg,fg);g.userData={fg,w};return g;
+}
+function setBar(bar,f,col){bar.visible=f<.999;const {fg,w}=bar.userData;fg.scale.x=Math.max(.001,w*f);fg.position.x=-(w-w*f)/2;if(col)fg.material.color.setHex(col)}
+/* ---- 装置のレベル（1〜7） ---- */
+const MAXLV=7;
+const WALL_HP=[0,80,150,240,360,520,720,1000];
+const TUR={hp:[0,50,85,130,190,270,370,500],dmg:[0,2.5,3.5,5,7,10,14,19],int:[0,.95,.8,.66,.55,.45,.38,.3],rng:[0,14,15,16.5,18,20,21.5,23],shots:[0,1,1,1,2,2,3,3]};
+const MINE={dmg:[0,14,20,28,38,50,66,86],rad:[0,2.4,2.6,2.8,3.0,3.3,3.6,4.0],re:[0,7,6.2,5.5,4.8,4.2,3.6,3]};
+const CAN={hp:[0,90,140,200,280,380,500,650],dmg:[0,18,26,36,50,68,90,120],rad:[0,3,3.2,3.4,3.7,4,4.4,4.9],int:[0,3,2.7,2.4,2.1,1.8,1.55,1.3],rng:[0,24,25,26,27,28,30,32]};
+const UPCOST=[0,3,6,10,15,22,30]; // 今のLv → 次のLvに必要な魔物石
+const MT={
+  stone:()=>M(0x8d8f93),stone2:()=>M(0x9a9ca1),stone3:()=>M(0x7b7e86),wood:()=>M(0x8b5a2b),wood2:()=>M(0x9c6a38),dwood:()=>M(0x5c3b1e),
+  iron:()=>M(0x50555e,{metalness:.55,roughness:.45}),steel:()=>M(0xdfe6ee,{metalness:.6,roughness:.35}),gold:()=>M(0xe0b84a,{metalness:.75,roughness:.3}),dark:()=>M(0x3a3448),dark2:()=>M(0x2a2436),
+  roof:()=>M(0x8a3b2e),rune:()=>glow(0xb46bff),cyan:()=>glow(0x7dfcff)
+};
+function glow(c){const k='__g'+c;return matCache[k]||(matCache[k]=basic(c))}
+// Lv5〜7の高級テーマ
+const THEME={5:{a:0x3a3448,b:0x2a2436,trim:'gold',rune:0xb46bff},6:{a:0x2a1416,b:0x1a0c0e,trim:'gold',rune:0xff3b2f},7:{a:0xe9e6f2,b:0xcfcbe0,trim:'gold',rune:0x5ff6ff}};
+const metalOf=lv=>lv>=5?MT.gold():lv>=3?MT.steel():MT.iron();
+function add(g,geo,mat,x,y,z,sx=1,sy=1,sz=1){const m=mesh(geo,mat);m.position.set(x,y,z);m.scale.set(sx,sy,sz);g.add(m);return m}
+const CORN=[[-.5,-.5],[.5,-.5],[-.5,.5],[.5,.5]];
+function spikes(g,n,y,r,mat,len=1.6){for(let k=0;k<n;k++){const a=k/n*6.283+.39,pv=new THREE.Object3D();pv.rotation.y=-a;pv.position.y=y;const s=mesh(GEO.horn,mat);s.rotation.z=-Math.PI/2;s.position.x=r;s.scale.set(1.3,len,1.3);pv.add(s);g.add(pv)}}
+function floaters(g,y,col,n=4,r=1.3){const arr=[];for(let k=0;k<n;k++){const c=new THREE.Mesh(new THREE.OctahedronGeometry(.16,0),glow(col));c.userData.a=k/n*6.283;c.userData.r=r;c.userData.y=y;g.add(c);arr.push(c)}g.userData.floaters=arr}
+function wallVis(lv){
+  const g=new THREE.Group();let top=2.9;
+  if(lv<=2){
+    add(g,GEO.box,MT.stone(),0,lv===1?.17:.25,0,2,lv===1?.35:.5,2);
+    CORN.forEach(([x,z])=>{const l=add(g,GEO.log,MT.wood(),x,lv===1?0:.15,z);l.rotation.y=rand(0,3);add(g,GEO.logTip,lv===1?MT.wood2():MT.iron(),x,lv===1?0:.15,z)});
+    add(g,GEO.box,lv===1?MT.dwood():MT.iron(),0,1.7,0,2,.16,2);
+    if(lv===2)add(g,GEO.box,MT.iron(),0,.95,0,2.02,.14,2.02);
+  }else if(lv===3){
+    add(g,GEO.box,MT.stone2(),0,.6,0,2,1.2,2);
+    add(g,GEO.box,MT.stone3(),0,1.22,0,2.06,.1,2.06);
+    CORN.forEach(([x,z])=>{add(g,GEO.log,MT.wood(),x,.35,z,1,.75,1);add(g,GEO.logTip,MT.iron(),x,-.3,z)});
+    add(g,GEO.box,MT.iron(),0,2.05,0,2,.14,2);
+    spikes(g,8,.75,1.02,MT.iron(),1.4);
+  }else if(lv===4){
+    add(g,GEO.box,MT.stone(),0,1.2,0,2,2.4,2);
+    add(g,GEO.box,MT.stone3(),0,2.5,0,2.12,.22,2.12);
+    CORN.forEach(([x,z])=>add(g,GEO.box,MT.stone2(),x*1.25,2.85,z*1.25,.6,.5,.6));
+    add(g,GEO.box,MT.stone3(),0,.15,0,2.14,.3,2.14);
+    spikes(g,8,1,1.02,MT.iron(),1.8);spikes(g,8,1.8,1.02,MT.iron(),1.4);top=3.3;
+  }else{
+    const T=THEME[lv],A=M(T.a),B=M(T.b),R=glow(T.rune),G=MT.gold(),h=2.6+(lv-5)*.3;
+    add(g,GEO.box,A,0,h/2,0,2,h,2);
+    add(g,GEO.box,G,0,.18,0,2.14,.18,2.14);
+    add(g,GEO.box,G,0,h+.06,0,2.16,.16,2.16);
+    add(g,GEO.box,R,0,h*.54,0,2.03,.12,.5);add(g,GEO.box,R,0,h*.54,0,.5,.12,2.03);
+    add(g,GEO.box,R,0,h*.54,0,.12,h*.5,2.03);add(g,GEO.box,R,0,h*.54,0,2.03,h*.5,.12);
+    CORN.forEach(([x,z])=>{add(g,GEO.box,B,x*1.25,h+.4,z*1.25,.62,.6+(lv-5)*.15,.62);add(g,GEO.horn,G,x*1.25,h+.95+(lv-5)*.1,z*1.25,1.6,1.2+(lv-5)*.4,1.6)});
+    spikes(g,10+(lv-5)*2,.9,1.02,lv===6?M(0x1a0c0e,{metalness:.5}):G,2+(lv-5)*.4);spikes(g,10+(lv-5)*2,h*.72,1.02,G,1.6+(lv-5)*.3);
+    if(lv===7)floaters(g,h+1.8,T.rune,4,1.4);
+    top=h+1.4+(lv===7?.8:0);
+  }
+  return {vis:g,barY:top+.5};
+}
+function turretVis(lv){
+  const g=new THREE.Group(),head=new THREE.Group();
+  const H=[0,1.2,1.6,2.2,2.6,3.0,3.3,3.6][lv],T=THEME[lv];
+  const baseMat=T?M(T.a):lv>=3?MT.stone2():MT.stone();
+  add(g,new THREE.CylinderGeometry(lv>=3?.82:.85,1.05,H,lv>=3?8:6),baseMat,0,H/2,0);
+  if(lv>=3)add(g,new THREE.CylinderGeometry(1.08,1.08,.18,8),T?MT.gold():MT.stone3(),0,.1,0);
+  if(T){add(g,new THREE.CylinderGeometry(.86,.86,.12,8),MT.gold(),0,H*.55,0);add(g,new THREE.CylinderGeometry(.84,.84,.4,8),glow(T.rune),0,H*.3,0,1.005,1,1.005)}
+  const py=H+.1;
+  add(g,GEO.box,T?M(T.b):lv>=4?MT.stone3():MT.dwood(),0,py,0,lv>=3?2:1.7,.2,lv>=3?2:1.7);
+  const pr=lv>=3?.85:.7;
+  CORN.forEach(([x,z])=>add(g,GEO.box,T?MT.gold():lv>=4?MT.stone():MT.wood(),x*2*pr,py+(lv>=4?1.15:.3),z*2*pr,lv>=4?.22:.14,lv>=4?2.1:.5,lv>=4?.22:.14));
+  if(lv>=4){
+    const roof=mesh(new THREE.ConeGeometry(1.75,1.1+(lv>=6?.4:0),4),T?M(T.b):MT.roof());roof.position.y=py+2.75+(lv>=6?.2:0);roof.rotation.y=Math.PI/4;g.add(roof);
+    if(T){add(g,new THREE.ConeGeometry(.1,.6,6),MT.gold(),0,py+3.7,0);const orb=new THREE.Mesh(new THREE.OctahedronGeometry(.28+(lv-5)*.06,0),glow(T.rune));orb.position.y=py+4.25;g.add(orb)}
+    if(lv===7)floaters(g,py+4.25,T.rune,3,.9);
+  }
+  if(lv===2){add(g,GEO.box,MT.wood(),.75,py+.7,-.75,.06,1.4,.06);add(g,GEO.box,M(0xc0392b),.75,py+1.15,-.48,.02,.4,.5)}
+  const hy=py+.45;head.position.y=hy;g.add(head);
+  const bowMat=T?MT.gold():lv>=3?MT.iron():M(0x4a2f18);
+  const bowR=[0,.6,.62,.75,.75,.95,.95,1.05][lv];
+  const offs=TUR.shots[lv]===3?[-.4,0,.4]:TUR.shots[lv]===2?[-.28,.28]:[0];
+  offs.forEach(ox=>{
+    add(head,GEO.box,T?M(T.a):MT.wood(),ox,0,0,.22,.22,lv>=3?1.4:1.2);
+    const bow=mesh(new THREE.TorusGeometry(bowR*(offs.length===3?.8:1),lv>=3?.07:.05,4,12,Math.PI),bowMat);bow.rotation.set(Math.PI/2,0,Math.PI);bow.position.set(ox,0,.4);head.add(bow);
+    const tip=mesh(new THREE.ConeGeometry(.07,.25,4),lv>=2?MT.iron():M(0xc9d1d9));tip.rotation.x=Math.PI/2;tip.position.set(ox,0,lv>=3?.9:.75);head.add(tip);
+  });
+  const gem=new THREE.Mesh(new THREE.OctahedronGeometry(T?.2:.12,0),T?glow(T.rune):MT.cyan());gem.position.y=.28;head.add(gem);
+  return {vis:g,head,my:hy,barY:lv>=4?py+3.6+(T?1:0):hy+1};
+}
+function mineVis(lv){
+  const g=new THREE.Group(),T=THEME[lv];
+  const s=.8+lv*.06;
+  add(g,new THREE.CylinderGeometry(.55*s,.62*s,.18,10),T?M(T.a):lv>=3?MT.steel():MT.iron(),0,.09,0);
+  add(g,new THREE.CylinderGeometry(.3*s,.36*s,.12,10),T?MT.gold():MT.iron(),0,.22,0);
+  for(let k=0;k<6;k++){const a=k/6*6.283;add(g,new THREE.ConeGeometry(.06,.18,4),T?MT.gold():MT.iron(),Math.cos(a)*.48*s,.2,Math.sin(a)*.48*s)}
+  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.09*s,10,8),new THREE.MeshBasicMaterial({color:T?T.rune:0xff3020}));lamp.position.y=.3;g.add(lamp);
+  return {vis:g,lamp,barY:1.1};
+}
+function cannonVis(lv){
+  const g=new THREE.Group(),head=new THREE.Group(),T=THEME[lv];
+  add(g,GEO.box,T?M(T.b):lv>=3?MT.stone2():MT.dwood(),0,.2,0,1.9,.4,1.9);
+  if(lv>=3)add(g,GEO.box,T?MT.gold():MT.iron(),0,.42,0,1.95,.06,1.95);
+  head.position.y=.75;g.add(head);
+  add(head,GEO.box,T?M(T.a):MT.wood(),0,0,0,1.1,.35,1.2);
+  [-1,1].forEach(sd=>{const wh=mesh(new THREE.CylinderGeometry(.38,.38,.12,12),T?MT.gold():lv>=3?MT.iron():MT.dwood());wh.rotation.z=Math.PI/2;wh.position.set(sd*.62,-.1,-.15);head.add(wh)});
+  const barrels=lv>=6?[-.26,.26]:[0],bs=1+lv*.07,bm=T?MT.gold():metalOf(lv);
+  const pitch=new THREE.Group();pitch.position.y=.3;pitch.rotation.x=-.32;head.add(pitch);
+  barrels.forEach(ox=>{
+    const b=mesh(new THREE.CylinderGeometry(.17*bs,.24*bs,1.5*bs,12),T?M(T.a):lv>=3?MT.iron():M(0x3a3d44,{metalness:.5,roughness:.5}));b.rotation.x=Math.PI/2;b.position.set(ox,0,.45);pitch.add(b);
+    const rim=mesh(new THREE.TorusGeometry(.19*bs,.05,6,14),bm);rim.position.set(ox,0,.45+.75*bs);pitch.add(rim);
+    const band=mesh(new THREE.TorusGeometry(.23*bs,.04,6,14),bm);band.position.set(ox,0,.05);pitch.add(band);
+    if(T){const gl=mesh(new THREE.TorusGeometry(.21*bs,.03,6,14),glow(T.rune));gl.position.set(ox,0,.45);pitch.add(gl)}
+  });
+  if(lv===7)floaters(g,2.2,THEME[7].rune,3,.9);
+  return {vis:g,head,muzzle:.45+.75*bs,barY:2.2+(lv===7?.6:0)};
+}
+function setLevel(b,lv){
+  const ratio=b.max?b.hp/b.max:1,rot=b.head?b.head.rotation.y:0;
+  if(b.vis)b.g.remove(b.vis);
+  const r={wall:wallVis,turret:turretVis,mine:mineVis,cannon:cannonVis}[b.type](lv);
+  b.vis=r.vis;b.g.add(r.vis);b.head=r.head||null;if(b.head)b.head.rotation.y=rot;b.my=r.my;b.muzzle=r.muzzle;b.lamp=r.lamp;b.bar.position.y=r.barY;b.lv=lv;
+  b.max=b.type==='wall'?WALL_HP[lv]:b.type==='turret'?TUR.hp[lv]:b.type==='cannon'?CAN.hp[lv]:1;b.hp=Math.max(1,ratio*b.max);
+}
+function makeBuilding(type,i,j){
+  const g=new THREE.Group();g.position.set(i*2,0,j*2);
+  const bar=hpBar(1.4,3);g.add(bar);scene.add(g);
+  const b={type,g,i,j,x:i*2,z:j*2,hp:1,max:0,bar,cd:0,shake:0,lv:0,passable:type==='mine',arm:1};
+  setLevel(b,1);b.hp=b.max;return b;
+}
+const COST={wall:{w:3,s:0},turret:{w:10,s:5},mine:{w:2,s:3},cannon:{w:15,s:15}};
+const NAMES={wall:'🧱 壁',turret:'🏹 砲台',mine:'💣 地雷',cannon:'💥 大砲'};
+
+/* ghost */
+const ghostMat=new THREE.MeshBasicMaterial({color:0x6bff9a,transparent:true,opacity:.35,depthWrite:false});
+const ghost=new THREE.Group();scene.add(ghost);ghost.visible=false;
+const ghostWall=new THREE.Mesh(GEO.box,ghostMat);ghostWall.scale.set(2,2.8,2);ghostWall.position.y=1.4;
+const ghostTur=new THREE.Mesh(new THREE.CylinderGeometry(.9,1,2.2,6),ghostMat);ghostTur.position.y=1.1;
+const ghostRing=new THREE.Mesh(new THREE.RingGeometry(1.3,1.45,4,1),ghostMat);ghostRing.rotation.set(-Math.PI/2,0,Math.PI/4);ghostRing.position.y=.06;
+const ghostMine=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,.25,10),ghostMat);ghostMine.position.y=.12;
+const ghostCan=new THREE.Mesh(GEO.box,ghostMat);ghostCan.scale.set(1.9,1.3,1.9);ghostCan.position.y=.65;
+ghost.add(ghostWall,ghostTur,ghostRing,ghostMine,ghostCan);
+
+/* ---------- monsters ---------- */
+/* 魔物の種類（hp・速さ・攻撃・大きさ・魔物石ドロップ） */
+const MTYPES={
+  imp:   {hp:9,  spd:2.6,dmg:7, s:1,   col:0x3b2d5c,eye:0xff3b2f,drop:()=>Math.random()<.2?2:Math.random()<.85?1:0},
+  runner:{hp:5,  spd:4.5,dmg:5, s:.75, col:0x24505e,eye:0x6bfff0,drop:()=>Math.random()<.7?1:0},
+  brute: {hp:34, spd:1.7,dmg:18,s:1.65,col:0x6b2b3a,eye:0xffb02e,drop:()=>4+(Math.random()<.4?1:0)},
+  boss:  {hp:230,spd:1.35,dmg:38,s:2.6, col:0x22142e,eye:0xffe040,drop:()=>15}
+};
+function makeMonster(kind,night){
+  const T=MTYPES[kind],s=T.s,big=kind==='brute'||kind==='boss';
+  const g=new THREE.Group();
+  const col=new THREE.Color(T.col).lerp(new THREE.Color(0x12081a),Math.min(.55,(night-1)*.06));
+  const baseEm=night>=6?new THREE.Color(0x3a0010).multiplyScalar(Math.min(1.6,(night-5)*.35)):new THREE.Color(0);
+  const bm=new THREE.MeshStandardMaterial({color:col,flatShading:true,roughness:.7,emissive:baseEm.clone()});
+  const bodyM=mesh(GEO.mBody,bm);bodyM.position.y=.7;bodyM.scale.set(1,.95,kind==='runner'?1.25:1);g.add(bodyM);
+  const parts=new THREE.Group();bodyM.add(parts);
+  const hornS=1+Math.min(1,(night-1)*.12);
+  [-1,1].forEach(sd=>{
+    const h=mesh(GEO.horn,M(night>=8?0x2a2020:0xe8dcc0));h.position.set(sd*.26,.48,.05);h.rotation.z=-sd*.45;h.scale.setScalar(hornS);parts.add(h);
+    const e=new THREE.Mesh(GEO.eye,basic(T.eye));e.position.set(sd*.18,.1,.47);parts.add(e);
+  });
+  const mouth=new THREE.Mesh(GEO.box,basic(0x150b18));mouth.scale.set(.28,.06,.05);mouth.position.set(0,-.12,.5);parts.add(mouth);
+  if(big||night>=4){const n=big?3:2;for(let k=0;k<n;k++){const sp=mesh(GEO.horn,M(0x2a1a1a));sp.position.set(0,.35-k*.22,-.5);sp.rotation.x=-1.2;parts.add(sp)}}
+  if(kind==='boss'){for(let k=0;k<5;k++){const a=k/5*6.283;const c=mesh(GEO.horn,MT.gold());c.position.set(Math.cos(a)*.22,.58,Math.sin(a)*.22);c.scale.set(.8,.7,.8);parts.add(c)}}
+  const feet=[-1,1].map(sd=>{const f=mesh(GEO.sph,M(0x1e1530));f.scale.set(.16,.1,.22);f.position.set(sd*.25,.1,0);g.add(f);return f});
+  const arms=[-1,1].map(sd=>{const a=mesh(GEO.sph,bm);a.scale.setScalar(.15);a.position.set(sd*.6,.65,.1);g.add(a);return a});
+  const bar=hpBar(.9,1.65);g.add(bar);
+  g.scale.setScalar(s);
+  const a=Math.random()*6.283,R=rand(44,54);
+  g.position.set(Math.cos(a)*R,-1.2,Math.sin(a)*R);scene.add(g);
+  // 日が経つほど強くなる
+  // 1日ごとに体力+60%・攻撃+28%。10日目以降はさらに毎日 体力×1.2・攻撃×1.13 ずつ上乗せ
+  const late=Math.max(0,night-10);
+  const hp=T.hp*(1+.6*(night-1))*Math.pow(1.2,late),dmg=Math.round(T.dmg*(1+.28*(night-1))*Math.pow(1.13,late));
+  return {g,body:bodyM,bm,baseEm,feet,arms,bar,kind,x:g.position.x,z:g.position.z,y:-1.2,r:.48*s,s,hp,max:hp,
+    spd:T.spd*Math.min(1.6,1+.035*(night-1)+.02*late)*rand(.9,1.1),dmg,cd:0,flash:0,lunge:0,t:Math.random()*10,wob:rand(-.35,.35),kx:0,kz:0,dead:false};
+}
+
+/* ---------- effects ---------- */
+function burst(x,y,z,color,n,spd=4,size=1){
+  for(let k=0;k<n&&particles.length<320;k++){
+    const m=new THREE.Mesh(GEO.part,M(color));m.position.set(x,y,z);const s=size*rand(.6,1.4);m.scale.setScalar(s);scene.add(m);
+    const a=Math.random()*6.283,v=rand(.3,1)*spd;
+    particles.push({m,vx:Math.cos(a)*v,vy:rand(2,5)*spd/4,vz:Math.sin(a)*v,life:rand(.5,1),max:1,s,rx:rand(-8,8),ry:rand(-8,8)});
+  }
+}
+const fxEl=$('fx');
+function floatText(x,y,z,txt,cls){const d=document.createElement('div');d.className='ft '+(cls||'');d.textContent=txt;fxEl.appendChild(d);floats.push({d,p:new THREE.Vector3(x,y,z),t:0})}
+let toastT=0;function toast(t,dur=2.8){const e=$('toast');e.textContent=t;e.classList.add('show');toastT=dur}
+let shakeAmt=0;
+
+/* audio */
+let AC=null;
+function sfx(type){
+  if(!AC)return;try{
+  const t=AC.currentTime,g=AC.createGain();g.connect(AC.destination);
+  if(type==='chop'||type==='rock'||type==='place'||type==='break'||type==='boom'){
+    const len=type==='boom'?.7:type==='break'?.35:.12,b=AC.createBuffer(1,AC.sampleRate*len,AC.sampleRate),d=b.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);
+    const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=type==='boom'?380:type==='rock'?2400:type==='place'?500:type==='break'?700:1200;
+    s.connect(f);f.connect(g);g.gain.value=.35;s.start(t);
+  }else{
+    const o=AC.createOscillator();o.connect(g);
+    const cfg={hit:['square',300,120,.08,.12],shoot:['triangle',900,300,.09,.08],hurt:['sawtooth',200,80,.18,.15],kill:['triangle',500,90,.22,.14],coin:['sine',880,1320,.1,.08],night:['sine',220,110,1.2,.18],up:['triangle',520,1560,.35,.16],fire:['sine',180,90,.15,.12]}[type];
+    if(!cfg)return;o.type=cfg[0];o.frequency.setValueAtTime(cfg[1],t);o.frequency.exponentialRampToValueAtTime(cfg[2],t+cfg[3]);
+    g.gain.setValueAtTime(cfg[4],t);g.gain.exponentialRampToValueAtTime(.001,t+cfg[3]);o.start(t);o.stop(t+cfg[3]+.02);
+  }}catch(e){}
+}
+
+/* ---------- input ---------- */
+const keys={};
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();if(!e.repeat)actDown()}if(e.code==='Digit1')setBuild('wall');if(e.code==='Digit2')setBuild('turret');if(e.code==='Digit3')setBuild('up');if(e.code==='Escape')setBuild(null)});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')actUp()});
+const joy={id:null,sx:0,sy:0,x:0,y:0};
+const jz=$('joyzone'),jb=$('joy'),kn=$('knob');
+jz.addEventListener('pointerdown',e=>{joy.id=e.pointerId;joy.sx=e.clientX;joy.sy=e.clientY;joy.x=joy.y=0;jb.style.display='block';jb.style.left=e.clientX+'px';jb.style.top=e.clientY+'px';kn.style.transform='';try{jz.setPointerCapture(e.pointerId)}catch(_){}});
+jz.addEventListener('pointermove',e=>{if(e.pointerId!==joy.id)return;let dx=e.clientX-joy.sx,dy=e.clientY-joy.sy;const l=Math.hypot(dx,dy),mx=50;if(l>mx){dx*=mx/l;dy*=mx/l}joy.x=dx/mx;joy.y=dy/mx;kn.style.transform=`translate(${dx}px,${dy}px)`});
+const jEnd=e=>{if(e.pointerId!==joy.id)return;joy.id=null;joy.x=joy.y=0;jb.style.display='none'};
+jz.addEventListener('pointerup',jEnd);jz.addEventListener('pointercancel',jEnd);
+let actHeld=false;
+const actEl=$('act');
+function actDown(){if(!S.running)return;actHeld=true;actEl.classList.add('press');if(S.build==='up')doUpgrade();else if(S.build)placeBuild();else tryAttack()}
+function actUp(){actHeld=false;actEl.classList.remove('press')}
+actEl.addEventListener('pointerdown',e=>{e.preventDefault();actDown()});
+actEl.addEventListener('pointerup',actUp);actEl.addEventListener('pointercancel',actUp);actEl.addEventListener('pointerleave',actUp);
+$('bWall').addEventListener('pointerdown',e=>{e.preventDefault();setBuild(S.build==='wall'?null:'wall')});
+$('bTur').addEventListener('pointerdown',e=>{e.preventDefault();setBuild(S.build==='turret'?null:'turret')});
+$('bMine').addEventListener('pointerdown',e=>{e.preventDefault();setBuild(S.build==='mine'?null:'mine')});
+$('bCan').addEventListener('pointerdown',e=>{e.preventDefault();setBuild(S.build==='cannon'?null:'cannon')});
+$('bUp').addEventListener('pointerdown',e=>{e.preventDefault();setBuild(S.build==='up'?null:'up')});
+$('cancel').addEventListener('pointerdown',e=>{e.preventDefault();setBuild(null)});
+$('bHire').addEventListener('pointerdown',e=>{e.preventDefault();if(!S.running)return;setBuild(null);actUp();S.paused=true;renderHire();$('hire').style.display='flex'});
+$('skip').addEventListener('click',e=>{e.stopPropagation();if(!S.running||S.paused||S.night)return; // 夜はスキップ不可
+  S.time=Math.floor(S.time/CYCLE)*CYCLE+NIGHT_START-.3;S.warned=true;toast('⏩ 昼をスキップした！',1.4)});
+$('hClose').addEventListener('click',()=>{$('hire').style.display='none';S.paused=false;last=performance.now()});
+$('hRows').addEventListener('click',e=>{const b=e.target.closest('.hb');if(b)hireAction(b.dataset.a,b.dataset.j)});
+function setBuild(t){
+  if(!S.running)return;S.build=t;S.nearCan=undefined;actEl.classList.remove('cannon');
+  $('bWall').classList.toggle('on',t==='wall');$('bTur').classList.toggle('on',t==='turret');$('bUp').classList.toggle('on',t==='up');
+  $('cancel').style.display=t?'block':'none';
+  $('actI').textContent=t==='up'?'⬆️':t?'🔨':'⚔️';$('actL').textContent=t==='up'?'強化':t?'設置':'攻撃/伐採';
+  ghost.visible=!!t;ghostWall.visible=t==='wall';ghostTur.visible=t==='turret';ghostMine.visible=t==='mine';ghostCan.visible=t==='cannon';
+  $('bMine').classList.toggle('on',t==='mine');$('bCan').classList.toggle('on',t==='cannon');
+}
+
+/* ---------- actions ---------- */
+function faceTo(x,z){P.face=Math.atan2(x-P.x,z-P.z)}
+function tryAttack(){
+  if(P.cd>0)return;
+  P.cd=.42;P.swing=1;
+  let best=null,bd=2.5;
+  for(const m of monsters){if(m.dead||m.y<-.3)continue;const d=Math.hypot(m.x-P.x,m.z-P.z)-m.r;if(d<bd){bd=d;best=m}}
+  const cb=nearCannon();
+  if(cb){P.cd=.25;P.swing=0;if(cb.cd>0)return;const tg=cannonTarget(cb);if(!tg){if(S.canMsgT<=0){toast('💥 射程内に魔物がいない',1.2);S.canMsgT=2}return}fireCannon(cb,tg);return}
+  if(best){faceTo(best.x,best.z);hurtMonster(best,3.5,P.x,P.z);return}
+  // 焚き火に薪をくべる
+  let fz=null,fd=3;for(const f of fires()){const d=Math.hypot(P.x-f.x,P.z-f.z);if(d<fd){fd=d;fz=f}}
+  if(fz){const f=fz;
+    faceTo(f.x,f.z);
+    if(f.hp>=f.max){floatText(f.x,2.4,f.z,'火力MAX','ok');return}
+    if(S.wood<1){toast('🪵 木材がない！ 木を伐って薪にしよう');return}
+    const was=f.hp;S.wood--;f.hp=Math.min(f.max,f.hp+FUEL_PER_WOOD);f.warned=false;
+    burst(f.x,1.1,f.z,0xffb347,10,3.5);burst(f.x,.6,f.z,0x8b5a2b,4,2);floatText(f.x,2.4,f.z,'🔥 +'+FUEL_PER_WOOD,'wood');sfx('fire');
+    if(was<=0)toast('🔥 焚き火に再び火がついた！',1.8);
+    return;
+  }
+  // いちばん近い「木・岩・自分の建物」を叩く
+  let tgt=null,td=1.9,kind='';
+  for(const t of trees){if(t.decor||t.state!=='alive')continue;const d=Math.hypot(t.x-P.x,t.z-P.z)-t.r;if(d<td){td=d;tgt=t;kind='tree'}}
+  for(const r of rocks){if(r.state!=='alive')continue;const d=Math.hypot(r.x-P.x,r.z-P.z)-r.r;if(d<td){td=d;tgt=r;kind='rock'}}
+  for(const b of buildings.values()){if(b.grow!==undefined||b.type==='fire')continue;const d=Math.max(Math.abs(b.x-P.x),Math.abs(b.z-P.z))-1;if(d<Math.min(td,1.3)){td=d;tgt=b;kind='bld'}}
+  if(kind==='tree'){faceTo(tgt.x,tgt.z);chopTree(tgt,P.x,P.z,1)}
+  else if(kind==='rock'){faceTo(tgt.x,tgt.z);mineRock(tgt,1)}else if(kind==='bld'){const b=tgt;
+    faceTo(b.x,b.z);b.hp-=b.max*.26;b.shake=.25;sfx('chop');burst(b.x,1.2,b.z,0xa0703a,5,3);
+    if(b.hp<=0)destroyBuilding(b,true);
+  }
+}
+const nearP=(x,z,r=20)=>Math.hypot(P.x-x,P.z-z)<r;
+function chopTree(tr,fx,fz,gain){
+  tr.hp--;tr.shake=.3;S.wood+=gain;if(nearP(tr.x,tr.z))sfx('chop');
+  burst(tr.x,1,tr.z,0xc8935a,6,3.5);burst(tr.x,2.5,tr.z,0x4a8f3c,3,3);
+  floatText(tr.x,2,tr.z,'+'+gain+' 🪵','wood');
+  if(tr.hp<=0){tr.state='falling';tr.t=0;tr.claim=null;tr.outer.rotation.y=Math.atan2(tr.x-fx,tr.z-fz);S.wood+=2;setTimeout(()=>floatText(tr.x,2.6,tr.z,'+2 🪵','wood'),200);if(nearP(tr.x,tr.z))sfx('break')}
+}
+function mineRock(rk,gain){
+  rk.hp--;rk.shake=.25;S.stone+=gain;if(nearP(rk.x,rk.z))sfx('rock');
+  burst(rk.x,.6,rk.z,0xb8bec6,7,3.5);floatText(rk.x,1.6,rk.z,'+'+gain+' 🪨','stone');
+  if(rk.hp<=0){rk.state='gone';rk.t=0;rk.claim=null;rk.m.visible=false;S.stone+=2;burst(rk.x,.6,rk.z,0x8a8f96,16,5,1.4);setTimeout(()=>floatText(rk.x,2,rk.z,'+2 🪨','stone'),200);if(nearP(rk.x,rk.z))sfx('break')}
+}
+function destroyBuilding(b,byPlayer){
+  buildings.delete(key(b.i,b.j));scene.remove(b.g);
+  burst(b.x,1,b.z,b.lv>=4?0x8d8f93:0x8b5a2b,20,6,1.5);burst(b.x,.5,b.z,b.lv===5?0xb46bff:0x8d8f93,10,4,1.3);sfx('break');
+  if(byPlayer){
+    const c=b.cost||COST[b.type],w=Math.floor(c.w/2),s=Math.floor(c.s/2);
+    S.wood+=w;S.stone+=s;floatText(b.x,2.4,b.z,'解体 +'+w+'🪵'+(s?' +'+s+'🪨':''),'wood');
+  }else toast(NAMES[b.type]+'が壊された！',1.8);
+}
+function upTarget(){
+  const fx=P.x+Math.sin(P.face)*2,fz=P.z+Math.cos(P.face)*2;let best=null,bd=2.4;
+  for(const b of buildings.values()){if(b.type==='fire')continue;const d=Math.min(Math.hypot(b.x-fx,b.z-fz),Math.hypot(b.x-P.x,b.z-P.z)-.6);if(d<bd){bd=d;best=b}}
+  return best;
+}
+function doUpgrade(){
+  const b=upTarget();
+  if(!b){toast('強化する壁・砲台の近くで押してね');return}
+  if(b.lv>=MAXLV){toast('これ以上は強化できない（Lv MAX）');return}
+  const cost=UPCOST[b.lv];
+  if(S.mst<cost){toast(`💎 魔物石が足りない（${cost}個必要）`);return}
+  S.mst-=cost;setLevel(b,b.lv+1);b.g.scale.set(1,.2,1);b.grow=0;
+  burst(b.x,1.5,b.z,0xb46bff,18,5);burst(b.x,2.5,b.z,0xffe27a,10,4);
+  floatText(b.x,b.bar.position.y,b.z,b.lv>=MAXLV?'Lv MAX!':'Lv'+b.lv+'!','lv');sfx('up');
+}
+function ghostCell(){
+  const fx=P.x+Math.sin(P.face)*2.6,fz=P.z+Math.cos(P.face)*2.6;
+  const i=Math.round(fx/2),j=Math.round(fz/2),x=i*2,z=j*2;
+  let ok=!buildings.has(key(i,j))&&Math.hypot(x,z)>2.9&&Math.hypot(x,z)<WORLD_R-1;
+  if(ok)for(const t of trees){if(!t.decor&&t.state==='alive'&&Math.abs(t.x-x)<1+t.r&&Math.abs(t.z-z)<1+t.r){ok=false;break}}
+  if(ok)for(const r of rocks){if(r.state==='alive'&&Math.abs(r.x-x)<1+r.r*.8&&Math.abs(r.z-z)<1+r.r*.8){ok=false;break}}
+  return {i,j,x,z,ok};
+}
+function placeBuild(){
+  const c=ghostCell(),cost=costOf(S.build);
+  if(!c.ok){toast('ここには建てられない');return}
+  if(S.wood<cost.w||S.stone<cost.s){toast(`材料不足：🪵${cost.w}${cost.s?'・🪨'+cost.s:''} が必要`);return}
+  S.wood-=cost.w;S.stone-=cost.s;
+  const b=makeBuilding(S.build,c.i,c.j);
+  b.g.scale.set(1,.01,1);b.grow=0;
+  buildings.set(key(c.i,c.j),b);
+  burst(c.x,.3,c.z,0xb59a74,12,4);sfx('place');
+}
+/* 爆発（地雷・大砲） */
+let shells=[],rings=[];
+const ringGeo=new THREE.RingGeometry(.8,1,32);ringGeo.rotateX(-Math.PI/2);
+function explode(x,z,rad,dmg,col=0xffa040){
+  for(const m of monsters){if(m.dead||m.y<-.3)continue;const d=Math.hypot(m.x-x,m.z-z);if(d<rad+m.r)hurtMonster(m,Math.round(dmg*(1-.4*Math.min(1,d/rad))),x,z)}
+  burst(x,.5,z,col,18,7,1.5);burst(x,.4,z,0xffe27a,10,5,1.2);burst(x,.4,z,0x555555,12,4,1.8);
+  const rm=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.9,depthWrite:false,blending:THREE.AdditiveBlending}));
+  rm.position.set(x,.12,z);scene.add(rm);rings.push({m:rm,t:0,r:rad});
+  if(nearP(x,z,22)){shakeAmt=Math.max(shakeAmt,.25);sfx('boom')}
+}
+function fireCannon(b,tg){
+  b.cd=CAN.int[b.lv];b.recoil=.3;
+  const hr=b.head.rotation.y,mz=b.muzzle*.95+.2;
+  const sx=b.x+Math.sin(hr)*mz,sz=b.z+Math.cos(hr)*mz,sy=1.45;
+  const d=Math.hypot(tg.x-sx,tg.z-sz),T=Math.max(.55,d/17);
+  const tx=tg.x+Math.sin(tg.g.rotation.y)*tg.spd*T*.8,tz=tg.z+Math.cos(tg.g.rotation.y)*tg.spd*T*.8;
+  const m=mesh(new THREE.SphereGeometry(.18+b.lv*.02,10,8),b.lv>=5?glow(THEME[b.lv].rune):M(0x222226,{metalness:.5,roughness:.4}));m.position.set(sx,sy,sz);scene.add(m);
+  shells.push({m,sx,sy,sz,tx,tz,t:0,T,h:2+d*.22,lv:b.lv});
+  burst(sx,sy,sz,0x888888,8,3,1.3);burst(sx,sy,sz,0xffc060,5,4);
+  if(nearP(b.x,b.z,24))sfx('boom');
+}
+function cannonTarget(b){let tg=null,td=CAN.rng[b.lv];for(const m of monsters){if(m.dead||m.y<-.3)continue;const d=Math.hypot(m.x-b.x,m.z-b.z);if(d<td){td=d;tg=m}}return tg}
+function nearCannon(){for(const b of buildings.values()){if(b.type==='cannon'&&Math.max(Math.abs(P.x-b.x),Math.abs(P.z-b.z))<2)return b}return null}
+function hurtMonster(m,dmg,fx,fz){
+  if(m.dead)return;
+  m.hp-=dmg;m.flash=.12;
+  const dx=m.x-fx,dz=m.z-fz,d=Math.hypot(dx,dz)||1;m.kx=dx/d*(m.kind==='brute'?3:7);m.kz=dz/d*(m.kind==='brute'?3:7);
+  burst(m.x,.8*m.s,m.z,0x8a5cff,5,3);floatText(m.x,1.8*m.s,m.z,Math.round(dmg*10)/10+'','dmg');sfx('hit');
+  if(m.hp<=0)killMonster(m,true);
+}
+/* 魔物石のドロップ */
+const dropGeo=new THREE.OctahedronGeometry(.22,0);
+const dropMat=new THREE.MeshStandardMaterial({color:0xb46bff,emissive:0x7a2bff,emissiveIntensity:.9,flatShading:true,roughness:.25,metalness:.2});
+function spawnDrop(x,z,n){
+  for(let k=0;k<n;k++){
+    const m=new THREE.Mesh(dropGeo,dropMat);m.castShadow=true;
+    const a=Math.random()*6.283,sp=rand(1.5,3.5);
+    m.position.set(x,.8,z);scene.add(m);
+    drops.push({m,x,z,y:.8,vx:Math.cos(a)*sp,vz:Math.sin(a)*sp,vy:rand(4,6),t:0,ph:Math.random()*6});
+  }
+}
+function killMonster(m,byPlayer){
+  if(m.dead)return;m.dead=true;scene.remove(m.g);
+  burst(m.x,.7*m.s,m.z,0x5b3d9a,14,5,1.3);burst(m.x,.7*m.s,m.z,0x1a1030,8,4,1.6);
+  if(byPlayer){S.kills++;sfx('kill');
+    const n=MTYPES[m.kind].drop();if(n)spawnDrop(m.x,m.z,n);}
+}
+function hurtPlayer(d){
+  P.hp-=d;P.lastHit=0;shakeAmt=.35;$('vig').style.opacity=1;setTimeout(()=>$('vig').style.opacity=0,180);sfx('hurt');
+  floatText(P.x,2.2,P.z,'-'+d,'dmg');
+  if(P.hp<=0)gameOver('あなたは倒れた…');
+}
+
+/* ---------- 仲間（雇える人） ---------- */
+const JOBS={
+  wood: {name:'木こり',ic:'🪓',desc:'木を伐って木材を集める',shirt:0xb5462f},
+  stone:{name:'石掘り',ic:'⛏️',desc:'岩を砕いて石を集める',shirt:0x8a6a3a},
+  guard:{name:'兵隊',ic:'⚔️',desc:'魔物と戦う・大砲を撃つ・魔物石も拾う',shirt:0x3a5ea8},
+  gem:  {name:'石拾い',ic:'💎',desc:'落ちた魔物石だけを集めてくる（夜も働く）',shirt:0x2f8a5a}
+};
+const JOB_MAXLV=5;
+const hireCost=j=>5+3*Math.min(4,workers.filter(w=>w.type===j&&!w.dead).length)+2*Math.max(0,workers.filter(w=>w.type===j&&!w.dead).length-4);
+const JOB_UP=[0,6,10,15,22]; // 今のLv → 次のLvに必要な魔物石
+let workers=[];
+function workerStats(type,lv){
+  if(type==='guard')return {hp:50+30*(lv-1),dmg:2.5+1.6*(lv-1),cd:1-.1*(lv-1),spd:3.6+.2*lv};
+  if(type==='gem')return {hp:28+12*(lv-1),spd:4+.4*lv,pick:.8+.35*(lv-1)};
+  return {hp:30+12*(lv-1),cd:1.35-.15*(lv-1),gain:lv>=4?2:1,spd:3.3+.25*lv};
+}
+function workerVis(type,lv){
+  const g=new THREE.Group(),J=JOBS[type];
+  const metal=lv>=5?MT.gold():lv>=3?M(0xdfe6ee,{metalness:.6,roughness:.35}):M(0x9aa3ad,{metalness:.5,roughness:.45});
+  const shirt=type==='guard'&&lv>=3?(lv>=5?M(0xd8dde5,{metalness:.5,roughness:.4}):M(0xb8c0cc,{metalness:.4,roughness:.5})):M(J.shirt);
+  const legL=mesh(new THREE.BoxGeometry(.18,.45,.2),M(0x3b2f2f)),legR=legL.clone();
+  [legL,legR].forEach((l,i)=>{l.geometry=l.geometry.clone();l.geometry.translate(0,-.22,0);l.position.set(i?.11:-.11,.45,0);g.add(l)});
+  const body=mesh(new THREE.CylinderGeometry(.25,.3,.6,8),shirt);body.position.y=.75;g.add(body);
+  if(type==='guard'&&lv>=5){add(g,new THREE.CylinderGeometry(.31,.31,.08,8),MT.gold(),0,.55,0)}
+  if(type==='guard'&&lv>=3){const cape=mesh(GEO.box,M(lv>=5?0x7a1fa8:0xa82a2a));cape.scale.set(.45,.6,.05);cape.position.set(0,.78,-.3);cape.rotation.x=.12;g.add(cape)}
+  const head=mesh(new THREE.SphereGeometry(.22,10,8),M(0xf2c9a0,{flatShading:false}));head.position.y=1.25;g.add(head);
+  [-.08,.08].forEach(x=>{const e=new THREE.Mesh(GEO.eye,basic(0x222222));e.scale.setScalar(.45);e.position.set(x,1.27,.2);g.add(e)});
+  if(type==='gem'){add(g,new THREE.SphereGeometry(.24,10,6,0,Math.PI*2,0,Math.PI/2),M(0x6b4a2a),0,1.3,0);const pack=add(g,GEO.box,M(0x7a5a3a),0,.85,-.32,.38,.42,.22);
+    const cr=new THREE.Mesh(new THREE.OctahedronGeometry(.12+.02*lv,0),glow(0xb46bff));cr.position.set(0,1.15,-.32);g.add(cr)}
+  else if(type==='wood'){add(g,new THREE.ConeGeometry(.23,.3,8),M(0x2f6b34),0,1.5,0);add(g,GEO.sph,M(0xffffff),0,1.66,0,.06,.06,.06)}
+  else if(type==='stone'){const h=mesh(new THREE.SphereGeometry(.25,10,6,0,Math.PI*2,0,Math.PI/2),M(0xf2c230,{flatShading:false,roughness:.5}));h.position.y=1.3;g.add(h);
+    const lamp=new THREE.Mesh(GEO.sph,basic(0xfff6b0));lamp.scale.setScalar(.06);lamp.position.set(0,1.42,.22);g.add(lamp)}
+  else{const h=mesh(new THREE.SphereGeometry(.26,10,6,0,Math.PI*2,0,Math.PI/2),metal);h.position.y=1.3;g.add(h);
+    if(lv>=3){const pl=mesh(GEO.box,M(lv>=5?0xb46bff:0xd03030));pl.scale.set(.06,.18,.32);pl.position.set(0,1.6,-.02);g.add(pl)}}
+  const armL=new THREE.Group(),armR=new THREE.Group();armL.position.set(-.33,.98,0);armR.position.set(.33,.98,0);g.add(armL,armR);
+  [armL,armR].forEach(a=>{const m=mesh(new THREE.BoxGeometry(.13,.42,.13),shirt);m.position.y=-.19;a.add(m);const hd=mesh(GEO.sph,M(0xf2c9a0));hd.scale.setScalar(.075);hd.position.y=-.42;a.add(hd)});
+  const tool=new THREE.Group();tool.position.set(0,-.42,.05);armR.add(tool);
+  if(type==='gem'){add(tool,GEO.sph,M(0xc9b48a),0,-.05,.12,.16,.18,.16)}
+  else if(type==='wood'){add(tool,new THREE.CylinderGeometry(.03,.03,.7,5),MT.wood(),0,0,.27).rotation.x=Math.PI/2;add(tool,GEO.box,metal,0,.09,.55,.05,.26,.2)}
+  else if(type==='stone'){add(tool,new THREE.CylinderGeometry(.03,.03,.7,5),MT.wood(),0,0,.27).rotation.x=Math.PI/2;const pk=add(tool,GEO.box,metal,0,0,.6,.06,.5,.08);pk.rotation.x=.25}
+  else{add(tool,GEO.box,metal,0,0,.42,.06,.04,.7);add(tool,GEO.box,MT.dwood(),0,0,.03,.22,.06,.06);
+    const sh=mesh(new THREE.CylinderGeometry(.24,.24,.05,10),lv>=5?MT.gold():lv>=3?metal:MT.wood());sh.rotation.z=Math.PI/2;sh.position.set(-.05,-.3,.12);armL.add(sh)}
+  const sc=.78+.05*lv;g.scale.setScalar(sc);
+  return {g,legL,legR,armL,armR,body};
+}
+function setWorkerLv(w,lv){
+  const ratio=w.max?w.hp/w.max:1;
+  if(w.v)w.root.remove(w.v.g);
+  w.v=workerVis(w.type,lv);w.root.add(w.v.g);w.lv=lv;w.st=workerStats(w.type,lv);
+  w.max=w.st.hp;w.hp=Math.max(1,ratio*w.max);w.bar.position.y=1.9*(.78+.05*lv);
+}
+function makeWorker(type){
+  const root=new THREE.Group();scene.add(root);
+  const a=Math.random()*6.283,x=Math.cos(a)*3,z=Math.sin(a)*3;
+  const bar=hpBar(.8,1.9);root.add(bar);
+  const w={type,root,bar,x,z,face:a,hp:1,max:0,lv:0,cd:0,swing:0,walk:0,tgt:null,dead:false,flash:0,guardA:Math.random()*6.283};
+  setWorkerLv(w,S.jobLv[type]);w.hp=w.max;
+  burst(x,1,z,0xffe27a,12,4);return w;
+}
+function hurtWorker(w,d){
+  w.hp-=d;w.flash=.15;floatText(w.x,1.8,w.z,'-'+d,'dmg');if(nearP(w.x,w.z))sfx('hit');
+  if(w.hp<=0){w.dead=true;scene.remove(w.root);if(w.tgt)w.tgt.claim=null;if(w.opCan){w.opCan.opW=null;w.opCan=null}burst(w.x,.8,w.z,0xf2c9a0,12,4);toast(`💀 ${JOBS[w.type].name}がやられた…`,2)}
+}
+function updateWorkers(dt,t){
+  const LF=litFires();let gi=0;
+  // 大砲に兵隊を1人ずつ割り当てる（魔物がいる間だけ）
+  const cans=[];for(const b of buildings.values())if(b.type==='cannon')cans.push(b);
+  for(const w of workers)if(w.opCan&&(!buildings.has(key(w.opCan.i,w.opCan.j))||monsters.length===0)){w.opCan.opW=null;w.opCan=null;w.atCannon=null}
+  if(monsters.length)for(const b of cans){if(b.opW&&!b.opW.dead)continue;let best=null,bd=1e9;for(const w of workers){if(w.dead||w.type!=='guard'||w.opCan)continue;const d=Math.hypot(w.x-b.x,w.z-b.z);if(d<bd){bd=d;best=w}}if(best){b.opW=best;best.opCan=b}}
+  for(const w of workers){
+    if(w.dead)continue;
+    w.cd-=dt;let gx=null,gz=null,reach=0,act=null;
+    if(w.type==='guard'){
+      // 近くの魔物を探して戦う
+      const home=LF[(gi++)%LF.length]||core;
+      w.atCannon=null;
+      let best=null,bd=1e9;
+      if(w.opCan){ // 大砲係：すぐ近くの魔物だけ相手にして、あとは大砲を撃つ
+        const b=w.opCan;let near=null,nd=2.2;for(const m of monsters){if(m.dead||m.y<-.3)continue;const d=Math.hypot(m.x-w.x,m.z-w.z);if(d<nd){nd=d;near=m}}
+        if(near){gx=near.x;gz=near.z;reach=near.r+.75;act=()=>{hurtMonster(near,w.st.dmg,w.x,w.z)}}
+        else{const hr=b.head.rotation.y;gx=b.x-Math.sin(hr)*1.4;gz=b.z-Math.cos(hr)*1.4;reach=.35;if(Math.hypot(gx-w.x,gz-w.z)<.6){w.atCannon=b;w.face=hr}}
+      }else{
+      for(const m of monsters){if(m.dead||m.y<-.3)continue;const ds=Math.hypot(m.x-w.x,m.z-w.z);if(ds>=bd)continue;
+        let near=ds<9;if(!near)for(const f of LF){if(Math.hypot(m.x-f.x,m.z-f.z)<(f===core?18:13)){near=true;break}}
+        if(near){bd=ds;best=m}}
+      if(best){gx=best.x;gz=best.z;reach=best.r+.75;act=()=>{hurtMonster(best,w.st.dmg,w.x,w.z)}}
+      else{
+        // 落ちている魔物石を拾いに行く
+        let dp=null,dd=40;for(const d of drops){if(d.got||d.t<.5)continue;const k=Math.hypot(d.x-w.x,d.z-w.z);if(k<dd){dd=k;dp=d}}
+        if(dp){gx=dp.x;gz=dp.z;reach=.1;if(dd<.8){dp.got=true;scene.remove(dp.m);S.mst++;floatText(w.x,2,w.z,'+1 💎','mst');if(nearP(w.x,w.z))sfx('coin')}}
+        else{const ga=w.guardA+t*.03;gx=home.x+Math.cos(ga)*5.5;gz=home.z+Math.sin(ga)*5.5;reach=.4}
+      }
+      }
+    }else if(w.type==='gem'){
+      // 落ちた魔物石を探して拾う
+      let dp=null,dd=1e9;for(const d of drops){if(d.got||d.t<.4||(d.claim&&d.claim!==w&&!d.claim.dead))continue;const k=Math.hypot(d.x-w.x,d.z-w.z);if(k<dd){dd=k;dp=d}}
+      if(dp){dp.claim=w;gx=dp.x;gz=dp.z;reach=.05;
+        for(const d of drops){if(!d.got&&d.t>.4&&Math.hypot(d.x-w.x,d.z-w.z)<w.st.pick){d.got=true;scene.remove(d.m);S.mst++;floatText(w.x,2,w.z,'+1 💎','mst');if(nearP(w.x,w.z))sfx('coin')}}}
+      else{gx=Math.cos(w.guardA)*3.2;gz=Math.sin(w.guardA)*3.2;reach=.4}
+    }else if(S.night){
+      // 夜は焚き火のそばに避難
+      if(w.tgt){w.tgt.claim=null;w.tgt=null}
+      let f0=core,fd=1e9;for(const f of LF){const d=Math.hypot(f.x-w.x,f.z-w.z);if(d<fd){fd=d;f0=f}}
+      gx=f0.x+Math.cos(w.guardA)*3.4;gz=f0.z+Math.sin(w.guardA)*3.4;reach=.4;
+    }else{
+      const list=w.type==='wood'?trees:rocks;
+      if(w.tgt&&(w.tgt.state!=='alive'||w.tgt.claim!==w)){w.tgt=null}
+      if(!w.tgt){let best=null,bd=1e9;for(const o of list){if(o.decor||o.state!=='alive'||(o.claim&&!o.claim.dead&&o.claim!==w))continue;const d=Math.hypot(o.x-w.x,o.z-w.z)+Math.hypot(o.x,o.z)*.3;if(d<bd){bd=d;best=o}}
+        if(best){best.claim=w;w.tgt=best}}
+      if(w.tgt){const o=w.tgt;gx=o.x;gz=o.z;reach=o.r+.6;act=()=>{w.type==='wood'?chopTree(o,w.x,w.z,w.st.gain):mineRock(o,w.st.gain)}}
+    }
+    let moving=false;
+    if(gx!==null){
+      const dx=gx-w.x,dz=gz-w.z,d=Math.hypot(dx,dz);
+      if(d>reach){const sp=w.st.spd*dt;w.x+=dx/d*Math.min(sp,d-reach+.01);w.z+=dz/d*Math.min(sp,d-reach+.01);moving=true;
+        const tf=Math.atan2(dx,dz);let df=tf-w.face;df=Math.atan2(Math.sin(df),Math.cos(df));w.face+=df*Math.min(1,dt*10)}
+      else if(act){w.face=Math.atan2(dx,dz);if(w.cd<=0){w.cd=w.st.cd;w.swing=1;act()}}
+    }
+    for(const tr of trees){if(tr.state==='alive'&&!tr.decor&&Math.abs(tr.x-w.x)<2&&Math.abs(tr.z-w.z)<2)circleCircle(w,tr.x,tr.z,tr.r+.3)}
+    for(const r of rocks){if(r.state==='alive'&&Math.abs(r.x-w.x)<2.5&&Math.abs(r.z-w.z)<2.5)circleCircle(w,r.x,r.z,r.r+.3)}
+    circleCircle(w,0,0,core.r+.35);
+    for(const o of workers){if(o===w||o.dead)continue;const ox=w.x-o.x,oz=w.z-o.z,od=Math.hypot(ox,oz);if(od<.6&&od>1e-4){w.x+=ox/od*(.6-od)*.5;w.z+=oz/od*(.6-od)*.5}}
+    if(!S.night&&w.hp<w.max)w.hp=Math.min(w.max,w.hp+dt*2);
+    // 見た目
+    w.walk=moving?w.walk+dt*11:w.walk*.85;
+    const v=w.v,sw=Math.sin(w.walk)*.7*(moving?1:0);
+    w.root.position.set(w.x,0,w.z);v.g.rotation.y=w.face;
+    v.legL.rotation.x=sw;v.legR.rotation.x=-sw;v.armL.rotation.x=-sw*.8;
+    if(w.swing>0){w.swing-=dt*3;const k=Math.max(0,w.swing);v.armR.rotation.x=k>.6?-2.6*(1-k)/.4:-2.6+(1-k/.6)*2.2}else v.armR.rotation.x=sw*.8;
+    v.body.position.y=.75+Math.abs(Math.sin(w.walk))*.04;
+    setBar(w.bar,w.hp/w.max,0x6bd4ff);if(w.bar.visible)w.bar.quaternion.copy(camera.quaternion);
+  }
+  workers=workers.filter(w=>!w.dead);
+}
+
+/* 雇用パネル */
+function renderHire(){
+  $('hMst').textContent=S.mst;const JM=jobMax();
+  $('hRows').innerHTML=Object.keys(JOBS).map(j=>{
+    const J=JOBS[j],n=workers.filter(w=>w.type===j&&!w.dead).length,lv=S.jobLv[j];
+    const hc=hireCost(j),uc=JOB_UP[lv];
+    const canH=n<JM&&S.mst>=hc,canU=lv<JOB_MAXLV&&S.mst>=uc;
+    return `<div class="hrow"><div class="hic">${J.ic}</div><div class="hinfo"><b>${J.name}</b> <span class="lv">Lv${lv}</span><small>${n}/${JM}人・${J.desc}</small></div>
+      <button class="hb ${canH?'':'off'}" data-a="hire" data-j="${j}">${n>=JM?'満員':'雇う<br>💎'+hc}</button>
+      <button class="hb up ${canU?'':'off'}" data-a="up" data-j="${j}">${lv>=JOB_MAXLV?'MAX':'強化<br>💎'+uc}</button></div>`}).join('');
+}
+function hireAction(a,j){
+  const n=workers.filter(w=>w.type===j&&!w.dead).length,lv=S.jobLv[j];
+  if(a==='hire'){
+    if(n>=jobMax()){toast(`これ以上は雇えない（最大${jobMax()}人）`);return}
+    const c=hireCost(j);if(S.mst<c){toast(`💎 魔物石が足りない（${c}個必要）`);return}
+    S.mst-=c;workers.push(makeWorker(j));sfx('coin');toast(`${JOBS[j].ic} ${JOBS[j].name}を雇った！`,1.6);
+  }else{
+    if(lv>=JOB_MAXLV){toast('これ以上は強化できない（Lv MAX）');return}
+    const c=JOB_UP[lv];if(S.mst<c){toast(`💎 魔物石が足りない（${c}個必要）`);return}
+    S.mst-=c;S.jobLv[j]=lv+1;workers.forEach(w=>{if(w.type===j){setWorkerLv(w,lv+1);burst(w.x,1,w.z,0xb46bff,10,4)}});
+    sfx('up');toast(`${JOBS[j].ic} ${JOBS[j].name}が Lv${lv+1} になった！`,1.8);
+  }
+  renderHire();
+}
+
+/* ---------- collision helpers ---------- */
+function circleBox(o,bx,bz,r){
+  const px=clamp(o.x,bx-1,bx+1),pz=clamp(o.z,bz-1,bz+1);let dx=o.x-px,dz=o.z-pz;const d2=dx*dx+dz*dz;
+  if(d2>=r*r)return false;
+  if(d2>1e-6){const d=Math.sqrt(d2);o.x+=dx/d*(r-d);o.z+=dz/d*(r-d)}
+  else{const ox=o.x-bx,oz=o.z-bz;if(Math.abs(ox)>Math.abs(oz))o.x=bx+Math.sign(ox||1)*(1+r);else o.z=bz+Math.sign(oz||1)*(1+r)}
+  return true;
+}
+function circleCircle(o,x,z,R){const dx=o.x-x,dz=o.z-z,d=Math.hypot(dx,dz);if(d<R&&d>1e-4){o.x=x+dx/d*R;o.z=z+dz/d*R;return true}return false}
+function nearBuildings(x,z,cb){const i0=Math.round(x/2),j0=Math.round(z/2);for(let i=i0-1;i<=i0+1;i++)for(let j=j0-1;j<=j0+1;j++){const b=buildings.get(key(i,j));if(b&&!b.passable&&cb(b))return b}return null}
+
+/* ---------- game flow ---------- */
+const MON_CAP=isMobile?45:70; // 同時に出る魔物の上限（重さ対策）
+const CYCLE=160,NIGHT_START=90; // 1日160秒（夜70秒）
+function resetWorld(){
+  trees.forEach(t=>scene.remove(t.outer));rocks.forEach(r=>scene.remove(r.m));monsters.forEach(m=>scene.remove(m.g));
+  arrows.forEach(a=>scene.remove(a.m));particles.forEach(p=>scene.remove(p.m));floats.forEach(f=>f.d.remove());
+  buildings.forEach(b=>scene.remove(b.g));buildings.clear();
+  drops.forEach(d=>scene.remove(d.m));shells.forEach(x=>scene.remove(x.m));rings.forEach(x=>scene.remove(x.m));shells=[];rings=[];workers.forEach(w=>scene.remove(w.root));workers=[];
+  trees=[];rocks=[];monsters=[];arrows=[];particles=[];floats=[];drops=[];
+  const TN=isMobile?170:210;
+  for(let k=0,tries=0;k<TN&&tries<9000;tries++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*(WORLD_R-2),x=Math.cos(a)*r,z=Math.sin(a)*r;
+    if(r<6.5)continue;const dens=.15+.85*smooth(-.35,.45,forestN(x,z));if(Math.random()>dens)continue;
+    if(freeSpot(x,z,2.3)){trees.push(makeTree(x,z,false));k++}}
+  for(let k=0,tries=0;k<40&&tries<6000;tries++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*(WORLD_R-4),x=Math.cos(a)*r,z=Math.sin(a)*r;
+    if(r<8)continue;if(Math.random()>.2+.8*(1-smooth(-.4,.3,forestN(x,z))))continue;
+    if(freeSpot(x,z,2.6)){rocks.push(makeRock(x,z));k++}}
+  // a few trees near spawn so the first chop is quick
+  [[3,6],[-3.5,5.5],[5,1.5]].forEach(([x,z])=>{if(freeSpot(x,z,1.8))trees.push(makeTree(x,z,false))});
+  Object.assign(S,{wood:5,stone:0,mst:0,canMsgT:0,paused:false,jobLv:{wood:1,stone:1,guard:1,gem:1},fuelWarn:false,day:1,time:0,night:false,kills:0,spawnLeft:0,spawnT:0,build:null,running:true,warned:false,coreWarnT:0});
+  Object.assign(P,{x:0,z:4,face:0,hp:100,cd:0,swing:0,lastHit:99});
+  core.hp=core.max;setBuild(null);
+}
+function gameOver(msg){
+  if(!S.running)return;setBuild(null);S.running=false;actUp();
+  $('card').innerHTML=`<h1>GAME OVER</h1><div class="sub">${msg}</div><div class="stat">🗓️ 生存：<b>${S.day}</b> 日目<br>👹 撃破：<b>${S.kills}</b> 体<br>🏗️ 建築：<b>${buildings.size}</b> 個<br>👥 仲間：<b>${workers.length}</b> 人</div><button id="again">もう一度</button><button class="back" type="button">🏠 もどる</button>`;
+  $('ov').style.display='flex';
+  $('again').onclick=()=>{$('ov').style.display='none';resetWorld();toast('☀️ Day 1 — 夜までに備えよう')};
+}
+$('start').onclick=()=>{
+  try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  $('ov').style.display='none';resetWorld();toast('☀️ Day 1 — 夜までに備えよう');
+};
+
+/* ---------- lighting ---------- */
+const C=(h)=>new THREE.Color(h);
+const SKY_D=C(0x9fd3f0),SKY_S=C(0xf2a273),SKY_N=C(0x0c1430);
+const SUN_D=C(0xfff0d0),SUN_S=C(0xff9a5a),SUN_N=C(0x7f8dff);
+const HEMI_D=C(0xcfe8ff),HEMI_N=C(0x4352a8);
+const tmpC=new THREE.Color(),tmpC2=new THREE.Color();
+const sunDir=new THREE.Vector3();
+let nightF=0;
+function updateLighting(p,t){
+  nightF=smooth(NIGHT_START-15,NIGHT_START+3,p)*(1-smooth(CYCLE-10,CYCLE,p));
+  const sunsetF=Math.max(0,1-Math.abs(p-(NIGHT_START-5))/12)+Math.max(0,1-Math.abs(p-(CYCLE-2))/6)*.6;
+  tmpC.copy(SKY_D).lerp(SKY_N,nightF);tmpC.lerp(SKY_S,clamp(sunsetF,0,1)*.7);
+  scene.fog.color.copy(tmpC);renderer.setClearColor(tmpC);
+  scene.fog.near=40-20*nightF;scene.fog.far=90-35*nightF;
+  hemi.intensity=.85-.62*nightF;hemi.color.copy(HEMI_D).lerp(HEMI_N,nightF);
+  sun.intensity=1.1-.8*nightF;
+  tmpC2.copy(SUN_D).lerp(SUN_N,nightF).lerp(SUN_S,clamp(sunsetF,0,1)*.8);sun.color.copy(tmpC2);
+  const el=.95-.55*clamp(sunsetF,0,1),az=.6+p/CYCLE*2.2;
+  sunDir.set(Math.cos(az)*Math.cos(el),Math.sin(el),Math.sin(az)*Math.cos(el));
+  const fl=Math.sin(t*17)*.15+Math.sin(t*7.3)*.2;
+  fireLight.intensity=(.7+2.1*nightF)*(1+fl*.5)*(.15+.85*core.hp/core.max);
+  torch.intensity=nightF*1.7*(1+fl*.2);
+  ffMat.opacity=nightF*.9;
+}
+
+/* ---------- update ---------- */
+const v3=new THREE.Vector3(),camLook=new THREE.Vector3(0,0,4),camOff=new THREE.Vector3();
+function fitCam(){const a=innerWidth/innerHeight;if(a<.8){camOff.set(0,19,13.5);camera.fov=52}else{camOff.set(0,17,13);camera.fov=48}camera.aspect=a;camera.updateProjectionMatrix()}
+fitCam();
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);fitCam()});
+camera.position.set(0,25,21);
+
+function update(dt,t){
+  /* time of day */
+  const prevP=S.time%CYCLE;S.time+=dt;const p=S.time%CYCLE;
+  if(p<prevP){ // dawn
+    S.day++;S.night=false;S.warned=false;
+    monsters.forEach(m=>{if(!m.dead){burst(m.x,.7,m.z,0xffd27a,8,4);killMonster(m,false)}});
+    P.hp=Math.min(P.max,P.hp+30);
+    toast(`☀️ 朝日が魔物を焼き払った！ Day ${S.day}`);sfx('coin');
+  }
+  if(!S.warned&&p>=NIGHT_START-17){S.warned=true;toast('🌆 日が暮れる… 壁と砲台で焚き火を守れ！',3.5)}
+  if(!S.night&&p>=NIGHT_START){S.night=true;const n=S.day;S.spawnLeft=10+n*8;S.spawnInt=Math.min(2,30/S.spawnLeft);S.spawnT=1;
+    toast(n%5===0?`👑 夜 ${n} — 魔物Lv${n}… 魔王級が来る！`:`🌙 夜 ${n} — 魔物Lv${n} が来る！`,3);sfx('night');
+    if(n%5===0){for(let k=0;k<n/5;k++)monsters.push(makeMonster('boss',n))}}
+  if(S.night&&S.spawnLeft>0&&monsters.length<MON_CAP){S.spawnT-=dt;if(S.spawnT<=0){S.spawnT=S.spawnInt*rand(.6,1.3);S.spawnLeft--;const n=S.day,r=Math.random();
+    const kind=n>=3&&r<Math.min(.38,.08*n)?'brute':n>=2&&r>.68?'runner':'imp';monsters.push(makeMonster(kind,n))}}
+  updateLighting(p,t);
+  /* 焚き火の燃料 */
+  core.hp-=FUEL_BURN*dt;
+  if(!S.fuelWarn&&core.hp<30){S.fuelWarn=true;toast('🔥 火が弱まっている！ 焚き火の近くで⚔️を押して薪をくべろ',3.5)}
+  if(core.hp>45)S.fuelWarn=false;
+  if(core.hp<=0){core.hp=0;gameOver('焚き火が燃え尽きてしまった…');return}
+
+  /* player */
+  let mx=joy.x,mz=joy.y;
+  if(keys.KeyW||keys.ArrowUp)mz-=1;if(keys.KeyS||keys.ArrowDown)mz+=1;if(keys.KeyA||keys.ArrowLeft)mx-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;
+  let ml=Math.hypot(mx,mz);if(ml>1){mx/=ml;mz/=ml;ml=1}
+  const spd=6.2;
+  if(ml>.12){P.x+=mx*spd*dt;P.z+=mz*spd*dt;if(P.swing<=0||S.build){const tf=Math.atan2(mx,mz);let df=tf-P.face;df=Math.atan2(Math.sin(df),Math.cos(df));P.face+=df*Math.min(1,dt*14)}P.walk+=dt*ml*12}
+  else P.walk*=.85;
+  for(const tr of trees){if(tr.state==='alive'&&Math.abs(tr.x-P.x)<3&&Math.abs(tr.z-P.z)<3)circleCircle(P,tr.x,tr.z,tr.r+.35)}
+  for(const r of rocks){if(r.state==='alive'&&Math.abs(r.x-P.x)<3&&Math.abs(r.z-P.z)<3)circleCircle(P,r.x,r.z,r.r+.3)}
+  nearBuildings(P.x,P.z,b=>{circleBox(P,b.x,b.z,.38);return false});
+  circleCircle(P,core.x,core.z,core.r+.4);
+  const pd=Math.hypot(P.x,P.z);if(pd>WORLD_R){P.x*=WORLD_R/pd;P.z*=WORLD_R/pd}
+  P.cd-=dt;P.lastHit+=dt;
+  if(actHeld&&!S.build&&P.cd<=0)tryAttack();
+  if(P.lastHit>4&&P.hp<P.max)P.hp=Math.min(P.max,P.hp+dt*(S.night?1:3));
+  // anim
+  pG.position.set(P.x,0,P.z);pG.rotation.y=P.face;
+  const sw=Math.sin(P.walk)*.7*Math.min(1,ml*2+(P.walk>.1?.0:0));
+  legL.position.z=sw*.2;legR.position.z=-sw*.2;legL.position.y=.12+Math.max(0,sw)*.1;legR.position.y=.12+Math.max(0,-sw)*.1;armL.rotation.x=-sw*.6;
+  P.wings.forEach((w,i)=>{w.rotation.z=(i?-1:1)*Math.sin(t*(ml>.12?14:4))*(ml>.12?.35:.12)});
+  P.orb.material.emissiveIntensity=.8+Math.sin(t*4)*.3+(P.swing>0?1.2:0);
+  if(P.swing>0){P.swing-=dt*3.2;const k=Math.max(0,P.swing);armR.rotation.x=k>.6?-2.6*(1-k)/.4:-2.6+(1-k/.6)*2.2}else armR.rotation.x=sw*.8;
+  body.position.y=.78+Math.abs(Math.sin(P.walk))*.07;body.rotation.z=Math.sin(P.walk)*.06;
+
+  /* ghost */
+  if(S.build==='up'){const b=upTarget();S.upT=b;ghost.visible=!!b;
+    if(b){ghost.position.set(b.x,0,b.z);ghostRing.scale.setScalar(1.15);const can=b.lv<MAXLV&&S.mst>=UPCOST[b.lv];ghostMat.color.setHex(b.lv>=MAXLV?0xffe27a:can?0xc08bff:0xff5d5d);ghostMat.opacity=.5+Math.sin(t*6)*.15}}
+  else if(S.build){ghostRing.scale.setScalar(1);const c=ghostCell();ghost.position.set(c.x,0,c.z);const cost=costOf(S.build);const can=c.ok&&S.wood>=cost.w&&S.stone>=cost.s;ghostMat.color.setHex(can?0x6bff9a:0xff5d5d);ghostMat.opacity=.28+Math.sin(t*6)*.08}
+
+  /* trees */
+  for(const tr of trees){
+    if(tr.decor)continue;
+    if(tr.state==='alive'){if(tr.shake>0){tr.shake-=dt;const k=tr.shake*.25;tr.inner.rotation.set(Math.sin(t*60)*k,0,Math.cos(t*55)*k)}else if(tr.grow!==undefined){tr.grow+=dt/3;const g=Math.min(1,tr.grow);tr.inner.scale.setScalar(.1+.9*smooth(0,1,g));if(g>=1)delete tr.grow}}
+    else if(tr.state==='falling'){tr.t+=dt;const k=Math.min(1,tr.t/.9);tr.inner.rotation.set(k*k*Math.PI/2,0,0);
+      if(tr.t>.9&&!tr.landed){tr.landed=true;const fx=tr.x+Math.sin(tr.outer.rotation.y)*2.5*tr.s,fz=tr.z+Math.cos(tr.outer.rotation.y)*2.5*tr.s;burst(fx,.3,fz,0x4a8f3c,14,5);burst(fx,.3,fz,0xb59a74,8,4);shakeAmt=Math.max(shakeAmt,.15)}
+      if(tr.t>1.6){tr.inner.position.y=-(tr.t-1.6)*3;}
+      if(tr.t>2.2){tr.state='stump';tr.t=0;tr.inner.visible=false;tr.stump.visible=true;tr.landed=false}}
+    else if(tr.state==='stump'){tr.t+=dt;if(tr.t>40&&!buildings.has(key(Math.round(tr.x/2),Math.round(tr.z/2)))&&Math.hypot(P.x-tr.x,P.z-tr.z)>2){tr.state='alive';tr.hp=4;tr.stump.visible=false;tr.inner.visible=true;tr.inner.position.y=0;tr.inner.rotation.set(0,0,0);tr.grow=0;tr.inner.scale.setScalar(.1)}}
+  }
+  for(const r of rocks){
+    if(r.state==='alive'&&r.shake>0){r.shake-=dt;r.m.position.x=r.x+Math.sin(t*70)*r.shake*.3}
+    else if(r.state==='gone'){r.t+=dt;if(r.t>60&&!buildings.has(key(Math.round(r.x/2),Math.round(r.z/2)))&&Math.hypot(P.x-r.x,P.z-r.z)>2.5){r.state='alive';r.hp=5;r.m.visible=true;r.m.position.x=r.x;burst(r.x,.4,r.z,0x8a8f96,6,2)}}
+  }
+
+  /* monsters */
+  const LF=litFires();
+  for(const m of monsters){
+    if(m.dead)continue;
+    m.t+=dt;m.cd-=dt;
+    if(m.y<0){m.y=Math.min(0,m.y+dt*1.5);if(Math.random()<.3)burst(m.x,.1,m.z,0x3a2a1a,1,2)}
+    const dP=Math.hypot(P.x-m.x,P.z-m.z);
+    // 狙う相手：近くの「主人公・仲間・砲台」→ いなければ焚き火
+    let tg=null,tgD=9,tgK='';
+    if(dP<tgD){tgD=dP;tg=P;tgK='p'}
+    for(const w of workers){if(w.dead)continue;const d=Math.hypot(w.x-m.x,w.z-m.z);if(d<tgD){tgD=d;tg=w;tgK='w'}}
+    for(const b of buildings.values()){if(b.type!=='turret'&&b.type!=='cannon')continue;const d=Math.hypot(b.x-m.x,b.z-m.z)-1;if(d<tgD){tgD=d;tg=b;tgK='b'}}
+    if(!tg){let fd=1e9;for(const f of LF){const d=Math.hypot(f.x-m.x,f.z-m.z);if(d<fd){fd=d;tg=f}}}
+    const tx=tg?tg.x:core.x,tz=tg?tg.z:core.z;
+    let dx=tx-m.x,dz=tz-m.z;const dl=Math.hypot(dx,dz)||1;dx/=dl;dz/=dl;
+    const w=m.wob*Math.min(1,dl/6),cw=Math.cos(w),sw2=Math.sin(w);const ndx=dx*cw-dz*sw2,ndz=dx*sw2+dz*cw;
+    let moving=m.y>=-.2;
+    if(moving){m.x+=(ndx*m.spd+m.kx)*dt;m.z+=(ndz*m.spd+m.kz)*dt}
+    m.kx*=Math.pow(.02,dt);m.kz*=Math.pow(.02,dt);
+    // separation
+    for(const o of monsters){if(o===m||o.dead)continue;const ox=m.x-o.x,oz=m.z-o.z,od=Math.hypot(ox,oz),R=m.r+o.r;if(od<R&&od>1e-4){const push=(R-od)*.5;m.x+=ox/od*push;m.z+=oz/od*push}}
+    for(const tr of trees){if(tr.state==='alive'&&!tr.decor&&Math.abs(tr.x-m.x)<2.5&&Math.abs(tr.z-m.z)<2.5)circleCircle(m,tr.x,tr.z,tr.r+m.r)}
+    for(const r of rocks){if(r.state==='alive'&&Math.abs(r.x-m.x)<2.5&&Math.abs(r.z-m.z)<2.5)circleCircle(m,r.x,r.z,r.r+m.r)}
+    let hitB=null;nearBuildings(m.x,m.z,b=>{if(circleBox(m,b.x,b.z,m.r)&&!hitB)hitB=b;return false});
+    const atCore=circleCircle(m,core.x,core.z,core.r+m.r)||Math.hypot(m.x,m.z)<core.r+m.r+.05;
+    const atPlayer=dP<m.r+.65;
+    let atW=null;if(tgK==='w'&&Math.hypot(tg.x-m.x,tg.z-m.z)<m.r+.55)atW=tg;
+    if(!atW)for(const w of workers){if(!w.dead&&Math.hypot(w.x-m.x,w.z-m.z)<m.r+.45){atW=w;break}}
+    if(m.cd<=0&&m.y>=-.2){
+      if(atPlayer){m.cd=1.1;m.lunge=.25;hurtPlayer(m.dmg)}
+      else if(atW){m.cd=1.1;m.lunge=.25;hurtWorker(atW,m.dmg)}
+      else if(hitB&&hitB.type==='fire'){m.cd=1.1;m.lunge=.25;hitB.shake=.25;
+        if(hitB.hp>0){hitB.hp-=m.dmg*.6;burst(hitB.x,1,hitB.z,0xff8a1f,8,4);if(hitB.hp<=0){hitB.hp=0;toast('🔥 焚き火が1つ消された… 雇える人数が減った',2.2)}}
+        else destroyBuilding(hitB,false);}
+      else if(hitB){m.cd=1.1;m.lunge=.25;hitB.hp-=m.dmg;hitB.shake=.25;burst(hitB.x,1.2,hitB.z,0xa0703a,5,3);sfx('chop');
+        if(hitB.hp<=0)destroyBuilding(hitB,false);}
+      else if(atCore){m.cd=1.1;m.lunge=.25;core.hp-=m.dmg*.6;burst(0,1,0,0xff8a1f,8,4);shakeAmt=Math.max(shakeAmt,.12);
+        if(S.coreWarnT<=0){toast('🔥 焚き火が襲われている！',1.6);S.coreWarnT=4}
+        if(core.hp<=0){core.hp=0;gameOver('焚き火が魔物に消されてしまった…')}}
+    }
+    // visuals
+    m.g.position.set(m.x,m.y,m.z);
+    m.g.rotation.y=Math.atan2(tx-m.x,tz-m.z);
+    const hop=Math.abs(Math.sin(m.t*9));
+    m.body.position.y=.7+hop*.14;m.body.position.z=m.lunge>0?Math.sin(m.lunge/.25*Math.PI)*.45:0;m.lunge-=dt;
+    m.feet[0].position.z=Math.sin(m.t*9)*.18;m.feet[1].position.z=-Math.sin(m.t*9)*.18;
+    m.arms[0].position.y=.65+Math.sin(m.t*9)*.08;m.arms[1].position.y=.65-Math.sin(m.t*9)*.08;
+    if(m.flash>0){m.flash-=dt;m.bm.emissive.setHex(0xffffff)}else m.bm.emissive.copy(m.baseEm);
+    setBar(m.bar,m.hp/m.max);
+    if(m.bar.visible)m.bar.quaternion.copy(m.g.quaternion).invert().multiply(camera.quaternion);
+  }
+  monsters=monsters.filter(m=>!m.dead);
+  updateWorkers(dt,t);
+  S.coreWarnT-=dt;S.canMsgT-=dt;
+
+  /* buildings */
+  for(const b of buildings.values()){
+    if(b.grow!==undefined){b.grow+=dt*4;const g=Math.min(1,b.grow);b.g.scale.set(1+Math.sin(g*Math.PI)*.08,Math.max(.01,1-Math.pow(1-g,3)),1+Math.sin(g*Math.PI)*.08);if(g>=1){delete b.grow;b.g.scale.set(1,1,1)}}
+    if(b.shake>0){b.shake-=dt;b.g.position.x=b.x+Math.sin(t*80)*b.shake*.25}else b.g.position.x=b.x;
+    if(b.type==='fire'){
+      if(b.hp>0){b.hp-=FUEL_BURN*dt;
+        if(!b.warned&&b.hp<25){b.warned=true;toast('🔥 ほかの焚き火が弱まっている！ 薪をくべよう',2.4)}
+        if(b.hp<=0){b.hp=0;toast('🔥 焚き火が1つ燃え尽きた… 雇える人数が減った',2.4)}}
+      const cf=b.hp>0?.15+.85*b.hp/b.max:0,fl=1+Math.sin(t*14+b.i)*.08;
+      b.f1.visible=b.f2.visible=cf>0;b.f1.scale.set(cf,fl*cf,cf);b.f2.scale.set(cf,(2-fl)*cf,cf);
+      b.light.intensity=cf>0?(1.2+2.2*nightF)*fl*cf:0;
+      if(cf>0&&Math.random()<dt*5*cf)burst(b.x+rand(-.2,.2),1.1,b.z+rand(-.2,.2),Math.random()<.5?0xffb347:0xff6a1a,1,1,.6);
+      if(cf===0&&Math.random()<dt*2)burst(b.x,.6,b.z,0x555555,1,.8,.8);
+      setBar(b.bar,b.hp/b.max,0xff9a3c);if(b.bar.visible)b.bar.quaternion.copy(camera.quaternion);
+      continue;
+    }
+    if(b.type==='mine'){
+      b.arm-=dt;b.lamp.visible=b.arm<=0?Math.sin(t*7)>-.3:false;
+      if(b.arm<=0&&b.grow===undefined){for(const m of monsters){if(!m.dead&&m.y>=-.2&&Math.hypot(m.x-b.x,m.z-b.z)<m.r+.55){explode(b.x,b.z,MINE.rad[b.lv],MINE.dmg[b.lv],b.lv>=5?THEME[b.lv].rune:0xffa040);b.arm=MINE.re[b.lv];break}}}
+      b.bar.visible=false;continue;
+    }
+    setBar(b.bar,b.hp/b.max,b.hp/b.max>.5?0x6bff8a:b.hp/b.max>.25?0xffd04d:0xff4d4d);
+    if(b.bar.visible)b.bar.quaternion.copy(camera.quaternion);
+    if(b.g.userData&&b.vis.userData.floaters)b.vis.userData.floaters.forEach(c=>{const a=c.userData.a+t*1.2;c.position.set(Math.cos(a)*c.userData.r,c.userData.y+Math.sin(t*2+a)*.15,Math.sin(a)*c.userData.r);c.rotation.y+=dt*2});
+    if(b.type==='cannon'){
+      b.cd-=dt;const tg=cannonTarget(b);
+      if(b.recoil>0){b.recoil-=dt;b.head.position.z=-Math.sin(b.recoil/.3*Math.PI)*.25}else b.head.position.z=0;
+      const pOp=!S.build&&Math.max(Math.abs(P.x-b.x),Math.abs(P.z-b.z))<2;
+      const gOp=b.opW&&!b.opW.dead&&b.opW.atCannon===b;
+      b.manned=pOp||gOp;
+      if(tg&&b.manned){const want=Math.atan2(tg.x-b.x,tg.z-b.z);let df=want-b.head.rotation.y;df=Math.atan2(Math.sin(df),Math.cos(df));b.head.rotation.y+=df*Math.min(1,dt*6);
+        if(gOp&&!pOp&&b.cd<=0&&Math.abs(df)<.25)fireCannon(b,tg)}
+      continue;
+    }
+    if(b.type==='turret'){
+      b.cd-=dt;const rng=TUR.rng[b.lv];
+      const inR=[];for(const m of monsters){if(m.dead||m.y<-.3)continue;const d=Math.hypot(m.x-b.x,m.z-b.z);if(d<rng)inR.push([d,m])}
+      inR.sort((a,c)=>a[0]-c[0]);
+      if(inR.length){
+        const tg=inR[0][1];
+        const want=Math.atan2(tg.x-b.x,tg.z-b.z);let df=want-b.head.rotation.y;df=Math.atan2(Math.sin(df),Math.cos(df));b.head.rotation.y+=df*Math.min(1,dt*10);
+        if(b.cd<=0&&Math.abs(df)<.3){
+          b.cd=TUR.int[b.lv];
+          for(let k=0;k<TUR.shots[b.lv];k++){
+            const [td,t2]=inR[Math.min(k,inR.length-1)],ox=TUR.shots[b.lv]>1?(k?.28:-.28):0;
+            const hr=b.head.rotation.y,sx=b.x+Math.sin(hr)*.8+Math.cos(hr)*ox,sz=b.z+Math.cos(hr)*.8-Math.sin(hr)*ox,sy=b.my;
+            const lead=td/28,px=t2.x+Math.sin(t2.g.rotation.y)*t2.spd*lead,pz=t2.z+Math.cos(t2.g.rotation.y)*t2.spd*lead;
+            const ax=px-sx,az=pz-sz,ay=.8*t2.s-sy,al=Math.hypot(ax,ay,az)||1;
+            const am=new THREE.Mesh(GEO.arrow,b.lv===5?MT.rune():b.lv>=3?M(0xd9dee5,{metalness:.5}):M(0xf2e6c8));am.position.set(sx,sy,sz);am.lookAt(sx+ax,sy+ay,sz+az);scene.add(am);
+            if(b.lv===5)am.scale.set(1.8,1.8,1.3);
+            arrows.push({m:am,vx:ax/al*30,vy:ay/al*30,vz:az/al*30,life:1.2+lead,dmg:TUR.dmg[b.lv],magic:b.lv===5});
+          }
+          sfx('shoot');
+        }
+      }else b.head.rotation.y+=dt*.4;
+    }
+  }
+
+  /* arrows */
+  for(const a of arrows){
+    a.life-=dt;a.m.position.x+=a.vx*dt;a.m.position.y+=a.vy*dt;a.m.position.z+=a.vz*dt;
+    for(const m of monsters){if(m.dead)continue;if(Math.hypot(m.x-a.m.position.x,m.z-a.m.position.z)<m.r+.3){hurtMonster(m,a.dmg,a.m.position.x-a.vx,a.m.position.z-a.vz);if(a.magic)burst(a.m.position.x,a.m.position.y,a.m.position.z,0xb46bff,6,3);a.life=0;break}}
+    if(a.m.position.y<0)a.life=0;
+    if(a.life<=0)scene.remove(a.m);
+  }
+  arrows=arrows.filter(a=>a.life>0);
+
+  /* 魔物石（ドロップ） */
+  for(const d of drops){
+    if(d.got)continue;d.t+=dt;
+    if(d.vy!==0||d.y>.45){d.vy-=14*dt;d.x+=d.vx*dt;d.z+=d.vz*dt;d.y+=d.vy*dt;if(d.y<=.45&&d.vy<0){d.y=.45;d.vy=0;d.vx=d.vz=0}}
+    const dx=P.x-d.x,dz=P.z-d.z,dd=Math.hypot(dx,dz);
+    if(d.t>.5&&dd<4){const sp=10*(1-dd/5)+3;d.x+=dx/dd*sp*dt;d.z+=dz/dd*sp*dt}
+    if(d.t>.5&&dd<.7){d.got=true;S.mst++;scene.remove(d.m);floatText(P.x,2.3,P.z,'+1 💎','mst');sfx('coin');continue}
+    if(d.t>90){d.got=true;scene.remove(d.m);continue}
+    d.m.position.set(d.x,d.y+(d.vy===0?Math.sin(t*3+d.ph)*.12:0),d.z);d.m.rotation.y+=dt*3;
+  }
+  drops=drops.filter(d=>!d.got);
+
+  /* 砲弾・爆発の輪 */
+  for(const sh of shells){
+    sh.t+=dt;const k=Math.min(1,sh.t/sh.T);
+    sh.m.position.set(sh.sx+(sh.tx-sh.sx)*k,sh.sy*(1-k)+.3*k+sh.h*4*k*(1-k),sh.sz+(sh.tz-sh.sz)*k);
+    if(Math.random()<.5)burst(sh.m.position.x,sh.m.position.y,sh.m.position.z,0x777777,1,.6,.7);
+    if(k>=1){scene.remove(sh.m);sh.done=true;explode(sh.tx,sh.tz,CAN.rad[sh.lv],CAN.dmg[sh.lv],sh.lv>=5?THEME[sh.lv].rune:0xff8a30)}
+  }
+  shells=shells.filter(s2=>!s2.done);
+  for(const r of rings){r.t+=dt;const k=r.t/.45;r.m.scale.setScalar(r.r*(.3+k));r.m.material.opacity=Math.max(0,.9*(1-k));if(k>=1){scene.remove(r.m);r.m.material.dispose();r.done=true}}
+  rings=rings.filter(r=>!r.done);
+
+  /* particles */
+  for(const q of particles){
+    q.life-=dt;q.vy-=14*dt;q.m.position.x+=q.vx*dt;q.m.position.y+=q.vy*dt;q.m.position.z+=q.vz*dt;
+    if(q.m.position.y<.05){q.m.position.y=.05;q.vy*=-.3;q.vx*=.6;q.vz*=.6}
+    q.m.rotation.x+=q.rx*dt;q.m.rotation.y+=q.ry*dt;q.m.scale.setScalar(q.s*Math.max(0,q.life/q.max));
+    if(q.life<=0)scene.remove(q.m);
+  }
+  particles=particles.filter(q=>q.life>0);
+
+  /* fire / fireflies */
+  const fl=1+Math.sin(t*14)*.08+Math.sin(t*23)*.05;
+  const cf=.15+.85*core.hp/core.max;
+  flame1.scale.set(cf,fl*cf*(1+Math.sin(t*9)*.1),cf);flame2.scale.set(cf,(2-fl)*cf,cf);flame1.rotation.y+=dt*2;
+  if(Math.random()<dt*8*cf)burst(rand(-.2,.2),1.2,rand(-.2,.2),Math.random()<.5?0xffb347:0xff6a1a,1,1,.6);
+  if(nightF>.01){const pa=ffGeo.attributes.position.array;ffSeed.forEach((f,i)=>{pa[i*3]=f.x+Math.sin(t*.5+f.p)*2;pa[i*3+1]=f.y+Math.sin(t*1.3+f.p*2)*.5;pa[i*3+2]=f.z+Math.cos(t*.4+f.p)*2});ffGeo.attributes.position.needsUpdate=true}
+}
+
+function updateCamera(dt){
+  camLook.lerp(v3.set(P.x,.5,P.z),1-Math.exp(-6*dt));
+  const target=v3.copy(camLook).add(camOff);
+  camera.position.lerp(target,1-Math.exp(-5*dt));
+  if(shakeAmt>0){camera.position.x+=rand(-1,1)*shakeAmt;camera.position.y+=rand(-1,1)*shakeAmt;shakeAmt=Math.max(0,shakeAmt-dt*1.5)}
+  camera.lookAt(camLook);
+  sun.position.set(camLook.x+sunDir.x*45,sunDir.y*45,camLook.z+sunDir.z*45);
+  sun.target.position.set(camLook.x,0,camLook.z);
+}
+
+function updateUI(dt){
+  $('wood').textContent=S.wood;$('stone').textContent=S.stone;$('mst').textContent=S.mst;
+  $('fuelT').textContent='火力 '+Math.ceil(core.hp)+'%';$('coref').classList.toggle('low',core.hp<30);
+  $('hpf').style.width=Math.max(0,P.hp/P.max*100)+'%';$('coref').style.width=Math.max(0,core.hp/core.max*100)+'%';
+  const p=S.time%CYCLE;
+  if(S.night){$('clockT').textContent=`🌙 夜 ${S.day}（魔物Lv${S.day}）`;$('clockS').textContent=`残り魔物 ${monsters.length+S.spawnLeft}・朝まで ${Math.ceil(CYCLE-p)}秒`}
+  else{$('clockT').textContent=`☀️ Day ${S.day}`;$('clockS').textContent=`夜まで ${Math.ceil(NIGHT_START-p)}秒`}
+  $('cycf').style.width=(p/CYCLE*100)+'%';$('skip').style.display=S.night?'none':'inline-block';
+  $('bWall').classList.toggle('no',S.wood<3);$('bTur').classList.toggle('no',S.wood<10||S.stone<5);$('bMine').classList.toggle('no',S.wood<2||S.stone<3);$('bCan').classList.toggle('no',S.wood<15||S.stone<15);
+  {const nc=S.build?null:nearCannon();if(nc!==S.nearCan){S.nearCan=nc;actEl.classList.toggle('cannon',!!nc);if(!S.build){$('actI').textContent=nc?'💥':'⚔️';$('actL').textContent=nc?'発射':'攻撃/伐採'}}}$('bUp').classList.toggle('no',S.mst<3);$('bHire').classList.toggle('no',S.mst<5);
+  let h;
+  if(S.build==='up'){const b=S.upT;h=!b?'⬆️ 強化したい装置に近づいてね':b.lv>=MAXLV?`${NAMES[b.type]} Lv MAX`:`${NAMES[b.type]} Lv${b.lv} → Lv${b.lv+1}（💎${UPCOST[b.lv]}）`}
+  else if(S.build)h={wall:'🧱 向いている方向に壁を置く（🔨で設置）',turret:'🏹 砲台は射程内の魔物を自動で撃つ',mine:'💣 地雷は魔物が踏むと爆発（時間で再装填）',cannon:'💥 大砲は自分か兵隊が横にいないと撃てない'}[S.build];
+  else if(S.nearCan)h='💥 大砲を操作中！ ボタンで発射（射程 '+CAN.rng[S.nearCan.lv]+'m）';
+  else if(core.hp<35)h='🔥 火が消えそう！ 焚き火の横で⚔️を押して薪をくべよう';
+  else if(S.night)h='🛡️ 焚き火を守れ！ 💎魔物石を拾って強化しよう';
+  else if(S.day===1&&S.wood<8)h='🌲 木に近づいて ⚔️ で伐採';
+  else if(S.day===1&&S.stone<5)h='🪨 岩を砕くと石が手に入る';
+  else if(S.mst>=5&&!workers.length)h='👥 魔物石で仲間を雇える（右下の👥）';
+  else if(S.mst>=3)h='⬆️ 魔物石で壁・砲台を強化できる';
+  else h='🧱 壁と砲台で焚き火を固めよう（自分の建物も⚔️で解体できる）';
+  if($('hint').textContent!==h)$('hint').textContent=h;
+  if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').classList.remove('show')}
+  const W=innerWidth,H=innerHeight;
+  for(const f of floats){f.t+=dt;f.p.y+=dt*1.6;v3.copy(f.p).project(camera);f.d.style.left=((v3.x*.5+.5)*W)+'px';f.d.style.top=((-v3.y*.5+.5)*H)+'px';f.d.style.opacity=Math.max(0,1-f.t/1.1);if(f.t>1.1)f.d.remove()}
+  floats=floats.filter(f=>f.t<=1.1);
+}
+
+/* ---------- loop ---------- */
+// idle scenery before start
+resetWorld();S.running=false;S.time=20;
+let last=performance.now(),T=0;
+function loop(now){
+  requestAnimationFrame(loop);
+  let dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
+  if(S.running&&!S.paused){update(dt,T);updateUI(dt)}
+  else{updateLighting(S.time%CYCLE,T);const fl=1+Math.sin(T*14)*.08,cf=core.hp>0?.15+.85*core.hp/core.max:.01;flame1.scale.set(cf,fl*cf,cf);flame2.scale.set(cf,cf,cf);camLook.set(Math.sin(T*.1)*3,.5,4);}
+  updateCamera(dt);
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(loop);
+document.addEventListener('visibilitychange',()=>{last=performance.now()});
+// トトと魔物たちの中で開いたとき：もどるボタンで閉じる
+const EMB=window.parent!==window;if(EMB)document.body.classList.add('emb');
+const goBack=()=>{try{window.parent.postMessage({toride:'close'},'*')}catch(e){}};
+document.addEventListener('click',e=>{if(e.target.closest('.back'))goBack()});
+$('quit').addEventListener('click',()=>{if(S.running&&!S.paused){S.paused=true;$('card').innerHTML=`<h1>ひと休み</h1><div class="sub">ゲームを止めています</div><button id="resume">つづける</button><button class="back" type="button">🏠 もどる（記録は残りません）</button>`;$('ov').style.display='flex';$('resume').onclick=()=>{$('ov').style.display='none';S.paused=false;last=performance.now()}}else goBack()});
+})();
+</script>
+</body>
