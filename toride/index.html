@@ -1001,7 +1001,7 @@ function resetWorld(){
     if(freeSpot(x,z,2.6)){rocks.push(makeRock(x,z));k++}}
   // a few trees near spawn so the first chop is quick
   [[3,6],[-3.5,5.5],[5,1.5]].forEach(([x,z])=>{if(freeSpot(x,z,1.8))trees.push(makeTree(x,z,false))});
-  Object.assign(S,{wood:5,stone:0,mst:0,canMsgT:0,paused:false,jobLv:{wood:1,stone:1,guard:1,gem:1},fuelWarn:false,day:1,time:0,night:false,kills:0,spawnLeft:0,spawnT:0,build:null,running:true,warned:false,coreWarnT:0,tut:null,tutNight:false,tutBurn:0,tutSkipOk:false,tutFired:0,tutOut:false,runId:Date.now().toString(36)+Math.random().toString(36).slice(2,7)});
+  Object.assign(S,{wood:5,stone:0,mst:0,canMsgT:0,paused:false,jobLv:{wood:1,stone:1,guard:1,gem:1},fuelWarn:false,day:1,time:0,night:false,kills:0,spawnLeft:0,spawnT:0,build:null,running:true,warned:false,coreWarnT:0,tut:null,tutNight:false,tutBurn:0,tutSkipOk:false,tutFired:0,tutOut:false,tutOnly:null,runId:Date.now().toString(36)+Math.random().toString(36).slice(2,7)});
   Object.assign(P,{x:0,z:4,face:0,hp:100,cd:0,swing:0,lastHit:99});
   core.hp=core.max;setBuild(null);
 }
@@ -1162,6 +1162,7 @@ function update(dt,t){
     if(dP<tgD){tgD=dP;tg=P;tgK='p'}
     for(const w of workers){if(w.dead)continue;const d=Math.hypot(w.x-m.x,w.z-m.z);if(d<tgD){tgD=d;tg=w;tgK='w'}}
     for(const b of buildings.values()){if(b.type!=='turret'&&b.type!=='cannon')continue;const d=Math.hypot(b.x-m.x,b.z-m.z)-1;if(d<tgD){tgD=d;tg=b;tgK='b'}}
+    if(m.tutTg&&!m.tutTg.gone&&buildings.has(key(m.tutTg.i,m.tutTg.j))){tg=m.tutTg;tgK=''}   /* 練習：地雷に向かって歩く */
     if(!tg){let fd=1e9;for(const f of LF){const d=Math.hypot(f.x-m.x,f.z-m.z);if(d<fd){fd=d;tg=f}}}
     const tx=tg?tg.x:core.x,tz=tg?tg.z:core.z;
     let dx=tx-m.x,dz=tz-m.z;const dl=Math.hypot(dx,dz)||1;dx/=dl;dz/=dl;
@@ -1223,7 +1224,7 @@ function update(dt,t){
     }
     if(b.type==='mine'){
       b.arm-=dt;b.lamp.visible=b.arm<=0?Math.sin(t*7)>-.3:false;
-      if(b.arm<=0&&b.grow===undefined){for(const m of monsters){if(!m.dead&&m.y>=-.2&&Math.hypot(m.x-b.x,m.z-b.z)<m.r+.55){explode(b.x,b.z,MINE.rad[b.lv],MINE.dmg[b.lv],b.lv>=5?THEME[b.lv].rune:0xffa040);buildings.delete(key(b.i,b.j));scene.remove(b.g);b.gone=true;break}}}   /* 2026-11-07：地雷は1回爆発したらなくなる */
+      if(b.arm<=0&&b.grow===undefined&&!(S.tut&&S.tutOnly&&S.tutOnly!=='mine')){for(const m of monsters){if(!m.dead&&m.y>=-.2&&Math.hypot(m.x-b.x,m.z-b.z)<m.r+.55){explode(b.x,b.z,MINE.rad[b.lv],MINE.dmg[b.lv],b.lv>=5?THEME[b.lv].rune:0xffa040);buildings.delete(key(b.i,b.j));scene.remove(b.g);b.gone=true;break}}}   /* 2026-11-07：地雷は1回爆発したらなくなる */
       b.bar.visible=false;continue;
     }
     setBar(b.bar,b.hp/b.max,b.hp/b.max>.5?0x6bff8a:b.hp/b.max>.25?0xffd04d:0xff4d4d);
@@ -1241,7 +1242,7 @@ function update(dt,t){
     }
     if(b.type==='turret'){
       b.cd-=dt;const rng=TUR.rng[b.lv];
-      const inR=[];for(const m of monsters){if(m.dead||m.y<-.3)continue;const d=Math.hypot(m.x-b.x,m.z-b.z);if(d<rng)inR.push([d,m])}
+      const inR=[];if(!(S.tut&&S.tutOnly&&S.tutOnly!=='turret'))for(const m of monsters){   /* 練習中は、いま習っている装置だけ動く */if(m.dead||m.y<-.3)continue;const d=Math.hypot(m.x-b.x,m.z-b.z);if(d<rng)inR.push([d,m])}
       inR.sort((a,c)=>a[0]-c[0]);
       if(inR.length){
         const tg=inR[0][1];
@@ -1378,23 +1379,25 @@ const TUT=[
       tutSetD('<b>火が消えた！</b> 本番ならここでゲームオーバーです。<br>焚き火の<b>すぐ横で⚔️</b>を押すと、<b>木材1つで火力+9</b>。消えても練習なら薪をくべれば<b>また火がつきます</b>。<br>⏱ 満タンから0まで約2分40秒。夜の前や、ゲージが減ってきたら早めにくべよう！')}},
   goal:st=>st.ph===0?['🔥 火が消えるまで待とう…',false]:[`🔥 薪をくべて火力 ${Math.floor(core.hp)} / 90%`,core.hp>=90],
   leave:()=>{S.tutBurn=0;core.hp=Math.max(core.hp,90)}},
- {t:'攻撃のしかた',d:'魔物が3体やって来た！ 近くで<b>⚔️</b>を押すと攻撃（1回3.5ダメージ）。<br>倒すと<b>💎魔物石</b>を落とすことがあり、近づくと自動で拾えます。💎は<b>装置の強化</b>や<b>仲間を雇う</b>のに使います。',
+ {t:'攻撃のしかた',only:'none',d:'魔物が3体やって来た！ 近くで<b>⚔️</b>を押すと攻撃（1回3.5ダメージ）。<br>倒すと<b>💎魔物石</b>を落とすことがあり、近づくと自動で拾えます。💎は<b>装置の強化</b>や<b>仲間を雇う</b>のに使います。',
   enter:st=>{st.m=tutSpawn(3,'imp',P.x,P.z,8)},
   goal:st=>[`魔物を倒す ${3-alive(st.m)} / 3`,alive(st.m)===0]},
  {t:'壁の置きかた',d:'右下の<b>🧱ボタン</b>で設置モード。向いている方向に<b>緑の枠</b>が出るので、<b>🔨ボタン</b>で設置（🪵3）。赤い枠のところには置けません。<br>壁は<b>魔物の通り道をふさぎ</b>、焚き火を守ります。強化すると体力 <b>80 → 最大1000</b>。<br>やめるときは「✖やめる」。',
   enter:st=>{st.base=cntB('wall');tutNeed(10)},
   goal:st=>[`壁を置く ${Math.min(2,cntB('wall')-st.base)} / 2`,cntB('wall')-st.base>=2]},
- {t:'砲台の置きかた',d:'<b>🏹砲台</b>（🪵10🪨5）は、近くの魔物を<b>自動でうって</b>くれます（射程14m）。<br>⚠️ 砲台と大砲は、<b>持っている数が増えるほど材料が多く</b>必要になります。<br>砲台を建てたら魔物が来ます。砲台の活やくを見よう！',
+ {t:'地雷の置きかた',only:'mine',d:'<b>💣地雷</b>（🪵2🪨3）は、魔物がふむと<b>爆発</b>して、まわりの魔物にダメージ。<br>⚠️ <b>1回爆発するとなくなります</b>。魔物の通り道に置こう。',
+  enter:st=>{st.ph=0;st.base=cntB('mine')},
+  tick:st=>{tutNeed(2,3);if(st.ph===0&&cntB('mine')>st.base){let b=null;for(const x of buildings.values())if(x.type==='mine')b=x;st.b=b;st.ph=1;
+      const dx=b.x-core.x,dz=b.z-core.z,d=Math.hypot(dx,dz)||1;const m=makeMonster('imp',1);m.x=b.x+dx/d*7;m.z=b.z+dz/d*7;m.g.position.set(m.x,-1.2,m.z);m.tutTg=b;monsters.push(m);st.m=[m];toast('👹 魔物が地雷に向かってくる！ 攻撃しないで見ていよう',2)}
+    if(st.ph===1&&st.b&&st.b.gone)st.ph=2;
+    if(st.ph===1&&st.b&&!st.b.gone&&!buildings.has(key(st.b.i,st.b.j))){st.ph=0;st.base=cntB('mine');toast('地雷がなくなった… もう一度置こう',2)}
+    else if(st.ph===1&&st.m&&alive(st.m)===0&&!st.b.gone){const b=st.b,dx=b.x-core.x,dz=b.z-core.z,d=Math.hypot(dx,dz)||1;const m=makeMonster('imp',1);m.x=b.x+dx/d*7;m.z=b.z+dz/d*7;m.g.position.set(m.x,-1.2,m.z);m.tutTg=b;monsters.push(m);st.m=[m];toast('👹 もう1体来た！ 攻撃しないで見ていよう',2)}},
+  goal:st=>st.ph===0?['💣 地雷を1つ置く',false]:st.ph===1?['💥 魔物が地雷をふむのを見よう（攻撃しないで待つ）',false]:['地雷が爆発してなくなった！',true]},
+ {t:'砲台の置きかた',only:'turret',d:'<b>🏹砲台</b>（🪵10🪨5）は、近くの魔物を<b>自動でうって</b>くれます（射程14m）。<br>⚠️ 砲台と大砲は、<b>持っている数が増えるほど材料が多く</b>必要になります。<br>砲台を建てたら魔物が来ます。砲台の活やくを見よう！',
   enter:st=>{st.base=cntB('turret');st.ph=0},
   tick:st=>{const c=costOf('turret');tutNeed(c.w,c.s);if(st.ph===0&&cntB('turret')>st.base){st.ph=1;let b=null;for(const x of buildings.values())if(x.type==='turret')b=x;st.m=tutSpawn(3,'imp',b.x,b.z,15);toast('👹 魔物が来た！',1.4)}},
   goal:st=>st.ph===0?['🏹 砲台を1つ建てる',false]:[`砲台で魔物を倒す ${3-alive(st.m)} / 3`,alive(st.m)===0]},
- {t:'地雷の置きかた',d:'<b>💣地雷</b>（🪵2🪨3）は、魔物がふむと<b>爆発</b>して、まわりの魔物にダメージ。<br>⚠️ <b>1回爆発するとなくなります</b>。魔物の通り道に置こう。',
-  enter:st=>{st.ph=0;st.base=cntB('mine')},
-  tick:st=>{tutNeed(2,3);if(st.ph===0&&cntB('mine')>st.base){let b=null;for(const x of buildings.values())if(x.type==='mine')b=x;st.b=b;st.ph=1;
-      const dx=b.x-P.x,dz=b.z-P.z,d=Math.hypot(dx,dz)||1;const m=makeMonster('imp',1);m.x=b.x+dx/d*6;m.z=b.z+dz/d*6;m.g.position.set(m.x,-1.2,m.z);monsters.push(m);st.m=[m];toast('👹 魔物が地雷に向かってくる！ その場で待とう',2)}
-    if(st.ph===1&&st.b&&st.b.gone)st.ph=2},
-  goal:st=>st.ph===0?['💣 地雷を1つ置く',false]:st.ph===1?['💥 魔物が地雷をふむのを見よう（動かずに待つ）',false]:['地雷が爆発してなくなった！',true]},
- {t:'大砲の使いかた',d:'<b>💥大砲</b>（🪵15🪨15〜）は強力な爆発弾をうちます（射程24m）。ただし<b>自分か⚔️兵隊が横にいるときだけ</b>うてます。<br>大砲のすぐ横に立つと右下のボタンが<b>💥発射</b>に変わるので、押してうとう！',
+ {t:'大砲の使いかた',only:'cannon',d:'<b>💥大砲</b>（🪵15🪨15〜）は強力な爆発弾をうちます（射程24m）。ただし<b>自分か⚔️兵隊が横にいるときだけ</b>うてます。<br>大砲のすぐ横に立つと右下のボタンが<b>💥発射</b>に変わるので、押してうとう！',
   enter:st=>{st.ph=0;st.base=cntB('cannon');S.tutFired=0},
   tick:st=>{const c=costOf('cannon');tutNeed(c.w,c.s);if(st.ph===0&&cntB('cannon')>st.base){let b=null;for(const x of buildings.values())if(x.type==='cannon')b=x;st.ph=1;st.m=tutSpawn(3,'imp',b.x,b.z,19);S.tutFired=0;toast('👹 魔物が来た！ 大砲の横で💥を押そう',2)}},
   goal:st=>st.ph===0?['💥 大砲を1つ建てる',false]:[`大砲を撃つ ${Math.min(1,S.tutFired)}/1 ・ 魔物を倒す ${3-alive(st.m)}/3`,S.tutFired>=1&&alive(st.m)===0]},
@@ -1414,7 +1417,7 @@ const TUT=[
   leave:()=>{S.tutBurn=0;S.tutSkipOk=false}}
 ];
 function tutSetD(h){$('tutD').innerHTML=h}
-function tutEnter(i){const st=S.tut;st.i=i;st.s={};st.done=false;st.autoMin=false;const T=TUT[i];
+function tutEnter(i){const st=S.tut;st.i=i;st.s={};st.done=false;st.autoMin=false;S.tutOnly=TUT[i].only||null;const T=TUT[i];
   $('tutT').textContent=`${i+1}/${TUT.length}　${T.t}`;$('tutP').style.width=(i/TUT.length*100)+'%';
   tutSetD(T.d);$('tutN').disabled=true;$('tutN').textContent=i===TUT.length-1?'練習おわり ✔':'次へ ▶';
   document.body.classList.remove('tmin');$('tutMin').textContent='たたむ';
