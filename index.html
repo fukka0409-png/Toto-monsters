@@ -316,6 +316,14 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .tr-logo .l2{font-size:64px;font-weight:900;line-height:1.05;letter-spacing:.05em;background:linear-gradient(180deg,#fff6c8 0%,#ffd45a 45%,#ff8a1f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #4a1f06) drop-shadow(0 0 2px #2a1003) drop-shadow(0 0 14px rgba(255,140,40,.55))}
 .tr-logo .l3{margin-top:2px;font-size:13px;font-weight:800;color:#ffe9b8;letter-spacing:.25em;text-indent:.25em;text-shadow:0 2px 3px #000}
 .tr-bg::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(180deg,rgba(20,10,30,0),rgba(20,10,30,.5));border-radius:inherit}
+.hm-left{position:relative}
+.tr-rk{position:absolute;left:0;top:calc(100% + 8px);width:100%;max-width:200px;box-sizing:border-box;z-index:2;padding:6px 9px;border-radius:14px;background:rgba(20,12,30,.72);border:2px solid rgba(255,214,120,.65);color:#fff;font-size:12px;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.tr-rk h4{margin:0 0 3px;font-size:11px;font-weight:900;color:#ffd27a;text-align:center;white-space:nowrap}
+.tr-rk ol{margin:0;padding:0;list-style:none}
+.tr-rk li{display:flex;justify-content:space-between;gap:6px;padding:0 4px;border-radius:6px;font-size:12px}
+.tr-rk li.me{background:rgba(255,200,90,.3);font-weight:900}
+.tr-rk .my{margin-top:4px;text-align:center;font-weight:800;color:#ffe9b8;font-size:11px}
+.tr-rk .no{text-align:center;opacity:.75}
 .tr-go{position:absolute;z-index:3;left:0;right:0;bottom:5%;display:flex;flex-direction:column;align-items:center}
 .tr-wrap{position:relative;animation:trPulse 1.5s ease-in-out infinite}
 .tr-start{position:relative;overflow:hidden;font:inherit;font-size:26px;font-weight:900;letter-spacing:8px;text-indent:8px;color:#3a1600;padding:11px 42px 13px;border-radius:999px;border:4px solid #3a1600;background:linear-gradient(180deg,#fff6b8 0%,#ffd84a 42%,#ff9d24 100%);box-shadow:0 8px 0 #3a1600,0 14px 26px rgba(0,0,0,.5),inset 0 4px 0 rgba(255,255,255,.75),inset 0 -5px 0 rgba(200,90,0,.35);cursor:pointer;transition:transform .06s,box-shadow .06s}
@@ -5338,6 +5346,21 @@ const tsHome = () => true;
 const tsInHome = () => false;   // 2026-10-28：全員公開。ホームは魔物サバイバル、魔物合戦はプロフィールから
 const ioOn = () => true;
 const trHome = () => dexPeek();   // 2026-11-07：ホームの魔物サバイバルを「トトの森」に交代（まだ公開しない：ふっかーだけ）
+/* 2026-11-07：トトの森の「何日生き残ったか」匿名ランキングをホームに出す（trdays/{uid}={d,at}） */
+let TR_RK=null, TR_RK_AT=0, TR_RK_BUSY=false;
+function trRkHtml(){ const h="<h4>🏆 生き残りランキング</h4>"; const R=TR_RK; if(!R) return h+'<div class="no">読み込み中…</div>';
+  if(!R.top.length) return h+'<div class="no">まだ記録がありません</div>';
+  let i=0,prev=-1,rank=0; const rows=R.top.map(t=>{ i++; if(t.d!==prev){ rank=i; prev=t.d; } return `<li class="${t.me?"me":""}"><span>${rank}位${t.me?"（あなた）":""}</span><b>${t.d}日</b></li>`; }).join("");
+  return h+`<ol>${rows}</ol>`+(R.md?`<div class="my">あなた：${R.md}日（${R.mr}位/${R.n}人）</div>`:""); }
+async function trRkLoad(force){ const el=()=>document.getElementById("trRk");
+  if(!DB||!MYID||TR_RK_BUSY) return; if(!force&&TR_RK&&Date.now()-TR_RK_AT<60000){ return; }
+  TR_RK_BUSY=true;
+  try{ const col=DB.collection("trdays"); const q=await col.orderBy("d","desc").limit(3).get(); const top=[]; q.forEach(d=>top.push({d:d.data().d|0, me:d.id===MYID}));
+    const mine=await col.doc(MYID).get(); const md=mine.exists?(mine.data().d|0):0; let mr=0, n=top.length;
+    try{ if(md){ const a=col.where("d",">",md); mr=(a.count?(await a.count().get()).data().count:(await a.get()).size)+1; } n=col.count?(await col.count().get()).data().count:n; }catch(e){}
+    TR_RK={top,md,mr,n}; TR_RK_AT=Date.now(); const e=el(); if(e) e.innerHTML=trRkHtml(); }
+  catch(e){ console.warn("trdays",e); const x=el(); if(x&&!TR_RK) x.innerHTML='<h4>🏆 生き残りランキング</h4><div class="no">読み込めませんでした</div>'; }
+  TR_RK_BUSY=false; }
 const dexPeek = () => { try{ return !!MYID && normName(myName())===normName("ふっかー"); }catch(e){ return false; } };
 // 図鑑：まだ出会っていない魔物の入手方法
 function howToGet(m){ const L=[];
@@ -5946,7 +5969,7 @@ function renderHome(){
       </button>
       <div class="hm-row"><div class="hm-left">
       <button class="hm-invest" type="button" id="hmInvest">💰 冒険者に投資する${activeInvs().length?`<small>投資中 ${activeInvs().length}/${INV_MAX}</small>`:""}</button>
-      ${tsInHome()?`<button class="hm-tsnew" type="button" id="hmTsNew">⚔️ 魔物合戦が追加されました！</button>`:""}</div>
+      ${tsInHome()?`<button class="hm-tsnew" type="button" id="hmTsNew">⚔️ 魔物合戦が追加されました！</button>`:""}${trHome()?`<div class="tr-rk" id="trRk">${trRkHtml()}</div>`:""}</div>
       <div class="hm-btns">
         <button class="hm-btn" type="button" id="hmTitle">🏠 タイトル画面に戻る</button>
         <button class="hm-btn" type="button" id="hmFriend">🤝 フレンド${DB&&MYID&&frBadge()?`<span class="rules-new fr-badge">${frBadge()}</span>`:""}</button>
@@ -5967,6 +5990,7 @@ function renderHome(){
   if($("#hmChange")) $("#hmChange").onclick=()=>openHomeEdit("m");
   if($("#ioChange")) $("#ioChange").onclick=()=>{ try{ SFX.tap(); }catch(e){} openHomeEdit("m"); };
   if($(".tr-logo")){ const tp=$(".hm-top"), lg=$(".tr-logo"), go=$(".tr-go"); if(tp&&lg){ const top=tp.offsetTop+tp.offsetHeight+10; lg.style.top=top+"px"; if(go&&lg.offsetTop+lg.offsetHeight>go.offsetTop-6) lg.style.top=Math.max(0,go.offsetTop-6-lg.offsetHeight)+"px"; } }   /* トトの森の文字がボタンに隠れないように */
+  if($("#trRk")) trRkLoad();
   if($("#trStart")) $("#trStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.openToride) window.openToride(true); };
   if($("#ioStart")) $("#ioStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.ioOpen) window.ioOpen(); };
   if($("#ioStats")) setTimeout(()=>{ try{ window.ioFillStats&&window.ioFillStats(); }catch(e){} },50);
@@ -10738,7 +10762,7 @@ async function titleRanks(){
     w.style.cssText="position:fixed;inset:0;z-index:9000;background:#0d1530";
     w.innerHTML=`<iframe src="toride/index.html?v=6${go?"&go=1":""}" title="トトの森" style="border:0;width:100%;height:100%;display:block" allow="autoplay; fullscreen"></iframe>`;
     document.body.appendChild(w);
-    const onMsg=e=>{ if(e.data&&e.data.toride==="close"){ window.removeEventListener("message",onMsg); w.remove(); } };
+    const onMsg=e=>{ if(e.data&&e.data.toride==="close"){ window.removeEventListener("message",onMsg); w.remove(); try{ trRkLoad(true); }catch(_){} } };
     window.addEventListener("message",onMsg); }
   window.openToride=openToride;
   // トトの戦略（試作）：まだ公開しないので、冒険者「ふっかー」にだけボタンを出す
