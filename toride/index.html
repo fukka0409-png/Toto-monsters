@@ -969,12 +969,12 @@ function resetWorld(){
     if(freeSpot(x,z,2.6)){rocks.push(makeRock(x,z));k++}}
   // a few trees near spawn so the first chop is quick
   [[3,6],[-3.5,5.5],[5,1.5]].forEach(([x,z])=>{if(freeSpot(x,z,1.8))trees.push(makeTree(x,z,false))});
-  Object.assign(S,{wood:5,stone:0,mst:0,canMsgT:0,paused:false,jobLv:{wood:1,stone:1,guard:1,gem:1},fuelWarn:false,day:1,time:0,night:false,kills:0,spawnLeft:0,spawnT:0,build:null,running:true,warned:false,coreWarnT:0});
+  Object.assign(S,{wood:5,stone:0,mst:0,canMsgT:0,paused:false,jobLv:{wood:1,stone:1,guard:1,gem:1},fuelWarn:false,day:1,time:0,night:false,kills:0,spawnLeft:0,spawnT:0,build:null,running:true,warned:false,coreWarnT:0,runId:Date.now().toString(36)+Math.random().toString(36).slice(2,7)});
   Object.assign(P,{x:0,z:4,face:0,hp:100,cd:0,swing:0,lastHit:99});
   core.hp=core.max;setBuild(null);
 }
 /* ---------- 何日生き残ったかの匿名ランキング（2026-11-07） trdays/{uid} = {d, at} ---------- */
-const PDB=()=>{try{const w=window.parent;return w&&w!==window&&w.DB&&w.MYID?{db:w.DB,uid:w.MYID}:null}catch(e){return null}};
+const PDB=()=>{try{const w=window.parent;if(!w||w===window)return null;const r=typeof w.trDB==='function'?w.trDB():null;return r&&r.db&&r.uid?r:null}catch(e){return null}};
 async function rkSave(d){const p=PDB();if(!p)return;const ref=p.db.collection('trdays').doc(p.uid);
   try{const cur=await ref.get();const old=cur.exists?(cur.data().d|0):0;if(d>old)await ref.set({d,at:Date.now()})}catch(e){console.warn('trdays',e)}}
 async function rkHtml(){const p=PDB();if(!p)return '<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">ゲーム本体から開くと見られます</div></div>';
@@ -985,9 +985,13 @@ async function rkHtml(){const p=PDB();if(!p)return '<div class="rk"><h3>🏆 生
     return `<div class="rk"><h3>🏆 生き残りランキング</h3>${rows?`<ol>${rows}</ol>`:'<div style="text-align:center;opacity:.7">まだ記録がありません</div>'}${md?`<div class="my">あなたの最高：${md}日（${myRank}位 / ${total}人）</div>`:''}</div>`}
   catch(e){return '<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">読み込めませんでした</div></div>'}}
 async function rkFill(el){if(!el)return;el.innerHTML='<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">読み込み中…</div></div>';el.innerHTML=await rkHtml()}
+/* 2026-11-07：生き残った日数×500コイン（死んでも途中でやめてももらえる・1回のプレイで1回だけ） */
+const COIN_PER_DAY=500;
+function giveCoins(d){try{const w=window.parent;if(w&&w!==window&&typeof w.trReward==='function')return w.trReward(S.runId,d)}catch(e){}return 0}
 function gameOver(msg){
-  if(!S.running)return;setBuild(null);S.running=false;actUp();
-  $('card').innerHTML=`<h1>GAME OVER</h1><div class="sub">${msg}</div><div class="stat">🗓️ 生存：<b>${S.day}</b> 日目<br>👹 撃破：<b>${S.kills}</b> 体<br>🏗️ 建築：<b>${buildings.size}</b> 個<br>👥 仲間：<b>${workers.length}</b> 人</div><div id="rkBox"></div><button id="again">もう一度</button><button class="back" type="button">🏠 もどる</button>`;
+  if(!S.running)return;setBuild(null);S.running=false;actUp();S.paused=false;
+  const got=giveCoins(S.day);
+  $('card').innerHTML=`<h1>${msg==='途中でやめました'?'おつかれさま':'GAME OVER'}</h1><div class="sub">${msg}</div><div class="stat">🗓️ 生存：<b>${S.day}</b> 日目<br>${got?`🪙 コイン：<b>+${got.toLocaleString()}</b><br>`:''}👹 撃破：<b>${S.kills}</b> 体<br>🏗️ 建築：<b>${buildings.size}</b> 個<br>👥 仲間：<b>${workers.length}</b> 人</div><div id="rkBox"></div><button id="again">もう一度</button><button class="back" type="button">🏠 もどる</button>`;
   $('ov').style.display='flex';
   {const d=S.day;rkSave(d).then(()=>rkFill($('rkBox')))}
   $('again').onclick=()=>{$('ov').style.display='none';resetWorld();toast('☀️ Day 1 — 夜までに備えよう')};
@@ -1320,7 +1324,7 @@ document.addEventListener('visibilitychange',()=>{last=performance.now()});
 const EMB=window.parent!==window;if(EMB)document.body.classList.add('emb');
 const goBack=()=>{try{window.parent.postMessage({toride:'close'},'*')}catch(e){}};
 document.addEventListener('click',e=>{if(e.target.closest('.back'))goBack()});
-$('quit').addEventListener('click',()=>{if(S.running&&!S.paused){S.paused=true;$('card').innerHTML=`<h1>ひと休み</h1><div class="sub">ゲームを止めています</div><button id="resume">つづける</button><button class="back" type="button">🏠 もどる（記録は残りません）</button>`;$('ov').style.display='flex';$('resume').onclick=()=>{$('ov').style.display='none';S.paused=false;last=performance.now()}}else goBack()});
+$('quit').addEventListener('click',()=>{if(S.running&&!S.paused){S.paused=true;$('card').innerHTML=`<h1>ひと休み</h1><div class="sub">ゲームを止めています</div><button id="resume">つづける</button><button id="endRun" type="button" style="display:block;margin:12px auto 0;font-size:14px;padding:9px 24px;color:#fff;background:rgba(255,255,255,.14);box-shadow:none;border:1px solid rgba(255,255,255,.25)">🏁 やめる（${S.day}日分 🪙${(S.day*COIN_PER_DAY).toLocaleString()}）</button>`;$('ov').style.display='flex';$('endRun').onclick=()=>gameOver('途中でやめました');$('resume').onclick=()=>{$('ov').style.display='none';S.paused=false;last=performance.now()}}else goBack()});
 if(/[?&]go=1/.test(location.search))startGame(); // ホームの「スタート」から開いたときはタイトルを飛ばす
 })();
 </script>
