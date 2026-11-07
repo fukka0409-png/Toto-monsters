@@ -5359,7 +5359,8 @@ function trRkHtml(){ const h="<h4>🏆 生き残りランキング</h4>"; const 
 async function trRkLoad(force){ const el=()=>document.getElementById("trRk");
   if(!DB||!MYID||TR_RK_BUSY) return; if(!force&&TR_RK&&Date.now()-TR_RK_AT<60000){ return; }
   TR_RK_BUSY=true;
-  try{ const col=DB.collection("trdays"); if(dexPeek()&&!S.trFix12&&window.trSaveDays){ try{ await window.trSaveDays(12); S.trFix12=1; save(); }catch(e){} }
+  try{ const col=DB.collection("trdays"); if(dexPeek()&&!S.trFix12){ S.trFix12=1; save(); }
+    if(dexPeek()&&!S.trReset1108){ try{ await DB.collection("trdays").doc(MYID).delete(); S.trReset1108=1; save(); }catch(e){ console.warn("trdays reset",e); } }   /* 2026-11-08：ふっかーの順位を1回だけリセット */
     const q=await col.orderBy("d","desc").limit(3).get(); const top=[]; q.forEach(d=>top.push({id:d.id, d:d.data().d|0, me:d.id===MYID}));
     await Promise.all(top.map(async t=>{ try{ const pr=await DB.doc("profiles/"+t.id).get(); t.nm=pr.exists?(pr.data().name||""):""; }catch(e){ t.nm=""; } }));
     const mine=await col.doc(MYID).get(); const md=mine.exists?(mine.data().d|0):0; let mr=0, n=top.length;
