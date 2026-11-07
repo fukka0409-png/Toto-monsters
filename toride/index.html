@@ -60,7 +60,7 @@ canvas{display:block;position:fixed;inset:0}
 .ft.dmg{color:#ffd1d1}.ft.wood{color:#ffe0a8}.ft.stone{color:#dfe7f0}.ft.ok{color:#a6ffbf}
 #vig{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;box-shadow:inset 0 0 120px 40px rgba(255,0,30,.75);transition:opacity .25s}
 #ov{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(10,20,40,.55),rgba(5,8,18,.9))}
-#card{max-width:340px;margin:20px;padding:24px 22px;text-align:center;border-radius:22px}
+#card{max-width:340px;max-height:calc(100% - 40px);overflow:auto;margin:20px;padding:24px 22px;text-align:center;border-radius:22px}
 #card h1{margin:0 0 4px;font-size:34px;letter-spacing:2px;background:linear-gradient(180deg,#fff2c8,#ffb35c);-webkit-background-clip:text;background-clip:text;color:transparent}
 #card .sub{opacity:.8;font-size:13px;margin-bottom:16px}
 #card ul{text-align:left;padding-left:4px;list-style:none;font-size:14px;line-height:1.75;margin:0 0 18px}
@@ -71,6 +71,12 @@ body.emb #card button.back{display:block}
 body.emb .tback{display:block}
 #quit{display:none;position:fixed;left:calc(10px + env(safe-area-inset-left));top:calc(118px + env(safe-area-inset-top));z-index:6;font:inherit;font-size:12px;font-weight:800;color:#fff;padding:6px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(15,20,30,.55)}
 body.emb #quit{display:block}
+#card .rk{margin:0 0 16px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);text-align:left;font-size:13px}
+#card .rk h3{margin:0 0 6px;font-size:14px;text-align:center}
+#card .rk ol{margin:0;padding:0;list-style:none}
+#card .rk li{display:flex;justify-content:space-between;padding:3px 6px;border-radius:8px}
+#card .rk li.me{background:rgba(255,200,90,.25);font-weight:900}
+#card .rk .my{margin-top:6px;text-align:center;font-weight:800;color:#ffd27a}
 #card .stat{font-size:16px;line-height:1.8;margin:10px 0 18px}
 
 /* タイトル画面 */
@@ -144,6 +150,7 @@ body.emb #quit{display:block}
     <div class="swrap"><button id="start" class="startbtn" type="button">スタート</button><span class="finger">👆</span></div>
     <div class="tsub">タップしてはじめよう</div>
     <button id="howBtn" class="tlink" type="button">❓ 遊び方</button>
+    <button id="rkBtn" class="tlink" type="button">🏆 生き残りランキング</button>
   </div>
   <button class="back tback" type="button">🏠 もどる</button>
   <div style="display:none">
@@ -155,7 +162,8 @@ body.emb #quit{display:block}
       <li>🪓 ⚔️で木を伐る・岩を砕く・魔物を斬る</li>
       <li>🧱 木材で壁、🏹 木材+石で砲台を建てる</li>
       <li>💎 魔物を倒すと「魔物石」を落とす</li>
-      <li>💣 地雷・💥 大砲（自分か兵隊が操作）も作れる</li>
+      <li>💣 地雷（1回爆発でなくなる）・💥 大砲（自分か兵隊が操作）も作れる</li>
+      <li>🏹 砲台・💥 大砲は数が増えるほど材料が多く必要</li>
       <li>⬆️ 魔物石で装置を最大Lv7まで強化</li>
       <li>👥 魔物石で木こり・石掘り・兵隊・石拾いを雇える</li>
       <li>🔥 焚き火は時間で弱まる。近くで⚔️を押して薪🪵をくべよう</li>
@@ -325,7 +333,14 @@ const fireLight=new THREE.PointLight(0xff9a3c,2,20,1.6);fireLight.position.y=1.6
 const fires=()=>[core];
 const litFires=()=>[core];
 const jobMax=()=>5; // 各職業の最大人数
-const costOf=t=>COST[t];
+/* 2026-11-07：砲台・大砲は持っている数が増えるほど高くなる（1個ごとに+60%） */
+const SCALE_T={turret:1,cannon:1};
+const countOf=t=>{let n=0;for(const b of buildings.values())if(b.type===t)n++;return n};
+const costOf=t=>{const c=COST[t];if(!SCALE_T[t]||!c)return c;const k=1+.6*countOf(t);return {w:Math.ceil(c.w*k),s:Math.ceil(c.s*k)}};
+const costTxt=c=>'🪵'+c.w+(c.s?'🪨'+c.s:'');
+let _costLbl='';
+function updCostLabels(){const a=costOf('turret'),b=costOf('cannon'),k=costTxt(a)+'|'+costTxt(b);if(k===_costLbl)return;_costLbl=k;
+  const t=document.querySelector('#bTur small'),c=document.querySelector('#bCan small');if(t)t.textContent='砲台 '+costTxt(a);if(c)c.textContent='大砲 '+costTxt(b)}
 
 /* ---------- player（もこもこ角つきの主人公） ---------- */
 const P={x:0,z:4,face:0,hp:100,max:100,cd:0,swing:0,lastHit:99,walk:0};
@@ -707,7 +722,7 @@ function placeBuild(){
   if(!c.ok){toast('ここには建てられない');return}
   if(S.wood<cost.w||S.stone<cost.s){toast(`材料不足：🪵${cost.w}${cost.s?'・🪨'+cost.s:''} が必要`);return}
   S.wood-=cost.w;S.stone-=cost.s;
-  const b=makeBuilding(S.build,c.i,c.j);
+  const b=makeBuilding(S.build,c.i,c.j);b.cost={w:cost.w,s:cost.s};
   b.g.scale.set(1,.01,1);b.grow=0;
   buildings.set(key(c.i,c.j),b);
   burst(c.x,.3,c.z,0xb59a74,12,4);sfx('place');
@@ -959,10 +974,23 @@ function resetWorld(){
   Object.assign(P,{x:0,z:4,face:0,hp:100,cd:0,swing:0,lastHit:99});
   core.hp=core.max;setBuild(null);
 }
+/* ---------- 何日生き残ったかの匿名ランキング（2026-11-07） trdays/{uid} = {d, at} ---------- */
+const PDB=()=>{try{const w=window.parent;return w&&w!==window&&w.DB&&w.MYID?{db:w.DB,uid:w.MYID}:null}catch(e){return null}};
+async function rkSave(d){const p=PDB();if(!p)return;const ref=p.db.collection('trdays').doc(p.uid);
+  try{const cur=await ref.get();const old=cur.exists?(cur.data().d|0):0;if(d>old)await ref.set({d,at:Date.now()})}catch(e){console.warn('trdays',e)}}
+async function rkHtml(){const p=PDB();if(!p)return '<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">ゲーム本体から開くと見られます</div></div>';
+  try{const col=p.db.collection('trdays');const q=await col.orderBy('d','desc').limit(10).get();
+    const mine=await col.doc(p.uid).get();const md=mine.exists?(mine.data().d|0):0;
+    let myRank=0,total=q.size;try{const a=col.where('d','>',md);myRank=md?(a.count?(await a.count().get()).data().count:(await a.get()).size)+1:0;total=col.count?(await col.count().get()).data().count:q.size}catch(e){}
+    let rows='';let i=0,prev=-1,rank=0;q.forEach(doc=>{i++;const d=doc.data().d|0;if(d!==prev){rank=i;prev=d}rows+=`<li class="${doc.id===p.uid?'me':''}"><span>${rank}位${doc.id===p.uid?'（あなた）':''}</span><b>${d}日</b></li>`});
+    return `<div class="rk"><h3>🏆 生き残りランキング</h3>${rows?`<ol>${rows}</ol>`:'<div style="text-align:center;opacity:.7">まだ記録がありません</div>'}${md?`<div class="my">あなたの最高：${md}日（${myRank}位 / ${total}人）</div>`:''}</div>`}
+  catch(e){return '<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">読み込めませんでした</div></div>'}}
+async function rkFill(el){if(!el)return;el.innerHTML='<div class="rk"><h3>🏆 生き残りランキング</h3><div style="text-align:center;opacity:.7">読み込み中…</div></div>';el.innerHTML=await rkHtml()}
 function gameOver(msg){
   if(!S.running)return;setBuild(null);S.running=false;actUp();
-  $('card').innerHTML=`<h1>GAME OVER</h1><div class="sub">${msg}</div><div class="stat">🗓️ 生存：<b>${S.day}</b> 日目<br>👹 撃破：<b>${S.kills}</b> 体<br>🏗️ 建築：<b>${buildings.size}</b> 個<br>👥 仲間：<b>${workers.length}</b> 人</div><button id="again">もう一度</button><button class="back" type="button">🏠 もどる</button>`;
+  $('card').innerHTML=`<h1>GAME OVER</h1><div class="sub">${msg}</div><div class="stat">🗓️ 生存：<b>${S.day}</b> 日目<br>👹 撃破：<b>${S.kills}</b> 体<br>🏗️ 建築：<b>${buildings.size}</b> 個<br>👥 仲間：<b>${workers.length}</b> 人</div><div id="rkBox"></div><button id="again">もう一度</button><button class="back" type="button">🏠 もどる</button>`;
   $('ov').style.display='flex';
+  {const d=S.day;rkSave(d).then(()=>rkFill($('rkBox')))}
   $('again').onclick=()=>{$('ov').style.display='none';resetWorld();toast('☀️ Day 1 — 夜までに備えよう')};
 }
 function startGame(){
@@ -971,6 +999,7 @@ function startGame(){
 }
 $('start').onclick=startGame;
 $('howBtn').onclick=()=>{$('how').style.display='flex'};
+$('rkBtn').onclick=()=>{$('card').innerHTML='<div id="rkBox"></div><button id="rkX">閉じる</button>';$('ov').style.display='flex';$('rkX').onclick=()=>{$('ov').style.display='none'};rkFill($('rkBox'))};
 $('howX').onclick=()=>{$('how').style.display='none'};
 // 音は最初のタップで有効にする（タイトルを飛ばして始めたとき用）
 addEventListener('pointerdown',()=>{try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}},{passive:true});
@@ -1146,7 +1175,7 @@ function update(dt,t){
     }
     if(b.type==='mine'){
       b.arm-=dt;b.lamp.visible=b.arm<=0?Math.sin(t*7)>-.3:false;
-      if(b.arm<=0&&b.grow===undefined){for(const m of monsters){if(!m.dead&&m.y>=-.2&&Math.hypot(m.x-b.x,m.z-b.z)<m.r+.55){explode(b.x,b.z,MINE.rad[b.lv],MINE.dmg[b.lv],b.lv>=5?THEME[b.lv].rune:0xffa040);b.arm=MINE.re[b.lv];break}}}
+      if(b.arm<=0&&b.grow===undefined){for(const m of monsters){if(!m.dead&&m.y>=-.2&&Math.hypot(m.x-b.x,m.z-b.z)<m.r+.55){explode(b.x,b.z,MINE.rad[b.lv],MINE.dmg[b.lv],b.lv>=5?THEME[b.lv].rune:0xffa040);buildings.delete(key(b.i,b.j));scene.remove(b.g);b.gone=true;break}}}   /* 2026-11-07：地雷は1回爆発したらなくなる */
       b.bar.visible=false;continue;
     }
     setBar(b.bar,b.hp/b.max,b.hp/b.max>.5?0x6bff8a:b.hp/b.max>.25?0xffd04d:0xff4d4d);
@@ -1246,6 +1275,7 @@ function updateCamera(dt){
 }
 
 function updateUI(dt){
+  updCostLabels();
   $('wood').textContent=S.wood;$('stone').textContent=S.stone;$('mst').textContent=S.mst;
   $('fuelT').textContent='火力 '+Math.ceil(core.hp)+'%';$('coref').classList.toggle('low',core.hp<30);
   $('hpf').style.width=Math.max(0,P.hp/P.max*100)+'%';$('coref').style.width=Math.max(0,core.hp/core.max*100)+'%';
@@ -1257,7 +1287,7 @@ function updateUI(dt){
   {const nc=S.build?null:nearCannon();if(nc!==S.nearCan){S.nearCan=nc;actEl.classList.toggle('cannon',!!nc);if(!S.build){$('actI').textContent=nc?'💥':'⚔️';$('actL').textContent=nc?'発射':'攻撃/伐採'}}}$('bUp').classList.toggle('no',S.mst<3);$('bHire').classList.toggle('no',S.mst<5);
   let h;
   if(S.build==='up'){const b=S.upT;h=!b?'⬆️ 強化したい装置に近づいてね':b.lv>=MAXLV?`${NAMES[b.type]} Lv MAX`:`${NAMES[b.type]} Lv${b.lv} → Lv${b.lv+1}（💎${UPCOST[b.lv]}）`}
-  else if(S.build)h={wall:'🧱 向いている方向に壁を置く（🔨で設置）',turret:'🏹 砲台は射程内の魔物を自動で撃つ',mine:'💣 地雷は魔物が踏むと爆発（時間で再装填）',cannon:'💥 大砲は自分か兵隊が横にいないと撃てない'}[S.build];
+  else if(S.build)h={wall:'🧱 向いている方向に壁を置く（🔨で設置）',turret:'🏹 砲台は射程内の魔物を自動で撃つ',mine:'💣 地雷は魔物が踏むと爆発（1回でなくなる）',cannon:'💥 大砲は自分か兵隊が横にいないと撃てない'}[S.build];
   else if(S.nearCan)h='💥 大砲を操作中！ ボタンで発射（射程 '+CAN.rng[S.nearCan.lv]+'m）';
   else if(core.hp<35)h='🔥 火が消えそう！ 焚き火の横で⚔️を押して薪をくべよう';
   else if(S.night)h='🛡️ 焚き火を守れ！ 💎魔物石を拾って強化しよう';
