@@ -105,6 +105,27 @@ body.emb #quit{display:block}
 #how h2{margin:0 0 8px;text-align:center;font-size:20px}
 #how ul{padding-left:4px;list-style:none;font-size:14px;line-height:1.75;margin:0 0 14px}
 #how button{display:block;margin:0 auto;font:inherit;font-weight:800;font-size:15px;color:#2a1405;border:0;border-radius:999px;padding:9px 34px;background:linear-gradient(180deg,#ffd27a,#ff9a3c);cursor:pointer}
+/* 練習モード（2026-11-08） */
+#tut{display:none;position:fixed;left:50%;transform:translateX(-50%);top:calc(112px + env(safe-area-inset-top));width:min(94vw,420px);z-index:6;padding:10px 12px 12px;border-radius:16px;background:rgba(14,18,30,.86);border:2px solid rgba(255,210,122,.75)}
+body.tut #tut{display:block}
+body.tut #hint,body.tut #quit{display:none!important}
+body.tut #toast{top:calc(300px + env(safe-area-inset-top))}
+body.tut.tmin #toast{top:calc(170px + env(safe-area-inset-top))}
+#tut .th{display:flex;align-items:center;gap:6px}
+#tut .th b{flex:1;font-size:14px;color:#ffd27a;min-width:0}
+#tut .th button{font:inherit;font-size:12px;font-weight:800;color:#fff;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1)}
+#tut .tbar{height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:6px 0 4px;overflow:hidden}
+#tut .tbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd27a,#ff9a3c);transition:width .3s}
+#tutD{font-size:12.5px;line-height:1.6;max-height:30vh;overflow:auto}
+#tutD b{color:#ffe9b8}
+#tutG{margin-top:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.08);font-size:13px;font-weight:800}
+#tutG.ok{background:rgba(90,220,130,.22);color:#b6ffcb}
+#tutN{display:block;width:100%;margin-top:8px;font:inherit;font-size:15px;font-weight:900;color:#2a1405;border:0;border-radius:999px;padding:9px;background:linear-gradient(180deg,#ffd27a,#ff9a3c);box-shadow:0 4px 14px rgba(255,140,40,.4)}
+#tutN:disabled{opacity:.35;box-shadow:none}
+body.tmin #tutD,body.tmin #tutN{display:none}
+#card .mode{display:block;width:100%;margin:10px 0 0;text-align:left;padding:12px 16px;border-radius:16px;font-size:20px}
+#card .mode small{display:block;font-size:12px;font-weight:700;opacity:.8;margin-top:2px}
+#card .mode.p{background:linear-gradient(180deg,#bfe8ff,#6fb6ff);box-shadow:0 6px 20px rgba(80,160,255,.35)}
 </style>
 </head>
 <body>
@@ -142,6 +163,7 @@ body.emb #quit{display:block}
   <div id="hRows"></div>
   <button id="hClose">閉じる</button>
 </div></div>
+<div id="tut" class="pill"><div class="th"><b id="tutT"></b><button id="tutMin" type="button">たたむ</button><button id="tutX" type="button">やめる</button></div><div class="tbar"><i id="tutP"></i></div><div id="tutD"></div><div id="tutG"></div><button id="tutN" type="button" disabled>次へ ▶</button></div>
 <div id="ov" style="display:none"><div id="card" class="pill"></div></div>
 <div id="title">
   <div class="tbg"></div>
@@ -638,6 +660,7 @@ $('bUp').addEventListener('pointerdown',e=>{e.preventDefault();setBuild(S.build=
 $('cancel').addEventListener('pointerdown',e=>{e.preventDefault();setBuild(null)});
 $('bHire').addEventListener('pointerdown',e=>{e.preventDefault();if(!S.running)return;setBuild(null);actUp();S.paused=true;renderHire();$('hire').style.display='flex'});
 $('skip').addEventListener('click',e=>{e.stopPropagation();if(!S.running||S.paused||S.night)return; // 夜はスキップ不可
+  if(S.tut){if(!S.tutSkipOk){toast('練習のこのステップではスキップできません',1.6);return}S.tutNight=true}
   S.time=Math.floor(S.time/CYCLE)*CYCLE+NIGHT_START-.3;S.warned=true;toast('⏩ 昼をスキップした！',1.4)});
 $('hClose').addEventListener('click',()=>{$('hire').style.display='none';S.paused=false;last=performance.now()});
 $('hRows').addEventListener('click',e=>{const b=e.target.closest('.hb');if(b)hireAction(b.dataset.a,b.dataset.j)});
@@ -745,6 +768,7 @@ function explode(x,z,rad,dmg,col=0xffa040){
   if(nearP(x,z,22)){shakeAmt=Math.max(shakeAmt,.25);sfx('boom')}
 }
 function fireCannon(b,tg){
+  if(S.tut)S.tutFired=(S.tutFired||0)+1;
   b.cd=CAN.int[b.lv];b.recoil=.3;
   const hr=b.head.rotation.y,mz=b.muzzle*.95+.2;
   const sx=b.x+Math.sin(hr)*mz,sz=b.z+Math.cos(hr)*mz,sy=1.45;
@@ -784,7 +808,7 @@ function killMonster(m,byPlayer){
 function hurtPlayer(d){
   P.hp-=d;P.lastHit=0;shakeAmt=.35;$('vig').style.opacity=1;setTimeout(()=>$('vig').style.opacity=0,180);sfx('hurt');
   floatText(P.x,2.2,P.z,'-'+d,'dmg');
-  if(P.hp<=0)gameOver('あなたは倒れた…');
+  if(P.hp<=0){if(S.tut){P.hp=P.max;toast('💫 練習なので復活！（本番ならゲームオーバー）',2.4)}else gameOver('あなたは倒れた…')}
 }
 
 /* ---------- 仲間（雇える人） ---------- */
@@ -977,7 +1001,7 @@ function resetWorld(){
     if(freeSpot(x,z,2.6)){rocks.push(makeRock(x,z));k++}}
   // a few trees near spawn so the first chop is quick
   [[3,6],[-3.5,5.5],[5,1.5]].forEach(([x,z])=>{if(freeSpot(x,z,1.8))trees.push(makeTree(x,z,false))});
-  Object.assign(S,{wood:5,stone:0,mst:0,canMsgT:0,paused:false,jobLv:{wood:1,stone:1,guard:1,gem:1},fuelWarn:false,day:1,time:0,night:false,kills:0,spawnLeft:0,spawnT:0,build:null,running:true,warned:false,coreWarnT:0,runId:Date.now().toString(36)+Math.random().toString(36).slice(2,7)});
+  Object.assign(S,{wood:5,stone:0,mst:0,canMsgT:0,paused:false,jobLv:{wood:1,stone:1,guard:1,gem:1},fuelWarn:false,day:1,time:0,night:false,kills:0,spawnLeft:0,spawnT:0,build:null,running:true,warned:false,coreWarnT:0,tut:null,tutNight:false,tutBurn:0,tutSkipOk:false,tutFired:0,tutOut:false,runId:Date.now().toString(36)+Math.random().toString(36).slice(2,7)});
   Object.assign(P,{x:0,z:4,face:0,hp:100,cd:0,swing:0,lastHit:99});
   core.hp=core.max;setBuild(null);
 }
@@ -1009,7 +1033,18 @@ function startGame(){
   try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}
   $('title').style.display='none';$('ov').style.display='none';resetWorld();toast('☀️ Day 1 — 夜までに備えよう');
 }
-$('start').onclick=startGame;
+$('start').onclick=showMode;
+/* 本番か練習をえらぶ（2026-11-08） */
+function showMode(){
+  try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}
+  $('title').style.display='none';
+  $('card').innerHTML=`<h1>トトの森</h1><div class="sub">どちらであそぶ？</div>
+    <button class="mode" id="mReal" type="button">🔥 本番<small>いつも通り。生き残った日数×500コイン・ランキングに記録</small></button>
+    <button class="mode p" id="mPrac" type="button">📘 練習<small>1つずつ説明を見ながら遊び方を練習（コイン・記録はなし）</small></button>
+    <button class="back" type="button">🏠 もどる</button>`;
+  $('ov').style.display='flex';
+  $('mReal').onclick=startGame;$('mPrac').onclick=startPractice;
+}
 $('howBtn').onclick=()=>{$('how').style.display='flex'};
 $('rkBtn').onclick=()=>{$('card').innerHTML='<div id="rkBox"></div><button id="rkX">閉じる</button>';$('ov').style.display='flex';$('rkX').onclick=()=>{$('ov').style.display='none'};rkFill($('rkBox'))};
 $('howX').onclick=()=>{$('how').style.display='none'};
@@ -1050,6 +1085,7 @@ camera.position.set(0,25,21);
 
 function update(dt,t){
   /* time of day */
+  if(S.tut&&!S.tutNight)S.time=20;   /* 練習中は昼のまま */
   const prevP=S.time%CYCLE;S.time+=dt;const p=S.time%CYCLE;
   if(p<prevP){ // dawn
     S.day++;S.night=false;S.warned=false;
@@ -1065,10 +1101,10 @@ function update(dt,t){
     const kind=n>=3&&r<Math.min(.38,.08*n)?'brute':n>=2&&r>.68?'runner':'imp';monsters.push(makeMonster(kind,n))}}
   updateLighting(p,t);
   /* 焚き火の燃料 */
-  core.hp-=FUEL_BURN*dt;
+  core.hp-=FUEL_BURN*dt*(S.tut?S.tutBurn:1);
   if(!S.fuelWarn&&core.hp<30){S.fuelWarn=true;toast('🔥 火が弱まっている！ 焚き火の近くで⚔️を押して薪をくべろ',3.5)}
   if(core.hp>45)S.fuelWarn=false;
-  if(core.hp<=0){core.hp=0;gameOver('焚き火が燃え尽きてしまった…');return}
+  if(core.hp<=0){core.hp=0;if(S.tut){if(!S.tutOut){S.tutOut=true;toast('🔥 火が消えた！（本番ならゲームオーバー）',2.6)}}else{gameOver('焚き火が燃え尽きてしまった…');return}}
 
   /* player */
   let mx=joy.x,mz=joy.y;
@@ -1288,6 +1324,7 @@ function updateCamera(dt){
 
 function updateUI(dt){
   updCostLabels();
+  if(S.tut)tutTick(dt);
   $('wood').textContent=S.wood;$('stone').textContent=S.stone;$('mst').textContent=S.mst;
   $('fuelT').textContent='火力 '+Math.ceil(core.hp)+'%';$('coref').classList.toggle('low',core.hp<30);
   $('hpf').style.width=Math.max(0,P.hp/P.max*100)+'%';$('coref').style.width=Math.max(0,core.hp/core.max*100)+'%';
@@ -1315,6 +1352,95 @@ function updateUI(dt){
   floats=floats.filter(f=>f.t<=1.1);
 }
 
+
+/* ---------- 練習モード（2026-11-08）：1ステップずつ説明しながら遊び方を練習 ---------- */
+const cntB=t=>{let n=0;for(const b of buildings.values())if(b.type===t)n++;return n};
+const alive=list=>list.filter(m=>!m.dead).length;
+function tutSpawn(n,kind,cx,cz,dist){const out=[];for(let k=0;k<n;k++){const m=makeMonster(kind,1),a=Math.random()*6.283;m.x=cx+Math.cos(a)*dist;m.z=cz+Math.sin(a)*dist;m.g.position.set(m.x,-1.2,m.z);monsters.push(m);out.push(m)}return out}
+function tutNeed(w,s,m){if(w!=null)S.wood=Math.max(S.wood,w);if(s!=null)S.stone=Math.max(S.stone,s);if(m!=null)S.mst=Math.max(S.mst,m)}
+const TUT=[
+ {t:'目的とゲームオーバー',d:'夜になると魔物が<b>焚き火🔥</b>をねらってやって来ます。焚き火を守りながら<b>何日生き残れるか</b>をきそうゲームです。<br>💀 <b>焚き火が消える</b>か、<b>自分（トト）が倒れる</b>とゲームオーバー。<br>🪙 本番では「生き残った日数×500コイン」がもらえて、ランキングにも記録されます。<br>※練習ではゲームオーバーにならず、時間も昼のまま止まっています。',
+  goal:()=>['読んだら「次へ」を押そう',true]},
+ {t:'歩きかた',d:'画面の<b>左側をドラッグ</b>すると歩けます（パソコンは<b>WASDキー</b>か矢印キー）。まわりを歩いてみよう。',
+  enter:st=>{st.px=P.x;st.pz=P.z;st.dist=0},
+  tick:st=>{st.dist+=Math.hypot(P.x-st.px,P.z-st.pz);st.px=P.x;st.pz=P.z},
+  goal:st=>[`歩いた距離 ${Math.min(15,Math.floor(st.dist))} / 15m`,st.dist>=15]},
+ {t:'採掘① 木を伐る',d:'木に近づいて右下の<b>⚔️ボタン</b>を押すと伐採できます。1回で<b>🪵+1</b>、切りたおすと<b>+2</b>。切りかぶは40秒でまた生えます。<br>🪵木材は<b>壁・薪・装置</b>に使います。ボタンは長押しでも連続で振れます。',
+  enter:st=>{st.base=S.wood},
+  goal:st=>[`木材 ${Math.max(0,S.wood-st.base)} / 6 個 集める`,S.wood-st.base>=6]},
+ {t:'採掘② 岩を砕く',d:'岩に近づいて<b>⚔️</b>を押すと<b>🪨石</b>が取れます（1回+1、こわすと+2）。こわした岩は60秒でまた出てきます。<br>🪨石は<b>砲台・地雷・大砲</b>に使います。近くに岩を出しました！',
+  enter:st=>{st.base=S.stone;let near=false;for(const r of rocks)if(r.state==='alive'&&Math.hypot(r.x-P.x,r.z-P.z)<12)near=true;
+    if(!near){const a=P.face;for(let k=0;k<12;k++){const x=P.x+Math.sin(a+k*.5)*5,z=P.z+Math.cos(a+k*.5)*5;if(Math.hypot(x,z)>4&&freeSpot(x,z,2)){rocks.push(makeRock(x,z));break}}}},
+  goal:st=>[`石 ${Math.max(0,S.stone-st.base)} / 5 個 集める`,S.stone-st.base>=5]},
+ {t:'焚き火の守りかた',d:'右上の<b>🔥ゲージ</b>が焚き火の火力。時間とともに<b>どんどん減って</b>いき、本番では<b>0になるとゲームオーバー</b>！<br>練習なので、いちど火が消えるところを見てみよう…',
+  enter:st=>{st.ph=0;core.hp=Math.min(core.hp,30);S.tutBurn=12;S.tutOut=false},
+  tick:st=>{if(st.ph===0&&core.hp<=0){st.ph=1;S.tutBurn=1;tutNeed(14);
+      tutSetD('<b>火が消えた！</b> 本番ならここでゲームオーバーです。<br>焚き火の<b>すぐ横で⚔️</b>を押すと、<b>木材1つで火力+9</b>。消えても練習なら薪をくべれば<b>また火がつきます</b>。<br>⏱ 満タンから0まで約2分40秒。夜の前や、ゲージが減ってきたら早めにくべよう！')}},
+  goal:st=>st.ph===0?['🔥 火が消えるまで待とう…',false]:[`🔥 薪をくべて火力 ${Math.floor(core.hp)} / 90%`,core.hp>=90],
+  leave:()=>{S.tutBurn=0;core.hp=Math.max(core.hp,90)}},
+ {t:'攻撃のしかた',d:'魔物が3体やって来た！ 近くで<b>⚔️</b>を押すと攻撃（1回3.5ダメージ）。<br>倒すと<b>💎魔物石</b>を落とすことがあり、近づくと自動で拾えます。💎は<b>装置の強化</b>や<b>仲間を雇う</b>のに使います。',
+  enter:st=>{st.m=tutSpawn(3,'imp',P.x,P.z,8)},
+  goal:st=>[`魔物を倒す ${3-alive(st.m)} / 3`,alive(st.m)===0]},
+ {t:'壁の置きかた',d:'右下の<b>🧱ボタン</b>で設置モード。向いている方向に<b>緑の枠</b>が出るので、<b>🔨ボタン</b>で設置（🪵3）。赤い枠のところには置けません。<br>壁は<b>魔物の通り道をふさぎ</b>、焚き火を守ります。強化すると体力 <b>80 → 最大1000</b>。<br>やめるときは「✖やめる」。',
+  enter:st=>{st.base=cntB('wall');tutNeed(10)},
+  goal:st=>[`壁を置く ${Math.min(2,cntB('wall')-st.base)} / 2`,cntB('wall')-st.base>=2]},
+ {t:'砲台の置きかた',d:'<b>🏹砲台</b>（🪵10🪨5）は、近くの魔物を<b>自動でうって</b>くれます（射程14m）。<br>⚠️ 砲台と大砲は、<b>持っている数が増えるほど材料が多く</b>必要になります。<br>砲台を建てたら魔物が来ます。砲台の活やくを見よう！',
+  enter:st=>{st.base=cntB('turret');st.ph=0},
+  tick:st=>{const c=costOf('turret');tutNeed(c.w,c.s);if(st.ph===0&&cntB('turret')>st.base){st.ph=1;let b=null;for(const x of buildings.values())if(x.type==='turret')b=x;st.m=tutSpawn(3,'imp',b.x,b.z,15);toast('👹 魔物が来た！',1.4)}},
+  goal:st=>st.ph===0?['🏹 砲台を1つ建てる',false]:[`砲台で魔物を倒す ${3-alive(st.m)} / 3`,alive(st.m)===0]},
+ {t:'地雷の置きかた',d:'<b>💣地雷</b>（🪵2🪨3）は、魔物がふむと<b>爆発</b>して、まわりの魔物にダメージ。<br>⚠️ <b>1回爆発するとなくなります</b>。魔物の通り道に置こう。',
+  enter:st=>{st.ph=0;st.base=cntB('mine')},
+  tick:st=>{tutNeed(2,3);if(st.ph===0&&cntB('mine')>st.base){let b=null;for(const x of buildings.values())if(x.type==='mine')b=x;st.b=b;st.ph=1;
+      const dx=b.x-P.x,dz=b.z-P.z,d=Math.hypot(dx,dz)||1;const m=makeMonster('imp',1);m.x=b.x+dx/d*6;m.z=b.z+dz/d*6;m.g.position.set(m.x,-1.2,m.z);monsters.push(m);st.m=[m];toast('👹 魔物が地雷に向かってくる！ その場で待とう',2)}
+    if(st.ph===1&&st.b&&st.b.gone)st.ph=2},
+  goal:st=>st.ph===0?['💣 地雷を1つ置く',false]:st.ph===1?['💥 魔物が地雷をふむのを見よう（動かずに待つ）',false]:['地雷が爆発してなくなった！',true]},
+ {t:'大砲の使いかた',d:'<b>💥大砲</b>（🪵15🪨15〜）は強力な爆発弾をうちます（射程24m）。ただし<b>自分か⚔️兵隊が横にいるときだけ</b>うてます。<br>大砲のすぐ横に立つと右下のボタンが<b>💥発射</b>に変わるので、押してうとう！',
+  enter:st=>{st.ph=0;st.base=cntB('cannon');S.tutFired=0},
+  tick:st=>{const c=costOf('cannon');tutNeed(c.w,c.s);if(st.ph===0&&cntB('cannon')>st.base){let b=null;for(const x of buildings.values())if(x.type==='cannon')b=x;st.ph=1;st.m=tutSpawn(3,'imp',b.x,b.z,19);S.tutFired=0;toast('👹 魔物が来た！ 大砲の横で💥を押そう',2)}},
+  goal:st=>st.ph===0?['💥 大砲を1つ建てる',false]:[`大砲を撃つ ${Math.min(1,S.tutFired)}/1 ・ 魔物を倒す ${3-alive(st.m)}/3`,S.tutFired>=1&&alive(st.m)===0]},
+ {t:'装置の強化',d:'<b>⬆️ボタン</b>で強化モード。強化したい装置の<b>近くで⬆️</b>を押すと、💎魔物石を使ってレベルアップ（最大<b>Lv7</b>）。<br>例）🏹砲台 Lv1→Lv7：攻撃 <b>2.5→19</b>・射程 <b>14→23m</b>・1回に<b>3発</b><br>　　🧱壁の体力 <b>80→1000</b>、💥大砲の攻撃 <b>18→120</b><br>費用 💎 3→6→10→15→22→30',
+  enter:st=>{tutNeed(null,null,10)},
+  goal:()=>{let ok=false;for(const b of buildings.values())if(b.lv>=2)ok=true;return ['⬆️ どれか1つの装置を Lv2 にする',ok]}},
+ {t:'仲間の増やしかた',d:'<b>👥ボタン</b>で仲間を雇えます（💎5〜、1人ふえるごとに少し高くなる）。各職業<b>5人まで</b>。画面を開いている間は時間が止まります。<br>🪓<b>木こり</b>：木材を集める　⛏️<b>石掘り</b>：石を集める<br>⚔️<b>兵隊</b>：魔物と戦う・大砲をうつ　💎<b>石拾い</b>：魔物石を集める',
+  enter:st=>{st.base=workers.length;tutNeed(null,null,12)},
+  goal:st=>[`👥 仲間を1人雇う ${Math.min(1,workers.length-st.base)}/1`,workers.length>st.base]},
+ {t:'仲間のレベルアップ',d:'👥の画面の<b>「強化」</b>で、その職業の<b>全員</b>が強くなります（最大<b>Lv5</b>）。<br>🪓⛏️ 作業の速さ <b>1.35秒→0.75秒</b>／回、<b>Lv4から1回で2個</b><br>⚔️ 兵隊：体力 <b>50→170</b>・攻撃 <b>2.5→8.9</b>・攻撃の間かく <b>1秒→0.6秒</b><br>💎 石拾い：足が速くなり、遠くの石まで拾う<br>費用 💎 6→10→15→22',
+  enter:st=>{st.lv=Object.assign({},S.jobLv);tutNeed(null,null,8)},
+  goal:st=>{const up=Object.keys(S.jobLv).some(k=>S.jobLv[k]>st.lv[k]);return ['👥 どれか1つの職業をレベルアップ',up]}},
+ {t:'夜をのりきろう',d:'1日は<b>昼130秒・夜70秒</b>。夜は魔物がたくさん来て、<b>5日ごと</b>に魔王級のボスも。朝になると残った魔物は消えます。<b>日がたつほど魔物は強く</b>なり、15日目からは毎日2倍に！<br>上の<b>「⏩ 昼をスキップ」</b>で夜にできます。押して夜を体験しよう！',
+  enter:st=>{S.tutSkipOk=true;st.ph=0},
+  tick:st=>{if(st.ph===0&&S.tutNight)st.ph=1;if(st.ph===1&&S.night){st.ph=2;S.tutBurn=1;document.body.classList.add('tmin');$('tutMin').textContent='ひらく'}if(st.ph===2&&!S.night)st.ph=3},
+  goal:st=>st.ph<=1?['⏩ 「昼をスキップ」を押す',false]:st.ph===2?[`🌙 夜を守りきろう（残り魔物 ${monsters.filter(m=>!m.dead).length+S.spawnLeft}）`,S.spawnLeft===0&&!monsters.some(m=>!m.dead)]:['☀️ 朝になった！',true],
+  leave:()=>{S.tutBurn=0;S.tutSkipOk=false}}
+];
+function tutSetD(h){$('tutD').innerHTML=h}
+function tutEnter(i){const st=S.tut;st.i=i;st.s={};st.done=false;st.autoMin=false;const T=TUT[i];
+  $('tutT').textContent=`${i+1}/${TUT.length}　${T.t}`;$('tutP').style.width=(i/TUT.length*100)+'%';
+  tutSetD(T.d);$('tutN').disabled=true;$('tutN').textContent=i===TUT.length-1?'練習おわり ✔':'次へ ▶';
+  document.body.classList.remove('tmin');$('tutMin').textContent='たたむ';
+  if(T.enter)T.enter(st.s);tutTick(0)}
+function tutTick(dt){const st=S.tut;if(!st)return;const T=TUT[st.i];if(T.tick)T.tick(st.s,dt);
+  if(!st.done&&!st.autoMin&&st.i>0&&(joy.id!==null||actHeld||S.build)){st.autoMin=true;document.body.classList.add('tmin');$('tutMin').textContent='ひらく'}   /* 動きはじめたら説明をたたんで画面を見やすく */
+  const [txt,ok]=T.goal(st.s);const g=$('tutG');const h=(ok?'✅ ':'🎯 ')+txt;if(g.textContent!==h)g.textContent=h;g.classList.toggle('ok',!!ok);
+  if(ok&&!st.done){st.done=true;$('tutN').disabled=false;sfx('up');if(st.i>0)toast('✅ クリア！「次へ」を押そう',1.6);document.body.classList.remove('tmin');$('tutMin').textContent='たたむ'}}
+function startPractice(){
+  try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}
+  $('title').style.display='none';$('ov').style.display='none';resetWorld();
+  S.wood=0;S.tut={i:0};document.body.classList.add('tut');tutEnter(0);toast('📘 練習モード',1.4);
+}
+function endPractice(done){
+  const st=S.tut;if(st){const T=TUT[st.i];if(T&&T.leave)T.leave()}
+  S.tut=null;document.body.classList.remove('tut','tmin');setBuild(null);S.running=false;S.paused=false;$('hire').style.display='none';
+  resetWorld();S.running=false;S.time=20;
+  if(done){$('card').innerHTML=`<h1>練習おわり！</h1><div class="sub">すべてのステップをクリアしました🎉</div><div class="stat" style="font-size:14px;text-align:left">🔥 焚き火を守って何日生き残れるか<br>🪓 木と石を集めて 🧱🏹💣💥 で守る<br>💎 魔物石で強化・仲間をふやす<br>🌙 夜をのりこえて日数をのばそう！</div><button id="goReal" type="button">🔥 本番をはじめる</button><button id="goMode" type="button" style="display:block;margin:12px auto 0;font-size:14px;padding:9px 24px;color:#fff;background:rgba(255,255,255,.14);box-shadow:none;border:1px solid rgba(255,255,255,.25)">もどる</button>`;
+    $('ov').style.display='flex';$('goReal').onclick=startGame;$('goMode').onclick=showMode}
+  else showMode();
+}
+$('tutN').onclick=()=>{const st=S.tut;if(!st||!st.done)return;const T=TUT[st.i];if(T.leave)T.leave();if(st.i>=TUT.length-1){$('tutP').style.width='100%';endPractice(true)}else tutEnter(st.i+1)};
+$('tutX').onclick=()=>{if(!S.tut)return;S.paused=true;$('card').innerHTML=`<h1>練習をやめる？</h1><div class="sub">いまはステップ${S.tut.i+1}/${TUT.length}です</div><button id="tRes" type="button">つづける</button><button id="tEnd" type="button" style="display:block;margin:12px auto 0;font-size:14px;padding:9px 24px;color:#fff;background:rgba(255,255,255,.14);box-shadow:none;border:1px solid rgba(255,255,255,.25)">やめる</button>`;
+  $('ov').style.display='flex';$('tRes').onclick=()=>{$('ov').style.display='none';S.paused=false;last=performance.now()};$('tEnd').onclick=()=>{$('ov').style.display='none';endPractice(false)}};
+$('tutMin').onclick=()=>{const m=document.body.classList.toggle('tmin');$('tutMin').textContent=m?'ひらく':'たたむ'};
+
 /* ---------- loop ---------- */
 // idle scenery before start
 resetWorld();S.running=false;S.time=20;
@@ -1334,7 +1460,7 @@ const EMB=window.parent!==window;if(EMB)document.body.classList.add('emb');
 const goBack=()=>{try{window.parent.postMessage({toride:'close'},'*')}catch(e){}};
 document.addEventListener('click',e=>{if(e.target.closest('.back'))goBack()});
 $('quit').addEventListener('click',()=>{if(S.running&&!S.paused){S.paused=true;$('card').innerHTML=`<h1>ひと休み</h1><div class="sub">ゲームを止めています</div><button id="resume">つづける</button><button id="endRun" type="button" style="display:block;margin:12px auto 0;font-size:14px;padding:9px 24px;color:#fff;background:rgba(255,255,255,.14);box-shadow:none;border:1px solid rgba(255,255,255,.25)">🏁 やめる（${S.day}日分 🪙${(S.day*COIN_PER_DAY).toLocaleString()}）</button>`;$('ov').style.display='flex';$('endRun').onclick=()=>gameOver('途中でやめました');$('resume').onclick=()=>{$('ov').style.display='none';S.paused=false;last=performance.now()}}else goBack()});
-if(/[?&]go=1/.test(location.search))startGame(); // ホームの「スタート」から開いたときはタイトルを飛ばす
+if(/[?&]go=1/.test(location.search))showMode(); // ホームの「スタート」から開いたときはタイトルを飛ばして本番／練習をえらぶ
 })();
 </script>
 </body>
