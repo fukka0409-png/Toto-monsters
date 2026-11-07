@@ -311,7 +311,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .io-bg{position:absolute;inset:0;background:url(io/home.jpg) center bottom/cover no-repeat;border-radius:inherit}
 /* トトの森の砦のホーム（ふっかーだけ・2026-11-07） */
 .tr-bg{position:absolute;inset:0;background:#2a1d3a url(toride/title.jpg?v=2) center 72%/cover no-repeat;border-radius:inherit}
-.tr-logo{position:absolute;z-index:2;left:0;right:0;top:29%;text-align:center;pointer-events:none;font-family:'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP',system-ui,sans-serif}
+.tr-logo{position:absolute;z-index:2;left:0;right:0;top:38%;text-align:center;pointer-events:none;font-family:'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP',system-ui,sans-serif}
 .tr-logo .l1{font-size:22px;font-weight:900;color:#fff7e0;letter-spacing:.3em;text-indent:.3em;text-shadow:0 2px 0 #5a2d0c,0 0 10px rgba(0,0,0,.6)}
 .tr-logo .l2{font-size:64px;font-weight:900;line-height:1.05;letter-spacing:.05em;background:linear-gradient(180deg,#fff6c8 0%,#ffd45a 45%,#ff8a1f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #4a1f06) drop-shadow(0 0 2px #2a1003) drop-shadow(0 0 14px rgba(255,140,40,.55))}
 .tr-logo .l3{margin-top:2px;font-size:13px;font-weight:800;color:#ffe9b8;letter-spacing:.25em;text-indent:.25em;text-shadow:0 2px 3px #000}
@@ -5933,7 +5933,7 @@ function renderHome(){
   if(homeMode==="invest") return renderInvest();
   if(homeMode==="me") return renderMe(`<button class="chip" type="button" id="backHome" style="margin-bottom:10px">← ホームへもどる</button>`), ($("#backHome").onclick=()=>{ homeMode="scene"; render(); });
   const h=homeCfg(), m=isArt(h.m)?artOf(h.m):mon(h.m);
-  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":trHome()?" tr":ioOn()?" io":""}">
+  $("#stage").innerHTML=`<div class="home${tsInHome()?" ts":trHome()?" trh":ioOn()?" io":""}">
     ${tsInHome()?"":trHome()?`<div class="tr-bg"></div>`:ioOn()?`<div class="io-bg"></div>`:`<div class="hm-bg" style="background-image:url('${homeImg("bg",h.bg)}')"></div>
     <div class="hm-ground" style="background-image:url('${homeImg("gd",h.gd)}')"></div>`}
     <div class="hm-top hm-top2">
@@ -5966,6 +5966,7 @@ function renderHome(){
   if($("#hmStats")) $("#hmStats").onclick=()=>{ sheet(`<div class="sheet-h"><h3>📊 自己記録</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>${myStatsHtml()}`); };
   if($("#hmChange")) $("#hmChange").onclick=()=>openHomeEdit("m");
   if($("#ioChange")) $("#ioChange").onclick=()=>{ try{ SFX.tap(); }catch(e){} openHomeEdit("m"); };
+  if($(".tr-logo")){ const tp=$(".hm-top"), lg=$(".tr-logo"), go=$(".tr-go"); if(tp&&lg){ const top=tp.offsetTop+tp.offsetHeight+10; lg.style.top=top+"px"; if(go&&lg.offsetTop+lg.offsetHeight>go.offsetTop-6) lg.style.top=Math.max(0,go.offsetTop-6-lg.offsetHeight)+"px"; } }   /* 森の砦の文字がボタンに隠れないように */
   if($("#trStart")) $("#trStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.openToride) window.openToride(true); };
   if($("#ioStart")) $("#ioStart").onclick=()=>{ try{ SFX.tap(); }catch(e){} if(window.ioOpen) window.ioOpen(); };
   if($("#ioStats")) setTimeout(()=>{ try{ window.ioFillStats&&window.ioFillStats(); }catch(e){} },50);
