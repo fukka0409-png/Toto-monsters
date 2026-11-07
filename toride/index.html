@@ -550,7 +550,8 @@ function monPow(n,k){
   if(n<=4)return E[Math.max(0,n-1)];
   const g5=k==='hp'?1.38:1.2;                          // 5〜10日目：1日ごと×1.38（攻撃×1.2）
   let v=E[3]*Math.pow(g5,Math.min(n,10)-4);
-  for(let i=1;i<=n-10;i++)v*=k==='hp'?1.25+.04*i:1.12+.02*i;   // 11日目〜：1日ごとの上がり方もどんどん大きく
+  for(let i=1;i<=Math.min(n,15)-10;i++)v*=k==='hp'?1.25+.04*i:1.12+.02*i;   // 11〜15日目：1日ごとの上がり方もどんどん大きく
+  if(n>15)v*=Math.pow(2,n-15);   // 16日目〜：1日ごとに体力も攻撃も2倍
   return v}
 function makeMonster(kind,night){
   const T=MTYPES[kind],s=T.s,big=kind==='brute'||kind==='boss';
