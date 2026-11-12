@@ -5710,7 +5710,7 @@ const illHave=()=>Object.keys(S.ill||{}).filter(k=>(S.ill[k]||0)>0).length;
 async function illQr(v){
   if(!dexPeek()) return qrSay("このQRコードは、まだ使えません（もうすぐ使えるようになります）",false);
   if(!DB||!MYID) return qrSay("イラストのQRコードは、ログインしてから読み取ってね",false);
-  const used=DB.doc("illqr/"+v), n=Math.floor(Math.random()*ILL_N);
+  const used=DB.doc("illqr/"+v), rest=[...Array(ILL_N).keys()].filter(i=>!((S.ill||{})[i]>0)), pool=rest.length?rest:[...Array(ILL_N).keys()], n=pool[Math.floor(Math.random()*pool.length)];   /* まだ持っていないデザインから当たる（全部そろったら全部の中から） */
   try{ await DB.runTransaction(async tx=>{ const u=await tx.get(used); if(u.exists) throw new Error("used"); tx.set(used,{uid:MYID, at:gnow(), n:n}); }); }
   catch(e){ const m=String(e&&e.message); return qrSay(m==="used"?"このイラストのQRコードは、もう使われています":"読み取りに失敗しました。通信のよい所でもう一度ためしてね",false); }
   S.ill=S.ill||{}; S.ill[n]=(S.ill[n]||0)+1; save();
@@ -5752,7 +5752,7 @@ function illReveal(i,isNew){
 function illAlbum(){
   document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
   const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(f=>f()))(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🖼 イラストアルバム（${illHave()}/${ILL_N}）</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
-    <p class="sub">イラストのQRコードを読み取ると、13枚の中から1枚が当たります。タップで大きく見たり、写真に保存できます。</p>
+    <p class="sub">イラストのQRコードを読み取ると、まだ持っていない絵の中から1枚が当たります。タップで大きく見たり、写真に保存できます。</p>
     <div class="ill-grid">${Array.from({length:ILL_N},(_,i)=>{ const c=(S.ill||{})[i]||0; return c?`<button type="button" class="ill-cell" data-i="${i}"><img src="${illThumb(i)}" alt="" loading="lazy">${c>1?`<b>×${c}</b>`:""}</button>`:`<div class="ill-cell no">？<small>No.${i+1}</small></div>`; }).join("")}</div>`);
     bg.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>illReveal(+b.dataset.i,false)); });
 }
