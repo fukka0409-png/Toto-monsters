@@ -1283,6 +1283,7 @@ html[lang=en] .kn-bt span{font-size:38px}
 .icg-prev img{width:100%;max-width:420px;aspect-ratio:1;border-radius:16px;object-fit:cover;border:2px solid rgba(255,210,120,.55);box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .icg-go{width:100%;font-size:17px;padding:14px}
 .icg-go:disabled{opacity:.4}
+.icg-buy{display:block;width:100%;box-sizing:border-box;margin-top:10px;text-align:center;text-decoration:none;background:#ff8fb1;color:#3a0d1c}
 
 .ill-ov{position:fixed;inset:0;z-index:9800;background:radial-gradient(circle at 50% 40%,#2a1c4a 0%,#0b0716 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto}
 .ill-stage{position:relative;width:min(82vw,380px);aspect-ratio:1}
@@ -5807,6 +5808,7 @@ function icgOpen(){
     <div class="icg-prev"><img src="im/ill/banner.jpg" alt="SNS用アイコンガチャ" draggable="false"></div>
     <button class="btn gold icg-go" type="button" id="icgGo" disabled>🎟 チケット1枚でまわす</button>
     <p class="sub" id="icgNote" style="text-align:center;margin-top:6px"></p>
+    <a class="btn icg-buy" href="https://fukka0409.base.shop/items/165803101" target="_blank" rel="noopener">🛒 チケットを200円で購入</a>
     <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 自分のアイコンアルバム（${illHave()}）</button>`);
     const upd=()=>{ const tk=ICG_TK, lf=ICG_LEFT; bg.querySelector("#icgTk").textContent=tk==null?"…":tk; bg.querySelector("#icgLeft").textContent=lf==null?"…":lf;
       const go=bg.querySelector("#icgGo"), nt=bg.querySelector("#icgNote"); go.disabled=!(tk>0&&lf>0);
