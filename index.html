@@ -1274,6 +1274,14 @@ html[lang=en] .kn-bt span{font-size:38px}
 .kn-test button{border:0;border-radius:999px;padding:5px 7px;background:#ffd1f0;color:#3a0a2a;font:900 9.5px/1 var(--f-body);opacity:.92}
 .kn-test button.on{background:#ff7ad9}
 /* イラストQR（2026-11-12） */
+.icg-top{display:flex;justify-content:space-between;gap:8px;margin:10px 0}
+.icg-top>div{flex:1;text-align:center;padding:8px;border-radius:12px;background:rgba(255,255,255,.06);font-weight:800}
+.icg-tk b{font-size:20px;color:#ffd27a}
+.icg-prev{display:flex;justify-content:center;gap:6px;margin:6px 0 12px}
+.icg-prev img{width:17%;aspect-ratio:1;border-radius:50%;object-fit:cover;filter:brightness(.55) blur(1px);border:2px solid rgba(255,210,120,.4)}
+.icg-go{width:100%;font-size:17px;padding:14px}
+.icg-go:disabled{opacity:.4}
+
 .ill-ov{position:fixed;inset:0;z-index:9800;background:radial-gradient(circle at 50% 40%,#2a1c4a 0%,#0b0716 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto}
 .ill-stage{position:relative;width:min(82vw,380px);aspect-ratio:1}
 .ill-mc{position:absolute;inset:-8%;width:116%;height:116%;opacity:0}
@@ -1336,6 +1344,7 @@ html[lang=en] .kn-bt span{font-size:38px}
     <button class="ttl-mini ttl-fz ttl-rp" id="ttlRp" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🚨 通報箱</span><b class="ttl-fz-badge" id="ttlRpB" hidden></b></button>
     <button class="ttl-mini ttl-fz ttl-gda" id="ttlGdAdm" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🛍 グッズ管理</span><b class="ttl-fz-badge" id="ttlGdAdmB" hidden></b></button>
     <button class="ttl-mini ttl-gd" id="ttlGd" type="button" hidden style="top:900px"><img src="title/btn_en.png" alt="" draggable="false"><span>🛍 グッズガチャ<small>※本物のグッズが当たります‼️</small></span></button>
+    <button class="ttl-mini" id="ttlIcon" type="button" hidden style="top:1045px"><img src="title/btn_en.png" alt="" draggable="false"><span style="font-size:27px;gap:4px">🎨 SNS用アイコンガチャ<small id="ttlIconN" style="font-size:16px"></small></span></button>
     <button class="ttl-mini" id="ttlCode2" type="button" hidden style="top:1045px"><img src="title/btn_en.png" alt="" draggable="false"><span style="font-size:36px">🎁 呪文・QRコード</span></button>
     <div class="ttl-vote-tip" id="ttlVoteTip" hidden></div>
     <button class="ttl-mini" id="ttlMini" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
@@ -5620,8 +5629,8 @@ function renderBonus(target){
     <button class="btn gold" type="submit">受け取る</button></form><div class="code-msg" id="codeMsg" role="status"></div></div>
   <div class="code-box qr-box"><h3>QRコードでプレゼント獲得</h3><p class="sub" style="margin:0">QRコードを読み取ると、プレゼントがもらえます。1つのQRコードにつき1回だけです。</p>
     <div class="qr-btns"><button class="btn gold" type="button" id="qrCam">📷 カメラで撮る</button><button class="btn" type="button" id="qrImg">🖼 保存した画像から読み取る</button></div>
-    <input type="file" id="qrFile" accept="image/*" hidden><div class="code-msg" id="qrMsg" role="status"></div>${dexPeek()?`<button class="btn" type="button" id="illAlb" style="width:100%;margin-top:10px">🖼 イラストアルバム（${illHave()}/${ILL_N}）<small style="display:block;font-size:11px;opacity:.75">ふっかーだけに表示</small></button>`:""}</div>`;
-  $("#qrCam").onclick=()=>qrCamera(); $("#qrImg").onclick=()=>$("#qrFile").click(); if($("#illAlb")) $("#illAlb").onclick=()=>illAlbum();
+    <input type="file" id="qrFile" accept="image/*" hidden><div class="code-msg" id="qrMsg" role="status"></div></div>`;
+  $("#qrCam").onclick=()=>qrCamera(); $("#qrImg").onclick=()=>$("#qrFile").click();
   $("#qrFile").onchange=e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=""; if(f) qrFromFile(f); };
   const a=$("#cDaily"); if(a) a.onclick=claimDaily;
   const cn=$("#copyNo"); if(cn) cn.onclick=()=>{ const t=String(S.userNo); navigator.clipboard?.writeText(t).then(()=>toast("ユーザー番号をコピーしました"),()=>toast("No."+t)); };
@@ -5707,20 +5716,19 @@ async function gtQr(v){ if(!DB||!MYID) return qrSay("グッズチケットのQR�
 /* ---------- 2026-11-12：イラストQR（まだ ふっかーだけ）。QRを読むと魔法陣から13枚のイラストのどれか1枚が当たる。1つのQRは世界で1回だけ（illqr/{code}） ---------- */
 const ILL_N=13, illSrc=i=>`im/ill/${i+1}.jpg`, illThumb=i=>`im/ill/t${i+1}.jpg`;
 const illHave=()=>Object.keys(S.ill||{}).filter(k=>(S.ill[k]||0)>0).length;
-async function illQr(v){
+async function illQr(v){   /* 2026-11-12 13:3x：QRで直接アイコンが当たるのはやめて、アイコンガチャチケットが1枚もらえる形に */
   if(!dexPeek()) return qrSay("このQRコードは、まだ使えません（もうすぐ使えるようになります）",false);
-  if(!DB||!MYID) return qrSay("イラストのQRコードは、ログインしてから読み取ってね",false);
-  const used=DB.doc("illqr/"+v), rest=[...Array(ILL_N).keys()].filter(i=>!((S.ill||{})[i]>0)), pool=rest.length?rest:[...Array(ILL_N).keys()], n=pool[Math.floor(Math.random()*pool.length)];   /* まだ持っていないデザインから当たる（全部そろったら全部の中から） */
-  try{ await DB.runTransaction(async tx=>{ const u=await tx.get(used); if(u.exists) throw new Error("used"); tx.set(used,{uid:MYID, at:gnow(), n:n}); }); }
-  catch(e){ const m=String(e&&e.message); return qrSay(m==="used"?"このイラストのQRコードは、もう使われています":"読み取りに失敗しました。通信のよい所でもう一度ためしてね",false); }
-  S.ill=S.ill||{}; S.ill[n]=(S.ill[n]||0)+1; save();
-  qrSay(`🖼 イラストが当たりました！ アルバムに入りました`,true);
-  const ab=document.getElementById("illAlb"); if(ab) ab.firstChild.textContent=`🖼 イラストアルバム（${illHave()}/${ILL_N}）`;
-  illReveal(n,true);
+  if(!DB||!MYID) return qrSay("このQRコードは、ログインしてから読み取ってね",false);
+  const used=DB.doc("illqr/"+v);
+  try{ await DB.runTransaction(async tx=>{ const u=await tx.get(used); if(u.exists) throw new Error("used"); tx.set(used,{uid:MYID, at:gnow(), n:0}); }); }
+  catch(e){ const m=String(e&&e.message); return qrSay(m==="used"?"このQRコードは、もう使われています":"読み取りに失敗しました。通信のよい所でもう一度ためしてね",false); }
+  S.iconTk=(S.iconTk||0)+1; save(); try{ SFX.reveal("S"); }catch(e){}
+  qrSay(`🎟 アイコンガチャチケットを1枚受け取りました！（今 ${S.iconTk}枚）タイトル画面の「SNS用アイコンガチャ」で使えます`,true);
+  try{ icgBtn(); }catch(e){}
 }
 async function illSave(i){
-  try{ const r=await fetch(illSrc(i)); const b=await r.blob(); const f=new File([b],`toto_illust_${i+1}.jpg`,{type:"image/jpeg"});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:"トトと魔物たち イラスト"}); return; }
+  try{ const r=await fetch(illSrc(i)); const b=await r.blob(); const f=new File([b],`toto_icon_${i+1}.jpg`,{type:"image/jpeg"});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:"トトと魔物たち SNS用アイコン"}); return; }
     const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },3000);
     toast("画像を保存しました");
   }catch(e){ if(e&&e.name==="AbortError") return; toast("保存できませんでした。画像を長押しして保存してね"); }
@@ -5737,10 +5745,10 @@ function illReveal(i,isNew){
       <g class="r3" fill="none" stroke="#9ff3ff" stroke-width="1.2"><circle cx="100" cy="100" r="30"/>${Array.from({length:8},(_,k)=>{const a=k/8*Math.PI*2;return `<line x1="${(100+Math.cos(a)*30).toFixed(1)}" y1="${(100+Math.sin(a)*30).toFixed(1)}" x2="${(100+Math.cos(a)*44).toFixed(1)}" y2="${(100+Math.sin(a)*44).toFixed(1)}"/>`}).join("")}</g>
     </svg>
     <div class="ill-flash"></div>
-    <img class="ill-card" src="${illSrc(i)}" alt="イラスト No.${i+1}" draggable="false">
+    <img class="ill-card" src="${illSrc(i)}" alt="アイコン No.${i+1}" draggable="false">
     <div class="ill-sparks">${Array.from({length:14},(_,k)=>`<i style="--a:${k/14*360}deg;--d:${(k%3)*.08}s"></i>`).join("")}</div>
   </div>
-  <div class="ill-info"><h3>${isNew?"✨ イラストが当たった！":"🖼 イラスト"}</h3><p>No.${i+1} / ${ILL_N}${(S.ill&&S.ill[i]>1)?`（${S.ill[i]}枚目）`:""}</p>
+  <div class="ill-info"><h3>${isNew?"✨ アイコンが当たった！":"🖼 SNS用アイコン"}</h3><p>No.${i+1} / ${ILL_N}${(S.ill&&S.ill[i]>1)?`（${S.ill[i]}枚目）`:""}</p>
     <button class="btn gold" type="button" data-s>📥 写真に保存する</button><div class="ill-row"><button class="btn" type="button" data-a>🖼 アルバム</button><button class="btn" type="button" data-x>とじる</button></div>
     <small>保存できないときは、画像を長押しして保存してね</small></div>`;
   document.body.appendChild(ov); try{ SFX.tap(); }catch(e){}
@@ -5751,11 +5759,32 @@ function illReveal(i,isNew){
 }
 function illAlbum(){
   document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
-  const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(f=>f()))(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🖼 イラストアルバム（${illHave()}/${ILL_N}）</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
-    <p class="sub">イラストのQRコードを読み取ると、まだ持っていない絵の中から1枚が当たります。タップで大きく見たり、写真に保存できます。</p>
+  const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(f=>f()))(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🖼 アイコンアルバム（${illHave()}/${ILL_N}）</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <p class="sub">SNS用アイコンガチャで当たったアイコンです。タップで大きく見たり、写真に保存してSNSのアイコンに使えます。</p>
     <div class="ill-grid">${Array.from({length:ILL_N},(_,i)=>{ const c=(S.ill||{})[i]||0; return c?`<button type="button" class="ill-cell" data-i="${i}"><img src="${illThumb(i)}" alt="" loading="lazy">${c>1?`<b>×${c}</b>`:""}</button>`:`<div class="ill-cell no">？<small>No.${i+1}</small></div>`; }).join("")}</div>`);
     bg.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>illReveal(+b.dataset.i,false)); });
 }
+
+/* ---------- 2026-11-12：SNS用アイコンガチャ（まだ ふっかーだけ）。アイコンガチャチケット1枚で1回。まだ持っていないアイコンから当たる ---------- */
+function icgBtn(){ const b=document.getElementById("ttlIcon"); if(!b) return; const on=!!(DB&&MYID)&&dexPeek(); if(b.hidden===on) b.hidden=!on;
+  const t=document.getElementById("ttlIconN"); if(t){ const x=`🎟 チケット ${S.iconTk||0}枚・ふっかーだけに表示`; if(t.textContent!==x) t.textContent=x; } }
+setInterval(()=>{ try{ icgBtn(); }catch(e){} },1000);
+function icgOpen(){
+  document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
+  const go=f=>{ const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(g=>g()))(f); };
+  go(()=>{ const tk=S.iconTk||0, bg=sheet(`<div class="sheet-h"><h3>🎨 SNS用アイコンガチャ</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <p class="sub">アイコンガチャチケット1枚で1回まわせます。まだ持っていないアイコンの中から1つが当たります（全${ILL_N}種）。当たったアイコンは写真に保存して、SNSのアイコンに使えます。</p>
+    <div class="icg-top"><div class="icg-tk">🎟 チケット <b>${tk}</b> 枚</div><div class="icg-have">🖼 ${illHave()} / ${ILL_N} 種</div></div>
+    <div class="icg-prev">${[0,3,6,9,12].map(i=>`<img src="${illThumb(i)}" alt="">`).join("")}</div>
+    <button class="btn gold icg-go" type="button" id="icgGo" ${tk<1?"disabled":""}>🎟 チケット1枚でまわす</button>
+    ${tk<1?`<p class="sub" style="text-align:center;margin-top:6px">チケットは、配布されたQRコードを「呪文・QR」で読み取るとゲットできます</p>`:""}
+    <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 アイコンアルバムを見る</button>`);
+    bg.querySelector("#icgAlb").onclick=()=>illAlbum();
+    bg.querySelector("#icgGo").onclick=()=>{ if((S.iconTk||0)<1) return toast("チケットがありません");
+      const rest=[...Array(ILL_N).keys()].filter(i=>!((S.ill||{})[i]>0)), pool=rest.length?rest:[...Array(ILL_N).keys()], n=pool[Math.floor(Math.random()*pool.length)];
+      S.iconTk--; S.ill=S.ill||{}; S.ill[n]=(S.ill[n]||0)+1; save(); icgBtn(); bg.remove(); illReveal(n,true); };
+  }); }
+document.addEventListener("click",e=>{ if(e.target.closest("#ttlIcon")){ try{ SFX.tap(); }catch(_){} icgOpen(); } });
 async function qrRedeem(txt){
   const v=String(txt).trim();
   if(/^TOTOGT-[A-Z0-9]{12}$/.test(v)) return gtQr(v);   /* 2026-11-04：グッズチケット1枚のQRコード（1つのQRコードは1回だけ） */
