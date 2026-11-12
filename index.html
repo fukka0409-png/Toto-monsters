@@ -5754,29 +5754,65 @@ function illReveal(i,isNew){
 function illAlbum(){
   document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
   const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(f=>f()))(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🖼 アイコンアルバム（${illHave()}/${ILL_N}）</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
-    <p class="sub">SNS用アイコンガチャで当たったアイコンです。タップで大きく見たり、写真に保存してSNSのアイコンに使えます。</p>
+    <p class="sub">SNS用アイコンガチャで自分が当てたアイコンです。タップで大きく見たり、写真に保存してSNSのアイコンに使えます。</p>
     <div class="ill-grid">${Array.from({length:ILL_N},(_,i)=>{ const c=(S.ill||{})[i]||0; return c?`<button type="button" class="ill-cell" data-i="${i}"><img src="${illThumb(i)}" alt="" loading="lazy">${c>1?`<b>×${c}</b>`:""}</button>`:`<div class="ill-cell no">？<small>No.${i+1}</small></div>`; }).join("")}</div>`);
     bg.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>illReveal(+b.dataset.i,false)); });
 }
 
-/* ---------- 2026-11-12：SNS用アイコンガチャ（まだ ふっかーだけ）。アイコンガチャチケット1枚で1回。まだ持っていないアイコンから当たる ---------- */
+/* ---------- 2026-11-12：SNS用アイコンガチャ（まだ ふっかーだけ）
+   ・アイコンは世界で1つずつ：誰かが当てたアイコンは、ほかの人には当たらない（icgacha/main の t に「番号→当てた人」を記録）
+   ・チケットはサーバーで数える（icgtk/{uid}.n）。配るのは ICON_GRANTS に書いて、ふっかーがゲームを開いたときに届ける
+   ・まわすときは、チケット-1 と アイコンの記録を同じトランザクションでする（ルールで両方を確認） ---------- */
+const ICON_GRANTS = [
+  { id:"ig-2026-11-12-fukka", to:{ "ふっかー":2 } },
+];
+let ICG_TK=null, ICG_LEFT=null;
+async function icgLoad(){ if(!DB||!MYID) return; try{ const [a,b]=await Promise.all([DB.doc("icgtk/"+MYID).get(), DB.doc("icgacha/main").get()]);
+  ICG_TK=a.exists?(a.data().n|0):0; ICG_LEFT=ILL_N-(b.exists?Object.keys(b.data().t||{}).length:0); }catch(e){} icgBtn(); }
 function icgBtn(){ const b=document.getElementById("ttlIcon"); if(!b) return; const on=!!(DB&&MYID)&&dexPeek(); if(b.hidden===on) b.hidden=!on;
-  const t=document.getElementById("ttlIconN"); if(t){ const x=`🎟 チケット ${S.iconTk||0}枚・ふっかーだけに表示`; if(t.textContent!==x) t.textContent=x; } }
+  const t=document.getElementById("ttlIconN"); if(t){ const x=`🎟 チケット ${ICG_TK==null?"…":ICG_TK}枚・ふっかーだけに表示`; if(t.textContent!==x) t.textContent=x; } }
 setInterval(()=>{ try{ icgBtn(); }catch(e){} },1000);
+{ let was=false; setInterval(()=>{ const on=!!(DB&&MYID)&&typeof dexPeek==="function"&&dexPeek(); if(on&&!was){ icgLoad(); icgGrant(); } was=on; },1500); }
+/* ふっかーの端末で、ICON_GRANTS のチケットを名前の冒険者に届ける（同じ配布は1回だけ） */
+async function icgGrant(){ if(!DB||!MYID||!dexPeek()) return;
+  try{ const m=DB.doc("icgacha/main"); const ms=await m.get(); if(!ms.exists) await m.set({t:{}, last:""}); }catch(e){ console.warn("icgacha main",e); }
+  if(!S.illReset1112){ S.ill={}; S.iconTk=0; S.illReset1112=1; save(); }   /* テストで当てた分はなかったことに */
+  S.igDone=S.igDone||[]; const out=[];
+  for(const g of ICON_GRANTS){ if(S.igDone.includes(g.id)) continue; let ok=true;
+    for(const [nm,cnt] of Object.entries(g.to)){
+      try{ const q=await DB.collection("profiles").where("name","==",nm).get(); const ids=[]; q.forEach(d=>ids.push(d.id));
+        if(ids.length!==1){ ok=false; out.push(`⚠️ ${nm}：${ids.length?"同じ名前が"+ids.length+"人":"見つからない"}`); continue; }
+        const ref=DB.doc("icgtk/"+ids[0]);
+        await DB.runTransaction(async tx=>{ const d=await tx.get(ref); const x=d.exists?d.data():{n:0,g:[]}; const gg=x.g||[]; if(gg.includes(g.id)) return; tx.set(ref,{n:(x.n|0)+cnt, g:gg.concat([g.id]).slice(-50)}); });
+        out.push(`✅ ${nm}：🎟×${cnt}`);
+      }catch(e){ ok=false; out.push(`⚠️ ${nm}：届けられませんでした`); console.warn("icgrant",e); } }
+    if(ok){ S.igDone.push(g.id); save(); } }
+  if(out.length) toast("アイコンガチャチケット配布："+out.join(" / "),4);
+  icgLoad(); }
 function icgOpen(){
   document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
   const go=f=>{ const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(g=>g()))(f); };
-  go(()=>{ const tk=S.iconTk||0, bg=sheet(`<div class="sheet-h"><h3>🎨 SNS用アイコンガチャ</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
-    <p class="sub">アイコンガチャチケット1枚で1回まわせます。まだ持っていないアイコンの中から1つが当たります（全${ILL_N}種）。当たったアイコンは写真に保存して、SNSのアイコンに使えます。</p>
-    <div class="icg-top"><div class="icg-tk">🎟 チケット <b>${tk}</b> 枚</div><div class="icg-have">🖼 ${illHave()} / ${ILL_N} 種</div></div>
+  go(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🎨 SNS用アイコンガチャ</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <p class="sub">アイコンガチャチケット1枚で1回まわせます。アイコンは<b>全${ILL_N}種・世界に1つずつ</b>。誰かが当てたアイコンは、もう当たりません。当たったアイコンは写真に保存して、SNSのアイコンに使えます。</p>
+    <div class="icg-top"><div class="icg-tk">🎟 チケット <b id="icgTk">…</b> 枚</div><div class="icg-have">✨ のこり <b id="icgLeft">…</b> 種</div></div>
     <div class="icg-prev">${[0,3,6,9,12].map(i=>`<img src="${illThumb(i)}" alt="">`).join("")}</div>
-    <button class="btn gold icg-go" type="button" id="icgGo" ${tk<1?"disabled":""}>🎟 チケット1枚でまわす</button>
-    ${tk<1?`<p class="sub" style="text-align:center;margin-top:6px">チケットは、運営からのプレゼント（プレゼントBOX）で届きます</p>`:""}
-    <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 アイコンアルバムを見る</button>`);
+    <button class="btn gold icg-go" type="button" id="icgGo" disabled>🎟 チケット1枚でまわす</button>
+    <p class="sub" id="icgNote" style="text-align:center;margin-top:6px"></p>
+    <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 自分のアイコンアルバム（${illHave()}）</button>`);
+    const upd=()=>{ const tk=ICG_TK, lf=ICG_LEFT; bg.querySelector("#icgTk").textContent=tk==null?"…":tk; bg.querySelector("#icgLeft").textContent=lf==null?"…":lf;
+      const go=bg.querySelector("#icgGo"), nt=bg.querySelector("#icgNote"); go.disabled=!(tk>0&&lf>0);
+      nt.textContent=lf===0?"全部のアイコンが出ました！":tk===0?"チケットは、運営から届きます":""; };
+    upd(); icgLoad().then(upd);
     bg.querySelector("#icgAlb").onclick=()=>illAlbum();
-    bg.querySelector("#icgGo").onclick=()=>{ if((S.iconTk||0)<1) return toast("チケットがありません");
-      const rest=[...Array(ILL_N).keys()].filter(i=>!((S.ill||{})[i]>0)), pool=rest.length?rest:[...Array(ILL_N).keys()], n=pool[Math.floor(Math.random()*pool.length)];
-      S.iconTk--; S.ill=S.ill||{}; S.ill[n]=(S.ill[n]||0)+1; save(); icgBtn(); bg.remove(); illReveal(n,true); };
+    bg.querySelector("#icgGo").onclick=async()=>{ const go=bg.querySelector("#icgGo"); if(go.disabled) return; go.disabled=true; go.textContent="まわしています…";
+      const tkRef=DB.doc("icgtk/"+MYID), mRef=DB.doc("icgacha/main"); let n=-1;
+      try{ await DB.runTransaction(async tx=>{ const a=await tx.get(tkRef), m=await tx.get(mRef); const tk=a.exists?(a.data().n|0):0; if(tk<1) throw new Error("notk"); if(!m.exists) throw new Error("nomain");
+          const taken=m.data().t||{}; const free=[...Array(ILL_N).keys()].filter(i=>!taken[String(i)]); if(!free.length) throw new Error("allout");
+          n=free[Math.floor(Math.random()*free.length)]; const k=String(n);
+          tx.update(tkRef,{n:tk-1}); tx.update(mRef,{["t."+k]:{u:MYID, at:gnow()}, last:k}); }); }
+      catch(e){ const m=String(e&&e.message); go.textContent="🎟 チケット1枚でまわす"; await icgLoad(); upd();
+        return toast(m==="notk"?"チケットがありません":m==="allout"?"全部のアイコンが出ました！":"まわせませんでした。通信のよい所でもう一度ためしてね"); }
+      S.ill=S.ill||{}; S.ill[n]=(S.ill[n]||0)+1; save(); ICG_TK=Math.max(0,(ICG_TK||1)-1); ICG_LEFT=Math.max(0,(ICG_LEFT||1)-1); icgBtn(); bg.remove(); illReveal(n,true); };
   }); }
 document.addEventListener("click",e=>{ if(e.target.closest("#ttlIcon")){ try{ SFX.tap(); }catch(_){} icgOpen(); } });
 async function qrRedeem(txt){
@@ -7524,7 +7560,6 @@ function fixBest4Yoko(){
 }
 // 指定した冒険者へのプレゼント（名前で指定・1回だけ）。1セット＝チケット3枚＋5000コイン、名前の後の数だけセット
 const NAMED_GIFTS = [
-  { id:"ng-2026-11-12-fukka-itk", itk:2, to:{ "ふっかー":1 } },   // アイコンガチャチケット2枚
   { id:"ng-2026-10-23", ticket:3, coins:5000, to:{ "あわ":1, "love":6, "yoko★":1, "おじな":2, "ちゅん":1, "ふっかー":2 } },
   { id:"ng-2026-10-23b-love", ticket:5, coins:60000, to:{ "love":1 } },
   { id:"ng-2026-10-23b-yoko", coins:5000, to:{ "yoko★":1 } },
