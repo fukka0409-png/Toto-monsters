@@ -5720,7 +5720,7 @@ async function gtQr(v){ if(!DB||!MYID) return qrSay("グッズチケットのQR�
   qrSay(`🎫 グッズチケットを1枚受け取りました！（今 ${n}枚）グッズガチャで使えます`,true); }
 
 /* ---------- 2026-11-12：イラストQR（まだ ふっかーだけ）。QRを読むと魔法陣から13枚のイラストのどれか1枚が当たる。1つのQRは世界で1回だけ（illqr/{code}） ---------- */
-const ILL_N=13, illSrc=i=>`im/ill/${i+1}.jpg`, illThumb=i=>`im/ill/t${i+1}.jpg`;
+const ILL_N=19, illSrc=i=>`im/ill/${i+1}.jpg`, illThumb=i=>`im/ill/t${i+1}.jpg`;
 const illHave=()=>Object.keys(S.ill||{}).filter(k=>(S.ill[k]||0)>0).length;
 async function illQr(v){   /* 2026-11-12：QRでのアイコン・チケット配布はやめた（チケットは運営のプレゼントで届く） */
   return qrSay("このQRコードは、トトと魔物たちの報酬のQRコードではありません",false);
