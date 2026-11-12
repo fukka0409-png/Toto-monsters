@@ -760,6 +760,7 @@ html .ttl .ttl-mini span small:empty{display:none}
 html[lang=en] .ttl .ttl-mini span{font-size:36px}
 .ttl-mini[hidden]{display:none}
 #ttlVoteTip{top:1192px!important}
+#ttlVote,#ttlVoteTip{display:none!important}   /* 2026-11-12：魔物投票はミニゲームの中に移動 */
 html .ttl .ttl-mini.ttl-gd span{font-size:34px;gap:4px}
 html .ttl .ttl-mini.ttl-gd span small{font-size:17px;color:#c62828}
 .ttl-mini:active{transform:scale(.96)}
@@ -4992,6 +4993,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:18, t:"🗳 魔物投票はミニゲームに移動しました！（ホームの「🎮 ミニゲーム」から遊べます）"},
   {ss:18, t:"🌲 新しい3Dゲーム「トトの森」がホーム画面に登場！ 木を伐って壁や砲台を作り、夜の魔物から焚き火を守ろう。生き残った日数×500コインがもらえて、生き残りランキングもあります"},
   {ss:18, t:"🏃 魔物サバイバルはミニゲームに移動しました！（ホームの「🎮 ミニゲーム」から遊べます）"},
   {ss:18, t:"🏦 貯金の引き出しが「1時間に1回・1億コインまで」になりました（毎時間ログインすれば1日で最大24億コイン）"},
@@ -10760,6 +10762,7 @@ async function titleRanks(){
       <div class="mg-pick"><button type="button" id="mgDef"><i>🛡</i><span><b>${L?"Defense":"防衛作戦"}</b><small>${L?"An idle game — guard your base for 24 hours and earn coins":"放置ゲーム。24時間土台を守ってコインをかせごう"}</small>${st?`<small><em id="mgDefSt">${st}</em></small>`:""}</span></button>
       <button type="button" id="mgMb" class="mg-mb" hidden><img src="mb/banner.jpg" alt=""><span><b>⚔️ ${L?"Monster Battle":"魔物バトル"}</b><small>${L?"Build a team of 6 and battle players or quests!":"6体の魔物を編成して、みんなやクエストと対戦しよう！"}</small></span></button>
       <button type="button" id="mgMc" class="mg-mc" hidden><img src="mc/banner.jpg" alt=""><span><b>🎯 ${L?"Monster Catcher":"魔物キャッチャー"}</b><small>${L?"A claw machine — grab monsters with arms drawn by everyone!":"UFOキャッチャー。みんなが描いたアームで魔物をつかもう！"}</small></span></button>
+      <button type="button" id="mgVote"><i>🗳</i><span><b>${L?"Monster Vote":"魔物投票"}</b><small>${L?"Vote for your favorite monster! Vote: +1,000 coins / Entry: +1 moko":"好きな魔物に投票しよう！ 投票で1000コイン・エントリーで1モコ"}</small></span></button>
       <button type="button" id="mgAdv"><i>🗡</i><span><b>${L?"Toto's Adventure":"トトの冒険"}</b><small>${L?"Action — defeat monsters for 5 minutes and climb the ranking":"アクション。5分間魔物を倒してランキング上位をめざそう"}</small></span></button>${trHome()?`<button type="button" id="mgIo"><i>🏃</i><span><b>${L?"Monster Survival":"魔物サバイバル"}</b><small>${L?"Moved here from the home screen! Pick a monster and survive":"ホーム画面からお引っこししました！魔物をえらんで生き残ろう"}</small></span></button>`:""}${dexPeek()&&!trHome()?`<button type="button" id="mgTr"><i>🌲</i><span><b>${L?"Toto's Forest (dev)":"トトの森（開発中）"}</b><small>${L?"3D survival — chop trees, build walls and survive the night. Only you can see this":"3Dサバイバル。木を伐って壁や砲台を作り、夜の魔物から焚き火を守ろう。ふっかーだけに見えています"}</small></span></button>`:""}
       <div class="mg-rk"><div class="mg-rkh">🏆 ${L?"Toto's Adventure Ranking":"トトの冒険ランキング"}</div><div class="mg-rkg"><div><small>${L?"Defeated":"倒した数"}</small><b id="mgR1">―</b></div><div><small>${L?"Best Lv":"最高レベル"}</small><b id="mgR2">―</b></div></div><div class="mg-nx" id="mgNx"></div><div class="mg-rt" id="mgRt"></div></div></div>
       <button class="btn ghost" type="button" id="mgX">${L?"Close":"閉じる"}</button></div>`;
@@ -10771,7 +10774,7 @@ async function titleRanks(){
     bg.querySelector("#mgDef").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} openDefense(); };
     bg.querySelector("#mgMb").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.openMB) openMB(); };
     bg.querySelector("#mgMc").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.openMC) openMC(); };
-    bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); }; const bio=bg.querySelector("#mgIo"); if(bio) bio.onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.ioOpen) window.ioOpen(); };
+    bg.querySelector("#mgAdv").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} onTop(openAdventureIntro); }; bg.querySelector("#mgVote").onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.openVote) window.openVote(); }; const bio=bg.querySelector("#mgIo"); if(bio) bio.onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} if(window.ioOpen) window.ioOpen(); };
     const btr=bg.querySelector("#mgTr"); if(btr) btr.onclick=()=>{ close(); try{ SFX.tap(); }catch(e){} openToride(); }; }); };
   // トトの森（3Dサバイバル・2026-11-07）。toride/index.html を全画面で開く
   function openToride(go){ if(document.getElementById("toride")) return;
