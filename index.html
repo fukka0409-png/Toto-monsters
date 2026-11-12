@@ -78,6 +78,7 @@ html[lang=en] .logo small{display:none}
 .stage{flex:1;overflow-y:auto;overflow-x:hidden;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:4px 120px}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bark);border-top:2px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
 .tabs nav{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+body.nocode .tabs nav{grid-template-columns:repeat(4,1fr)} body.nocode .tabs button[data-tab="mission"]{display:none}   /* 2026-11-12：ふっかーは呪文・QRをタイトルへ移動（試し） */
 .tabs button{background:none;border:0;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--mist-dim);position:relative}
 .tabs button.dot::after{content:"";position:absolute;top:6px;right:calc(50% - 18px);width:9px;height:9px;border-radius:50%;background:var(--berry)}
 .tabs button svg{width:26px;height:26px}
@@ -1299,6 +1300,7 @@ html[lang=en] .kn-bt span{font-size:38px}
     <button class="ttl-mini ttl-fz ttl-rp" id="ttlRp" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🚨 通報箱</span><b class="ttl-fz-badge" id="ttlRpB" hidden></b></button>
     <button class="ttl-mini ttl-fz ttl-gda" id="ttlGdAdm" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🛍 グッズ管理</span><b class="ttl-fz-badge" id="ttlGdAdmB" hidden></b></button>
     <button class="ttl-mini ttl-gd" id="ttlGd" type="button" hidden style="top:900px"><img src="title/btn_en.png" alt="" draggable="false"><span>🛍 グッズガチャ<small>※本物のグッズが当たります‼️</small></span></button>
+    <button class="ttl-mini" id="ttlCode2" type="button" hidden style="top:1045px"><img src="title/btn_en.png" alt="" draggable="false"><span style="font-size:36px">🎁 呪文・QRコード<small>（ふっかーだけに表示）</small></span></button>
     <div class="ttl-vote-tip" id="ttlVoteTip" hidden></div>
     <button class="ttl-mini" id="ttlMini" type="button" hidden><img src="title/btn_en.png" alt="" draggable="false"><span>🎮 ミニゲーム<small id="ttlDefSt"></small></span></button>
     <div class="ttl-rk" id="ttlRk"><i class="ttl-rkh">🏆 トトの冒険ランキング</i><div><small>倒した数</small><b id="ttlR1" translate="no">―</b></div><div><small>最高レベル</small><b id="ttlR2" translate="no">―</b></div></div>
@@ -10753,6 +10755,9 @@ async function titleRanks(){
   document.getElementById("ttlNews").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(()=>openInfo()); };
   newsDot();
   // 呪文・QRプレゼント（ショップのページと同じもの）をタイトルから開く
+  /* 2026-11-12：ふっかーだけ、呪文・QRをタイトルの「グッズガチャ」の下に移動（下のタブからは消す） */
+  { const b2=document.getElementById("ttlCode2"); if(b2) b2.onclick=()=>document.getElementById("ttlCode").click();
+    setInterval(()=>{ const on=!!(DB&&MYID)&&dexPeek(); if(b2&&b2.hidden===on) b2.hidden=!on; document.body.classList.toggle("nocode",on); if(on&&tab==="mission"){ tab="home"; render(); } },1000); }
   document.getElementById("ttlCode").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🎁 呪文・QRプレゼント</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div id="ttlCodeBody"></div>`); renderBonus(bg.querySelector("#ttlCodeBody")); }); };
   // ミニゲーム：防衛作戦とトトの冒険をえらぶ（魔物バトル・魔物キャッチャーは 2026-10-26 にミニゲームから外した：hidden）
   document.getElementById("ttlMini").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(()=>{ const L=LANG==="en", R=S.def&&S.def.run;
