@@ -4633,7 +4633,7 @@ function bigUnitWarn(){ const n=S.units.length;
 // 呪文でまとめて売却する方法（お知らせに表示）
 const byeSpellHtml = L => L
   ? `<div class="ubw-spell"><b>✨ Sell many at once with a spell</b><br>Go to <b>Presents / Missions → Spells</b> and enter<br><code>Cランクさようなら</code><br>to sell all C-rank monsters at once (works for B / A / S / Z too, e.g. <code>Bランクさようなら</code>). Locked and placed monsters are kept.</div>`
-  : `<div class="ubw-spell"><b>✨ 呪文でまとめて売却できます</b><br>タイトル画面の「呪文・QRコード」の<b>呪文</b>に<br><code>Cランクさようなら</code><br>ととなえると、Cランクの魔物をまとめて売却できます（<code>Bランクさようなら</code>のように、B・A・S・Zでも使えます）。鍵をかけた魔物と配置中の魔物は残ります。</div>`;
+  : `<div class="ubw-spell"><b>✨ 呪文でまとめて売却できます</b><br>下のタブ「呪文・QR」の<b>呪文</b>に<br><code>Cランクさようなら</code><br>ととなえると、Cランクの魔物をまとめて売却できます（<code>Bランクさようなら</code>のように、B・A・S・Zでも使えます）。鍵をかけた魔物と配置中の魔物は残ります。</div>`;
 // 魔物が800体以上の冒険者には、ゲームを開くたびにタイトル画面で注意する
 let ttlUnitWarnDone=false;
 function titleUnitWarn(){
@@ -5031,7 +5031,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
-  {ss:18, t:"🎁 「呪文・QR」はタイトル画面に移動しました！（「グッズガチャ」の下のボタンから）"},
+  {ss:18, t:"🎁 「呪文・QR」は下のタブ（BOXとガチャの間）にもどりました"},
   {ss:18, t:"🗳 魔物投票はミニゲームに移動しました！（ホームの「🎮 ミニゲーム」から遊べます）"},
   {ss:18, t:"🌲 新しい3Dゲーム「トトの森」がホーム画面に登場！ 木を伐って壁や砲台を作り、夜の魔物から焚き火を守ろう。生き残った日数×500コインがもらえて、生き残りランキングもあります"},
   {ss:18, t:"🏃 魔物サバイバルはミニゲームに移動しました！（ホームの「🎮 ミニゲーム」から遊べます）"},
@@ -5093,7 +5093,7 @@ function openRules(){
   const n=v=>Number(v).toLocaleString();
   const secs=[
     ["🎮","このゲームでやること",`<ol class="rl-steps"><li><b>ガチャ</b>で魔物をあつめる</li><li><b>合成</b>で魔物のレベルを上げる</li><li>いちばん強い魔物を<b>プロフィールに配置</b>する</li><li>ランキングの人と<b>バトル</b>して、冒険者レベルを上げる</li><li>ランク戦終了時の<b>ランキング集計</b>で景品をもらう！</li></ol>`],
-    ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：タイトル画面の「呪文・QRコード」の「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）</li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
+    ["💰","コインの集め方",`<ul><li>QRコードでプレゼント獲得：下のタブ「呪文・QR」の「QRコードでプレゼント獲得」から読み取る（1つのQRコードにつき1回）</li><li>💱 魔物の売却価格は、全冒険者の図鑑の獲得数で決まる。たくさん獲得されている魔物ほど安く（最低1コイン）、自分しか持っていない魔物は「参加人数×1000コイン」。図鑑で魔物をタップすると、獲得数と今の価格が見られる（10万コインで自分の獲得数を1減らせる）</li><li>ショップのバナーを${U(SHOP_STAY/1000+"秒")}見る：<b>${U(SHOP_REWARD+"コイン")}</b>（${U(SHOP_BIG_STAY/1000+"秒以上なら"+n(SHOP_BIG_REWARD)+"コイン")}・3時間ごと）</li><li>バトルに勝つ：<b>${U(WIN_BASE+"コイン＋相手の冒険者Lv分")}</b></li><li>魔物を売る（C ${SELL.C}／B ${SELL.B}／A ${SELL.A}／S ${n(SELL.S)}／Z ${n(SELL.Z)}コイン）</li></ul>`],
     ["🎰","ガチャ（パック）",`<ul><li>魔物パックは<b>1パック${COST}コイン</b>。10連・100連・500連（BOXの魔物が500体以下のときだけ）もあります。</li><li>パックの上の切り込みを<b>指で横になぞって</b>開けよう。</li><li>${U("🎫 ガチャチケットがあれば、コインなしで開けられる（1枚で10連パック・アイテムガチャは2回）","d")}</li><li>ランクは <span class="rk rk-C">C</span>&lt;<span class="rk rk-B">B</span>&lt;<span class="rk rk-A">A</span>&lt;<span class="rk rk-S">S</span>&lt;<span class="rk rk-Z">Z</span></li><li>アイテムガチャは<b>1回${n(ITEM_COST)}コイン</b></li></ul>`],
     ["🔨","合成（レベル上げ）",`<ul><li>魔物をタップ →「合成する」で、ほかの魔物を素材にして経験値をあげる。</li><li>合成1回に<b>50コイン</b>。<b>同じ魔物どうし</b>なら経験値<b>${SAME_BONUS}倍</b>！</li><li>素材はレベルが高いほど経験値が多い。🔒鍵をかけた魔物は素材にならない。</li><li>最大<b>Lv${MAX_LV}</b>。ランクが高いほどレベルが上がりにくい。</li><li>💎覚醒の石を使うと、1個で<b>1レベル</b>上がる（${U("どのレベルからでも使える")}・Lv${MAX_LV}もこえられる）。</li></ul>`],
     ["🛡","配置（プロフィールの魔物）",`<ul><li>手持ちの魔物を1体、プロフィールに<b>配置</b>する。この魔物でバトルする。</li><li>${U("配置するかどうかは<b>自由</b>（自動では配置されない）","e")}。好きな魔物に変えたり、外したりできる。</li><li>${U("バトルで負けても、魔物は<b>配置したまま</b>すぐ使える","m")}。</li><li>${U("枠が空のあいだは","e")}${U("<b>30分ごとに冒険者Lv−1</b>（チェックポイント関係なし）","j")}。</li><li>ほかの人に見えるのは絵と名前だけ。<b>レベルはひみつ</b>。</li><li>🪙 配置していると<b>15分ごとにコイン</b>（魔物のLvで変わる：1〜10は1000／11〜30は700／31〜70は500／71〜100は300／101〜500は50／501〜999は10／1000〜はなし）。🔰冒険者Lv${SAFE_LV}未満はもらえない</li></ul>`],
@@ -10848,7 +10848,7 @@ async function titleRanks(){
   // 呪文・QRプレゼント（ショップのページと同じもの）をタイトルから開く
   /* 2026-11-12：ふっかーだけ、呪文・QRをタイトルの「グッズガチャ」の下に移動（下のタブからは消す） */
   { const b2=document.getElementById("ttlCode2"); if(b2) b2.onclick=()=>document.getElementById("ttlCode").click();
-    setInterval(()=>{ const on=!!(DB&&MYID);   /* 2026-11-12 みんなに公開 */ if(b2&&b2.hidden===on) b2.hidden=!on; document.body.classList.toggle("nocode",on); if(on&&tab==="mission"){ tab="home"; render(); } },1000); }
+    setInterval(()=>{ const on=false;   /* 2026-11-12 13:30 下のタブ（BOXとガチャの間）に戻した */ if(b2&&b2.hidden===on) b2.hidden=!on; document.body.classList.toggle("nocode",on); if(on&&tab==="mission"){ tab="home"; render(); } },1000); }
   document.getElementById("ttlCode").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🎁 呪文・QRプレゼント</h3><button class="x" type="button" aria-label="閉じる">✕</button></div><div id="ttlCodeBody"></div>`); renderBonus(bg.querySelector("#ttlCodeBody")); }); };
   // ミニゲーム：防衛作戦とトトの冒険をえらぶ（魔物バトル・魔物キャッチャーは 2026-10-26 にミニゲームから外した：hidden）
   document.getElementById("ttlMini").onclick=()=>{ try{ SFX.tap(); }catch(e){} onTop(()=>{ const L=LANG==="en", R=S.def&&S.def.run;
