@@ -5786,6 +5786,8 @@ function icgBtn(){ const b=document.getElementById("ttlIcon"); if(!b) return; co
 setInterval(()=>{ try{ icgBtn(); }catch(e){} },1000);
 { let was=false; setInterval(()=>{ const on=!!(DB&&MYID)&&typeof dexPeek==="function"&&dexPeek(); if(on&&!was){ icgLoad(); icgGrant(); } was=on; },1500); }
 { let was2=false; setInterval(()=>{ const on=!!(DB&&MYID); if(on&&!was2) icgLoad(); was2=on; },1500); }
+setInterval(()=>{ if(DB&&MYID&&document.querySelector("#title:not([hidden])")) icgLoad(); },20000);   /* チケットが届いたらすぐ数が変わるように */
+setInterval(()=>{ if(DB&&MYID&&typeof dexPeek==="function"&&dexPeek()&&ICON_GRANTS.some(g=>!(S.igDone||[]).includes(g.id))) icgGrant(); },60000);   /* 届けられなかった配布は1分ごとにやり直す */
 /* ふっかーの端末で、ICON_GRANTS のチケットを名前の冒険者に届ける（同じ配布は1回だけ） */
 async function icgGrant(){ if(!DB||!MYID||!dexPeek()) return;
   try{ const m=DB.doc("icgacha/main"); const ms=await m.get(); if(!ms.exists) await m.set({t:{}, last:""}); }catch(e){ console.warn("icgacha main",e); }
@@ -5798,9 +5800,9 @@ async function icgGrant(){ if(!DB||!MYID||!dexPeek()) return;
         const ref=DB.doc("icgtk/"+ids[0]);
         await DB.runTransaction(async tx=>{ const d=await tx.get(ref); const x=d.exists?d.data():{n:0,g:[]}; const gg=x.g||[]; if(gg.includes(g.id)) return; tx.set(ref,{n:(x.n|0)+cnt, g:gg.concat([g.id]).slice(-50)}); });
         out.push(`✅ ${nm}：🎟×${cnt}`);
-      }catch(e){ ok=false; out.push(`⚠️ ${nm}：届けられませんでした`); console.warn("icgrant",e); } }
+      }catch(e){ ok=false; out.push(`⚠️ ${nm}：届けられませんでした（${String(e&&e.code||e&&e.message||e).slice(0,40)}）`); console.warn("icgrant",e); } }
     if(ok){ S.igDone.push(g.id); save(); } }
-  if(out.length) toast("アイコンガチャチケット配布："+out.join(" / "),4);
+  if(out.length) toast("アイコンガチャチケット配布："+out.join(" / "),6);
   icgLoad(); }
 function icgOpen(){
   document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
