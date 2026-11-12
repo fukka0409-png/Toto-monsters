@@ -1273,6 +1273,42 @@ html[lang=en] .kn-bt span{font-size:38px}
 .kn-test b{font-size:10px;background:#ff7ad9;color:#3a0a2a;border-radius:999px;padding:4px 7px}
 .kn-test button{border:0;border-radius:999px;padding:5px 7px;background:#ffd1f0;color:#3a0a2a;font:900 9.5px/1 var(--f-body);opacity:.92}
 .kn-test button.on{background:#ff7ad9}
+/* イラストQR（2026-11-12） */
+.ill-ov{position:fixed;inset:0;z-index:9800;background:radial-gradient(circle at 50% 40%,#2a1c4a 0%,#0b0716 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.ill-stage{position:relative;width:min(82vw,380px);aspect-ratio:1}
+.ill-mc{position:absolute;inset:-8%;width:116%;height:116%;opacity:0}
+.ill-mc .r1{transform-origin:100px 100px;animation:illspin 12s linear infinite}
+.ill-mc .r2{transform-origin:100px 100px;animation:illspin 8s linear infinite reverse}
+.ill-mc .r3{transform-origin:100px 100px;animation:illspin 5s linear infinite}
+@keyframes illspin{to{transform:rotate(360deg)}}
+.ill-card{position:absolute;inset:4%;width:92%;height:92%;border-radius:50%;object-fit:cover;opacity:0;transform:scale(.2);box-shadow:0 0 40px rgba(255,210,120,.55);-webkit-touch-callout:default;user-select:auto}
+.ill-flash{position:absolute;inset:-30%;border-radius:50%;background:radial-gradient(circle,#fff 0%,rgba(255,240,190,.85) 25%,rgba(255,200,90,0) 60%);opacity:0;pointer-events:none}
+.ill-sparks{position:absolute;inset:0;pointer-events:none}
+.ill-sparks i{position:absolute;left:50%;top:50%;width:6px;height:18px;margin:-9px 0 0 -3px;border-radius:3px;background:#fff3b0;box-shadow:0 0 8px #ffd27a;opacity:0;transform:rotate(var(--a)) translateY(0)}
+.ill-info{text-align:center;color:#fff;margin-top:18px;width:min(86vw,360px);opacity:0}
+.ill-info h3{margin:0 0 4px;font-size:22px;color:#ffd27a}
+.ill-info p{margin:0 0 12px;opacity:.85}
+.ill-info .btn{width:100%}
+.ill-row{display:flex;gap:8px;margin-top:8px}
+.ill-row .btn{flex:1}
+.ill-info small{display:block;margin-top:8px;opacity:.6;font-size:11px}
+.ill-ov.play .ill-mc{animation:illmc 1.9s ease forwards}
+@keyframes illmc{0%{opacity:0;transform:scale(.4) rotate(-90deg)}25%{opacity:1;transform:scale(1) rotate(0)}70%{opacity:1;transform:scale(1.05) rotate(40deg)}100%{opacity:.55;transform:scale(1.1) rotate(60deg)}}
+.ill-ov.play .ill-flash{animation:illfl 1s ease 1.3s forwards}
+@keyframes illfl{0%{opacity:0;transform:scale(.3)}40%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.4)}}
+.ill-ov.play .ill-card{animation:illcard .7s cubic-bezier(.2,1.4,.4,1) 1.5s forwards}
+@keyframes illcard{to{opacity:1;transform:scale(1)}}
+.ill-ov.play .ill-sparks i{animation:illsp .9s ease-out calc(1.5s + var(--d)) forwards}
+@keyframes illsp{0%{opacity:1;transform:rotate(var(--a)) translateY(-40px)}100%{opacity:0;transform:rotate(var(--a)) translateY(-220px)}}
+.ill-ov.play .ill-info{animation:illin .4s ease 2.1s forwards}
+@keyframes illin{to{opacity:1}}
+.ill-ov.show .ill-mc{opacity:.45}.ill-ov.show .ill-card,.ill-ov.show .ill-info{opacity:1;transform:none}
+.ill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.ill-cell{position:relative;aspect-ratio:1;border-radius:50%;padding:0;border:2px solid rgba(255,210,120,.6);background:#1b1530;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#8a7fb0;font-size:28px;font-weight:900}
+.ill-cell img{width:100%;height:100%;object-fit:cover}
+.ill-cell b{position:absolute;right:8%;bottom:8%;background:#ffd27a;color:#3a1a08;border-radius:999px;font-size:11px;padding:1px 6px}
+.ill-cell small{font-size:10px;font-weight:700}
+.ill-cell.no{border-style:dashed;border-color:rgba(255,255,255,.2)}
 </style>
 </head><body class="ttl-open">
 <div class="ttl" id="title" aria-label="トトと魔物たち">
@@ -5584,8 +5620,8 @@ function renderBonus(target){
     <button class="btn gold" type="submit">受け取る</button></form><div class="code-msg" id="codeMsg" role="status"></div></div>
   <div class="code-box qr-box"><h3>QRコードでプレゼント獲得</h3><p class="sub" style="margin:0">QRコードを読み取ると、プレゼントがもらえます。1つのQRコードにつき1回だけです。</p>
     <div class="qr-btns"><button class="btn gold" type="button" id="qrCam">📷 カメラで撮る</button><button class="btn" type="button" id="qrImg">🖼 保存した画像から読み取る</button></div>
-    <input type="file" id="qrFile" accept="image/*" hidden><div class="code-msg" id="qrMsg" role="status"></div></div>`;
-  $("#qrCam").onclick=()=>qrCamera(); $("#qrImg").onclick=()=>$("#qrFile").click();
+    <input type="file" id="qrFile" accept="image/*" hidden><div class="code-msg" id="qrMsg" role="status"></div>${dexPeek()?`<button class="btn" type="button" id="illAlb" style="width:100%;margin-top:10px">🖼 イラストアルバム（${illHave()}/${ILL_N}）<small style="display:block;font-size:11px;opacity:.75">ふっかーだけに表示</small></button>`:""}</div>`;
+  $("#qrCam").onclick=()=>qrCamera(); $("#qrImg").onclick=()=>$("#qrFile").click(); if($("#illAlb")) $("#illAlb").onclick=()=>illAlbum();
   $("#qrFile").onchange=e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=""; if(f) qrFromFile(f); };
   const a=$("#cDaily"); if(a) a.onclick=claimDaily;
   const cn=$("#copyNo"); if(cn) cn.onclick=()=>{ const t=String(S.userNo); navigator.clipboard?.writeText(t).then(()=>toast("ユーザー番号をコピーしました"),()=>toast("No."+t)); };
@@ -5667,9 +5703,63 @@ async function gtQr(v){ if(!DB||!MYID) return qrSay("グッズチケットのQR�
     return qrSay(m==="used"?"このグッズチケットのQRコードは、もう使われています":m==="noacc"?"先にグッズガチャの登録をしてね（ホームのグッズガチャから登録できます）":m==="wait"?"グッズガチャの登録が承認されてから読み取ってね":"このQRコードは使えませんでした（もう一度ためすか、ふっかーに連絡してね）",false); }
   try{ S.gdCache=null; save(); }catch(e){} try{ SFX.reveal("S"); }catch(e){}
   qrSay(`🎫 グッズチケットを1枚受け取りました！（今 ${n}枚）グッズガチャで使えます`,true); }
+
+/* ---------- 2026-11-12：イラストQR（まだ ふっかーだけ）。QRを読むと魔法陣から13枚のイラストのどれか1枚が当たる。1つのQRは世界で1回だけ（illqr/{code}） ---------- */
+const ILL_N=13, illSrc=i=>`im/ill/${i+1}.jpg`, illThumb=i=>`im/ill/t${i+1}.jpg`;
+const illHave=()=>Object.keys(S.ill||{}).filter(k=>(S.ill[k]||0)>0).length;
+async function illQr(v){
+  if(!dexPeek()) return qrSay("このQRコードは、まだ使えません（もうすぐ使えるようになります）",false);
+  if(!DB||!MYID) return qrSay("イラストのQRコードは、ログインしてから読み取ってね",false);
+  const used=DB.doc("illqr/"+v), n=Math.floor(Math.random()*ILL_N);
+  try{ await DB.runTransaction(async tx=>{ const u=await tx.get(used); if(u.exists) throw new Error("used"); tx.set(used,{uid:MYID, at:gnow(), n:n}); }); }
+  catch(e){ const m=String(e&&e.message); return qrSay(m==="used"?"このイラストのQRコードは、もう使われています":"読み取りに失敗しました。通信のよい所でもう一度ためしてね",false); }
+  S.ill=S.ill||{}; S.ill[n]=(S.ill[n]||0)+1; save();
+  qrSay(`🖼 イラストが当たりました！ アルバムに入りました`,true);
+  const ab=document.getElementById("illAlb"); if(ab) ab.firstChild.textContent=`🖼 イラストアルバム（${illHave()}/${ILL_N}）`;
+  illReveal(n,true);
+}
+async function illSave(i){
+  try{ const r=await fetch(illSrc(i)); const b=await r.blob(); const f=new File([b],`toto_illust_${i+1}.jpg`,{type:"image/jpeg"});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:"トトと魔物たち イラスト"}); return; }
+    const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },3000);
+    toast("画像を保存しました");
+  }catch(e){ if(e&&e.name==="AbortError") return; toast("保存できませんでした。画像を長押しして保存してね"); }
+}
+function illReveal(i,isNew){
+  const ov=document.createElement("div"); ov.className="ill-ov";
+  ov.innerHTML=`<div class="ill-stage">
+    <svg class="ill-mc" viewBox="0 0 200 200" aria-hidden="true"><defs><radialGradient id="illG"><stop offset="0" stop-color="#fff6c8"/><stop offset=".6" stop-color="#ffcf5a" stop-opacity=".5"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></radialGradient></defs>
+      <circle cx="100" cy="100" r="96" fill="url(#illG)" opacity=".35"/>
+      <g class="r1" fill="none" stroke="#ffe08a" stroke-width="1.6"><circle cx="100" cy="100" r="92"/><circle cx="100" cy="100" r="84"/>
+        ${Array.from({length:24},(_,k)=>{const a=k/24*Math.PI*2,x=100+Math.cos(a)*88,y=100+Math.sin(a)*88;return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.8" fill="#fff3c0" stroke="none"/>`}).join("")}</g>
+      <g class="r2" fill="none" stroke="#c9a2ff" stroke-width="1.4"><polygon points="${Array.from({length:6},(_,k)=>{const a=k/6*Math.PI*2-Math.PI/2;return (100+Math.cos(a)*76).toFixed(1)+","+(100+Math.sin(a)*76).toFixed(1)}).join(" ")}"/>
+        <polygon points="${Array.from({length:6},(_,k)=>{const a=k/6*Math.PI*2+Math.PI/6-Math.PI/2;return (100+Math.cos(a)*76).toFixed(1)+","+(100+Math.sin(a)*76).toFixed(1)}).join(" ")}"/><circle cx="100" cy="100" r="44"/></g>
+      <g class="r3" fill="none" stroke="#9ff3ff" stroke-width="1.2"><circle cx="100" cy="100" r="30"/>${Array.from({length:8},(_,k)=>{const a=k/8*Math.PI*2;return `<line x1="${(100+Math.cos(a)*30).toFixed(1)}" y1="${(100+Math.sin(a)*30).toFixed(1)}" x2="${(100+Math.cos(a)*44).toFixed(1)}" y2="${(100+Math.sin(a)*44).toFixed(1)}"/>`}).join("")}</g>
+    </svg>
+    <div class="ill-flash"></div>
+    <img class="ill-card" src="${illSrc(i)}" alt="イラスト No.${i+1}" draggable="false">
+    <div class="ill-sparks">${Array.from({length:14},(_,k)=>`<i style="--a:${k/14*360}deg;--d:${(k%3)*.08}s"></i>`).join("")}</div>
+  </div>
+  <div class="ill-info"><h3>${isNew?"✨ イラストが当たった！":"🖼 イラスト"}</h3><p>No.${i+1} / ${ILL_N}${(S.ill&&S.ill[i]>1)?`（${S.ill[i]}枚目）`:""}</p>
+    <button class="btn gold" type="button" data-s>📥 写真に保存する</button><div class="ill-row"><button class="btn" type="button" data-a>🖼 アルバム</button><button class="btn" type="button" data-x>とじる</button></div>
+    <small>保存できないときは、画像を長押しして保存してね</small></div>`;
+  document.body.appendChild(ov); try{ SFX.tap(); }catch(e){}
+  if(isNew){ ov.classList.add("play"); setTimeout(()=>{ try{ SFX.reveal("S"); }catch(e){} },1500); } else ov.classList.add("show");
+  ov.querySelector("[data-s]").onclick=()=>illSave(i);
+  ov.querySelector("[data-x]").onclick=()=>ov.remove();
+  ov.querySelector("[data-a]").onclick=()=>{ ov.remove(); illAlbum(); };
+}
+function illAlbum(){
+  document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
+  const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(f=>f()))(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🖼 イラストアルバム（${illHave()}/${ILL_N}）</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
+    <p class="sub">イラストのQRコードを読み取ると、13枚の中から1枚が当たります。タップで大きく見たり、写真に保存できます。</p>
+    <div class="ill-grid">${Array.from({length:ILL_N},(_,i)=>{ const c=(S.ill||{})[i]||0; return c?`<button type="button" class="ill-cell" data-i="${i}"><img src="${illThumb(i)}" alt="" loading="lazy">${c>1?`<b>×${c}</b>`:""}</button>`:`<div class="ill-cell no">？<small>No.${i+1}</small></div>`; }).join("")}</div>`);
+    bg.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>illReveal(+b.dataset.i,false)); });
+}
 async function qrRedeem(txt){
   const v=String(txt).trim();
   if(/^TOTOGT-[A-Z0-9]{12}$/.test(v)) return gtQr(v);   /* 2026-11-04：グッズチケット1枚のQRコード（1つのQRコードは1回だけ） */
+  if(/^TOTOIL-[A-Z0-9]{12}$/.test(v)) return illQr(v);   /* 2026-11-12：イラストQR（13枚から1枚・1つのQRは1回だけ） */
   let h; try{ h=await sha256(v); }catch(e){ return qrSay("この画面ではQRコードを確認できませんでした",false); }
   const c=QR_CODES.find(x=>x.h===h);
   if(!c) return qrSay("このQRコードは、トトと魔物たちの報酬のQRコードではありません",false);
@@ -10740,7 +10830,7 @@ async function titleRanks(){
   if(LANG==="en"){ T.querySelector(".ttl-start img").src="title/btn_en.png";  set.querySelector("img").src="title/set_en.png"; }
   T.querySelectorAll("[data-tl]").forEach(b=>{ b.setAttribute("aria-pressed",String(b.dataset.tl===LANG)); b.onclick=()=>{ try{ localStorage.setItem("toto-lang-set","1"); }catch(e){} if(b.dataset.tl!==LANG) setLang(b.dataset.tl); }; });
   // タイトルの上に出す画面（設定・アップデート情報）は、タイトルより前に表示する
-  const onTop=fn=>{ const before=new Set(document.body.children); fn(); [...document.body.children].filter(x=>!before.has(x)).forEach(x=>x.classList.add("ttl-top")); };
+  const onTop=fn=>{ const before=new Set(document.body.children); fn(); [...document.body.children].filter(x=>!before.has(x)).forEach(x=>x.classList.add("ttl-top")); }; window.ttlOnTop=onTop;
   set.onclick=()=>onTop(()=>{
     const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=56;
     bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true" aria-labelledby="tsT"><div class="swear-face">⚙️</div><p id="tsT">設定</p>
