@@ -5716,15 +5716,8 @@ async function gtQr(v){ if(!DB||!MYID) return qrSay("グッズチケットのQR�
 /* ---------- 2026-11-12：イラストQR（まだ ふっかーだけ）。QRを読むと魔法陣から13枚のイラストのどれか1枚が当たる。1つのQRは世界で1回だけ（illqr/{code}） ---------- */
 const ILL_N=13, illSrc=i=>`im/ill/${i+1}.jpg`, illThumb=i=>`im/ill/t${i+1}.jpg`;
 const illHave=()=>Object.keys(S.ill||{}).filter(k=>(S.ill[k]||0)>0).length;
-async function illQr(v){   /* 2026-11-12 13:3x：QRで直接アイコンが当たるのはやめて、アイコンガチャチケットが1枚もらえる形に */
-  if(!dexPeek()) return qrSay("このQRコードは、まだ使えません（もうすぐ使えるようになります）",false);
-  if(!DB||!MYID) return qrSay("このQRコードは、ログインしてから読み取ってね",false);
-  const used=DB.doc("illqr/"+v);
-  try{ await DB.runTransaction(async tx=>{ const u=await tx.get(used); if(u.exists) throw new Error("used"); tx.set(used,{uid:MYID, at:gnow(), n:0}); }); }
-  catch(e){ const m=String(e&&e.message); return qrSay(m==="used"?"このQRコードは、もう使われています":"読み取りに失敗しました。通信のよい所でもう一度ためしてね",false); }
-  S.iconTk=(S.iconTk||0)+1; save(); try{ SFX.reveal("S"); }catch(e){}
-  qrSay(`🎟 アイコンガチャチケットを1枚受け取りました！（今 ${S.iconTk}枚）タイトル画面の「SNS用アイコンガチャ」で使えます`,true);
-  try{ icgBtn(); }catch(e){}
+async function illQr(v){   /* 2026-11-12：QRでのアイコン・チケット配布はやめた（チケットは運営のプレゼントで届く） */
+  return qrSay("このQRコードは、トトと魔物たちの報酬のQRコードではありません",false);
 }
 async function illSave(i){
   try{ const r=await fetch(illSrc(i)); const b=await r.blob(); const f=new File([b],`toto_icon_${i+1}.jpg`,{type:"image/jpeg"});
@@ -5777,7 +5770,7 @@ function icgOpen(){
     <div class="icg-top"><div class="icg-tk">🎟 チケット <b>${tk}</b> 枚</div><div class="icg-have">🖼 ${illHave()} / ${ILL_N} 種</div></div>
     <div class="icg-prev">${[0,3,6,9,12].map(i=>`<img src="${illThumb(i)}" alt="">`).join("")}</div>
     <button class="btn gold icg-go" type="button" id="icgGo" ${tk<1?"disabled":""}>🎟 チケット1枚でまわす</button>
-    ${tk<1?`<p class="sub" style="text-align:center;margin-top:6px">チケットは、配布されたQRコードを「呪文・QR」で読み取るとゲットできます</p>`:""}
+    ${tk<1?`<p class="sub" style="text-align:center;margin-top:6px">チケットは、運営からのプレゼント（プレゼントBOX）で届きます</p>`:""}
     <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 アイコンアルバムを見る</button>`);
     bg.querySelector("#icgAlb").onclick=()=>illAlbum();
     bg.querySelector("#icgGo").onclick=()=>{ if((S.iconTk||0)<1) return toast("チケットがありません");
@@ -7195,13 +7188,14 @@ const PB_EN = t => LANG==="en";
 function presentAdd(p){ const L=pbox(); S.pboxKeys=S.pboxKeys||[];
   if(p.key){ if(S.pboxKeys.includes(p.key)) return false; S.pboxKeys.push(p.key); if(S.pboxKeys.length>600) S.pboxKeys=S.pboxKeys.slice(-600); }
   if(p.merge){ const o=L.find(x=>x.merge===p.merge); if(o){ for(const k of ["coins","lv","ticket","stone","moko"]) o[k]=(o[k]||0)+(p[k]||0); o.t=gnow(); o.n=(o.n||1)+1; save(); pboxUI(); return true; } }
-  L.push({ id:"p"+gnow().toString(36)+Math.random().toString(36).slice(2,6), t:gnow(), ic:p.ic||"🎁", title:p.title||"プレゼント", en:p.en||"", coins:Math.floor(p.coins||0), lv:Math.floor(p.lv||0), ticket:p.ticket||0, stone:p.stone||0, moko:Math.floor(p.moko||0), mons:p.mons||[], merge:p.merge||null, n:1 });
+  L.push({ id:"p"+gnow().toString(36)+Math.random().toString(36).slice(2,6), t:gnow(), ic:p.ic||"🎁", title:p.title||"プレゼント", en:p.en||"", coins:Math.floor(p.coins||0), lv:Math.floor(p.lv||0), ticket:p.ticket||0, itk:Math.floor(p.itk||0), stone:p.stone||0, moko:Math.floor(p.moko||0), mons:p.mons||[], merge:p.merge||null, n:1 });
   save(); pboxUI(); if(!p.quiet && pboxNoticed) setTimeout(()=>{ try{ toast(LANG==="en"?"🎁 A present arrived in your Present BOX":"🎁 プレゼントBOXにプレゼントが届きました"); }catch(e){} },800);
   return true; }
 function presentTxt(p, L=LANG==="en"){ const a=[];
   if(p.coins) a.push(`💰 ${p.coins.toLocaleString()}${L?" coins":"コイン"}`);
   if(p.lv) a.push(`⭐ ${L?"Adventurer Lv":"冒険者Lv"}+${p.lv}`);
   if(p.ticket) a.push(`🎫 ${L?"Gacha Ticket":"ガチャチケット"} ×${p.ticket}`);
+  if(p.itk) a.push(`🎟 ${L?"Icon Gacha Ticket":"アイコンガチャチケット"} ×${p.itk}`);
   if(p.stone) a.push(`💎 ${L?"Awakening Stone":"覚醒の石"} ×${p.stone}`);
   if(p.moko) a.push(`<img src="moko.png" alt="" style="width:18px;height:18px;vertical-align:-4px"> ${mokoFmt(p.moko)}${L?" Moko":"モコ"}`);
   (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(m) a.push(`<span class="rk rk-${m.rank}">${m.rank==="L"?(L?"LTD":"限定"):m.rank==="F"?(L?"FUSE":"融合"):m.rank}</span> 「${esc(m.name)}」`); });
@@ -7209,7 +7203,7 @@ function presentTxt(p, L=LANG==="en"){ const a=[];
 function presentClaim(id){ const L=pbox(), i=L.findIndex(x=>x.id===id); if(i<0) return null; const p=L[i]; L.splice(i,1);
   if(p.coins){ S.coins=(S.coins||0)+p.coins; capCoins(); }
   if(p.lv){ S.plv=(S.plv||1)+p.lv; lvWhy("プレゼント"); bumpMaxLv(); }
-  if(p.ticket) addItem("ticket",p.ticket); if(p.stone) addItem("stone",p.stone); if(p.moko) S.moko=(S.moko||0)+p.moko;
+  if(p.ticket) addItem("ticket",p.ticket); if(p.itk){ S.iconTk=(S.iconTk||0)+p.itk; try{ icgBtn(); }catch(e){} } if(p.stone) addItem("stone",p.stone); if(p.moko) S.moko=(S.moko||0)+p.moko;
   (p.mons||[]).forEach(x=>{ const m=mon(x.m); if(!m) return; S.got[m.id]=(S.got[m.id]||0)+1; S.units.push({u:S.nextUid++,m:m.id,l:1,e:0,s:0,g:0,k:!!x.k,t:gnow()}); });
   save(); try{ renderCoins(); }catch(e){} if(p.lv) try{ queueProfile(true); }catch(e){} pboxUI(); return p; }
 function presentDrop(id){ const L=pbox(), i=L.findIndex(x=>x.id===id); if(i>=0){ L.splice(i,1); save(); pboxUI(); } }
@@ -7640,7 +7634,7 @@ async function checkGiftNames(){ try{ if(!DB||!MYID||!dexPeek()) return; const s
 function checkNamedGift(){
   if(!MYID||isFreshSave(S)) return; S.ngift=S.ngift||[];
   const me=normName(myName()); let tk=0, cn=0, stn=0, mk=0; const ms=[];
-  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; if(g.title){ presentAdd({ic:g.ic||"🙏", title:g.title, en:g.en||"", coins:(g.coins||0)*n, ticket:(g.ticket||0)*n, stone:(g.stone||0)*n, moko:(g.moko||0)*n, mons:(g.mons||[]).filter(id=>mon(id)).map(id=>({m:id,k:true}))}); return; } tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; mk+=(g.moko||0)*n; (g.mons||[]).forEach(id=>{ if(mon(id)) ms.push({m:id,k:true}); }); });
+  NAMED_GIFTS.forEach(g=>{ if(S.ngift.includes(g.id)) return; const k=Object.keys(g.to).find(n=>normName(n)===me); S.ngift.push(g.id); if(!k) return; const n=g.to[k]; if(g.title){ presentAdd({ic:g.ic||"🙏", title:g.title, en:g.en||"", coins:(g.coins||0)*n, ticket:(g.ticket||0)*n, itk:(g.itk||0)*n, stone:(g.stone||0)*n, moko:(g.moko||0)*n, mons:(g.mons||[]).filter(id=>mon(id)).map(id=>({m:id,k:true}))}); return; } if(g.itk) presentAdd({ic:"🎟", title:"運営からのプレゼント：アイコンガチャチケット", en:"A present from the team: Icon Gacha Ticket", itk:g.itk*n}); tk+=(g.ticket||0)*n; cn+=(g.coins||0)*n; stn+=(g.stone||0)*n; mk+=(g.moko||0)*n; (g.mons||[]).forEach(id=>{ if(mon(id)) ms.push({m:id,k:true}); }); });
   if(ms.length) presentAdd({ic:"👑", title:"運営からのプレゼント：限定キャラ", en:"A present from the team: limited character", mons:ms});
   if(!tk&&!cn&&!stn&&!mk){ save(); return; }
   presentAdd({ic:"🎁", title:"運営からのプレゼント", en:"A present from the team", coins:cn, ticket:tk, stone:stn, moko:mk}); return;
