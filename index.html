@@ -1283,6 +1283,12 @@ html[lang=en] .kn-bt span{font-size:38px}
 .icg-prev img{width:100%;max-width:420px;aspect-ratio:1;border-radius:16px;object-fit:cover;border:2px solid rgba(255,210,120,.55);box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .icg-go{width:100%;font-size:17px;padding:14px}
 .icg-go:disabled{opacity:.4}
+.icg-adm{margin-top:14px;padding:10px;border-radius:12px;border:2px dashed rgba(255,210,120,.5)}
+.icg-row{display:flex;gap:6px;margin-top:8px}.icg-row input{flex:1;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);color:inherit;font:inherit}
+.icg-hit{display:flex;align-items:center;gap:6px;margin-top:8px;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.06)}
+.icg-hit span{flex:1;min-width:0;overflow:hidden}.icg-hit small{display:block;opacity:.7;font-size:11px}
+.icg-hit input{width:52px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);color:inherit;font:inherit;text-align:center}
+.icg-hit .btn{padding:8px 12px}
 .icg-buy{display:block;width:100%;box-sizing:border-box;margin-top:10px;text-align:center;text-decoration:none;background:#ff8fb1;color:#3a0d1c}
 
 .ill-ov{position:fixed;inset:0;z-index:9800;background:radial-gradient(circle at 50% 40%,#2a1c4a 0%,#0b0716 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto}
@@ -5804,6 +5810,23 @@ async function icgGrant(){ if(!DB||!MYID||!dexPeek()) return;
     if(ok){ S.igDone.push(g.id); save(); } }
   if(out.length) toast("アイコンガチャチケット配布："+out.join(" / "),6);
   icgLoad(); }
+/* ふっかーだけ：名前で冒険者を探して、アイコンガチャチケットを送る */
+function icgAdmin(bg){ const q=bg.querySelector("#icgQ"), res=bg.querySelector("#icgRes");
+  const find=async()=>{ const nm=q.value.trim(); if(!nm) return; res.innerHTML='<p class="sub">検索中…</p>';
+    try{ const map=new Map(); const add=sn=>sn.forEach(d=>map.set(d.id,d.data()));
+      add(await DB.collection("profiles").where("name","==",nm).get());
+      try{ add(await DB.collection("profiles").where("name",">=",nm).where("name","<",nm+"").limit(10).get()); }catch(e){}
+      if(!map.size){ res.innerHTML='<p class="sub">見つかりませんでした（名前を確かめてね）</p>'; return; }
+      const rows=await Promise.all([...map].slice(0,10).map(async([id,p])=>{ let n=0; try{ const t=await DB.doc("icgtk/"+id).get(); n=t.exists?(t.data().n|0):0; }catch(e){} return {id,nm:p.name||"？",lv:p.lv||p.plv||"",n}; }));
+      res.innerHTML=rows.map(r=>`<div class="icg-hit"><span><b>${esc(r.nm)}</b>${r.lv?` <small>Lv${r.lv}</small>`:""}<small>今 🎟${r.n}枚</small></span><input type="number" min="1" max="99" value="1" data-n="${r.id}"><button class="btn gold" type="button" data-send="${r.id}" data-nm="${esc(r.nm)}">送る</button></div>`).join("");
+      res.querySelectorAll("[data-send]").forEach(b=>b.onclick=async()=>{ const id=b.dataset.send, nm2=b.dataset.nm, cnt=Math.max(1,Math.min(99,parseInt(res.querySelector(`[data-n="${id}"]`).value)||0));
+        if(!confirm(`${nm2} にアイコンガチャチケットを ${cnt}枚 送りますか？`)) return; b.disabled=true; b.textContent="送信中…";
+        const ref=DB.doc("icgtk/"+id), gid="adm-"+gnow().toString(36);
+        try{ await DB.runTransaction(async tx=>{ const d=await tx.get(ref); const x=d.exists?d.data():{n:0,g:[]}; tx.set(ref,{n:(x.n|0)+cnt, g:(x.g||[]).concat([gid]).slice(-50)}); });
+          toast(`✅ ${nm2} に 🎟×${cnt} 送りました`); b.textContent="送った！"; if(id===MYID) icgLoad(); find(); }
+        catch(e){ b.disabled=false; b.textContent="送る"; toast("送れませんでした（"+String(e&&e.code||e&&e.message||e).slice(0,40)+"）"); } }); }
+    catch(e){ res.innerHTML='<p class="sub">検索できませんでした（'+esc(String(e&&e.code||e).slice(0,40))+'）</p>'; } };
+  bg.querySelector("#icgFind").onclick=find; q.onkeydown=e=>{ if(e.key==="Enter") find(); }; }
 function icgOpen(){
   document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
   const go=f=>{ const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(g=>g()))(f); };
@@ -5815,7 +5838,11 @@ function icgOpen(){
     <p class="sub" id="icgNote" style="text-align:center;margin-top:6px"></p>
     <a class="btn icg-buy" href="https://fukka0409.base.shop/items/165803101" target="_blank" rel="noopener">🛒 チケットを200円で購入</a>
     <p class="sub" style="text-align:center;margin-top:6px;font-size:12px">購入したら、インスタのDMで冒険者名を送ってください。チケットがゲームに届きます！</p>
-    <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 自分のアイコンアルバム（${illHave()}）</button>`);
+    <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 自分のアイコンアルバム（${illHave()}）</button>
+    ${dexPeek()?`<div class="icg-adm"><b>🔧 チケットを送る（ふっかーだけ）</b>
+      <div class="icg-row"><input id="icgQ" type="text" placeholder="冒険者の名前" autocomplete="off"><button class="btn" type="button" id="icgFind">🔍 検索</button></div>
+      <div id="icgRes"></div></div>`:""}`);
+    if(dexPeek()) icgAdmin(bg);
     const upd=()=>{ const tk=ICG_TK, lf=ICG_LEFT; bg.querySelector("#icgTk").textContent=tk==null?"…":tk; bg.querySelector("#icgLeft").textContent=lf==null?"…":lf;
       const go=bg.querySelector("#icgGo"), nt=bg.querySelector("#icgNote"); go.disabled=!(tk>0&&lf>0);
       nt.textContent=lf===0?"全部のアイコンが出ました！":tk===0?"チケットは、運営から届きます":""; };
