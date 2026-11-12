@@ -1318,6 +1318,9 @@ html[lang=en] .kn-bt span{font-size:38px}
 .ill-cell img{width:100%;height:100%;object-fit:cover}
 .ill-cell b{position:absolute;right:8%;bottom:8%;background:#ffd27a;color:#3a1a08;border-radius:999px;font-size:11px;padding:1px 6px}
 .ill-cell small{font-size:10px;font-weight:700}
+.ill-cell.taken{border-style:solid;border-color:rgba(255,255,255,.25)}
+.ill-cell.taken img{filter:grayscale(1) brightness(.55)}
+.ill-cell.taken span{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);font-size:11px;font-weight:900;color:#fff;line-height:1.35;text-align:center;text-shadow:0 1px 3px #000,0 0 6px #000}
 .ill-cell.no{border-style:dashed;border-color:rgba(255,255,255,.2)}
 </style>
 </head><body class="ttl-open">
@@ -5757,8 +5760,12 @@ function illAlbum(){
   document.querySelectorAll(".sheet-bg").forEach(x=>x.remove());
   const top=!!document.querySelector("#title:not([hidden])")&&window.ttlOnTop; (top?window.ttlOnTop:(f=>f()))(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🖼 アイコンアルバム（${illHave()}/${ILL_N}）</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <p class="sub">SNS用アイコンガチャで自分が当てたアイコンです。タップで大きく見たり、写真に保存してSNSのアイコンに使えます。</p>
-    <div class="ill-grid">${Array.from({length:ILL_N},(_,i)=>{ const c=(S.ill||{})[i]||0; return c?`<button type="button" class="ill-cell" data-i="${i}"><img src="${illThumb(i)}" alt="" loading="lazy">${c>1?`<b>×${c}</b>`:""}</button>`:`<div class="ill-cell no">？<small>No.${i+1}</small></div>`; }).join("")}</div>`);
-    bg.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>illReveal(+b.dataset.i,false)); });
+    <div class="ill-grid">${Array.from({length:ILL_N},(_,i)=>{ const c=(S.ill||{})[i]||0; return c?`<button type="button" class="ill-cell" data-i="${i}"><img src="${illThumb(i)}" alt="" loading="lazy">${c>1?`<b>×${c}</b>`:""}</button>`:`<div class="ill-cell no" data-n="${i}">？<small>No.${i+1}</small></div>`; }).join("")}</div>`);
+    bg.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>illReveal(+b.dataset.i,false));
+    /* 他の冒険者が当てたアイコンは、モノクロで「他の冒険者がゲット」 */
+    if(DB&&MYID) DB.doc("icgacha/main").get().then(sn=>{ const t=sn.exists?(sn.data().t||{}):{};
+      bg.querySelectorAll("[data-n]").forEach(c=>{ const k=c.dataset.n, x=t[k]; if(!x||x.u===MYID) return;
+        c.className="ill-cell taken"; c.innerHTML=`<img src="${illThumb(+k)}" alt="" loading="lazy"><span>他の冒険者が<br>ゲットしました</span>`; }); }).catch(()=>{}); });
 }
 
 /* ---------- 2026-11-12：SNS用アイコンガチャ（まだ ふっかーだけ）
