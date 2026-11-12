@@ -1280,7 +1280,7 @@ html[lang=en] .kn-bt span{font-size:38px}
 .icg-tk b{font-size:20px;color:#ffd27a}
 .icg-prev{display:flex;justify-content:center;gap:6px;margin:6px 0 12px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;pointer-events:none;caret-color:transparent}
 .icg-top,.icg-go{user-select:none;-webkit-user-select:none}
-.icg-prev img{width:17%;aspect-ratio:1;border-radius:50%;object-fit:cover;filter:brightness(.55) blur(1px);border:2px solid rgba(255,210,120,.4)}
+.icg-prev img{width:100%;max-width:420px;aspect-ratio:1;border-radius:16px;object-fit:cover;border:2px solid rgba(255,210,120,.55);box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .icg-go{width:100%;font-size:17px;padding:14px}
 .icg-go:disabled{opacity:.4}
 
@@ -5797,7 +5797,7 @@ function icgOpen(){
   go(()=>{ const bg=sheet(`<div class="sheet-h"><h3>🎨 SNS用アイコンガチャ</h3><button class="x" type="button" aria-label="閉じる">✕</button></div>
     <p class="sub">アイコンガチャチケット1枚で1回まわせます。アイコンは<b>全${ILL_N}種・世界に1つずつ</b>。誰かが当てたアイコンは、もう当たりません。当たったアイコンは写真に保存して、SNSのアイコンに使えます。</p>
     <div class="icg-top"><div class="icg-tk">🎟 チケット <b id="icgTk">…</b> 枚</div><div class="icg-have">✨ のこり <b id="icgLeft">…</b> 種</div></div>
-    <div class="icg-prev">${[0,3,6,9,12].map(i=>`<img src="${illThumb(i)}" alt="">`).join("")}</div>
+    <div class="icg-prev"><img src="im/ill/banner.jpg" alt="SNS用アイコンガチャ" draggable="false"></div>
     <button class="btn gold icg-go" type="button" id="icgGo" disabled>🎟 チケット1枚でまわす</button>
     <p class="sub" id="icgNote" style="text-align:center;margin-top:6px"></p>
     <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 自分のアイコンアルバム（${illHave()}）</button>`);
