@@ -326,6 +326,7 @@ input[type=range]{width:100%;accent-color:var(--moss)}
 .tr-rk .my{margin-top:4px;text-align:center;font-weight:800;color:#ffe9b8;font-size:11px}
 .tr-rk .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tr-rk li b{flex:none}
+.tr-rk h4 .cnt{margin-left:6px;font-size:11px;color:#ffe9b8;font-weight:800}
 .tr-rk .no{text-align:center;opacity:.75}
 .tr-go{position:absolute;z-index:3;left:0;right:0;bottom:5%;display:flex;flex-direction:column;align-items:center}
 .tr-wrap{position:relative;animation:trPulse 1.5s ease-in-out infinite}
@@ -5404,7 +5405,7 @@ const ioOn = () => true;
 const trHome = () => true;   // 2026-11-07：ホームの魔物サバイバルを「トトの森」に交代（みんなに公開）
 /* 2026-11-07：トトの森の「何日生き残ったか」匿名ランキングをホームに出す（trdays/{uid}={d,at}） */
 let TR_RK=null, TR_RK_AT=0, TR_RK_BUSY=false;
-function trRkHtml(){ const h="<h4>🏆 生き残りランキング</h4>"; const R=TR_RK; if(!R) return h+'<div class="no">読み込み中…</div>';
+function trRkHtml(){ const R=TR_RK; const h=`<h4>🏆 生き残りランキング${R&&R.n?`<span class="cnt">👥 ${R.n}</span>`:""}</h4>`; if(!R) return h+'<div class="no">読み込み中…</div>';
   if(!R.top.length) return h+'<div class="no">まだ記録がありません</div>';
   let i=0,prev=-1,rank=0; const rows=R.top.map(t=>{ i++; if(t.d!==prev){ rank=i; prev=t.d; } return `<li class="${t.me?"me":""}"><span class="nm">${rank}位 ${esc(t.nm||"？？？")}</span><b>${t.d}日</b></li>`; }).join("");
   return h+`<ol>${rows}</ol>`+(R.md?`<div class="my">あなた：${R.md}日（${R.mr}位/${R.n}人）</div>`:""); }
@@ -5416,7 +5417,8 @@ async function trRkLoad(force){ const el=()=>document.getElementById("trRk");
     const q=await col.orderBy("d","desc").limit(3).get(); const top=[]; q.forEach(d=>top.push({id:d.id, d:d.data().d|0, me:d.id===MYID}));
     await Promise.all(top.map(async t=>{ try{ const pr=await DB.doc("profiles/"+t.id).get(); t.nm=pr.exists?(pr.data().name||""):""; }catch(e){ t.nm=""; } }));
     const mine=await col.doc(MYID).get(); const md=mine.exists?(mine.data().d|0):0; let mr=0, n=top.length;
-    try{ if(md){ const a=col.where("d",">",md); mr=(a.count?(await a.count().get()).data().count:(await a.get()).size)+1; } n=col.count?(await col.count().get()).data().count:n; }catch(e){}
+    try{ if(md){ const a=col.where("d",">",md); mr=(a.count?(await a.count().get()).data().count:(await a.get()).size)+1; } }catch(e){}
+    try{ n=col.count?(await col.count().get()).data().count:(await col.get()).size; }catch(e){ try{ n=(await col.get()).size; }catch(_){} }
     TR_RK={top,md,mr,n}; TR_RK_AT=Date.now(); const e=el(); if(e) e.innerHTML=trRkHtml(); }
   catch(e){ console.warn("trdays",e); const x=el(); if(x&&!TR_RK) x.innerHTML='<h4>🏆 生き残りランキング</h4><div class="no">読み込めませんでした</div>'; }
   TR_RK_BUSY=false; }
