@@ -5046,6 +5046,7 @@ const U = (t, tag="c") => [].concat(RULES_TAG).includes(tag) ? `<span class="upd
    新しいことを足すときは NEWS のいちばん上に {ss:シーズン番号, t:"文"} を足す。新しい魔物は NEWS_MONS に {id, ss} を足す
    （融合でできた魔物は、fusemon の作られた時間から自動で出す） */
 const NEWS = [
+  {ss:18, t:"🎨 タイトル画面に「SNS用アイコンガチャ」が登場！ アイコンは世界に1つずつ。当てたアイコンは写真に保存してSNSのアイコンに使えます"},
   {ss:18, t:"🎁 「呪文・QR」は下のタブ（BOXとガチャの間）にもどりました"},
   {ss:18, t:"🗳 魔物投票はミニゲームに移動しました！（ホームの「🎮 ミニゲーム」から遊べます）"},
   {ss:18, t:"🌲 新しい3Dゲーム「トトの森」がホーム画面に登場！ 木を伐って壁や砲台を作り、夜の魔物から焚き火を守ろう。生き残った日数×500コインがもらえて、生き残りランキングもあります"},
@@ -5779,10 +5780,11 @@ const ICON_GRANTS = [
 let ICG_TK=null, ICG_LEFT=null;
 async function icgLoad(){ if(!DB||!MYID) return; try{ const [a,b]=await Promise.all([DB.doc("icgtk/"+MYID).get(), DB.doc("icgacha/main").get()]);
   ICG_TK=a.exists?(a.data().n|0):0; ICG_LEFT=ILL_N-(b.exists?Object.keys(b.data().t||{}).length:0); }catch(e){} icgBtn(); }
-function icgBtn(){ const b=document.getElementById("ttlIcon"); if(!b) return; const on=!!(DB&&MYID)&&dexPeek(); if(b.hidden===on) b.hidden=!on;
-  const t=document.getElementById("ttlIconN"); if(t){ const x=`🎟 チケット ${ICG_TK==null?"…":ICG_TK}枚・ふっかーだけに表示`; if(t.textContent!==x) t.textContent=x; } }
+function icgBtn(){ const b=document.getElementById("ttlIcon"); if(!b) return; const on=!!(DB&&MYID);   /* 2026-11-12 15:30 みんなに公開 */ if(b.hidden===on) b.hidden=!on;
+  const t=document.getElementById("ttlIconN"); if(t){ const x=`🎟 チケット ${ICG_TK==null?"…":ICG_TK}枚`; if(t.textContent!==x) t.textContent=x; } }
 setInterval(()=>{ try{ icgBtn(); }catch(e){} },1000);
 { let was=false; setInterval(()=>{ const on=!!(DB&&MYID)&&typeof dexPeek==="function"&&dexPeek(); if(on&&!was){ icgLoad(); icgGrant(); } was=on; },1500); }
+{ let was2=false; setInterval(()=>{ const on=!!(DB&&MYID); if(on&&!was2) icgLoad(); was2=on; },1500); }
 /* ふっかーの端末で、ICON_GRANTS のチケットを名前の冒険者に届ける（同じ配布は1回だけ） */
 async function icgGrant(){ if(!DB||!MYID||!dexPeek()) return;
   try{ const m=DB.doc("icgacha/main"); const ms=await m.get(); if(!ms.exists) await m.set({t:{}, last:""}); }catch(e){ console.warn("icgacha main",e); }
@@ -5809,6 +5811,7 @@ function icgOpen(){
     <button class="btn gold icg-go" type="button" id="icgGo" disabled>🎟 チケット1枚でまわす</button>
     <p class="sub" id="icgNote" style="text-align:center;margin-top:6px"></p>
     <a class="btn icg-buy" href="https://fukka0409.base.shop/items/165803101" target="_blank" rel="noopener">🛒 チケットを200円で購入</a>
+    <p class="sub" style="text-align:center;margin-top:6px;font-size:12px">購入したら、インスタのDMで冒険者名を送ってください。チケットがゲームに届きます！</p>
     <button class="btn" type="button" id="icgAlb" style="width:100%;margin-top:10px">🖼 自分のアイコンアルバム（${illHave()}）</button>`);
     const upd=()=>{ const tk=ICG_TK, lf=ICG_LEFT; bg.querySelector("#icgTk").textContent=tk==null?"…":tk; bg.querySelector("#icgLeft").textContent=lf==null?"…":lf;
       const go=bg.querySelector("#icgGo"), nt=bg.querySelector("#icgNote"); go.disabled=!(tk>0&&lf>0);
