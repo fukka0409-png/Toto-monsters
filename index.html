@@ -5776,6 +5776,7 @@ function illAlbum(){
    ・まわすときは、チケット-1 と アイコンの記録を同じトランザクションでする（ルールで両方を確認） ---------- */
 const ICON_GRANTS = [
   { id:"ig-2026-11-12-fukka", to:{ "ふっかー":2 } },
+  { id:"ig-2026-11-12-riku", to:{ "Riku":1 } },
 ];
 let ICG_TK=null, ICG_LEFT=null;
 async function icgLoad(){ if(!DB||!MYID) return; try{ const [a,b]=await Promise.all([DB.doc("icgtk/"+MYID).get(), DB.doc("icgacha/main").get()]);
