@@ -5790,6 +5790,9 @@ const ICON_GRANTS = [
   { id:"ig-2026-11-12-fukka", to:{ "ふっかー":2 } },
   { id:"ig-2026-11-12-riku", to:{ "Riku":1 } },
 ];
+const ICON_SETS = [   /* チケットの枚数をこの数にする（ふっかーが開いたとき1回だけ） */
+  { id:"is-2026-11-14-amo", to:{ "あも":0 } },
+];
 let ICG_TK=null, ICG_LEFT=null;
 async function icgLoad(){ if(!DB||!MYID) return; try{ const [a,b]=await Promise.all([DB.doc("icgtk/"+MYID).get(), DB.doc("icgacha/main").get()]);
   ICG_TK=a.exists?(a.data().n|0):0; ICG_LEFT=ILL_N-(b.exists?Object.keys(b.data().t||{}).length:0); }catch(e){} icgBtn(); }
@@ -5799,7 +5802,7 @@ setInterval(()=>{ try{ icgBtn(); }catch(e){} },1000);
 { let was=false; setInterval(()=>{ const on=!!(DB&&MYID)&&typeof dexPeek==="function"&&dexPeek(); if(on&&!was){ icgLoad(); icgGrant(); } was=on; },1500); }
 { let was2=false; setInterval(()=>{ const on=!!(DB&&MYID); if(on&&!was2) icgLoad(); was2=on; },1500); }
 setInterval(()=>{ if(DB&&MYID&&document.querySelector("#title:not([hidden])")) icgLoad(); },20000);   /* チケットが届いたらすぐ数が変わるように */
-setInterval(()=>{ if(DB&&MYID&&typeof dexPeek==="function"&&dexPeek()&&ICON_GRANTS.some(g=>!(S.igDone||[]).includes(g.id))) icgGrant(); },60000);   /* 届けられなかった配布は1分ごとにやり直す */
+setInterval(()=>{ if(DB&&MYID&&typeof dexPeek==="function"&&dexPeek()&&ICON_GRANTS.concat(ICON_SETS).some(g=>!(S.igDone||[]).includes(g.id))) icgGrant(); },60000);   /* 届けられなかった配布は1分ごとにやり直す */
 /* ふっかーの端末で、ICON_GRANTS のチケットを名前の冒険者に届ける（同じ配布は1回だけ） */
 async function icgGrant(){ if(!DB||!MYID||!dexPeek()) return;
   try{ const m=DB.doc("icgacha/main"); const ms=await m.get(); if(!ms.exists) await m.set({t:{}, last:""}); }catch(e){ console.warn("icgacha main",e); }
@@ -5814,6 +5817,15 @@ async function icgGrant(){ if(!DB||!MYID||!dexPeek()) return;
         out.push(`✅ ${nm}：🎟×${cnt}`);
       }catch(e){ ok=false; out.push(`⚠️ ${nm}：届けられませんでした（${String(e&&e.code||e&&e.message||e).slice(0,40)}）`); console.warn("icgrant",e); } }
     if(ok){ S.igDone.push(g.id); save(); } }
+  for(const g of ICON_SETS){ if(S.igDone.includes(g.id)) continue; let ok=true;
+    for(const [nm,cnt] of Object.entries(g.to)){
+      try{ const q=await DB.collection("profiles").where("name","==",nm).get(); const ids=[]; q.forEach(d=>ids.push(d.id));
+        if(ids.length!==1){ ok=false; out.push(`⚠️ ${nm}：${ids.length?"同じ名前が"+ids.length+"人":"見つからない"}`); continue; }
+        const ref=DB.doc("icgtk/"+ids[0]);
+        await DB.runTransaction(async tx=>{ const d=await tx.get(ref); const x=d.exists?d.data():{n:0,g:[]}; tx.set(ref,{n:cnt, g:(x.g||[]).concat([g.id]).slice(-50)}); });
+        out.push(`✅ ${nm}：🎟を${cnt}枚に`);
+      }catch(e){ ok=false; out.push(`⚠️ ${nm}：変更できませんでした（${String(e&&e.code||e&&e.message||e).slice(0,40)}）`); } }
+    if(ok){ S.igDone.push(g.id); save(); } }
   if(out.length) toast("アイコンガチャチケット配布："+out.join(" / "),6);
   icgLoad(); }
 /* ふっかーだけ：名前で冒険者を探して、アイコンガチャチケットを送る */
@@ -5824,7 +5836,10 @@ function icgAdmin(bg){ const q=bg.querySelector("#icgQ"), res=bg.querySelector("
       try{ add(await DB.collection("profiles").where("name",">=",nm).where("name","<",nm+"").limit(10).get()); }catch(e){}
       if(!map.size){ res.innerHTML='<p class="sub">見つかりませんでした（名前を確かめてね）</p>'; return; }
       const rows=await Promise.all([...map].slice(0,10).map(async([id,p])=>{ let n=0; try{ const t=await DB.doc("icgtk/"+id).get(); n=t.exists?(t.data().n|0):0; }catch(e){} return {id,nm:p.name||"？",lv:p.lv||p.plv||"",n}; }));
-      res.innerHTML=rows.map(r=>`<div class="icg-hit"><span><b>${esc(r.nm)}</b>${r.lv?` <small>Lv${r.lv}</small>`:""}<small>今 🎟${r.n}枚</small></span><input type="number" min="1" max="99" value="1" data-n="${r.id}"><button class="btn gold" type="button" data-send="${r.id}" data-nm="${esc(r.nm)}">送る</button></div>`).join("");
+      res.innerHTML=rows.map(r=>`<div class="icg-hit"><span><b>${esc(r.nm)}</b>${r.lv?` <small>Lv${r.lv}</small>`:""}<small>今 🎟${r.n}枚</small></span><input type="number" min="1" max="99" value="1" data-n="${r.id}"><button class="btn gold" type="button" data-send="${r.id}" data-nm="${esc(r.nm)}">送る</button><button class="btn" type="button" data-zero="${r.id}" data-nm="${esc(r.nm)}" title="0枚にする">0に</button></div>`).join("");
+      res.querySelectorAll("[data-zero]").forEach(b=>b.onclick=async()=>{ const id=b.dataset.zero, nm2=b.dataset.nm; if(!confirm(`${nm2} のアイコンガチャチケットを 0枚 にしますか？`)) return;
+        const ref=DB.doc("icgtk/"+id); try{ await DB.runTransaction(async tx=>{ const d=await tx.get(ref); const x=d.exists?d.data():{g:[]}; tx.set(ref,{n:0, g:(x.g||[]).concat(["zero-"+gnow().toString(36)]).slice(-50)}); }); toast(`✅ ${nm2} のチケットを0枚にしました`); if(id===MYID) icgLoad(); find(); }
+        catch(e){ toast("変更できませんでした（"+String(e&&e.code||e&&e.message||e).slice(0,40)+"）"); } });
       res.querySelectorAll("[data-send]").forEach(b=>b.onclick=async()=>{ const id=b.dataset.send, nm2=b.dataset.nm, cnt=Math.max(1,Math.min(99,parseInt(res.querySelector(`[data-n="${id}"]`).value)||0));
         if(!confirm(`${nm2} にアイコンガチャチケットを ${cnt}枚 送りますか？`)) return; b.disabled=true; b.textContent="送信中…";
         const ref=DB.doc("icgtk/"+id), gid="adm-"+gnow().toString(36);
