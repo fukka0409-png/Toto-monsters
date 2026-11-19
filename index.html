@@ -7089,29 +7089,6 @@ setInterval(async()=>{ try{ if(!DB||!MYID||rankless()||rankPaused()) return; con
     if(!rankless()&&!rankPaused()&&myRank&&myRank<=10&&tickNow()===n&&S.tkSelf!==n){ S.tkSelf=n; S.plv+=1; lvWhy("上位キープボーナス"); bumpMaxLv(); S.coins+=TOP10_COIN; save(); queueProfile(true); renderCoins();
       toast(`⏱ 上位キープボーナス Lv+1・+${TOP10_COIN}コイン（${myRank}位）`); try{ render(); }catch(_){} } }
 }catch(e){} },60*1000);
-/* 2026-11-19：第18回で抜けてしまった上位キープボーナスを、全員に1回だけまとめて付与（運営より）。
-   記録が残っていないので、開いたときの最新の順位で決める：1〜10位＝Lv+回数・300コイン×回数／11〜30位＝200コイン×回数。
-   回数＝第18回のはじまり（11/18 22:00）〜11/19 15:50 の10分の数から、実際に受け取れていた回数を引いたもの */
-const TK_COMP_END = Date.UTC(2026,10,19,6,50);   /* 11/19 15:50 JST */
-async function tickComp18(){ try{
-  if(S.tkComp18||!DB||!MYID||seasonNow()!==RANK_GAP_SS||(S.season??0)!==RANK_GAP_SS||rankPaused()||rankless()||gnow()>=seasonEnd(RANK_GAP_SS)) return;
-  if(tickComp18.busy) return; tickComp18.busy=1;
-  const a=Math.ceil(RANK18_START/TICK_MS), b=Math.floor(TK_COMP_END/TICK_MS), all=Math.max(0,b-a+1);
-  const q=await DB.collection("ticks").where("ss","==",RANK_GAP_SS).get(); let got10=0, got30=0;
-  q.docs.forEach(d=>{ const t=d.data(); if(t.n<a||t.n>b) return; if((t.t10||[]).includes(MYID)) got10++; else if((t.t30||[]).includes(MYID)) got30++; });
-  await loadRanking(true); const r=myRank; if(S.tkComp18) return;
-  let lv=0, coins=0;
-  if(r&&r<=10){ lv=Math.max(0,all-got10); coins=lv*TOP10_COIN; }
-  else if(r&&r<=30){ coins=Math.max(0,all-got10-got30)*TOP30_COIN; }
-  S.tkComp18=1;
-  if(lv){ S.plv+=lv; lvWhy("上位キープボーナス（抜けていた分）"); bumpMaxLv(); }
-  if(coins) S.coins+=coins; save(); queueProfile(true); renderCoins();
-  if(lv||coins){ const el=document.createElement("div"); el.className="reveal";
-    el.innerHTML=`<div class="burst"></div><h3>⏱ 上位キープボーナス（抜けていた分）</h3><p class="note" style="text-align:center;max-width:320px">一部の時間、上位キープボーナスが付いていませんでした🙏<br>今の順位（${r}位）で、抜けていた分をまとめて付与しました！<br><b style="color:var(--staff);font-size:18px">${lv?`冒険者Lv+${lv}・`:""}+${coins.toLocaleString()}コイン</b></p><button class="btn gold" type="button">OK</button>`;
-    document.body.appendChild(el); try{ SFX.reveal("S"); SFX.coin(); }catch(e){} el.querySelector(".btn").onclick=()=>{ el.remove(); render(); }; }
-  try{ render(); }catch(e){}
-}catch(e){ console.warn("tickComp18",e); } finally{ tickComp18.busy=0; } }
-setTimeout(tickComp18,9000); setInterval(tickComp18,60*1000);
 // まだ受け取っていない「上位キープ」の分（ほかの人のランキング表示・集計用）
 const tickLv = (list, id, after) => list.filter(t=>t.at>(after||0) && (t.t10||[]).includes(id)).length;
 let tickBusy=false;
