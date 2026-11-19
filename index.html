@@ -7080,8 +7080,9 @@ async function snapTick(){
 /* 2026-11-19：ランキング画面を開いた人がいないと記録（ticks）が作られず、上位キープボーナスが抜けることがあった。
    アプリを開いている人の端末で1分ごとに見て、今の10分の記録がまだなければ、ランキングを読み直して記録する */
 setInterval(async()=>{ try{ if(!DB||!MYID||rankless()||rankPaused()) return; const n=tickNow(); if(snapTick.done===n||snapTick.chk===n) return; snapTick.chk=n;
-  const ex=await DB.doc("ticks/"+n).get(); if(ex.exists){ snapTick.done=n; return; }
-  await loadRanking(true); await snapTick(); }catch(e){} },60*1000);
+  const ex=await DB.doc("ticks/"+n).get(); if(ex.exists) snapTick.done=n; else { await loadRanking(true); await snapTick(); }
+  await checkTicks(true);   /* ゲームを開いたままでも、10分ごとのボーナスをその場で受け取る（前はログインやランキングを開いたときだけ） */
+}catch(e){} },60*1000);
 // まだ受け取っていない「上位キープ」の分（ほかの人のランキング表示・集計用）
 const tickLv = (list, id, after) => list.filter(t=>t.at>(after||0) && (t.t10||[]).includes(id)).length;
 let tickBusy=false;
@@ -7349,6 +7350,7 @@ setInterval(()=>{ if(pboxNoticed) return; if(document.querySelector("#title:not(
     bg.querySelector("#pbLater").onclick=()=>bg.remove(); bg.querySelector("#pbGo").onclick=()=>{ bg.remove(); openPresentBox(); }; };
   setTimeout(show,2500); },2000);
 const APOLOGIES = [
+  { id:"fix-2026-11-19-ticks2", coins:1000 },   // ゲームを開いたままだと上位キープボーナスが受け取れていなかった
   { id:"fix-2026-11-19-ticks", coins:1000 },   // 上位キープボーナスの記録が抜けることがあった
   { id:"fix-2026-11-07-trdays", coins:1000 },   // トトの森の生き残りランキングに記録が保存されていなかった
   { id:"fix-2026-11-04-pausebot", coins:1000 },   // ランク戦がお休み中なのに、CPUがバトルやアイテム（マグネットなど）を使っていた
