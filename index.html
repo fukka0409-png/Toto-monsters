@@ -6691,7 +6691,7 @@ function seenMark(r){
 /* 2026-10-31：過去3回のランク戦の1〜3位（終わったランク戦の結果は変わらないので、この端末にとっておく） */
 let PAST_TOP=null, pastBusy=false;
 function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[cur-1,cur-2,cur-3].filter(x=>x>=0);
-  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop4")||"{}")||{}; }catch(e){}
+  let c={}; try{ c=JSON.parse(localStorage.getItem("toto-pasttop5")||"{}")||{}; }catch(e){}
   PAST_TOP=want.map(ss=>({ss, top:c[ss]||null}));
   const need=want.filter(ss=>!c[ss]); if(!need.length) return;
   pastBusy=true; (async()=>{ try{ let q=null;
@@ -6706,9 +6706,10 @@ function pastTopLoad(){ if(pastBusy||!DB) return; const cur=seasonNow(), want=[c
         top=top.slice().sort((a,b)=>a.r-b.r); top.forEach((t,i)=>{ t.fx=isFx(t.name); });
         top.forEach((t,i)=>{ if(!t.fx) return; const up=top.slice(0,i).reverse().find(x=>!x.fx), dn=top.slice(i+1).find(x=>!x.fx);
           t.lv=up&&dn?Math.round((up.lv+dn.lv)/2):up?Math.max(1,up.lv-1):dn?dn.lv+1:t.lv; t.fx=false; });
+        { const tie=RANK_TIE[ss]||{}; top.forEach(t=>{ const k=Object.keys(tie).find(k=>normName(k)===normName(t.name)); if(k!=null&&t.r>tie[k]){ t.r=tie[k]; t.tie=1; } }); top.sort((a,b)=>a.r-b.r||(b.tie?-1:0)); }   /* 同率の順位 */
         top=top.filter(x=>x.r<=3); }
       c[ss]=top; }
-    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop4",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
+    if(gnow()>seasonEnd(cur-1)+HOUR_MS){ try{ localStorage.setItem("toto-pasttop5",JSON.stringify(c)); }catch(e){} }   /* 終わってすぐは結果がそろっていないことがあるので、1時間たってからとっておく */
     PAST_TOP=want.map(ss=>({ss, top:c[ss]||[]})); if(tab==="rank"&&profMode==="rank") render();
   }catch(e){ PAST_TOP=null; } pastBusy=false; })(); }
 /* 2026-10-31：今のランク戦の1〜3位がもらえる限定キャラを、ランキング画面で宣伝する */
@@ -6721,7 +6722,7 @@ function limPromoHtml(){ const ss=seasonNow(), id=SEASON_LIMITED[ss], m=id&&mon(
   return `<div style="display:flex;align-items:center;gap:12px;margin:12px 0;padding:12px 14px;border:3px solid #b26bff;border-radius:18px;background:linear-gradient(135deg,rgba(178,107,255,.28),rgba(255,140,40,.18));box-shadow:0 0 16px rgba(178,107,255,.45)"><img src="${cardURL(m.id,0)}" alt="${esc(m.name)}" style="width:96px;height:96px;flex:none;border-radius:12px"><div style="min-width:0"><div style="font-weight:900;font-size:15px;line-height:1.4">🎁 ${L?`Top 3 of Ranked Match #${ss} get a limited character!`:`第${ss}回ランク戦の1〜3位に限定キャラをプレゼント！`}</div><div style="margin:6px 0 0"><span class="rk rk-L">${L?"Limited":"限定"}</span> <b translate="no">「${esc(m.name)}」</b></div><div style="font-size:12px;opacity:.8;margin:4px 0 0">${L?"Finish in the top 3 when the ranked match ends to get it.":"ランク戦が終わったときに3位以内に入るともらえます"}</div></div></div>`; }
 function pastTopHtml(){ if(!DB) return "";   /* 2026-10-31：みんなが見られる */ if(!PAST_TOP||PAST_TOP[0]&&PAST_TOP[0].ss!==seasonNow()-1) pastTopLoad(); if(!PAST_TOP||!PAST_TOP.length) return `<div class="note" style="margin:8px 0">🏆 ${LANG==="en"?"Loading past results…":"過去のランク戦を読み込み中…"}</div>`;
   const md=["🥇","🥈","🥉"], L=LANG==="en";
-  return `<details ${window.PAST_OPEN?"open":""} ontoggle="window.PAST_OPEN=this.open" style="display:block;margin:12px 0;padding:12px 14px;border:3px solid var(--gold,#e0a84b);border-radius:18px;background:rgba(0,0,0,.18)"><summary style="font-weight:900;cursor:pointer">🏆 ${L?"Past ranked matches — Top 3":"過去のランク戦 1〜3位"}</summary>${PAST_TOP.map(x=>`<div style="margin:10px 0 0"><div style="font-size:13px;opacity:.75;margin:0 0 2px">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</div>${x.top==null?`<div style="font-size:13px">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div style="font-size:13px">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:15px"><span style="flex:none">${md[t.r-1]||t.r}</span><span translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(t.name)}</span><span style="flex:none;min-width:86px;text-align:right">${t.fx?``:`<span style="font-size:12px;opacity:.75">Lv </span><span style="font-weight:900">${t.lv}</span>`}</span></div>`).join("")}</div>`).join("")}</details>`; }
+  return `<details ${window.PAST_OPEN?"open":""} ontoggle="window.PAST_OPEN=this.open" style="display:block;margin:12px 0;padding:12px 14px;border:3px solid var(--gold,#e0a84b);border-radius:18px;background:rgba(0,0,0,.18)"><summary style="font-weight:900;cursor:pointer">🏆 ${L?"Past ranked matches — Top 3":"過去のランク戦 1〜3位"}</summary>${PAST_TOP.map(x=>`<div style="margin:10px 0 0"><div style="font-size:13px;opacity:.75;margin:0 0 2px">${L?`Ranked Match #${x.ss}`:`第${x.ss}回`}</div>${x.top==null?`<div style="font-size:13px">${L?"Loading…":"読み込み中…"}</div>`:!x.top.length?`<div style="font-size:13px">${L?"No record":"記録がありません"}</div>`:x.top.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:15px"><span style="flex:none">${md[t.r-1]||t.r}</span><span translate="no" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(t.name)}${t.tie?`<small style="font-weight:400;opacity:.75">（${L?"tied":"同率"}）</small>`:""}</span><span style="flex:none;min-width:86px;text-align:right">${t.fx?``:`<span style="font-size:12px;opacity:.75">Lv </span><span style="font-weight:900">${t.lv}</span>`}</span></div>`).join("")}</div>`).join("")}</details>`; }
 function renderRanking(segHtml){
   if(!BANK_RK&&!bankErr) loadBankRank();   // 貯金ランキング1〜3位の金色の枠のため
   let body;
@@ -7218,6 +7219,9 @@ setInterval(checkSeasonEndMsg,20000);
 // ランク戦ごとの限定キャラ：{ランク戦の番号: 魔物のid}（そのランク戦の1〜3位に1体ずつ、結果発表で届く）
 // 2026-10-28：運営が決めた順位（前のランク戦＝シーズン11：loveさん3位・ＤＲＡＧＯＮさん4位）
 const RANK_FIX = { 11: { "love":3, "ｄｒａｇｏｎ":4 }, 12: { "love":2 }, 13: { "love":2 } };   // 13：運営の判断でloveさんは2位（2026-10-31）   // 12：画面が2つ動いていたバグで、loveさんのランキングの記録が消えていた
+/* 2026-11-19：運営が決めた「同率」の順位。ほかの人の順位は動かさない（第18回：yoko★さんは4位→同率3位） */
+const RANK_TIE = { 18: { "yoko★":3 } };
+const rankTieFor = s => { try{ const t=RANK_TIE[s]; if(!t) return null; const me=normName(myName()); for(const k in t) if(normName(k)===me) return t[k]; }catch(e){} return null; };
 const rankFixed = (s,p) => { try{ const t=RANK_FIX[s]; if(!t) return false; const n=normName(p&&p.name); return Object.keys(t).some(k=>normName(k)===n); }catch(e){ return false; } };
 // 決めた順位の冒険者をのぞいて数えた順位を、その人たちの席をよけてずらす（例：3位・4位が決まっていたら、3位→5位）
 const rankShift = (s,r) => { const t=RANK_FIX[s]; if(!t||!r) return r; Object.values(t).sort((a,b)=>a-b).forEach(v=>{ if(v<=r) r++; }); return r; };
@@ -7254,10 +7258,11 @@ async function checkSeason(){
       rank=rankShift(old, effRank(mine, prizeOk(old), others)); }
     }
     { const fx=rankFixFor(old); if(fx) rank=fx; }   // 運営が決めた順位
+    { const tf=rankTieFor(old); if(tf){ if(!rank||rank>tf) rank=tf; S["tie"+old]=1; } }   // 運営が決めた同率の順位
     if(RANK_FIX[old]){ S["rkFix"+old]=1; S["invLove"+old]=1; }   /* 2026-10-31：運営が決めた順位を入れたあとの精算なら、あとからの直し（順位・投資）はいらない（二重に払わないように） */
     const w=S.stats.win||0, l=S.stats.lose||0, dr=S.stats.draw||0, t=w+l+dr, wr=t?w/t*100:0;
     let coins=0, stones=0, mokos=0; const lines=[];
-    const eligible = prizeOk(old) || !!rankFixFor(old);
+    const eligible = prizeOk(old) || !!rankFixFor(old) || !!rankTieFor(old);
     if(!eligible) lines.push(S.lateSeen!==old?"⏰ 終了前の6時間以内にログインしていなかったので、ランキング外あつかいになり、景品はもらえませんでした":"⏰ 終了前の1時間以内にログインしていなかったので、ランキング外あつかいになり、景品はもらえませんでした");
     if(old===RANK_GAP_SS && rank && rank<=3 && eligible){ const n=RANK18_TK[rank]; S.gt18={rank, n}; lines.push(`🎫 <b>グッズチケットを${n}枚獲得しました！</b><br>インスタのDMにて報告し、チケットをゲットしましょう！`); }   /* 第18回の1〜3位：グッズチケットはその場ではわたさない（いつもの賞品はわたす） */
     if(rank && eligible){ const pz=(old>=PRIZE_NEW_SS?RANK_PRIZE:RANK_PRIZE_OLD)[rank] || (rank<=10?RANK_PRIZE_10:null);
@@ -7638,6 +7643,17 @@ async function fixYoko13(){ const SS=13, FL="fixY13";
     g.innerHTML=`<h3>🙏 ランク戦の順位の訂正</h3><p class="note" style="text-align:center;max-width:330px">第13回のランク戦の精算のとき、バグで順位がまちがって「1位」になっていました。<br>本当の順位は <b>${rank}位</b> でした。<br><br>${lines.join("<br>")}<br><br>ご迷惑をおかけしてごめんなさい🙏</p><button class="btn gold" type="button">OK</button>`;
     document.body.appendChild(g); g.querySelector(".btn").onclick=()=>{ g.remove(); render(); }; };
   show(); }
+/* 2026-11-19：第18回のyoko★さんは同率3位（運営の指定）。もう4位で精算していたら、3位との差を1回だけわたす */
+function tieRetro18(){ try{ const SS=18; if(!MYID||S["tie"+SS]||(S.season??0)<=SS||!rankTieFor(SS)) return; S["tie"+SS]=1;
+  const p3=(SS>=PRIZE_NEW_SS?RANK_PRIZE:RANK_PRIZE_OLD)[3], p4=RANK_PRIZE_10;
+  const c=Math.max(0,p3.c-p4.c), st=Math.max(0,p3.st-p4.st), mk=Math.max(0,(p3.mk||0)-(p4.mk||0));
+  presentAdd({ic:"🥉", title:`第${SS}回ランク戦は同率3位でした！（4位との差の賞品）`, en:`Ranked Match #${SS}: tied for 3rd (difference from 4th)`, coins:c, stone:st, moko:mk});
+  const lg=SEASON_LIMITED[SS]; if(lg&&!(S.limGot||{})[SS]&&mon(lg)){ S.limGot=S.limGot||{}; S.limGot[SS]=1; presentAdd({key:"lim:"+SS, ic:"👑", title:`ランク戦の3位の限定キャラ「${mon(lg).name}」`, en:"Limited character for 3rd place", mons:[lg]}); }
+  S.gt18={rank:3, n:RANK18_TK[3]}; if(!S.best||S.best>3) S.best=3; save(); try{ queueProfile(true); }catch(e){}
+  const bg=document.createElement("div"); bg.className="sheet-bg center"; bg.style.zIndex=63;
+  bg.innerHTML=`<div class="swear" role="dialog" aria-modal="true"><div class="swear-face">🥉</div><p>第${SS}回ランク戦は同率3位になりました！</p><div class="note" style="margin:0;text-align:center">3位の賞品との差をプレゼントBOXに送りました🎁<br>🎫 <b>グッズチケットを${RANK18_TK[3]}枚獲得しました！</b><br>インスタのDMにて報告し、チケットをゲットしましょう！</div><button class="btn gold" type="button">OK</button></div>`;
+  document.body.appendChild(bg); bg.querySelector(".btn").onclick=()=>bg.remove(); }catch(e){} }
+setTimeout(tieRetro18,11000); setInterval(tieRetro18,60*1000);
 /* 2026-11-03：yoko★さんの過去最高順位を2位にする（運営の指定・1回だけ） */
 /* 2026-11-04：Rikuさんがまちがって5億コインを貯金したので、貯金から5億コインを所持コインにもどす（運営より・1回だけ） */
 function fixRikuBank(){ try{ if(S.rikuBank1104||!MYID||normName(myName())!==normName("Riku")) return; S.rikuBank1104=1;
